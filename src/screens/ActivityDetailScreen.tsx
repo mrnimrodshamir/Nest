@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, Image, ScrollView, Pressable, StyleSheet, Linking, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MapView, { Marker, PROVIDER_DEFAULT } from 'react-native-maps';
@@ -10,6 +10,8 @@ import { formatStartTime } from '@/utils/formatStartTime';
 import { formatDuration } from '@/utils/formatDuration';
 import { formatAgeRange } from '@/utils/babyAge';
 import { useActivityRsvp } from '@/hooks/useActivityRsvp';
+import { AddToCalendarSheet } from '@/components/AddToCalendarSheet';
+import { hasCalendarDrift, updateCalendarEvent, removeCalendarEvent } from '@/lib/activityCalendar';
 
 interface ActivityDetailScreenProps {
   activity: ActivityDetail;
@@ -37,6 +39,8 @@ export function ActivityDetailScreen({
   onEdit,
 }: ActivityDetailScreenProps) {
   const { activity, isSubmitting, error, join, leave } = useActivityRsvp(initial);
+  const [showCalendarSheet, setShowCalendarSheet] = useState(false);
+  const [calendarNotice, setCalendarNotice] = useState<'changed' | 'cancelled' | null>(null);
 
   const isCancelled = activity.status === 'cancelled';
   const isEnded = activity.status === 'completed';
@@ -44,6 +48,25 @@ export function ActivityDetailScreen({
   const canJoin = !isCancelled && !isEnded && (activity.viewerStatus === 'going' || !isFull);
   const spotsLeft =
     activity.capacity !== null ? Math.max(0, activity.capacity - activity.attendeeCount) : null;
+
+  const calendarInfo = {
+    id: activity.id,
+    title: activity.title,
+    description: activity.description,
+    startsAt: new Date(activity.startTime),
+    durationMinutes: activity.durationMinutes,
+    locationName: activity.location.label,
+  };
+
+  useEffect(() => {
+    if (activity.viewerStatus !== 'going') return;
+    hasCalendarDrift(calendarInfo).then((drift) => {
+      if (isCancelled && drift !== 'not_linked') setCalendarNotice('cancelled');
+      else if (drift === 'changed') setCalendarNotice('changed');
+    });
+    // Only re-check when the fields that matter for drift actually change.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activity.viewerStatus, activity.startTime, activity.location.label, isCancelled]);
 
   const handleGetDirections = () => {
     const { latitude, longitude, label } = activity.location;
@@ -57,7 +80,7 @@ export function ActivityDetailScreen({
   const handleJoinPress = async () => {
     if (activity.viewerStatus === 'none') {
       const joined = await join();
-      if (joined) onJoined(activity);
+      if (joined) setShowCalendarSheet(true);
     } else {
       await leave();
     }
@@ -188,6 +211,28 @@ export function ActivityDetailScreen({
             </View>
           </Pressable>
 
+          {calendarNotice && (
+            <View style={styles.calendarNotice}>
+              <Text style={styles.calendarNoticeText}>
+                {calendarNotice === 'cancelled'
+                  ? "This activity was cancelled — remove it from your calendar?"
+                  : "This activity's time or location changed — update your calendar event?"}
+              </Text>
+              <Pressable
+                style={styles.calendarNoticeButton}
+                onPress={async () => {
+                  if (calendarNotice === 'cancelled') await removeCalendarEvent(activity.id);
+                  else await updateCalendarEvent(calendarInfo);
+                  setCalendarNotice(null);
+                }}
+              >
+                <Text style={styles.calendarNoticeButtonLabel}>
+                  {calendarNotice === 'cancelled' ? 'Remove' : 'Update'}
+                </Text>
+              </Pressable>
+            </View>
+          )}
+
           <Text style={styles.sectionLabel}>Who's going</Text>
           <View style={styles.attendeeRow}>
             {activity.attendees.slice(0, 5).map((attendee, index) => (
@@ -231,6 +276,15 @@ export function ActivityDetailScreen({
           </Text>
         </Pressable>
       </View>
+
+      <AddToCalendarSheet
+        visible={showCalendarSheet}
+        activity={calendarInfo}
+        onDismiss={() => {
+          setShowCalendarSheet(false);
+          onJoined(activity);
+        }}
+      />
     </SafeAreaView>
   );
 }
@@ -315,6 +369,24 @@ const styles = StyleSheet.create({
   },
   directionsButton: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   directionsLabel: { ...typography.caption, color: theme.text.accent, fontWeight: '600' as const },
+  calendarNotice: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: theme.brand.secondaryTint,
+    borderRadius: radius.md,
+    padding: spacing.md,
+    marginBottom: spacing.lg,
+    gap: spacing.sm,
+  },
+  calendarNoticeText: { ...typography.footnote, color: theme.text.primary, flex: 1 },
+  calendarNoticeButton: {
+    backgroundColor: theme.brand.secondary,
+    borderRadius: radius.sm,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+  },
+  calendarNoticeButtonLabel: { ...typography.caption, color: theme.text.inverse, fontWeight: '600' as const },
   attendeeRow: { flexDirection: 'row', alignItems: 'center' },
   attendeeAvatar: {
     width: 32,
