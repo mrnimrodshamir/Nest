@@ -1,8 +1,9 @@
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useEffect, useMemo } from 'react';
 import { View, ActivityIndicator } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { NavigationContainer, LinkingOptions } from '@react-navigation/native';
+import { NavigationContainer, LinkingOptions, createNavigationContainerRef } from '@react-navigation/native';
+import * as Notifications from 'expo-notifications';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useFonts } from '@expo-google-fonts/plus-jakarta-sans/useFonts';
 import {
@@ -43,6 +44,7 @@ export type RootStackParamList = {
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
+const navigationRef = createNavigationContainerRef<RootStackParamList>();
 
 const linking: LinkingOptions<RootStackParamList> = {
   prefixes: ['momzi://'],
@@ -68,6 +70,38 @@ export default function App() {
   });
   const { session, profile, isLoading: authLoading } = useAuth();
 
+  useEffect(() => {
+    // Safe fallback if the tapped notification references content that no
+    // longer exists — try/catch around navigation, since a bad or stale
+    // activityId shouldn't crash the app.
+    function handleNotificationData(data: Record<string, unknown> | undefined) {
+      const activityId = data?.activityId as string | undefined;
+      if (!activityId || !navigationRef.isReady()) return;
+      try {
+        if (data?.kind === 'chat') {
+          navigationRef.navigate('Chat', {
+            activityId,
+            activityTitle: (data?.activityTitle as string) ?? '',
+          });
+        } else {
+          navigationRef.navigate('ActivityDetail', { activityId });
+        }
+      } catch {
+        // Content no longer reachable — stay put rather than crash.
+      }
+    }
+
+    Notifications.getLastNotificationResponseAsync().then((response) => {
+      if (response) handleNotificationData(response.notification.request.content.data);
+    });
+
+    const subscription = Notifications.addNotificationResponseReceivedListener((response) => {
+      handleNotificationData(response.notification.request.content.data);
+    });
+
+    return () => subscription.remove();
+  }, []);
+
   if (!fontsLoaded || authLoading) {
     return (
       <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.background.app }}>
@@ -79,7 +113,7 @@ export default function App() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
-        <NavigationContainer linking={session && profile ? linking : undefined}>
+        <NavigationContainer ref={navigationRef} linking={session && profile ? linking : undefined}>
           {!session ? (
             <AuthNavigator />
           ) : !profile ? (

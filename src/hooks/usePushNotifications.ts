@@ -3,7 +3,10 @@ import { Platform } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import Constants from 'expo-constants';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '@/lib/supabase';
+
+const LAST_TOKEN_KEY = 'momzi.pushToken';
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -31,7 +34,10 @@ export async function ensurePushRegistration(promptIfNeeded: boolean): Promise<b
     const requested = await Notifications.requestPermissionsAsync();
     status = requested.status;
   }
-  if (status !== 'granted') return false;
+  if (status !== 'granted') {
+    console.log('[Push] permission not granted', { status });
+    return false;
+  }
 
   if (Platform.OS === 'android') {
     await Notifications.setNotificationChannelAsync('default', {
@@ -53,11 +59,31 @@ export async function ensurePushRegistration(promptIfNeeded: boolean): Promise<b
       { user_id: user.id, token },
       { onConflict: 'user_id,token' },
     );
-  } catch {
-    // Push registration is best-effort — never block the app on it.
+    // Remember which token belongs to *this device* so sign-out only removes
+    // this device's row, never a different device the user is also signed
+    // into.
+    await AsyncStorage.setItem(LAST_TOKEN_KEY, token);
+    console.log('[Push] token registered');
+  } catch (err) {
+    console.log('[Push] token registration failed', err instanceof Error ? err.message : err);
   }
 
   return true;
+}
+
+/** Removes this device's push token on sign-out so a signed-out device
+ *  stops receiving another account's notifications if someone else signs
+ *  into the same device later. Leaves other devices' tokens untouched. */
+export async function clearPushRegistration(userId: string): Promise<void> {
+  const token = await AsyncStorage.getItem(LAST_TOKEN_KEY);
+  if (!token) return;
+  try {
+    await supabase.from('push_tokens').delete().match({ user_id: userId, token });
+    await AsyncStorage.removeItem(LAST_TOKEN_KEY);
+    console.log('[Push] token cleared on sign-out');
+  } catch (err) {
+    console.log('[Push] token cleanup failed', err instanceof Error ? err.message : err);
+  }
 }
 
 /** Mount-time hook: silently syncs the push token if permission was already

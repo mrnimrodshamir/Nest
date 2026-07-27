@@ -3,7 +3,12 @@ import type { Session } from '@supabase/supabase-js';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import { supabase } from '@/lib/supabase';
 import { uploadAvatar } from '@/lib/uploadAvatar';
+import { clearPushRegistration } from '@/hooks/usePushNotifications';
 import type { NotificationPreferences, Profile } from '@/types/profile';
+
+function isNetworkError(message: string): boolean {
+  return /network|fetch failed|timed? ?out|offline/i.test(message);
+}
 
 export interface RegistrationInput {
   fullName: string;
@@ -78,7 +83,12 @@ export function useAuth(): UseAuthResult {
 
   const signIn = useCallback(async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
-    return error?.message ?? null;
+    if (error) {
+      console.log('[Auth] Email sign-in failed', error.message);
+      return isNetworkError(error.message) ? 'No internet connection — please try again.' : error.message;
+    }
+    console.log('[Auth] Email sign-in succeeded');
+    return null;
   }, []);
 
   const register = useCallback(async (input: RegistrationInput) => {
@@ -118,6 +128,7 @@ export function useAuth(): UseAuthResult {
   }, [loadProfile]);
 
   const signInWithApple = useCallback(async () => {
+    console.log('[Auth] Apple sign-in: requesting native credential');
     try {
       const credential = await AppleAuthentication.signInAsync({
         requestedScopes: [
@@ -125,16 +136,37 @@ export function useAuth(): UseAuthResult {
           AppleAuthentication.AppleAuthenticationScope.EMAIL,
         ],
       });
+      console.log('[Auth] Apple sign-in: credential received', {
+        hasIdentityToken: Boolean(credential.identityToken),
+        hasEmail: Boolean(credential.email),
+        hasFullName: Boolean(credential.fullName?.givenName),
+      });
 
       if (!credential.identityToken) {
-        return { status: 'error' as const, message: 'Apple did not return an identity token.' };
+        return {
+          status: 'error' as const,
+          message: 'Apple did not return a valid credential. Please try again.',
+        };
       }
 
       const { data, error } = await supabase.auth.signInWithIdToken({
         provider: 'apple',
         token: credential.identityToken,
       });
-      if (error) return { status: 'error' as const, message: error.message };
+      if (error) {
+        console.log('[Auth] Apple sign-in: Supabase error', error.message);
+        if (isNetworkError(error.message)) {
+          return { status: 'error' as const, message: 'No internet connection — please try again.' };
+        }
+        if (/already registered|already exists|user_already_exists/i.test(error.message)) {
+          return {
+            status: 'error' as const,
+            message:
+              'An account already exists with this email. Try logging in with email and password instead.',
+          };
+        }
+        return { status: 'error' as const, message: error.message };
+      }
 
       const userId = data.user?.id;
       if (!userId) return { status: 'error' as const, message: 'Sign in with Apple failed.' };
@@ -146,6 +178,7 @@ export function useAuth(): UseAuthResult {
         .maybeSingle();
 
       if (existingProfile) {
+        console.log('[Auth] Apple sign-in: returning user', { userId });
         await loadProfile(userId);
         return { status: 'signed-in' as const };
       }
@@ -153,6 +186,7 @@ export function useAuth(): UseAuthResult {
       // First-ever authorization for this account — Apple gives us name/email
       // exactly once, right now. Carry it forward for the profile-completion
       // step since it won't be sent again on future logins.
+      console.log('[Auth] Apple sign-in: first-time user, needs profile completion', { userId });
       const fullName = credential.fullName
         ? [credential.fullName.givenName, credential.fullName.familyName].filter(Boolean).join(' ')
         : null;
@@ -169,7 +203,17 @@ export function useAuth(): UseAuthResult {
         },
       };
     } catch (err: any) {
+      console.log('[Auth] Apple sign-in: exception', err?.code ?? err?.message);
       if (err?.code === 'ERR_REQUEST_CANCELED') return { status: 'cancelled' as const };
+      if (err?.code === 'ERR_REQUEST_NOT_HANDLED' || err?.code === 'ERR_REQUEST_NOT_INTERACTIVE') {
+        return {
+          status: 'error' as const,
+          message: 'Sign in with Apple is not available on this device right now.',
+        };
+      }
+      if (isNetworkError(err?.message ?? '')) {
+        return { status: 'error' as const, message: 'No internet connection — please try again.' };
+      }
       return { status: 'error' as const, message: err?.message ?? 'Sign in with Apple failed.' };
     }
   }, [loadProfile]);
@@ -224,8 +268,12 @@ export function useAuth(): UseAuthResult {
   }, []);
 
   const signOut = useCallback(async () => {
+    if (session) {
+      await clearPushRegistration(session.user.id);
+    }
     await supabase.auth.signOut();
-  }, []);
+    console.log('[Auth] Signed out');
+  }, [session]);
 
   const refreshProfile = useCallback(async () => {
     if (session) await loadProfile(session.user.id);
