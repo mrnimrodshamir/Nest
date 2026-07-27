@@ -16,7 +16,7 @@ interface EditActivityScreenProps {
 }
 
 export function EditActivityScreen({ activity, onBack, onSaved, onCancelled }: EditActivityScreenProps) {
-  const { isSubmitting, error, update, cancelActivity } = useEditActivity(activity.id);
+  const { isSubmitting, stage, error, update, cancelActivity } = useEditActivity(activity.id);
 
   const handleSubmit = async (input: CreateActivityInput) => {
     const success = await update(input);
@@ -66,9 +66,11 @@ export function EditActivityScreen({ activity, onBack, onSaved, onCancelled }: E
             babyMinAgeMonths: activity.babyMinAgeMonths,
             babyMaxAgeMonths: activity.babyMaxAgeMonths,
             notes: activity.notes ?? '',
+            coverImageUrl: activity.coverImageUrl,
           }}
           submitLabel="Save changes"
           isSubmitting={isSubmitting}
+          stage={stage}
           error={error}
           onSubmit={handleSubmit}
           footer={

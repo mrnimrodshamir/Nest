@@ -13,6 +13,7 @@ import { formatAgeRange } from '@/utils/babyAge';
 import { useActivityRsvp } from '@/hooks/useActivityRsvp';
 import { useAuth } from '@/hooks/useAuth';
 import { AddToCalendarSheet } from '@/components/AddToCalendarSheet';
+import { CoverImage } from '@/components/CoverImage';
 import { NotificationPermissionSheet } from '@/components/NotificationPermissionSheet';
 import { hasCalendarDrift, updateCalendarEvent, removeCalendarEvent } from '@/lib/activityCalendar';
 import {
@@ -130,13 +131,11 @@ export function ActivityDetailScreen({
     <SafeAreaView style={styles.container} edges={['bottom']}>
       <ScrollView showsVerticalScrollIndicator={false}>
         <View style={styles.hero}>
-          {activity.coverImageUrl && (
-            <Image
-              source={{ uri: activity.coverImageUrl }}
-              style={StyleSheet.absoluteFill}
-              resizeMode="cover"
-            />
-          )}
+          <CoverImage
+            url={activity.coverImageUrl}
+            fallbackCategory={activity.category}
+            style={StyleSheet.absoluteFill}
+          />
           <SafeAreaView edges={['top']} style={styles.heroOverlay}>
             <Pressable style={styles.roundButton} onPress={onBack} accessibilityLabel="Back">
               <ArrowLeft size={18} color={theme.text.primary} />

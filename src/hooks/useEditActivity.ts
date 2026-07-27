@@ -1,14 +1,34 @@
 import { useState } from 'react';
 import { supabase } from '@/lib/supabase';
+import { uploadActivityCover, type CoverUploadStage } from '@/lib/uploadActivityCover';
+import { curatedCoverUrl } from '@/components/CuratedCover';
 import type { CreateActivityInput } from '@/hooks/useCreateActivity';
 
 export function useEditActivity(activityId: string) {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [stage, setStage] = useState<CoverUploadStage | 'saving' | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const update = async (input: CreateActivityInput): Promise<boolean> => {
     setIsSubmitting(true);
+    setStage('saving');
     setError(null);
+
+    // A new local photo takes priority; otherwise a curated pick updates
+    // the cover; if neither changed, leave cover_image_url untouched.
+    let coverUpdate: { cover_image_url?: string } = {};
+    if (input.coverUri) {
+      try {
+        const coverUrl = await uploadActivityCover(activityId, input.coverUri, setStage);
+        coverUpdate = { cover_image_url: coverUrl };
+      } catch {
+        // Non-blocking — keep whatever cover the activity already had.
+      }
+    } else if (input.curatedCover) {
+      coverUpdate = { cover_image_url: curatedCoverUrl(input.curatedCover) };
+    }
+
+    setStage('saving');
     const { error: updateError } = await supabase
       .from('activities')
       .update({
@@ -24,9 +44,11 @@ export function useEditActivity(activityId: string) {
         baby_min_age_months: input.babyMinAgeMonths,
         baby_max_age_months: input.babyMaxAgeMonths,
         notes: input.notes || null,
+        ...coverUpdate,
       })
       .eq('id', activityId);
     setIsSubmitting(false);
+    setStage(null);
     if (updateError) {
       setError(updateError.message);
       return false;
@@ -49,5 +71,5 @@ export function useEditActivity(activityId: string) {
     return true;
   };
 
-  return { isSubmitting, error, update, cancelActivity };
+  return { isSubmitting, stage, error, update, cancelActivity };
 }

@@ -19,7 +19,7 @@ export function CreateActivityScreen({
   initialLatitude,
   initialLongitude,
 }: CreateActivityScreenProps) {
-  const { isSubmitting, error, submit } = useCreateActivity();
+  const { isSubmitting, stage, error, submit } = useCreateActivity();
 
   const handleSubmit = async (input: CreateActivityInput) => {
     const activityId = await submit(input);
@@ -58,6 +58,7 @@ export function CreateActivityScreen({
           }}
           submitLabel="Create activity"
           isSubmitting={isSubmitting}
+          stage={stage}
           error={error}
           onSubmit={handleSubmit}
         />

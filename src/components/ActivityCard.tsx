@@ -8,6 +8,7 @@ import Animated, {
 import { theme, typography, spacing, radius, pressFeedback } from '@/theme';
 import type { Activity } from '@/types/activity';
 import { CATEGORY_LABELS } from '@/types/activity';
+import { CoverImage } from '@/components/CoverImage';
 import { formatStartTime } from '@/utils/formatStartTime';
 
 interface ActivityCardProps {
@@ -62,13 +63,11 @@ export function ActivityCard({
       accessibilityLabel={`${activity.title}, ${formatStartTime(activity.startTime)}`}
     >
       <View style={[styles.image, isRail ? styles.imageRail : styles.imageFeed]}>
-        {activity.coverImageUrl ? (
-          <Image
-            source={{ uri: activity.coverImageUrl }}
-            style={StyleSheet.absoluteFill}
-            resizeMode="cover"
-          />
-        ) : null}
+        <CoverImage
+          url={activity.coverImageUrl}
+          fallbackCategory={activity.category}
+          style={StyleSheet.absoluteFill}
+        />
       </View>
 
       <View style={styles.body}>

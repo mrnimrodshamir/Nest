@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, Pressable, ScrollView, StyleSheet } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
+import { Camera } from 'phosphor-react-native';
 import { theme, typography, spacing, radius } from '@/theme';
 import { CategoryChip } from '@/components/CategoryChip';
 import { DateTimeField } from '@/components/DateTimeField';
@@ -8,13 +10,21 @@ import { NumberStepper } from '@/components/NumberStepper';
 import { YearsMonthsPicker } from '@/components/YearsMonthsPicker';
 import { Checkbox } from '@/components/Checkbox';
 import { PrimaryButton } from '@/components/PrimaryButton';
+import { CoverImage } from '@/components/CoverImage';
+import { CuratedCover, parseCuratedCover } from '@/components/CuratedCover';
 import { useAuth } from '@/hooks/useAuth';
 import { CATEGORY_LABELS, DURATION_OPTIONS_MINUTES } from '@/types/activity';
 import type { ActivityCategory } from '@/types/activity';
 import { formatDuration } from '@/utils/formatDuration';
-import type { CreateActivityInput } from '@/hooks/useCreateActivity';
+import type { CreateActivityInput, CreateActivityStage } from '@/hooks/useCreateActivity';
 
 const ACTIVITY_TYPES = Object.keys(CATEGORY_LABELS) as ActivityCategory[];
+
+const STAGE_LABELS: Record<CreateActivityStage, string> = {
+  saving: 'Saving…',
+  compressing: 'Preparing your photo…',
+  uploading: 'Uploading your photo…',
+};
 
 export interface ActivityFormInitialValues {
   activityType: ActivityCategory;
@@ -29,12 +39,14 @@ export interface ActivityFormInitialValues {
   babyMinAgeMonths: number | null;
   babyMaxAgeMonths: number | null;
   notes: string;
+  coverImageUrl?: string | null;
 }
 
 interface ActivityFormProps {
   initialValues?: ActivityFormInitialValues;
   submitLabel: string;
   isSubmitting: boolean;
+  stage?: CreateActivityStage | 'saving' | null;
   error: string | null;
   onSubmit: (input: CreateActivityInput) => void;
   /** Extra actions rendered below the submit button (e.g. Cancel activity) */
@@ -45,6 +57,7 @@ export function ActivityForm({
   initialValues,
   submitLabel,
   isSubmitting,
+  stage,
   error,
   onSubmit,
   footer,
@@ -53,6 +66,10 @@ export function ActivityForm({
 
   const [activityType, setActivityType] = useState<ActivityCategory>(
     initialValues?.activityType ?? 'stroller_walk',
+  );
+  const [coverUri, setCoverUri] = useState<string | null>(null);
+  const [curatedCover, setCuratedCover] = useState<ActivityCategory | null>(
+    parseCuratedCover(initialValues?.coverImageUrl ?? null),
   );
   const [title, setTitle] = useState(initialValues?.title ?? '');
   const [description, setDescription] = useState(initialValues?.description ?? '');
@@ -107,8 +124,27 @@ export function ActivityForm({
       babyMinAgeMonths: anyAge ? null : minYears * 12 + minMonths,
       babyMaxAgeMonths: anyAge ? null : maxYears * 12 + maxMonths,
       notes: notes.trim(),
+      coverUri,
+      curatedCover: coverUri ? null : curatedCover,
     });
   };
+
+  const handlePickCoverPhoto = async () => {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) return;
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [16, 9],
+      quality: 0.8,
+    });
+    if (!result.canceled && result.assets[0]) {
+      setCoverUri(result.assets[0].uri);
+      setCuratedCover(null);
+    }
+  };
+
+  const previewCoverUrl = coverUri ? null : curatedCover ? null : initialValues?.coverImageUrl ?? null;
 
   return (
     <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
@@ -121,6 +157,39 @@ export function ActivityForm({
             selected={activityType === type}
             onPress={() => setActivityType(type)}
           />
+        ))}
+      </View>
+
+      <Text style={styles.sectionLabel}>Cover photo</Text>
+      <View style={styles.coverPreview}>
+        {coverUri ? (
+          <CoverImage url={coverUri} fallbackCategory={activityType} style={styles.coverPreviewFill} />
+        ) : curatedCover ? (
+          <CuratedCover category={curatedCover} style={styles.coverPreviewFill} />
+        ) : previewCoverUrl ? (
+          <CoverImage url={previewCoverUrl} fallbackCategory={activityType} style={styles.coverPreviewFill} />
+        ) : (
+          <CuratedCover category={activityType} style={styles.coverPreviewFill} />
+        )}
+      </View>
+      <Pressable style={styles.uploadCoverButton} onPress={handlePickCoverPhoto}>
+        <Camera size={16} color={theme.text.primary} />
+        <Text style={styles.uploadCoverLabel}>Upload a photo</Text>
+      </Pressable>
+      <Text style={styles.curatedLabel}>Or choose a curated cover</Text>
+      <View style={styles.curatedRow}>
+        {ACTIVITY_TYPES.map((type) => (
+          <Pressable
+            key={type}
+            style={[styles.curatedSwatch, curatedCover === type && !coverUri && styles.curatedSwatchSelected]}
+            onPress={() => {
+              setCuratedCover(type);
+              setCoverUri(null);
+            }}
+            accessibilityLabel={`Use curated cover for ${CATEGORY_LABELS[type]}`}
+          >
+            <CuratedCover category={type} style={styles.curatedSwatchFill} />
+          </Pressable>
         ))}
       </View>
 
@@ -249,7 +318,11 @@ export function ActivityForm({
 
       {(validationError || error) && <Text style={styles.formError}>{validationError ?? error}</Text>}
 
-      <PrimaryButton label={submitLabel} onPress={handleSubmit} loading={isSubmitting} />
+      <PrimaryButton
+        label={isSubmitting && stage ? STAGE_LABELS[stage] : submitLabel}
+        onPress={handleSubmit}
+        loading={isSubmitting}
+      />
       {footer}
     </ScrollView>
   );
@@ -299,4 +372,35 @@ const styles = StyleSheet.create({
   },
   hostLabel: { ...typography.subhead, color: theme.text.secondary },
   formError: { ...typography.footnote, color: theme.semantic.danger, textAlign: 'center' },
+  coverPreview: {
+    height: 140,
+    borderRadius: radius.lg,
+    overflow: 'hidden',
+    backgroundColor: theme.background.surface,
+  },
+  coverPreviewFill: { flex: 1 },
+  uploadCoverButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    backgroundColor: theme.background.surface,
+    borderWidth: 1,
+    borderColor: theme.border.default,
+    borderRadius: radius.md,
+    paddingVertical: spacing.sm,
+  },
+  uploadCoverLabel: { ...typography.bodyMedium, color: theme.text.primary },
+  curatedLabel: { ...typography.footnote, color: theme.text.secondary },
+  curatedRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  curatedSwatch: {
+    width: 52,
+    height: 52,
+    borderRadius: radius.md,
+    overflow: 'hidden',
+    borderWidth: 2,
+    borderColor: 'transparent',
+  },
+  curatedSwatchSelected: { borderColor: theme.brand.primary },
+  curatedSwatchFill: { flex: 1 },
 });
