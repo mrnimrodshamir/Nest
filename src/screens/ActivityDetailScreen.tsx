@@ -10,8 +10,14 @@ import { formatStartTime } from '@/utils/formatStartTime';
 import { formatDuration } from '@/utils/formatDuration';
 import { formatAgeRange } from '@/utils/babyAge';
 import { useActivityRsvp } from '@/hooks/useActivityRsvp';
+import { useAuth } from '@/hooks/useAuth';
 import { AddToCalendarSheet } from '@/components/AddToCalendarSheet';
 import { hasCalendarDrift, updateCalendarEvent, removeCalendarEvent } from '@/lib/activityCalendar';
+import {
+  scheduleActivityReminders,
+  cancelActivityReminders,
+  rescheduleActivityReminders,
+} from '@/lib/activityReminders';
 
 interface ActivityDetailScreenProps {
   activity: ActivityDetail;
@@ -39,6 +45,8 @@ export function ActivityDetailScreen({
   onEdit,
 }: ActivityDetailScreenProps) {
   const { activity, isSubmitting, error, join, leave } = useActivityRsvp(initial);
+  const { profile } = useAuth();
+  const remindersEnabled = profile?.notificationPreferences.reminders ?? true;
   const [showCalendarSheet, setShowCalendarSheet] = useState(false);
   const [calendarNotice, setCalendarNotice] = useState<'changed' | 'cancelled' | null>(null);
 
@@ -60,6 +68,16 @@ export function ActivityDetailScreen({
 
   useEffect(() => {
     if (activity.viewerStatus !== 'going') return;
+
+    if (isCancelled) {
+      cancelActivityReminders(activity.id);
+    } else {
+      rescheduleActivityReminders(
+        { id: activity.id, title: activity.title, startsAt: new Date(activity.startTime) },
+        remindersEnabled,
+      );
+    }
+
     hasCalendarDrift(calendarInfo).then((drift) => {
       if (isCancelled && drift !== 'not_linked') setCalendarNotice('cancelled');
       else if (drift === 'changed') setCalendarNotice('changed');
@@ -80,9 +98,16 @@ export function ActivityDetailScreen({
   const handleJoinPress = async () => {
     if (activity.viewerStatus === 'none') {
       const joined = await join();
-      if (joined) setShowCalendarSheet(true);
+      if (joined) {
+        setShowCalendarSheet(true);
+        scheduleActivityReminders(
+          { id: activity.id, title: activity.title, startsAt: new Date(activity.startTime) },
+          remindersEnabled,
+        );
+      }
     } else {
       await leave();
+      await cancelActivityReminders(activity.id);
     }
   };
 

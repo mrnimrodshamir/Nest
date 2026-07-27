@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { ArrowLeft, SignOut } from 'phosphor-react-native';
 import { theme, typography, spacing, radius } from '@/theme';
 import { useAuth } from '@/hooks/useAuth';
+import { ensurePushRegistration } from '@/hooks/usePushNotifications';
 import { birthdateToMonths, formatBabyAge } from '@/utils/babyAge';
 import type { NotificationPreferences } from '@/types/profile';
 
@@ -73,6 +74,12 @@ export function ProfileScreen({ onBack }: ProfileScreenProps) {
                       ...profile.notificationPreferences,
                       [key]: value,
                     });
+                    // Reminders is one of only two moments allowed to trigger
+                    // the OS notification permission prompt (the other is
+                    // joining a first activity) — never proactively.
+                    if (key === 'reminders' && value) {
+                      void ensurePushRegistration(true);
+                    }
                   }}
                   trackColor={{ true: theme.brand.primary, false: theme.border.default }}
                 />
