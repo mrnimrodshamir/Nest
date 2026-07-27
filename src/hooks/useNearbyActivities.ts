@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import * as Location from 'expo-location';
 import { supabase } from '@/lib/supabase';
+import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 import type { Activity, ActivityCategory, ActivityStatus, Attendee } from '@/types/activity';
 
 const BASE_RADIUS_MILES = 2;
@@ -16,6 +17,9 @@ interface UseNearbyActivitiesResult {
   isRefreshing: boolean;
   radiusExpanded: boolean;
   locationLabel: string;
+  locationDenied: boolean;
+  isOffline: boolean;
+  error: string | null;
   refresh: () => void;
 }
 
@@ -40,26 +44,47 @@ export function useNearbyActivities(): UseNearbyActivitiesResult {
   const [activities, setActivities] = useState<Activity[]>([]);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [radiusExpanded, setRadiusExpanded] = useState(false);
+  const [locationDenied, setLocationDenied] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const { isOffline } = useNetworkStatus();
 
   const load = useCallback(async () => {
-    setIsRefreshing(true);
-
-    const coords = await resolveLocation();
-
-    let results = await fetchNearby(coords, BASE_RADIUS_MILES);
-    let expanded = false;
-
-    // Cold-start safety net: silently widen the search before ever
-    // surfacing an empty state to the person.
-    if (results.length === 0) {
-      results = await fetchNearby(coords, EXPANDED_RADIUS_MILES);
-      expanded = true;
+    if (isOffline) {
+      // Don't even attempt the round trip — surface the offline state
+      // immediately rather than waiting on a request that will time out.
+      setIsRefreshing(false);
+      return;
     }
 
-    setActivities(results);
-    setRadiusExpanded(expanded);
-    setIsRefreshing(false);
-  }, []);
+    setIsRefreshing(true);
+    setError(null);
+
+    try {
+      const { coords, denied } = await resolveLocation();
+      setLocationDenied(denied);
+
+      let results = await fetchNearby(coords, BASE_RADIUS_MILES);
+      let expanded = false;
+
+      // Cold-start safety net: silently widen the search before ever
+      // surfacing an empty state to the person.
+      if (results.length === 0) {
+        results = await fetchNearby(coords, EXPANDED_RADIUS_MILES);
+        expanded = true;
+      }
+
+      setActivities(results);
+      setRadiusExpanded(expanded);
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? "Couldn't load nearby activities. Please try again."
+          : 'Something went wrong loading activities.',
+      );
+    } finally {
+      setIsRefreshing(false);
+    }
+  }, [isOffline]);
 
   useEffect(() => {
     load();
@@ -77,23 +102,29 @@ export function useNearbyActivities(): UseNearbyActivitiesResult {
     isRefreshing,
     radiusExpanded,
     locationLabel: `Nearby, ${radiusExpanded ? EXPANDED_RADIUS_MILES : BASE_RADIUS_MILES}mi`,
+    locationDenied,
+    isOffline,
+    error,
     refresh: load,
   };
 }
 
 /** Only requests permission — does not block the feed if denied. Callers
  *  reaching Discover/the map is the first moment we ask, never at signup. */
-async function resolveLocation(): Promise<{ latitude: number; longitude: number }> {
+async function resolveLocation(): Promise<{ coords: { latitude: number; longitude: number }; denied: boolean }> {
   const { status } = await Location.requestForegroundPermissionsAsync();
-  if (status !== 'granted') return FALLBACK_LOCATION;
+  if (status !== 'granted') return { coords: FALLBACK_LOCATION, denied: true };
 
   try {
     const position = await Location.getCurrentPositionAsync({
       accuracy: Location.Accuracy.Balanced,
     });
-    return { latitude: position.coords.latitude, longitude: position.coords.longitude };
+    return {
+      coords: { latitude: position.coords.latitude, longitude: position.coords.longitude },
+      denied: false,
+    };
   } catch {
-    return FALLBACK_LOCATION;
+    return { coords: FALLBACK_LOCATION, denied: false };
   }
 }
 

@@ -3,12 +3,22 @@ import { View, Text, Pressable, StyleSheet, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MapView, { PROVIDER_DEFAULT, Region } from 'react-native-maps';
 import BottomSheet, { BottomSheetFlatList } from '@gorhom/bottom-sheet';
-import { Bell, MagnifyingGlass, Plus, UserCircle } from 'phosphor-react-native';
+import {
+  Bell,
+  MagnifyingGlass,
+  Plus,
+  UserCircle,
+  Compass,
+  FunnelSimpleX,
+  MapPinLine,
+  WifiSlash,
+  WarningCircle,
+} from 'phosphor-react-native';
 import { theme, typography, spacing, radius, iconDefaults } from '@/theme';
 import { ActivityCard } from '@/components/ActivityCard';
 import { ActivityMapPin } from '@/components/ActivityMapPin';
 import { CategoryChip } from '@/components/CategoryChip';
-import { EmptyState } from '@/components/EmptyState';
+import { StateCard } from '@/components/StateCard';
 import type { Activity, ActivityCategory } from '@/types/activity';
 import { CATEGORY_LABELS } from '@/types/activity';
 import { useNearbyActivities } from '@/hooks/useNearbyActivities';
@@ -54,7 +64,15 @@ export function DiscoverScreen({
   const listRef = useRef<React.ElementRef<typeof BottomSheetFlatList>>(null);
   const sheetIndex = useRef(SHEET_HALF_INDEX);
 
-  const { feedActivities, radiusExpanded, refresh, locationLabel } = useNearbyActivities();
+  const {
+    feedActivities,
+    radiusExpanded,
+    refresh,
+    locationLabel,
+    locationDenied,
+    isOffline,
+    error,
+  } = useNearbyActivities();
 
   const filteredFeed = useMemo(
     () =>
@@ -198,7 +216,17 @@ export function DiscoverScreen({
             </View>
           )}
           ListEmptyComponent={
-            <EmptyState radiusExpanded={radiusExpanded} onHostPress={onHostActivity} />
+            <DiscoverEmptyState
+              isOffline={isOffline}
+              error={error}
+              hasCategoryFilter={selectedCategory !== 'all'}
+              hasAnyActivities={feedActivities.length > 0}
+              locationDenied={locationDenied}
+              radiusExpanded={radiusExpanded}
+              onRetry={refresh}
+              onClearFilter={() => setSelectedCategory('all')}
+              onHostPress={onHostActivity}
+            />
           }
           contentContainerStyle={styles.listContent}
           onRefresh={refresh}
@@ -206,6 +234,95 @@ export function DiscoverScreen({
         />
       </BottomSheet>
     </View>
+  );
+}
+
+interface DiscoverEmptyStateProps {
+  isOffline: boolean;
+  error: string | null;
+  hasCategoryFilter: boolean;
+  hasAnyActivities: boolean;
+  locationDenied: boolean;
+  radiusExpanded: boolean;
+  onRetry: () => void;
+  onClearFilter: () => void;
+  onHostPress: () => void;
+}
+
+/** Priority order matters: offline and error are true dead-ends (nothing
+ *  loaded at all) and must win over anything else. A category filter with
+ *  zero matches is a different problem ("relax your filter") from truly
+ *  nothing nearby ("be the first"), so it's checked before falling all the
+ *  way through to that floor state. */
+function DiscoverEmptyState({
+  isOffline,
+  error,
+  hasCategoryFilter,
+  hasAnyActivities,
+  locationDenied,
+  radiusExpanded,
+  onRetry,
+  onClearFilter,
+  onHostPress,
+}: DiscoverEmptyStateProps) {
+  if (isOffline) {
+    return (
+      <StateCard
+        icon={WifiSlash}
+        title="You're offline"
+        body="We'll refresh the moment you're back online."
+        tone="warning"
+      />
+    );
+  }
+
+  if (error) {
+    return (
+      <StateCard
+        icon={WarningCircle}
+        title="Couldn't load activities"
+        body={error}
+        ctaLabel="Try again"
+        onCtaPress={onRetry}
+        tone="warning"
+      />
+    );
+  }
+
+  if (hasCategoryFilter && hasAnyActivities) {
+    return (
+      <StateCard
+        icon={FunnelSimpleX}
+        title="No activities match your filters"
+        body="Try a different category, or clear the filter to see everything nearby."
+        ctaLabel="Clear filter"
+        onCtaPress={onClearFilter}
+      />
+    );
+  }
+
+  if (locationDenied) {
+    return (
+      <StateCard
+        icon={MapPinLine}
+        title="Enable location to discover activities near you"
+        body="We're showing a default area for now. Turn on location access in Settings to see what's actually nearby."
+      />
+    );
+  }
+
+  return (
+    <StateCard
+      icon={Compass}
+      title={radiusExpanded ? 'Be the first here' : 'Nothing nearby just yet'}
+      body={
+        radiusExpanded
+          ? 'No one has hosted near you yet — the easiest way to meet mothers close by is to start something small yourself.'
+          : "We're widening your search radius to find something for you."
+      }
+      ctaLabel={radiusExpanded ? 'Host an activity' : undefined}
+      onCtaPress={radiusExpanded ? onHostPress : undefined}
+    />
   );
 }
 
