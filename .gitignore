@@ -5,6 +5,8 @@ web-build/
 *.log
 .DS_Store
 *.pem
+*.p8
+*apple-client-secret*
 
 # macOS
 .expo-shared/
