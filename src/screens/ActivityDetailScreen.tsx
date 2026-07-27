@@ -29,6 +29,7 @@ interface ActivityDetailScreenProps {
   /** Host or anyone already going can reopen the group chat at any time */
   onOpenChat?: () => void;
   canOpenChat?: boolean;
+  hasUnreadChat?: boolean;
   isHost?: boolean;
   onEdit?: () => void;
 }
@@ -41,6 +42,7 @@ export function ActivityDetailScreen({
   onJoined,
   onOpenChat,
   canOpenChat = false,
+  hasUnreadChat = false,
   isHost = false,
   onEdit,
 }: ActivityDetailScreenProps) {
@@ -196,6 +198,7 @@ export function ActivityDetailScreen({
             <Pressable style={styles.chatRow} onPress={onOpenChat}>
               <ChatCircleDots size={18} color={theme.brand.primary} weight="fill" />
               <Text style={styles.chatRowLabel}>Open group chat</Text>
+              {hasUnreadChat && <View style={styles.unreadDot} />}
             </Pressable>
           )}
 
@@ -376,6 +379,13 @@ const styles = StyleSheet.create({
     marginBottom: spacing.lg,
   },
   chatRowLabel: { ...typography.bodyMedium, color: theme.brand.primaryPressed },
+  unreadDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: theme.semantic.danger,
+    marginLeft: 'auto',
+  },
   sectionLabel: { ...typography.bodyMedium, color: theme.text.primary, marginBottom: spacing.sm },
   description: { ...typography.subhead, color: theme.text.secondary, lineHeight: 21, marginBottom: spacing.lg },
   mapPlaceholder: {

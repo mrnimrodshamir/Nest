@@ -5,15 +5,22 @@ import * as Device from 'expo-device';
 import Constants from 'expo-constants';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '@/lib/supabase';
+import { isNotificationForActiveChat } from '@/lib/activeChatTracker';
 
 const LAST_TOKEN_KEY = 'momzi.pushToken';
 
 Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: false,
-  }),
+  handleNotification: async (notification) => {
+    // The open ChatScreen already renders new messages via its realtime
+    // subscription — a foreground banner for that exact conversation would
+    // just be a redundant, noisy duplicate.
+    const suppress = isNotificationForActiveChat(notification.request.content.data);
+    return {
+      shouldShowAlert: !suppress,
+      shouldPlaySound: !suppress,
+      shouldSetBadge: false,
+    };
+  },
 });
 
 /**

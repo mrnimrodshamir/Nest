@@ -31,8 +31,10 @@ import { useActivityDetail } from '@/hooks/useActivityDetail';
 import { useActivityRsvp } from '@/hooks/useActivityRsvp';
 import { useActivityChatId } from '@/hooks/useActivityChatId';
 import { useDirectChatId } from '@/hooks/useDirectChatId';
+import { useHasUnread } from '@/hooks/useHasUnread';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { supabase } from '@/lib/supabase';
+import { setActiveChat } from '@/lib/activeChatTracker';
 import type { Activity } from '@/types/activity';
 import type { CreateActivityInput } from '@/hooks/useCreateActivity';
 import type { ShareableActivity } from '@/utils/buildShareMessage';
@@ -266,6 +268,8 @@ function ActivityDetailWithRsvp({
   const { activity, isSubmitting, join, leave } = useActivityRsvp(detail);
   const { session } = useAuth();
   const isHost = session?.user.id === activity.hostId;
+  const { chatId } = useActivityChatId(activity.id);
+  const hasUnread = useHasUnread(chatId);
 
   const openChat = () => {
     navigation.navigate('Chat', { kind: 'group', activityId: activity.id, title: activity.title });
@@ -288,6 +292,7 @@ function ActivityDetailWithRsvp({
       onJoined={openChat}
       onOpenChat={openChat}
       canOpenChat={isHost || activity.viewerStatus === 'going'}
+      hasUnreadChat={hasUnread}
       isHost={isHost}
       onEdit={() => navigation.navigate('EditActivity', { activityId: activity.id })}
     />
@@ -305,6 +310,15 @@ function GroupChatContainer({
 }) {
   const { chatId, error } = useActivityChatId(activityId);
   const [resolvedTitle, setResolvedTitle] = React.useState(title ?? '');
+
+  React.useEffect(() => {
+    setActiveChat({ type: 'group', activityId });
+    return () => setActiveChat(null);
+  }, [activityId]);
+
+  React.useEffect(() => {
+    if (chatId) supabase.rpc('mark_chat_read', { p_chat_id: chatId });
+  }, [chatId]);
 
   React.useEffect(() => {
     if (title || resolvedTitle) return;
@@ -335,6 +349,16 @@ function DirectChatContainer({
   onBack: () => void;
 }) {
   const { chatId, error } = useDirectChatId(otherUserId);
+
+  React.useEffect(() => {
+    setActiveChat({ type: 'direct', otherUserId });
+    return () => setActiveChat(null);
+  }, [otherUserId]);
+
+  React.useEffect(() => {
+    if (chatId) supabase.rpc('mark_chat_read', { p_chat_id: chatId });
+  }, [chatId]);
+
   return <ChatScreen chatId={chatId} resolveError={error} title={title ?? 'Chat'} onBack={onBack} />;
 }
 
