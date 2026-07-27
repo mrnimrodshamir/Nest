@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import * as Location from 'expo-location';
 import { supabase } from '@/lib/supabase';
-import type { ActivityCategory, ActivityDetail, Attendee } from '@/types/activity';
+import type { ActivityCategory, ActivityDetail, ActivityStatus, Attendee } from '@/types/activity';
 
 interface UseActivityDetailResult {
   detail: ActivityDetail | null;
@@ -25,6 +25,7 @@ interface ActivityRow {
   notes: string | null;
   latitude: number;
   longitude: number;
+  status: ActivityStatus;
 }
 
 export function useActivityDetail(activityId: string): UseActivityDetailResult {
@@ -92,8 +93,6 @@ export function useActivityDetail(activityId: string): UseActivityDetailResult {
         if (cancelled) return;
         if (attendeeRow?.status === 'going' || attendeeRow?.status === 'attended') {
           viewerStatus = 'going';
-        } else if (attendeeRow?.status === 'waitlisted') {
-          viewerStatus = 'waitlisted';
         }
       }
 
@@ -106,6 +105,7 @@ export function useActivityDetail(activityId: string): UseActivityDetailResult {
         title: activityRow.title,
         category: activityRow.category,
         coverImageUrl: activityRow.cover_image_url,
+        status: activityRow.status,
         startTime: activityRow.start_time,
         durationMinutes: activityRow.duration_minutes,
         distanceMiles,

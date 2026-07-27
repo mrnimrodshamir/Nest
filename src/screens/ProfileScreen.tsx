@@ -42,7 +42,7 @@ export function ProfileScreen({ onBack }: ProfileScreenProps) {
           )}
         </View>
 
-        <Text style={styles.name}>{profile?.displayName ?? 'Monzy member'}</Text>
+        <Text style={styles.name}>{profile?.displayName ?? 'Momzi member'}</Text>
         <Text style={styles.email}>{profile?.email}</Text>
 
         {profile?.babyName && (

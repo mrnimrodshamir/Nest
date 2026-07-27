@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Monzy",
+    "name": "Momzi",
     "slug": "momzi",
     "version": "0.1.0",
     "orientation": "portrait",
@@ -11,9 +11,9 @@
       "supportsTablet": false,
       "usesAppleSignIn": true,
       "infoPlist": {
-        "NSLocationWhenInUseUsageDescription": "Monzy uses your location to show meetups happening near you.",
-        "NSCameraUsageDescription": "Monzy uses your camera so you can add a profile photo or activity cover photo.",
-        "NSPhotoLibraryUsageDescription": "Monzy uses your photo library so you can choose a profile photo or activity cover photo."
+        "NSLocationWhenInUseUsageDescription": "Momzi uses your location to show meetups happening near you.",
+        "NSCameraUsageDescription": "Momzi uses your camera so you can add a profile photo or activity cover photo.",
+        "NSPhotoLibraryUsageDescription": "Momzi uses your photo library so you can choose a profile photo or activity cover photo."
       }
     },
     "android": {
@@ -24,7 +24,7 @@
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "Monzy uses your location to show meetups happening near you."
+          "locationWhenInUsePermission": "Momzi uses your location to show meetups happening near you."
         }
       ],
       "expo-apple-authentication"

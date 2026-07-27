@@ -52,7 +52,7 @@ export function SignInScreen({ onBack, onForgotPassword }: SignInScreenProps) {
           </Pressable>
 
           <Text style={styles.title}>Log in</Text>
-          <Text style={styles.subtitle}>Welcome back to Monzy</Text>
+          <Text style={styles.subtitle}>Welcome back to Momzi</Text>
 
           <View style={styles.form}>
             <FormField

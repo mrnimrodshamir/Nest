@@ -143,7 +143,7 @@ export function SignUpScreen({ onBack }: SignUpScreenProps) {
             </View>
 
             <Checkbox checked={acceptedTerms} onToggle={() => setAcceptedTerms((v) => !v)}>
-              I agree to Monzy's Terms of Service and Privacy Policy
+              I agree to Momzi's Terms of Service and Privacy Policy
             </Checkbox>
             {fieldErrors.terms && <Text style={styles.termsError}>{fieldErrors.terms}</Text>}
 

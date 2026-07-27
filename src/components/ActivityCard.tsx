@@ -73,10 +73,17 @@ export function ActivityCard({
 
       <View style={styles.body}>
         {!isRail && (
-          <View style={styles.categoryPill}>
-            <Text style={styles.categoryPillText}>
-              {CATEGORY_LABELS[activity.category]}
-            </Text>
+          <View style={styles.pillRow}>
+            <View style={styles.categoryPill}>
+              <Text style={styles.categoryPillText}>
+                {CATEGORY_LABELS[activity.category]}
+              </Text>
+            </View>
+            {activity.status === 'full' && (
+              <View style={[styles.categoryPill, styles.fullPill]}>
+                <Text style={[styles.categoryPillText, styles.fullPillText]}>Full</Text>
+              </View>
+            )}
           </View>
         )}
 
@@ -156,18 +163,20 @@ const styles = StyleSheet.create({
   body: {
     padding: spacing.md,
   },
+  pillRow: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.sm },
   categoryPill: {
     alignSelf: 'flex-start',
     backgroundColor: theme.brand.primaryTint,
     borderRadius: radius.pill,
     paddingHorizontal: spacing.md,
     paddingVertical: 4,
-    marginBottom: spacing.sm,
   },
   categoryPillText: {
     ...typography.caption,
     color: theme.text.accent,
   },
+  fullPill: { backgroundColor: theme.brand.secondaryTint },
+  fullPillText: { color: theme.brand.secondary },
   titleFeed: {
     ...typography.headline,
     color: theme.text.primary,

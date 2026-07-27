@@ -202,7 +202,7 @@ export function useAuth(): UseAuthResult {
 
       const { error } = await supabase.from('profiles').insert({
         id: userId,
-        display_name: input.fallbackFullName ?? 'Monzy member',
+        display_name: input.fallbackFullName ?? 'Momzi member',
         email: input.fallbackEmail ?? userData.user?.email ?? '',
         phone: input.phone,
         baby_name: input.babyName,

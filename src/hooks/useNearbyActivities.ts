@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import * as Location from 'expo-location';
 import { supabase } from '@/lib/supabase';
-import type { Activity, ActivityCategory, Attendee } from '@/types/activity';
+import type { Activity, ActivityCategory, ActivityStatus, Attendee } from '@/types/activity';
 
 const BASE_RADIUS_MILES = 2;
 const EXPANDED_RADIUS_MILES = 8;
@@ -25,6 +25,7 @@ interface NearbyActivityRow {
   title: string;
   category: ActivityCategory;
   cover_image_url: string | null;
+  status: ActivityStatus;
   start_time: string;
   duration_minutes: number;
   capacity: number | null;
@@ -145,6 +146,7 @@ async function fetchNearby(
       title: row.title,
       category: row.category,
       coverImageUrl: row.cover_image_url,
+      status: row.status,
       startTime: row.start_time,
       durationMinutes: row.duration_minutes,
       distanceMiles: row.distance_miles,

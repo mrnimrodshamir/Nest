@@ -5,77 +5,69 @@ import type { ActivityDetail } from '@/types/activity';
 export function useActivityRsvp(initial: ActivityDetail) {
   const [activity, setActivity] = useState(initial);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const join = useCallback(async () => {
-    const isFull =
-      activity.capacity !== null && activity.attendeeCount >= activity.capacity;
     const previous = activity;
-    const nextStatus = isFull ? 'waitlisted' : 'going';
-
+    setError(null);
     setIsSubmitting(true);
+    // Optimistic — the join_activity() RPC is the source of truth and will
+    // reject (revert below) if someone else took the last spot first.
     setActivity((current) => ({
       ...current,
-      viewerStatus: nextStatus,
-      attendeeCount: isFull ? current.attendeeCount : current.attendeeCount + 1,
+      viewerStatus: 'going',
+      attendeeCount: current.attendeeCount + 1,
+      status:
+        current.capacity !== null && current.attendeeCount + 1 >= current.capacity
+          ? 'full'
+          : current.status,
     }));
 
-    try {
-      await persistRsvp(activity.id, nextStatus);
-    } catch {
-      setActivity(previous); // revert on failure
-    } finally {
-      setIsSubmitting(false);
+    const { error: rpcError } = await supabase.rpc('join_activity', {
+      p_activity_id: activity.id,
+    });
+
+    setIsSubmitting(false);
+    if (rpcError) {
+      setActivity(previous);
+      setError(
+        rpcError.message.includes('full')
+          ? "This activity just filled up — you're a little late!"
+          : "Couldn't join right now — please try again.",
+      );
+      return false;
     }
+    return true;
   }, [activity]);
 
   const leave = useCallback(async () => {
     const previous = activity;
-
+    setError(null);
     setIsSubmitting(true);
     setActivity((current) => ({
       ...current,
       viewerStatus: 'none',
-      attendeeCount:
-        previous.viewerStatus === 'going'
-          ? Math.max(0, current.attendeeCount - 1)
-          : current.attendeeCount,
+      attendeeCount: Math.max(0, current.attendeeCount - 1),
+      status: current.status === 'full' ? 'published' : current.status,
     }));
 
-    try {
-      await persistRsvp(activity.id, 'none');
-    } catch {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    const { error: deleteError } = user
+      ? await supabase
+          .from('activity_attendees')
+          .delete()
+          .match({ activity_id: activity.id, user_id: user.id })
+      : { error: new Error('Not signed in') };
+
+    setIsSubmitting(false);
+    if (deleteError) {
       setActivity(previous);
-    } finally {
-      setIsSubmitting(false);
+      setError("Couldn't leave right now — please try again.");
     }
   }, [activity]);
 
-  return { activity, isSubmitting, join, leave };
-}
-
-async function persistRsvp(
-  activityId: string,
-  status: 'going' | 'waitlisted' | 'none',
-): Promise<void> {
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not signed in');
-
-  if (status === 'none') {
-    const { error } = await supabase
-      .from('activity_attendees')
-      .delete()
-      .match({ activity_id: activityId, user_id: user.id });
-    if (error) throw error;
-    return;
-  }
-
-  const { error } = await supabase
-    .from('activity_attendees')
-    .upsert(
-      { activity_id: activityId, user_id: user.id, status },
-      { onConflict: 'activity_id,user_id' },
-    );
-  if (error) throw error;
+  return { activity, isSubmitting, error, join, leave };
 }

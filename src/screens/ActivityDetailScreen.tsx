@@ -27,12 +27,14 @@ export function ActivityDetailScreen({
   onMessageHost,
   onJoined,
 }: ActivityDetailScreenProps) {
-  const { activity, isSubmitting, join, leave } = useActivityRsvp(initial);
+  const { activity, isSubmitting, error, join, leave } = useActivityRsvp(initial);
 
-  const isFull =
-    activity.capacity !== null && activity.attendeeCount >= activity.capacity;
+  const isCancelled = activity.status === 'cancelled';
+  const isEnded = activity.status === 'completed';
+  const isFull = activity.status === 'full';
+  const canJoin = !isCancelled && !isEnded && (activity.viewerStatus === 'going' || !isFull);
   const spotsLeft =
-    activity.capacity !== null ? activity.capacity - activity.attendeeCount : null;
+    activity.capacity !== null ? Math.max(0, activity.capacity - activity.attendeeCount) : null;
 
   const handleGetDirections = () => {
     const { latitude, longitude, label } = activity.location;
@@ -45,8 +47,8 @@ export function ActivityDetailScreen({
 
   const handleJoinPress = async () => {
     if (activity.viewerStatus === 'none') {
-      await join();
-      onJoined(activity);
+      const joined = await join();
+      if (joined) onJoined(activity);
     } else {
       await leave();
     }
@@ -74,10 +76,27 @@ export function ActivityDetailScreen({
         </View>
 
         <View style={styles.content}>
-          <View style={styles.categoryPill}>
-            <Text style={styles.categoryPillText}>
-              {CATEGORY_LABELS[activity.category]}
-            </Text>
+          <View style={styles.pillRow}>
+            <View style={styles.categoryPill}>
+              <Text style={styles.categoryPillText}>
+                {CATEGORY_LABELS[activity.category]}
+              </Text>
+            </View>
+            {isCancelled && (
+              <View style={[styles.categoryPill, styles.statusPillCancelled]}>
+                <Text style={[styles.categoryPillText, styles.statusPillTextCancelled]}>Cancelled</Text>
+              </View>
+            )}
+            {isEnded && !isCancelled && (
+              <View style={[styles.categoryPill, styles.statusPillEnded]}>
+                <Text style={[styles.categoryPillText, styles.statusPillTextEnded]}>Ended</Text>
+              </View>
+            )}
+            {isFull && !isCancelled && !isEnded && (
+              <View style={[styles.categoryPill, styles.statusPillFull]}>
+                <Text style={[styles.categoryPillText, styles.statusPillTextFull]}>Full</Text>
+              </View>
+            )}
           </View>
           <Text style={styles.title}>{activity.title}</Text>
           <Text style={styles.meta}>
@@ -166,23 +185,26 @@ export function ActivityDetailScreen({
       </ScrollView>
 
       <View style={styles.ctaBar}>
+        {error && <Text style={styles.ctaError}>{error}</Text>}
         <Pressable
           style={[
             styles.ctaButton,
-            activity.viewerStatus !== 'none' && styles.ctaButtonGoing,
+            activity.viewerStatus === 'going' && styles.ctaButtonGoing,
+            !canJoin && activity.viewerStatus === 'none' && styles.ctaButtonDisabled,
           ]}
           onPress={handleJoinPress}
-          disabled={isSubmitting}
+          disabled={isSubmitting || (!canJoin && activity.viewerStatus === 'none')}
         >
           <Text
             style={[
               styles.ctaLabel,
-              activity.viewerStatus !== 'none' && styles.ctaLabelGoing,
+              activity.viewerStatus === 'going' && styles.ctaLabelGoing,
             ]}
           >
-            {activity.viewerStatus === 'going' && "You're going"}
-            {activity.viewerStatus === 'waitlisted' && 'On the waitlist'}
-            {activity.viewerStatus === 'none' && (isFull ? 'Join waitlist' : 'Join this activity')}
+            {isCancelled && 'This activity was cancelled'}
+            {!isCancelled && isEnded && 'This activity has ended'}
+            {!isCancelled && !isEnded && activity.viewerStatus === 'going' && "You're going"}
+            {!isCancelled && !isEnded && activity.viewerStatus === 'none' && (isFull ? 'Activity full' : 'Join this activity')}
           </Text>
         </Pressable>
       </View>
@@ -208,15 +230,21 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   content: { padding: spacing.xl },
+  pillRow: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.sm },
   categoryPill: {
     alignSelf: 'flex-start',
     backgroundColor: theme.brand.primaryTint,
     borderRadius: radius.pill,
     paddingHorizontal: spacing.md,
     paddingVertical: 4,
-    marginBottom: spacing.sm,
   },
   categoryPillText: { ...typography.caption, color: theme.text.accent },
+  statusPillCancelled: { backgroundColor: '#F5DFDA' },
+  statusPillTextCancelled: { color: theme.semantic.danger },
+  statusPillEnded: { backgroundColor: theme.background.app },
+  statusPillTextEnded: { color: theme.text.muted },
+  statusPillFull: { backgroundColor: theme.brand.secondaryTint },
+  statusPillTextFull: { color: theme.brand.secondary },
   title: { ...typography.title2, color: theme.text.primary, marginBottom: 4 },
   meta: { ...typography.subhead, color: theme.text.secondary, marginBottom: spacing.lg },
   hostRow: {
@@ -276,6 +304,13 @@ const styles = StyleSheet.create({
   ctaButtonGoing: {
     backgroundColor: theme.brand.primaryTint,
   },
+  ctaButtonDisabled: { opacity: 0.5 },
   ctaLabel: { ...typography.headline, color: theme.text.inverse },
   ctaLabelGoing: { color: theme.text.accent },
+  ctaError: {
+    ...typography.footnote,
+    color: theme.semantic.danger,
+    textAlign: 'center',
+    marginBottom: spacing.sm,
+  },
 });

@@ -24,7 +24,7 @@ export function WelcomeScreen({
 
       <SafeAreaView style={styles.content} edges={['top', 'bottom']}>
         <View style={styles.hero}>
-          <Text style={styles.wordmark}>Monzy</Text>
+          <Text style={styles.wordmark}>Momzi</Text>
           <Text style={styles.tagline}>
             Meet mothers nearby.{'\n'}Real friendships, one walk at a time.
           </Text>
@@ -47,7 +47,7 @@ export function WelcomeScreen({
 
           <Pressable style={styles.loginLink} onPress={onLogIn}>
             <Text style={styles.loginLinkLabel}>
-              Already on Monzy? <Text style={styles.loginLinkAccent}>Log in</Text>
+              Already on Momzi? <Text style={styles.loginLinkAccent}>Log in</Text>
             </Text>
           </Pressable>
         </View>

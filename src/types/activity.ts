@@ -8,6 +8,11 @@ export type ActivityCategory =
   | 'workshop'
   | 'other';
 
+/** Draft is host-authoring-only and never shown in Discover. Full/Published
+ *  toggle automatically based on capacity (see the DB trigger). No waitlist
+ *  state in MVP — once full, joining is simply closed. */
+export type ActivityStatus = 'draft' | 'published' | 'full' | 'cancelled' | 'completed';
+
 export interface Attendee {
   id: string;
   displayName: string;
@@ -21,6 +26,7 @@ export interface Activity {
   title: string;
   category: ActivityCategory;
   coverImageUrl: string | null;
+  status: ActivityStatus;
   startTime: string; // ISO 8601
   durationMinutes: number;
   distanceMiles: number;
@@ -46,6 +52,17 @@ export const CATEGORY_PIN_COLOR: Record<ActivityCategory, string> = {
   other: '#A8A69C',
 };
 
+export const CATEGORY_EMOJI: Record<ActivityCategory, string> = {
+  stroller_walk: '🚶‍♀️',
+  coffee_meetup: '☕',
+  baby_playtime: '🧸',
+  picnic: '🧺',
+  fitness: '💪',
+  yoga: '🧘‍♀️',
+  workshop: '🎨',
+  other: '✨',
+};
+
 export interface Host {
   id: string;
   displayName: string;
@@ -68,7 +85,7 @@ export interface ActivityDetail extends Activity {
   host: Host;
   location: ActivityLocation;
   notes: string | null;
-  viewerStatus: 'none' | 'going' | 'waitlisted';
+  viewerStatus: 'none' | 'going';
 }
 
 export const CATEGORY_LABELS: Record<ActivityCategory, string> = {

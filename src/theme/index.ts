@@ -1,5 +1,5 @@
 /**
- * Monzy design system — single entry point
+ * Momzi design system — single entry point
  *
  * Import from '@/theme' throughout the app rather than reaching into
  * individual token files, so screens stay decoupled from token structure.

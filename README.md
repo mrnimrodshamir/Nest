@@ -1,4 +1,4 @@
-# Monzy
+# Momzi
 
 A social network for mothers on maternity leave — nearby meetups, activities,
 chats, and local communities. iOS-first, React Native + Expo + TypeScript +

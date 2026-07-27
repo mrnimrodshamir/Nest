@@ -219,9 +219,12 @@ function CreateActivityContainer({ navigation }: { navigation: any }) {
           activity: {
             id: activityId,
             title: input.title,
+            category: input.activityType,
             startsAt: input.startsAt,
             locationName: input.locationName,
             durationMinutes: input.durationMinutes,
+            babyMinAgeMonths: input.babyMinAgeMonths,
+            babyMaxAgeMonths: input.babyMaxAgeMonths,
           },
         });
       }}

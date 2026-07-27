@@ -1,9 +1,9 @@
 /**
- * Monzy motion tokens
+ * Momzi motion tokens
  *
  * Use with react-native-reanimated's withSpring / withTiming. iOS-native
  * feel comes from spring physics, not linear easing curves — almost every
- * transition in Monzy should be a spring, not a duration-based tween.
+ * transition in Momzi should be a spring, not a duration-based tween.
  *
  * Usage:
  *   import { withSpring } from 'react-native-reanimated';
