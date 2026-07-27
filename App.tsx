@@ -22,6 +22,7 @@ import { ShareActivityScreen } from '@/screens/ShareActivityScreen';
 import { ChatScreen } from '@/screens/ChatScreen';
 import { EditActivityScreen } from '@/screens/EditActivityScreen';
 import { ProfileScreen } from '@/screens/ProfileScreen';
+import { LaunchScreen } from '@/screens/LaunchScreen';
 import { CompleteAppleProfileScreen } from '@/screens/auth/CompleteAppleProfileScreen';
 import { AuthNavigator } from '@/navigation/AuthNavigator';
 import { theme } from '@/theme';
@@ -103,11 +104,7 @@ export default function App() {
   }, []);
 
   if (!fontsLoaded || authLoading) {
-    return (
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.background.app }}>
-        <ActivityIndicator color={theme.brand.primary} />
-      </View>
-    );
+    return <LaunchScreen />;
   }
 
   return (

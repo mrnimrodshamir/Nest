@@ -3,6 +3,7 @@ import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppleLogo } from 'phosphor-react-native';
 import { theme, typography, spacing, radius } from '@/theme';
+import { MomziLogo } from '@/components/MomziLogo';
 
 interface WelcomeScreenProps {
   onContinueWithApple: () => void;
@@ -24,6 +25,7 @@ export function WelcomeScreen({
 
       <SafeAreaView style={styles.content} edges={['top', 'bottom']}>
         <View style={styles.hero}>
+          <MomziLogo size={72} />
           <Text style={styles.wordmark}>Momzi</Text>
           <Text style={styles.tagline}>
             Meet mothers nearby.{'\n'}Real friendships, one walk at a time.
@@ -78,7 +80,13 @@ const styles = StyleSheet.create({
   },
   content: { flex: 1, justifyContent: 'space-between', paddingHorizontal: spacing['2xl'] },
   hero: { flex: 1, justifyContent: 'center' },
-  wordmark: { ...typography.display, fontSize: 44, color: theme.text.accent, marginBottom: spacing.md },
+  wordmark: {
+    ...typography.display,
+    fontSize: 44,
+    color: theme.text.accent,
+    marginTop: spacing.lg,
+    marginBottom: spacing.md,
+  },
   tagline: { ...typography.title3, color: theme.text.secondary, lineHeight: 28 },
   actions: { gap: spacing.md, paddingBottom: spacing.xl },
   appleButton: {
