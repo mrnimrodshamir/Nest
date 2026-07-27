@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, Image, ScrollView, Pressable, StyleSheet, Linking, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MapView, { Marker, PROVIDER_DEFAULT } from 'react-native-maps';
+import * as Notifications from 'expo-notifications';
 import { ArrowLeft, DotsThree, SealCheck, NavigationArrow, ChatCircleDots, PencilSimple } from 'phosphor-react-native';
 import { theme, typography, spacing, radius } from '@/theme';
 import type { ActivityDetail } from '@/types/activity';
@@ -12,6 +13,7 @@ import { formatAgeRange } from '@/utils/babyAge';
 import { useActivityRsvp } from '@/hooks/useActivityRsvp';
 import { useAuth } from '@/hooks/useAuth';
 import { AddToCalendarSheet } from '@/components/AddToCalendarSheet';
+import { NotificationPermissionSheet } from '@/components/NotificationPermissionSheet';
 import { hasCalendarDrift, updateCalendarEvent, removeCalendarEvent } from '@/lib/activityCalendar';
 import {
   scheduleActivityReminders,
@@ -50,6 +52,7 @@ export function ActivityDetailScreen({
   const { profile } = useAuth();
   const remindersEnabled = profile?.notificationPreferences.reminders ?? true;
   const [showCalendarSheet, setShowCalendarSheet] = useState(false);
+  const [showNotificationSheet, setShowNotificationSheet] = useState(false);
   const [calendarNotice, setCalendarNotice] = useState<'changed' | 'cancelled' | null>(null);
 
   const isCancelled = activity.status === 'cancelled';
@@ -101,16 +104,26 @@ export function ActivityDetailScreen({
     if (activity.viewerStatus === 'none') {
       const joined = await join();
       if (joined) {
-        setShowCalendarSheet(true);
-        scheduleActivityReminders(
-          { id: activity.id, title: activity.title, startsAt: new Date(activity.startTime) },
-          remindersEnabled,
-        );
+        const { status } = await Notifications.getPermissionsAsync();
+        if (status === 'undetermined') {
+          setShowNotificationSheet(true);
+        } else {
+          scheduleActivityReminders(
+            { id: activity.id, title: activity.title, startsAt: new Date(activity.startTime) },
+            remindersEnabled,
+          );
+          setShowCalendarSheet(true);
+        }
       }
     } else {
       await leave();
       await cancelActivityReminders(activity.id);
     }
+  };
+
+  const proceedToCalendarStep = () => {
+    setShowNotificationSheet(false);
+    setShowCalendarSheet(true);
   };
 
   return (
@@ -304,6 +317,18 @@ export function ActivityDetailScreen({
           </Text>
         </Pressable>
       </View>
+
+      <NotificationPermissionSheet
+        visible={showNotificationSheet}
+        onEnable={() => {
+          scheduleActivityReminders(
+            { id: activity.id, title: activity.title, startsAt: new Date(activity.startTime) },
+            remindersEnabled,
+          );
+          proceedToCalendarStep();
+        }}
+        onDismiss={proceedToCalendarStep}
+      />
 
       <AddToCalendarSheet
         visible={showCalendarSheet}

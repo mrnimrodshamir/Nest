@@ -1,10 +1,12 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, Image, Pressable, Switch, StyleSheet, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import * as Notifications from 'expo-notifications';
 import { ArrowLeft, SignOut } from 'phosphor-react-native';
 import { theme, typography, spacing, radius } from '@/theme';
 import { useAuth } from '@/hooks/useAuth';
 import { ensurePushRegistration } from '@/hooks/usePushNotifications';
+import { NotificationPermissionSheet } from '@/components/NotificationPermissionSheet';
 import { birthdateToMonths, formatBabyAge } from '@/utils/babyAge';
 import type { NotificationPreferences } from '@/types/profile';
 
@@ -20,6 +22,7 @@ const NOTIFICATION_LABELS: Record<keyof NotificationPreferences, string> = {
 
 export function ProfileScreen({ onBack }: ProfileScreenProps) {
   const { profile, signOut, updateNotificationPreferences } = useAuth();
+  const [showNotificationSheet, setShowNotificationSheet] = useState(false);
 
   const babyAgeLabel = profile?.babyBirthdate
     ? formatBabyAge(birthdateToMonths(profile.babyBirthdate))
@@ -69,16 +72,19 @@ export function ProfileScreen({ onBack }: ProfileScreenProps) {
                 <Text style={styles.infoLabel}>{NOTIFICATION_LABELS[key]}</Text>
                 <Switch
                   value={profile.notificationPreferences[key]}
-                  onValueChange={(value) => {
+                  onValueChange={async (value) => {
                     void updateNotificationPreferences({
                       ...profile.notificationPreferences,
                       [key]: value,
                     });
                     // Reminders is one of only two moments allowed to trigger
                     // the OS notification permission prompt (the other is
-                    // joining a first activity) — never proactively.
+                    // joining a first activity) — never proactively, and
+                    // always with the branded explainer first.
                     if (key === 'reminders' && value) {
-                      void ensurePushRegistration(true);
+                      const { status } = await Notifications.getPermissionsAsync();
+                      if (status === 'undetermined') setShowNotificationSheet(true);
+                      else void ensurePushRegistration(true);
                     }
                   }}
                   trackColor={{ true: theme.brand.primary, false: theme.border.default }}
@@ -93,6 +99,15 @@ export function ProfileScreen({ onBack }: ProfileScreenProps) {
           <Text style={styles.signOutLabel}>Sign out</Text>
         </Pressable>
       </ScrollView>
+
+      <NotificationPermissionSheet
+        visible={showNotificationSheet}
+        onEnable={() => {
+          setShowNotificationSheet(false);
+          void ensurePushRegistration(true);
+        }}
+        onDismiss={() => setShowNotificationSheet(false)}
+      />
     </SafeAreaView>
   );
 }
