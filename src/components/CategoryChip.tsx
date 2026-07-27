@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Pressable, Text, StyleSheet } from 'react-native';
-import { theme, typography, spacing, radius } from '@/theme';
+import Animated, { useSharedValue, useAnimatedStyle, withSpring, useReducedMotion } from 'react-native-reanimated';
+import { theme, typography, spacing, radius, springs } from '@/theme';
 
 interface CategoryChipProps {
   label: string;
@@ -8,18 +9,35 @@ interface CategoryChipProps {
   onPress: () => void;
 }
 
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
+
 export function CategoryChip({ label, selected, onPress }: CategoryChipProps) {
+  const reducedMotion = useReducedMotion();
+  const scale = useSharedValue(1);
+
+  useEffect(() => {
+    if (reducedMotion) return;
+    // A quick pop on selection change reads as confirmation without being
+    // distracting on every render.
+    scale.value = withSpring(1.06, springs.snappy, () => {
+      scale.value = withSpring(1, springs.snappy);
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selected]);
+
+  const animatedStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
+
   return (
-    <Pressable
+    <AnimatedPressable
       onPress={onPress}
-      style={[styles.chip, selected && styles.chipSelected]}
+      style={[styles.chip, selected && styles.chipSelected, animatedStyle]}
       accessibilityRole="button"
       accessibilityState={{ selected }}
     >
       <Text style={[styles.label, selected && styles.labelSelected]}>
         {label}
       </Text>
-    </Pressable>
+    </AnimatedPressable>
   );
 }
 

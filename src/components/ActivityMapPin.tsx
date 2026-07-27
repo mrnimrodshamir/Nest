@@ -1,7 +1,8 @@
-import React from 'react';
-import { View, StyleSheet } from 'react-native';
+import React, { useEffect } from 'react';
+import { StyleSheet } from 'react-native';
+import Animated, { useSharedValue, useAnimatedStyle, withSpring, useReducedMotion } from 'react-native-reanimated';
 import { Marker } from 'react-native-maps';
-import { theme } from '@/theme';
+import { theme, springs } from '@/theme';
 import type { Activity } from '@/types/activity';
 import { CATEGORY_PIN_COLOR } from '@/types/activity';
 
@@ -13,21 +14,27 @@ interface ActivityMapPinProps {
 
 export function ActivityMapPin({ activity, selected, onPress }: ActivityMapPinProps) {
   const color = CATEGORY_PIN_COLOR[activity.category];
+  const reducedMotion = useReducedMotion();
+  const scale = useSharedValue(1);
+
+  useEffect(() => {
+    scale.value = reducedMotion ? (selected ? 1.4 : 1) : withSpring(selected ? 1.4 : 1, springs.snappy);
+  }, [selected, reducedMotion, scale]);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
 
   return (
     <Marker
       coordinate={{ latitude: activity.latitude, longitude: activity.longitude }}
       onPress={() => onPress(activity)}
-      // tracksViewChanges only during the brief selection transition —
-      // leaving this permanently true tanks map performance with many pins
+      // tracksViewChanges only during the selection transition — leaving
+      // this permanently true tanks map performance with many pins
       tracksViewChanges={selected}
     >
-      <View
-        style={[
-          styles.pin,
-          { backgroundColor: color },
-          selected && styles.pinSelected,
-        ]}
+      <Animated.View
+        style={[styles.pin, { backgroundColor: color }, selected && styles.pinSelected, animatedStyle]}
       />
     </Marker>
   );
@@ -42,9 +49,6 @@ const styles = StyleSheet.create({
     borderColor: theme.background.surface,
   },
   pinSelected: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
     borderWidth: 3,
   },
 });

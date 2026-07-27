@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { View, Text, Pressable, StyleSheet, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MapView, { PROVIDER_DEFAULT, Region } from 'react-native-maps';
@@ -19,6 +19,7 @@ import { ActivityCard } from '@/components/ActivityCard';
 import { ActivityMapPin } from '@/components/ActivityMapPin';
 import { CategoryChip } from '@/components/CategoryChip';
 import { StateCard } from '@/components/StateCard';
+import { SkeletonCard } from '@/components/SkeletonCard';
 import type { Activity, ActivityCategory } from '@/types/activity';
 import { CATEGORY_LABELS } from '@/types/activity';
 import { useNearbyActivities } from '@/hooks/useNearbyActivities';
@@ -58,6 +59,7 @@ export function DiscoverScreen({
 }: DiscoverScreenProps) {
   const [selectedCategory, setSelectedCategory] = useState<ActivityCategory | 'all'>('all');
   const [selectedActivityId, setSelectedActivityId] = useState<string | null>(null);
+  const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
 
   const mapRef = useRef<MapView>(null);
   const sheetRef = useRef<BottomSheet>(null);
@@ -71,8 +73,15 @@ export function DiscoverScreen({
     locationLabel,
     locationDenied,
     isOffline,
+    isRefreshing,
     error,
   } = useNearbyActivities();
+
+  useEffect(() => {
+    if (!isRefreshing) setHasLoadedOnce(true);
+  }, [isRefreshing]);
+
+  const showSkeleton = !hasLoadedOnce && isRefreshing;
 
   const filteredFeed = useMemo(
     () =>
@@ -195,43 +204,55 @@ export function DiscoverScreen({
         handleIndicatorStyle={styles.sheetHandle}
       >
         <View style={styles.sheetHeader}>
-          <Text style={styles.sheetTitle}>{filteredFeed.length} nearby</Text>
+          <Text style={styles.sheetTitle}>
+            {showSkeleton ? 'Finding activities…' : `${filteredFeed.length} nearby`}
+          </Text>
         </View>
 
-        <BottomSheetFlatList
-          ref={listRef}
-          data={filteredFeed}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => (
-            <View style={styles.feedItem}>
-              <ActivityCard
-                activity={item}
-                variant="feed"
-                onPress={() => {
-                  handleCardSelect(item);
-                  onOpenActivity(item);
-                }}
-                highlighted={item.id === selectedActivityId}
+        {showSkeleton ? (
+          <View style={styles.listContent}>
+            {[0, 1, 2].map((i) => (
+              <View key={i} style={styles.feedItem}>
+                <SkeletonCard />
+              </View>
+            ))}
+          </View>
+        ) : (
+          <BottomSheetFlatList
+            ref={listRef}
+            data={filteredFeed}
+            keyExtractor={(item) => item.id}
+            renderItem={({ item }) => (
+              <View style={styles.feedItem}>
+                <ActivityCard
+                  activity={item}
+                  variant="feed"
+                  onPress={() => {
+                    handleCardSelect(item);
+                    onOpenActivity(item);
+                  }}
+                  highlighted={item.id === selectedActivityId}
+                />
+              </View>
+            )}
+            ListEmptyComponent={
+              <DiscoverEmptyState
+                isOffline={isOffline}
+                error={error}
+                hasCategoryFilter={selectedCategory !== 'all'}
+                hasAnyActivities={feedActivities.length > 0}
+                locationDenied={locationDenied}
+                radiusExpanded={radiusExpanded}
+                onRetry={refresh}
+                onClearFilter={() => setSelectedCategory('all')}
+                onHostPress={onHostActivity}
               />
-            </View>
-          )}
-          ListEmptyComponent={
-            <DiscoverEmptyState
-              isOffline={isOffline}
-              error={error}
-              hasCategoryFilter={selectedCategory !== 'all'}
-              hasAnyActivities={feedActivities.length > 0}
-              locationDenied={locationDenied}
-              radiusExpanded={radiusExpanded}
-              onRetry={refresh}
-              onClearFilter={() => setSelectedCategory('all')}
-              onHostPress={onHostActivity}
-            />
-          }
-          contentContainerStyle={styles.listContent}
-          onRefresh={refresh}
-          refreshing={false}
-        />
+            }
+            contentContainerStyle={styles.listContent}
+            onRefresh={refresh}
+            refreshing={false}
+          />
+        )}
       </BottomSheet>
     </View>
   );

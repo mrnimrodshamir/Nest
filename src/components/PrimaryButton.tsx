@@ -1,6 +1,7 @@
 import React from 'react';
 import { Pressable, Text, StyleSheet, ActivityIndicator, PressableProps } from 'react-native';
-import { theme, typography, spacing, radius } from '@/theme';
+import Animated, { useSharedValue, useAnimatedStyle, withSpring, useReducedMotion } from 'react-native-reanimated';
+import { theme, typography, spacing, radius, pressFeedback } from '@/theme';
 
 interface PrimaryButtonProps extends Omit<PressableProps, 'style'> {
   label: string;
@@ -8,24 +9,43 @@ interface PrimaryButtonProps extends Omit<PressableProps, 'style'> {
   variant?: 'primary' | 'secondary' | 'outline';
 }
 
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
+
 export function PrimaryButton({
   label,
   loading = false,
   variant = 'primary',
   disabled,
+  onPressIn,
+  onPressOut,
   ...pressableProps
 }: PrimaryButtonProps) {
   const isDisabled = disabled || loading;
+  const reducedMotion = useReducedMotion();
+  const scale = useSharedValue(1);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
 
   return (
-    <Pressable
+    <AnimatedPressable
       style={[
         styles.button,
         variant === 'secondary' && styles.buttonSecondary,
         variant === 'outline' && styles.buttonOutline,
         isDisabled && styles.buttonDisabled,
+        animatedStyle,
       ]}
       disabled={isDisabled}
+      onPressIn={(e) => {
+        if (!reducedMotion) scale.value = withSpring(pressFeedback.scale, pressFeedback.spring);
+        onPressIn?.(e);
+      }}
+      onPressOut={(e) => {
+        if (!reducedMotion) scale.value = withSpring(1, pressFeedback.spring);
+        onPressOut?.(e);
+      }}
       {...pressableProps}
     >
       {loading ? (
@@ -40,7 +60,7 @@ export function PrimaryButton({
           {label}
         </Text>
       )}
-    </Pressable>
+    </AnimatedPressable>
   );
 }
 

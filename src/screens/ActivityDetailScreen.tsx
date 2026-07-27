@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, Image, ScrollView, Pressable, StyleSheet, Linking, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MapView, { Marker, PROVIDER_DEFAULT } from 'react-native-maps';
+import Animated, { useSharedValue, useAnimatedStyle, withSpring, useReducedMotion } from 'react-native-reanimated';
 import * as Notifications from 'expo-notifications';
 import { ArrowLeft, DotsThree, SealCheck, NavigationArrow, ChatCircleDots, PencilSimple } from 'phosphor-react-native';
 import { theme, typography, spacing, radius } from '@/theme';
@@ -21,6 +22,8 @@ import {
   cancelActivityReminders,
   rescheduleActivityReminders,
 } from '@/lib/activityReminders';
+
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 interface ActivityDetailScreenProps {
   activity: ActivityDetail;
@@ -55,6 +58,19 @@ export function ActivityDetailScreen({
   const [showCalendarSheet, setShowCalendarSheet] = useState(false);
   const [showNotificationSheet, setShowNotificationSheet] = useState(false);
   const [calendarNotice, setCalendarNotice] = useState<'changed' | 'cancelled' | null>(null);
+  const reducedMotion = useReducedMotion();
+  const ctaScale = useSharedValue(1);
+  const ctaAnimatedStyle = useAnimatedStyle(() => ({ transform: [{ scale: ctaScale.value }] }));
+
+  useEffect(() => {
+    if (activity.viewerStatus === 'going' && !reducedMotion) {
+      // A quick confirming bounce the moment a join actually lands.
+      ctaScale.value = withSpring(1.05, { damping: 10, stiffness: 200 }, () => {
+        ctaScale.value = withSpring(1, { damping: 12, stiffness: 200 });
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activity.viewerStatus]);
 
   const isCancelled = activity.status === 'cancelled';
   const isEnded = activity.status === 'completed';
@@ -294,11 +310,12 @@ export function ActivityDetailScreen({
 
       <View style={styles.ctaBar}>
         {error && <Text style={styles.ctaError}>{error}</Text>}
-        <Pressable
+        <AnimatedPressable
           style={[
             styles.ctaButton,
             activity.viewerStatus === 'going' && styles.ctaButtonGoing,
             !canJoin && activity.viewerStatus === 'none' && styles.ctaButtonDisabled,
+            ctaAnimatedStyle,
           ]}
           onPress={handleJoinPress}
           disabled={isSubmitting || (!canJoin && activity.viewerStatus === 'none')}
@@ -314,7 +331,7 @@ export function ActivityDetailScreen({
             {!isCancelled && !isEnded && activity.viewerStatus === 'going' && "You're going"}
             {!isCancelled && !isEnded && activity.viewerStatus === 'none' && (isFull ? 'Activity full' : 'Join this activity')}
           </Text>
-        </Pressable>
+        </AnimatedPressable>
       </View>
 
       <NotificationPermissionSheet
