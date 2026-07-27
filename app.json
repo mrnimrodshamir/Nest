@@ -20,7 +20,8 @@
         "NSLocationWhenInUseUsageDescription": "Momzi uses your location to show meetups happening near you.",
         "NSCameraUsageDescription": "Momzi uses your camera so you can add a profile photo or activity cover photo.",
         "NSPhotoLibraryUsageDescription": "Momzi uses your photo library so you can choose a profile photo or activity cover photo.",
-        "NSCalendarsUsageDescription": "Momzi can add activities you join to your calendar."
+        "NSCalendarsUsageDescription": "Momzi can add activities you join to your calendar.",
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
