@@ -61,7 +61,7 @@ export async function scheduleActivityReminders(
             : `Starting in ${hoursBefore} hours: ${activity.title}`,
         data: { activityId: activity.id },
       },
-      trigger: { date: triggerDate },
+      trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: triggerDate },
     });
     scheduledIds.push(id);
   }

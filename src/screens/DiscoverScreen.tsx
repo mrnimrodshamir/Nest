@@ -177,9 +177,9 @@ export function DiscoverScreen({
           horizontal
           showsHorizontalScrollIndicator={false}
           data={CATEGORIES}
-          keyExtractor={(item) => item.key}
+          keyExtractor={(item: (typeof CATEGORIES)[number]) => item.key}
           contentContainerStyle={styles.chipRow}
-          renderItem={({ item }) => (
+          renderItem={({ item }: { item: (typeof CATEGORIES)[number] }) => (
             <CategoryChip
               label={item.label}
               selected={selectedCategory === item.key}
@@ -221,8 +221,8 @@ export function DiscoverScreen({
           <BottomSheetFlatList
             ref={listRef}
             data={filteredFeed}
-            keyExtractor={(item) => item.id}
-            renderItem={({ item }) => (
+            keyExtractor={(item: (typeof filteredFeed)[number]) => item.id}
+            renderItem={({ item }: { item: (typeof filteredFeed)[number] }) => (
               <View style={styles.feedItem}>
                 <ActivityCard
                   activity={item}

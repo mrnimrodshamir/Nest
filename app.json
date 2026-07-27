@@ -7,11 +7,6 @@
     "userInterfaceStyle": "automatic",
     "scheme": "momzi",
     "icon": "./assets/icon.png",
-    "splash": {
-      "image": "./assets/splash-icon.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#FAF8F4"
-    },
     "ios": {
       "bundleIdentifier": "com.nest.mobile",
       "supportsTablet": false,
@@ -26,7 +21,10 @@
     },
     "android": {
       "package": "com.nest.mobile",
-      "permissions": ["ACCESS_FINE_LOCATION", "ACCESS_COARSE_LOCATION"],
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION"
+      ],
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon-foreground.png",
         "backgroundColor": "#FAF8F4"
@@ -44,6 +42,14 @@
         "expo-calendar",
         {
           "calendarPermission": "Momzi can add activities you join to your calendar."
+        }
+      ],
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "resizeMode": "contain",
+          "backgroundColor": "#FAF8F4"
         }
       ]
     ],

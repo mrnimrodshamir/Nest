@@ -16,7 +16,8 @@ Notifications.setNotificationHandler({
     // just be a redundant, noisy duplicate.
     const suppress = isNotificationForActiveChat(notification.request.content.data);
     return {
-      shouldShowAlert: !suppress,
+      shouldShowBanner: !suppress,
+      shouldShowList: !suppress,
       shouldPlaySound: !suppress,
       shouldSetBadge: false,
     };

@@ -10,8 +10,8 @@ module.exports = function (api) {
           alias: { '@': './src' },
         },
       ],
-      // Must be listed last — react-native-reanimated requirement.
-      'react-native-reanimated/plugin',
+      // Must be listed last — react-native-reanimated 4 requirement (plugin moved to worklets).
+      'react-native-worklets/plugin',
     ],
   };
 };
