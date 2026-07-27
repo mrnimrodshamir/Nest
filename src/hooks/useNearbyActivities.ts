@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import * as Location from 'expo-location';
 import { supabase } from '@/lib/supabase';
-import { CATEGORY_PIN_COLOR } from '@/types/activity';
 import type { Activity, ActivityCategory, Attendee } from '@/types/activity';
 
 const BASE_RADIUS_MILES = 2;
@@ -27,7 +26,10 @@ interface NearbyActivityRow {
   category: ActivityCategory;
   cover_image_url: string | null;
   start_time: string;
+  duration_minutes: number;
   capacity: number | null;
+  baby_min_age_months: number | null;
+  baby_max_age_months: number | null;
   latitude: number;
   longitude: number;
   distance_miles: number;
@@ -78,6 +80,8 @@ export function useNearbyActivities(): UseNearbyActivitiesResult {
   };
 }
 
+/** Only requests permission — does not block the feed if denied. Callers
+ *  reaching Discover/the map is the first moment we ask, never at signup. */
 async function resolveLocation(): Promise<{ latitude: number; longitude: number }> {
   const { status } = await Location.requestForegroundPermissionsAsync();
   if (status !== 'granted') return FALLBACK_LOCATION;
@@ -110,7 +114,7 @@ async function fetchNearby(
 
   const { data: attendeeRows, error: attendeeError } = await supabase
     .from('activity_attendees')
-    .select('activity_id, status, user:profiles(id, display_name, avatar_url)')
+    .select('activity_id, status, user:public_profiles(id, display_name, avatar_url)')
     .in('activity_id', activityIds)
     .in('status', ['going', 'attended']);
   if (attendeeError) throw attendeeError;
@@ -142,23 +146,27 @@ async function fetchNearby(
       category: row.category,
       coverImageUrl: row.cover_image_url,
       startTime: row.start_time,
+      durationMinutes: row.duration_minutes,
       distanceMiles: row.distance_miles,
       latitude: row.latitude,
       longitude: row.longitude,
       attendeeCount: attendees.length,
       capacity: row.capacity,
+      babyMinAgeMonths: row.baby_min_age_months,
+      babyMaxAgeMonths: row.baby_max_age_months,
       attendees: attendees.slice(0, 5),
     };
   });
 }
 
+const PALETTE = ['#7C9A82', '#C9A876', '#8FB4C9', '#A8A69C'];
+
 /** Deterministic accent color per person so avatars stay visually stable
  *  across refreshes without needing a stored color column. */
 function colorForId(id: string): string {
-  const palette = Object.values(CATEGORY_PIN_COLOR);
   let hash = 0;
   for (let i = 0; i < id.length; i++) {
     hash = (hash * 31 + id.charCodeAt(i)) >>> 0;
   }
-  return palette[hash % palette.length];
+  return PALETTE[hash % PALETTE.length];
 }

@@ -1,11 +1,14 @@
 import React from 'react';
-import { View, Text, Image, ScrollView, Pressable, StyleSheet } from 'react-native';
+import { View, Text, Image, ScrollView, Pressable, StyleSheet, Linking, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ArrowLeft, DotsThree, SealCheck } from 'phosphor-react-native';
+import MapView, { Marker, PROVIDER_DEFAULT } from 'react-native-maps';
+import { ArrowLeft, DotsThree, SealCheck, NavigationArrow } from 'phosphor-react-native';
 import { theme, typography, spacing, radius } from '@/theme';
 import type { ActivityDetail } from '@/types/activity';
 import { CATEGORY_LABELS } from '@/types/activity';
 import { formatStartTime } from '@/utils/formatStartTime';
+import { formatDuration } from '@/utils/formatDuration';
+import { formatAgeRange } from '@/utils/babyAge';
 import { useActivityRsvp } from '@/hooks/useActivityRsvp';
 
 interface ActivityDetailScreenProps {
@@ -30,6 +33,15 @@ export function ActivityDetailScreen({
     activity.capacity !== null && activity.attendeeCount >= activity.capacity;
   const spotsLeft =
     activity.capacity !== null ? activity.capacity - activity.attendeeCount : null;
+
+  const handleGetDirections = () => {
+    const { latitude, longitude, label } = activity.location;
+    const url = Platform.select({
+      ios: `maps://?daddr=${latitude},${longitude}&q=${encodeURIComponent(label)}`,
+      default: `https://maps.google.com/?daddr=${latitude},${longitude}`,
+    });
+    if (url) Linking.openURL(url);
+  };
 
   const handleJoinPress = async () => {
     if (activity.viewerStatus === 'none') {
@@ -69,7 +81,11 @@ export function ActivityDetailScreen({
           </View>
           <Text style={styles.title}>{activity.title}</Text>
           <Text style={styles.meta}>
-            {formatStartTime(activity.startTime)} · {activity.distanceMiles.toFixed(1)}mi away
+            {formatStartTime(activity.startTime)} · {formatDuration(activity.durationMinutes)} ·{' '}
+            {activity.distanceMiles.toFixed(1)}mi away
+          </Text>
+          <Text style={styles.meta}>
+            Baby age: {formatAgeRange(activity.babyMinAgeMonths, activity.babyMaxAgeMonths)}
           </Text>
 
           <Pressable
@@ -96,9 +112,39 @@ export function ActivityDetailScreen({
           <Text style={styles.sectionLabel}>About</Text>
           <Text style={styles.description}>{activity.description}</Text>
 
+          {activity.notes && (
+            <>
+              <Text style={styles.sectionLabel}>What to bring</Text>
+              <Text style={styles.description}>{activity.notes}</Text>
+            </>
+          )}
+
           <Text style={styles.sectionLabel}>Location</Text>
-          <View style={styles.mapPlaceholder} />
-          <Text style={styles.locationLabel}>{activity.location.label}</Text>
+          <View style={styles.mapPlaceholder}>
+            <MapView
+              provider={PROVIDER_DEFAULT}
+              style={StyleSheet.absoluteFill}
+              scrollEnabled={false}
+              zoomEnabled={false}
+              pitchEnabled={false}
+              rotateEnabled={false}
+              region={{
+                latitude: activity.location.latitude,
+                longitude: activity.location.longitude,
+                latitudeDelta: 0.01,
+                longitudeDelta: 0.01,
+              }}
+            >
+              <Marker coordinate={activity.location} pinColor={theme.brand.primary} />
+            </MapView>
+          </View>
+          <Pressable style={styles.directionsRow} onPress={handleGetDirections}>
+            <Text style={styles.locationLabel}>{activity.location.label}</Text>
+            <View style={styles.directionsButton}>
+              <NavigationArrow size={14} color={theme.text.accent} weight="fill" />
+              <Text style={styles.directionsLabel}>Directions</Text>
+            </View>
+          </Pressable>
 
           <Text style={styles.sectionLabel}>Who's going</Text>
           <View style={styles.attendeeRow}>
@@ -191,12 +237,21 @@ const styles = StyleSheet.create({
   sectionLabel: { ...typography.bodyMedium, color: theme.text.primary, marginBottom: spacing.sm },
   description: { ...typography.subhead, color: theme.text.secondary, lineHeight: 21, marginBottom: spacing.lg },
   mapPlaceholder: {
-    height: 90,
+    height: 120,
     borderRadius: radius.lg,
     backgroundColor: theme.brand.accentTint,
     marginBottom: spacing.sm,
+    overflow: 'hidden',
   },
-  locationLabel: { ...typography.footnote, color: theme.text.secondary, marginBottom: spacing.lg },
+  locationLabel: { ...typography.footnote, color: theme.text.secondary, flexShrink: 1 },
+  directionsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: spacing.lg,
+  },
+  directionsButton: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  directionsLabel: { ...typography.caption, color: theme.text.accent, fontWeight: '600' as const },
   attendeeRow: { flexDirection: 'row', alignItems: 'center' },
   attendeeAvatar: {
     width: 32,

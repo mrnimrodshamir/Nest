@@ -1,7 +1,8 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useMemo } from 'react';
+import { View, ActivityIndicator } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer, LinkingOptions } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useFonts } from '@expo-google-fonts/plus-jakarta-sans/useFonts';
 import {
@@ -11,20 +12,46 @@ import {
   PlusJakartaSans_700Bold,
 } from '@expo-google-fonts/plus-jakarta-sans';
 import { StatusBar } from 'expo-status-bar';
+import * as Location from 'expo-location';
 
 import { DiscoverScreen } from '@/screens/DiscoverScreen';
 import { ActivityDetailScreen } from '@/screens/ActivityDetailScreen';
-import { AuthScreen } from '@/screens/AuthScreen';
+import { CreateActivityScreen } from '@/screens/CreateActivityScreen';
+import { ShareActivityScreen } from '@/screens/ShareActivityScreen';
+import { ProfileScreen } from '@/screens/ProfileScreen';
+import { CompleteAppleProfileScreen } from '@/screens/auth/CompleteAppleProfileScreen';
+import { AuthNavigator } from '@/navigation/AuthNavigator';
+import { theme } from '@/theme';
 import { useAuth } from '@/hooks/useAuth';
 import { useActivityDetail } from '@/hooks/useActivityDetail';
+import { useActivityRsvp } from '@/hooks/useActivityRsvp';
+import { usePushNotifications } from '@/hooks/usePushNotifications';
 import type { Activity } from '@/types/activity';
+import type { CreateActivityInput } from '@/hooks/useCreateActivity';
+import type { ShareableActivity } from '@/utils/buildShareMessage';
 
 export type RootStackParamList = {
   Discover: undefined;
-  ActivityDetail: { activity: Activity };
+  ActivityDetail: { activityId: string };
+  CreateActivity: undefined;
+  ShareActivity: { activity: ShareableActivity };
+  Profile: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
+
+const linking: LinkingOptions<RootStackParamList> = {
+  prefixes: ['momzi://'],
+  config: {
+    screens: {
+      Discover: '',
+      ActivityDetail: 'activity/:activityId',
+      CreateActivity: 'create',
+      Profile: 'profile',
+      ShareActivity: 'share',
+    },
+  },
+};
 
 export default function App() {
   const [fontsLoaded] = useFonts({
@@ -33,40 +60,39 @@ export default function App() {
     PlusJakartaSans_600SemiBold,
     PlusJakartaSans_700Bold,
   });
-  const { session, isLoading: authLoading } = useAuth();
+  const { session, profile, isLoading: authLoading } = useAuth();
 
   if (!fontsLoaded || authLoading) {
-    return null; // TODO: swap for a branded splash/loading state
-  }
-
-  if (!session) {
     return (
-      <SafeAreaProvider>
-        <AuthScreen />
-        <StatusBar style="dark" />
-      </SafeAreaProvider>
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.background.app }}>
+        <ActivityIndicator color={theme.brand.primary} />
+      </View>
     );
   }
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
-        <NavigationContainer>
-          <Stack.Navigator screenOptions={{ headerShown: false }}>
-            <Stack.Screen name="Discover">
-              {({ navigation }) => (
-                <DiscoverScreenContainer navigation={navigation} />
-              )}
-            </Stack.Screen>
-            <Stack.Screen name="ActivityDetail">
-              {({ route, navigation }) => (
-                <ActivityDetailContainer
-                  activity={route.params.activity}
-                  onBack={() => navigation.goBack()}
-                />
-              )}
-            </Stack.Screen>
-          </Stack.Navigator>
+        <NavigationContainer linking={session && profile ? linking : undefined}>
+          {!session ? (
+            <AuthNavigator />
+          ) : !profile ? (
+            // Signed in but the profile row never got created (interrupted
+            // registration, or an Apple sign-in that didn't finish the
+            // completion step) — recover with the same completion form.
+            <CompleteAppleProfileScreen
+              input={{
+                phone: '',
+                babyName: '',
+                babyBirthdate: '',
+                photoUri: null,
+                fallbackFullName: null,
+                fallbackEmail: session.user.email ?? null,
+              }}
+            />
+          ) : (
+            <MainNavigator />
+          )}
         </NavigationContainer>
         <StatusBar style="dark" />
       </SafeAreaProvider>
@@ -74,10 +100,46 @@ export default function App() {
   );
 }
 
+function MainNavigator() {
+  usePushNotifications();
+
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="Discover">
+        {({ navigation }) => <DiscoverScreenContainer navigation={navigation} />}
+      </Stack.Screen>
+      <Stack.Screen name="ActivityDetail">
+        {({ route, navigation }) => (
+          <ActivityDetailContainer
+            activityId={route.params.activityId}
+            onBack={() => navigation.goBack()}
+          />
+        )}
+      </Stack.Screen>
+      <Stack.Screen name="CreateActivity">
+        {({ navigation }) => <CreateActivityContainer navigation={navigation} />}
+      </Stack.Screen>
+      <Stack.Screen name="ShareActivity">
+        {({ route, navigation }) => (
+          <ShareActivityScreen
+            activity={route.params.activity}
+            onViewActivity={() =>
+              navigation.replace('ActivityDetail', { activityId: route.params.activity.id })
+            }
+          />
+        )}
+      </Stack.Screen>
+      <Stack.Screen name="Profile">
+        {({ navigation }) => <ProfileScreen onBack={() => navigation.goBack()} />}
+      </Stack.Screen>
+    </Stack.Navigator>
+  );
+}
+
 function DiscoverScreenContainer({ navigation }: { navigation: any }) {
   const handleOpenActivity = useCallback(
     (activity: Activity) => {
-      navigation.navigate('ActivityDetail', { activity });
+      navigation.navigate('ActivityDetail', { activityId: activity.id });
     },
     [navigation],
   );
@@ -91,25 +153,45 @@ function DiscoverScreenContainer({ navigation }: { navigation: any }) {
       onOpenNotifications={() => {
         // TODO: build the notifications screen
       }}
-      onHostActivity={() => {
-        // TODO: build the Create/Host activity flow
-      }}
+      onOpenProfile={() => navigation.navigate('Profile')}
+      onHostActivity={() => navigation.navigate('CreateActivity')}
     />
   );
 }
 
 function ActivityDetailContainer({
-  activity,
+  activityId,
   onBack,
 }: {
-  activity: Activity;
+  activityId: string;
   onBack: () => void;
 }) {
-  const { detail } = useActivityDetail(activity);
+  const { detail, isLoading, error } = useActivityDetail(activityId);
+
+  if (!detail) {
+    return (
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.background.surface }}>
+        {isLoading ? <ActivityIndicator color={theme.brand.primary} /> : null}
+        {error ? null : null}
+      </View>
+    );
+  }
+
+  return <ActivityDetailWithRsvp detail={detail} onBack={onBack} />;
+}
+
+function ActivityDetailWithRsvp({
+  detail,
+  onBack,
+}: {
+  detail: NonNullable<ReturnType<typeof useActivityDetail>['detail']>;
+  onBack: () => void;
+}) {
+  const { activity, isSubmitting, join, leave } = useActivityRsvp(detail);
 
   return (
     <ActivityDetailScreen
-      activity={detail}
+      activity={activity}
       onBack={onBack}
       onReport={() => {
         // TODO: wire to reports table once the report flow UI exists
@@ -122,4 +204,49 @@ function ActivityDetailContainer({
       }}
     />
   );
+}
+
+function CreateActivityContainer({ navigation }: { navigation: any }) {
+  const initialCoords = useInitialLocation();
+
+  return (
+    <CreateActivityScreen
+      onBack={() => navigation.goBack()}
+      initialLatitude={initialCoords.latitude}
+      initialLongitude={initialCoords.longitude}
+      onCreated={(activityId: string, input: CreateActivityInput) => {
+        navigation.replace('ShareActivity', {
+          activity: {
+            id: activityId,
+            title: input.title,
+            startsAt: input.startsAt,
+            locationName: input.locationName,
+            durationMinutes: input.durationMinutes,
+          },
+        });
+      }}
+    />
+  );
+}
+
+const FALLBACK_LOCATION = { latitude: 32.0853, longitude: 34.7818 };
+
+function useInitialLocation() {
+  const [coords, setCoords] = React.useState(FALLBACK_LOCATION);
+
+  React.useEffect(() => {
+    let cancelled = false;
+    Location.getLastKnownPositionAsync()
+      .then((position) => {
+        if (!cancelled && position) {
+          setCoords({ latitude: position.coords.latitude, longitude: position.coords.longitude });
+        }
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  return coords;
 }

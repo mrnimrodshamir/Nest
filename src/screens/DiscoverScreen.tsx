@@ -3,7 +3,7 @@ import { View, Text, Pressable, StyleSheet, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MapView, { PROVIDER_DEFAULT, Region } from 'react-native-maps';
 import BottomSheet, { BottomSheetFlatList } from '@gorhom/bottom-sheet';
-import { Bell, MagnifyingGlass, Plus } from 'phosphor-react-native';
+import { Bell, MagnifyingGlass, Plus, UserCircle } from 'phosphor-react-native';
 import { theme, typography, spacing, radius, iconDefaults } from '@/theme';
 import { ActivityCard } from '@/components/ActivityCard';
 import { ActivityMapPin } from '@/components/ActivityMapPin';
@@ -15,11 +15,13 @@ import { useNearbyActivities } from '@/hooks/useNearbyActivities';
 
 const CATEGORIES: Array<{ key: ActivityCategory | 'all'; label: string }> = [
   { key: 'all', label: 'All' },
-  { key: 'walks', label: CATEGORY_LABELS.walks },
-  { key: 'coffee', label: CATEGORY_LABELS.coffee },
-  { key: 'classes', label: CATEGORY_LABELS.classes },
-  { key: 'support', label: CATEGORY_LABELS.support },
-  { key: 'playdates', label: CATEGORY_LABELS.playdates },
+  { key: 'stroller_walk', label: CATEGORY_LABELS.stroller_walk },
+  { key: 'coffee_meetup', label: CATEGORY_LABELS.coffee_meetup },
+  { key: 'baby_playtime', label: CATEGORY_LABELS.baby_playtime },
+  { key: 'picnic', label: CATEGORY_LABELS.picnic },
+  { key: 'fitness', label: CATEGORY_LABELS.fitness },
+  { key: 'yoga', label: CATEGORY_LABELS.yoga },
+  { key: 'workshop', label: CATEGORY_LABELS.workshop },
 ];
 
 // Peek = mostly map, a hint of the list. Half = default — real cards visible
@@ -33,6 +35,7 @@ interface DiscoverScreenProps {
   onOpenActivity: (activity: Activity) => void;
   onOpenSearch: () => void;
   onOpenNotifications: () => void;
+  onOpenProfile: () => void;
   onHostActivity: () => void;
 }
 
@@ -40,6 +43,7 @@ export function DiscoverScreen({
   onOpenActivity,
   onOpenSearch,
   onOpenNotifications,
+  onOpenProfile,
   onHostActivity,
 }: DiscoverScreenProps) {
   const [selectedCategory, setSelectedCategory] = useState<ActivityCategory | 'all'>('all');
@@ -135,6 +139,9 @@ export function DiscoverScreen({
             </Pressable>
             <Pressable style={styles.iconButton} onPress={onOpenNotifications} accessibilityLabel="Notifications">
               <Bell size={iconDefaults.size.tabBar - 4} color={theme.text.primary} weight={iconDefaults.weight} />
+            </Pressable>
+            <Pressable style={styles.iconButton} onPress={onOpenProfile} accessibilityLabel="Profile">
+              <UserCircle size={iconDefaults.size.tabBar - 4} color={theme.text.primary} weight={iconDefaults.weight} />
             </Pressable>
           </View>
         </View>

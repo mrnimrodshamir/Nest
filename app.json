@@ -9,6 +9,7 @@
     "ios": {
       "bundleIdentifier": "com.nest.mobile",
       "supportsTablet": false,
+      "usesAppleSignIn": true,
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "Monzy uses your location to show meetups happening near you.",
         "NSCameraUsageDescription": "Monzy uses your camera so you can add a profile photo or activity cover photo.",
@@ -25,7 +26,8 @@
         {
           "locationWhenInUsePermission": "Monzy uses your location to show meetups happening near you."
         }
-      ]
+      ],
+      "expo-apple-authentication"
     ],
     "extra": {
       "eas": {
