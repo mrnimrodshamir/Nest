@@ -1,0 +1,26 @@
+node_modules/
+.expo/
+dist/
+web-build/
+*.log
+.DS_Store
+*.pem
+
+# macOS
+.expo-shared/
+
+# Env
+.env
+.env.local
+
+# TypeScript
+*.tsbuildinfo
+
+# Xcode / iOS
+ios/Pods/
+ios/build/
+*.xcworkspace/xcuserdata/
+
+# Android
+android/.gradle/
+android/app/build/
