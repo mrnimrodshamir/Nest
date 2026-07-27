@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, Image, ScrollView, Pressable, StyleSheet, Linking, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MapView, { Marker, PROVIDER_DEFAULT } from 'react-native-maps';
-import { ArrowLeft, DotsThree, SealCheck, NavigationArrow, ChatCircleDots } from 'phosphor-react-native';
+import { ArrowLeft, DotsThree, SealCheck, NavigationArrow, ChatCircleDots, PencilSimple } from 'phosphor-react-native';
 import { theme, typography, spacing, radius } from '@/theme';
 import type { ActivityDetail } from '@/types/activity';
 import { CATEGORY_LABELS } from '@/types/activity';
@@ -21,6 +21,8 @@ interface ActivityDetailScreenProps {
   /** Host or anyone already going can reopen the group chat at any time */
   onOpenChat?: () => void;
   canOpenChat?: boolean;
+  isHost?: boolean;
+  onEdit?: () => void;
 }
 
 export function ActivityDetailScreen({
@@ -31,6 +33,8 @@ export function ActivityDetailScreen({
   onJoined,
   onOpenChat,
   canOpenChat = false,
+  isHost = false,
+  onEdit,
 }: ActivityDetailScreenProps) {
   const { activity, isSubmitting, error, join, leave } = useActivityRsvp(initial);
 
@@ -74,9 +78,16 @@ export function ActivityDetailScreen({
             <Pressable style={styles.roundButton} onPress={onBack} accessibilityLabel="Back">
               <ArrowLeft size={18} color={theme.text.primary} />
             </Pressable>
-            <Pressable style={styles.roundButton} onPress={onReport} accessibilityLabel="More options">
-              <DotsThree size={18} color={theme.text.primary} weight="bold" />
-            </Pressable>
+            <View style={styles.heroActions}>
+              {isHost && onEdit && (
+                <Pressable style={styles.roundButton} onPress={onEdit} accessibilityLabel="Edit activity">
+                  <PencilSimple size={18} color={theme.text.primary} />
+                </Pressable>
+              )}
+              <Pressable style={styles.roundButton} onPress={onReport} accessibilityLabel="More options">
+                <DotsThree size={18} color={theme.text.primary} weight="bold" />
+              </Pressable>
+            </View>
           </SafeAreaView>
         </View>
 
@@ -233,6 +244,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingTop: spacing.sm,
   },
+  heroActions: { flexDirection: 'row', gap: spacing.sm },
   roundButton: {
     width: 32,
     height: 32,

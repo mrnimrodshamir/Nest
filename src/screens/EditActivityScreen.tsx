@@ -1,0 +1,106 @@
+import React from 'react';
+import { View, Text, Pressable, Alert, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { ArrowLeft } from 'phosphor-react-native';
+import { theme, typography, spacing } from '@/theme';
+import { ActivityForm } from '@/components/ActivityForm';
+import { useEditActivity } from '@/hooks/useEditActivity';
+import type { ActivityDetail } from '@/types/activity';
+import type { CreateActivityInput } from '@/hooks/useCreateActivity';
+
+interface EditActivityScreenProps {
+  activity: ActivityDetail;
+  onBack: () => void;
+  onSaved: () => void;
+  onCancelled: () => void;
+}
+
+export function EditActivityScreen({ activity, onBack, onSaved, onCancelled }: EditActivityScreenProps) {
+  const { isSubmitting, error, update, cancelActivity } = useEditActivity(activity.id);
+
+  const handleSubmit = async (input: CreateActivityInput) => {
+    const success = await update(input);
+    if (success) onSaved();
+  };
+
+  const handleCancelActivity = () => {
+    Alert.alert(
+      'Cancel this activity?',
+      'Everyone who joined will be notified. This can\'t be undone.',
+      [
+        { text: 'Keep activity', style: 'cancel' },
+        {
+          text: 'Cancel activity',
+          style: 'destructive',
+          onPress: async () => {
+            const success = await cancelActivity();
+            if (success) onCancelled();
+          },
+        },
+      ],
+    );
+  };
+
+  return (
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+      <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <View style={styles.header}>
+          <Pressable onPress={onBack} style={styles.backButton} accessibilityLabel="Back">
+            <ArrowLeft size={20} color={theme.text.primary} />
+          </Pressable>
+          <Text style={styles.headerTitle}>Edit activity</Text>
+          <View style={styles.backButton} />
+        </View>
+
+        <ActivityForm
+          initialValues={{
+            activityType: activity.category,
+            title: activity.title,
+            description: activity.description,
+            startsAt: new Date(activity.startTime),
+            durationMinutes: activity.durationMinutes,
+            latitude: activity.latitude,
+            longitude: activity.longitude,
+            locationName: activity.location.label,
+            maxParticipants: activity.capacity,
+            babyMinAgeMonths: activity.babyMinAgeMonths,
+            babyMaxAgeMonths: activity.babyMaxAgeMonths,
+            notes: activity.notes ?? '',
+          }}
+          submitLabel="Save changes"
+          isSubmitting={isSubmitting}
+          error={error}
+          onSubmit={handleSubmit}
+          footer={
+            <Pressable style={styles.cancelButton} onPress={handleCancelActivity} disabled={isSubmitting}>
+              <Text style={styles.cancelButtonLabel}>Cancel this activity</Text>
+            </Pressable>
+          }
+        />
+      </KeyboardAvoidingView>
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: theme.background.app },
+  flex: { flex: 1 },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+  },
+  backButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: theme.background.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerTitle: { ...typography.headline, color: theme.text.primary },
+  cancelButton: { alignItems: 'center', paddingVertical: spacing.md, marginTop: spacing.sm },
+  cancelButtonLabel: { ...typography.bodyMedium, color: theme.semantic.danger },
+});

@@ -19,6 +19,7 @@ import { ActivityDetailScreen } from '@/screens/ActivityDetailScreen';
 import { CreateActivityScreen } from '@/screens/CreateActivityScreen';
 import { ShareActivityScreen } from '@/screens/ShareActivityScreen';
 import { ChatScreen } from '@/screens/ChatScreen';
+import { EditActivityScreen } from '@/screens/EditActivityScreen';
 import { ProfileScreen } from '@/screens/ProfileScreen';
 import { CompleteAppleProfileScreen } from '@/screens/auth/CompleteAppleProfileScreen';
 import { AuthNavigator } from '@/navigation/AuthNavigator';
@@ -34,6 +35,7 @@ import type { ShareableActivity } from '@/utils/buildShareMessage';
 export type RootStackParamList = {
   Discover: undefined;
   ActivityDetail: { activityId: string };
+  EditActivity: { activityId: string };
   CreateActivity: undefined;
   ShareActivity: { activity: ShareableActivity };
   Chat: { activityId: string; activityTitle: string };
@@ -48,6 +50,7 @@ const linking: LinkingOptions<RootStackParamList> = {
     screens: {
       Discover: '',
       ActivityDetail: 'activity/:activityId',
+      EditActivity: 'activity/:activityId/edit',
       CreateActivity: 'create',
       Profile: 'profile',
       ShareActivity: 'share',
@@ -117,6 +120,16 @@ function MainNavigator() {
             activityId={route.params.activityId}
             onBack={() => navigation.goBack()}
             navigation={navigation}
+          />
+        )}
+      </Stack.Screen>
+      <Stack.Screen name="EditActivity">
+        {({ route, navigation }) => (
+          <EditActivityContainer
+            activityId={route.params.activityId}
+            onBack={() => navigation.goBack()}
+            onSaved={() => navigation.goBack()}
+            onCancelled={() => navigation.popToTop()}
           />
         )}
       </Stack.Screen>
@@ -225,7 +238,35 @@ function ActivityDetailWithRsvp({
       onJoined={openChat}
       onOpenChat={openChat}
       canOpenChat={isHost || activity.viewerStatus === 'going'}
+      isHost={isHost}
+      onEdit={() => navigation.navigate('EditActivity', { activityId: activity.id })}
     />
+  );
+}
+
+function EditActivityContainer({
+  activityId,
+  onBack,
+  onSaved,
+  onCancelled,
+}: {
+  activityId: string;
+  onBack: () => void;
+  onSaved: () => void;
+  onCancelled: () => void;
+}) {
+  const { detail, isLoading } = useActivityDetail(activityId);
+
+  if (!detail) {
+    return (
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.background.app }}>
+        {isLoading ? <ActivityIndicator color={theme.brand.primary} /> : null}
+      </View>
+    );
+  }
+
+  return (
+    <EditActivityScreen activity={detail} onBack={onBack} onSaved={onSaved} onCancelled={onCancelled} />
   );
 }
 
