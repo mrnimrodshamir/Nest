@@ -10,6 +10,8 @@ function isNetworkError(message: string): boolean {
   return /network|fetch failed|timed? ?out|offline/i.test(message);
 }
 
+export type RegistrationStage = 'creating-account' | 'uploading-photo' | 'saving-profile';
+
 export interface RegistrationInput {
   fullName: string;
   email: string;
@@ -35,11 +37,14 @@ interface UseAuthResult {
   profile: Profile | null;
   isLoading: boolean;
   signIn: (email: string, password: string) => Promise<string | null>;
-  register: (input: RegistrationInput) => Promise<string | null>;
+  register: (input: RegistrationInput, onStage?: (stage: RegistrationStage) => void) => Promise<string | null>;
   signInWithApple: () => Promise<
     { status: 'signed-in' } | { status: 'needs-profile'; input: AppleProfileInput } | { status: 'error'; message: string } | { status: 'cancelled' }
   >;
-  completeAppleProfile: (input: AppleProfileInput) => Promise<string | null>;
+  completeAppleProfile: (
+    input: AppleProfileInput,
+    onStage?: (stage: RegistrationStage) => void,
+  ) => Promise<string | null>;
   resetPassword: (email: string) => Promise<string | null>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
@@ -91,26 +96,33 @@ export function useAuth(): UseAuthResult {
     return null;
   }, []);
 
-  const register = useCallback(async (input: RegistrationInput) => {
+  const register = useCallback(async (input: RegistrationInput, onStage?: (stage: RegistrationStage) => void) => {
+    onStage?.('creating-account');
     const { data, error } = await supabase.auth.signUp({
       email: input.email,
       password: input.password,
     });
-    if (error) return error.message;
+    if (error) {
+      console.log('[Auth] Registration failed at signUp', error.message);
+      return isNetworkError(error.message) ? 'No internet connection — please try again.' : error.message;
+    }
 
     const userId = data.user?.id;
     if (!userId) return 'Could not create account — please try again.';
 
     let avatarUrl: string | null = null;
     if (input.photoUri) {
+      onStage?.('uploading-photo');
       try {
         avatarUrl = await uploadAvatar(userId, input.photoUri);
-      } catch {
+      } catch (err) {
         // Photo upload is optional — never block account creation on it.
+        console.log('[Auth] Avatar upload failed, continuing without it', err instanceof Error ? err.message : err);
         avatarUrl = null;
       }
     }
 
+    onStage?.('saving-profile');
     const { error: profileError } = await supabase.from('profiles').insert({
       id: userId,
       display_name: input.fullName,
@@ -123,6 +135,7 @@ export function useAuth(): UseAuthResult {
     });
     if (profileError) return profileError.message;
 
+    console.log('[Auth] Registration succeeded', { userId });
     await loadProfile(userId);
     return null;
   }, [loadProfile]);
@@ -219,7 +232,8 @@ export function useAuth(): UseAuthResult {
   }, [loadProfile]);
 
   const completeAppleProfile = useCallback(
-    async (input: AppleProfileInput) => {
+    async (input: AppleProfileInput, onStage?: (stage: RegistrationStage) => void) => {
+      onStage?.('creating-account');
       const { data: userData } = await supabase.auth.getUser();
       const userId = userData.user?.id;
       if (!userId) return 'Not signed in.';
@@ -237,13 +251,16 @@ export function useAuth(): UseAuthResult {
 
       let avatarUrl: string | null = null;
       if (input.photoUri) {
+        onStage?.('uploading-photo');
         try {
           avatarUrl = await uploadAvatar(userId, input.photoUri);
-        } catch {
+        } catch (err) {
+          console.log('[Auth] Avatar upload failed, continuing without it', err instanceof Error ? err.message : err);
           avatarUrl = null;
         }
       }
 
+      onStage?.('saving-profile');
       const { error } = await supabase.from('profiles').insert({
         id: userId,
         display_name: input.fallbackFullName ?? 'Momzi member',
