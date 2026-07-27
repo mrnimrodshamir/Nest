@@ -1,5 +1,5 @@
 /**
- * Momzi color tokens
+ * Monzy color tokens
  *
  * Palette direction: "fresh & airy" — sage, sand, and soft sky blue on a warm
  * off-white base. Deliberately avoids pure white (#FFFFFF) and pure black —
@@ -11,7 +11,7 @@
  */
 
 export const colors = {
-  // Brand — sage (primary actions, active states, the "Momzi green")
+  // Brand — sage (primary actions, active states, the "Monzy green")
   sage: {
     50: '#F1F5F1',
     100: '#E4ECE5',

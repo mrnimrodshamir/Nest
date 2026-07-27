@@ -11,7 +11,7 @@ before launch is slow and expensive, and generic "diverse mothers" stock
 photography reads as stock photography — it works against the "no generic
 layouts" principle rather than for it.
 
-**Not AI-generated photorealistic people**: Momzi's core value proposition is
+**Not AI-generated photorealistic people**: Monzy's core value proposition is
 *real people, real friendships*. Populating the app's own marketing and
 empty states with fake AI faces sits in direct tension with that promise,
 and photoreal AI people are still recognizable as such (skin texture,

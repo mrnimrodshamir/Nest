@@ -1,29 +1,29 @@
 {
   "expo": {
-    "name": "Momzi",
+    "name": "Monzy",
     "slug": "momzi",
     "version": "0.1.0",
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
     "scheme": "momzi",
     "ios": {
-      "bundleIdentifier": "com.momzi.app",
+      "bundleIdentifier": "com.nest.mobile",
       "supportsTablet": false,
       "infoPlist": {
-        "NSLocationWhenInUseUsageDescription": "Momzi uses your location to show meetups happening near you.",
-        "NSCameraUsageDescription": "Momzi uses your camera so you can add a profile photo or activity cover photo.",
-        "NSPhotoLibraryUsageDescription": "Momzi uses your photo library so you can choose a profile photo or activity cover photo."
+        "NSLocationWhenInUseUsageDescription": "Monzy uses your location to show meetups happening near you.",
+        "NSCameraUsageDescription": "Monzy uses your camera so you can add a profile photo or activity cover photo.",
+        "NSPhotoLibraryUsageDescription": "Monzy uses your photo library so you can choose a profile photo or activity cover photo."
       }
     },
     "android": {
-      "package": "com.momzi.app",
+      "package": "com.nest.mobile",
       "permissions": ["ACCESS_FINE_LOCATION", "ACCESS_COARSE_LOCATION"]
     },
     "plugins": [
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "Momzi uses your location to show meetups happening near you."
+          "locationWhenInUsePermission": "Monzy uses your location to show meetups happening near you."
         }
       ]
     ],

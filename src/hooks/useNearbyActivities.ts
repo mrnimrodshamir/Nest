@@ -1,18 +1,15 @@
 import { useCallback, useEffect, useState } from 'react';
-import type { Activity } from '@/types/activity';
-
-/**
- * TODO(supabase): replace mockFetchNearby with a real query, e.g.
- *
- *   supabase.rpc('nearby_activities', { user_location, radius_miles })
- *     .select('*, host:profiles(*), attendees:activity_attendees(user:profiles(*))')
- *
- * The screen-facing interface (todayActivities / feedActivities / radiusExpanded)
- * should not need to change — only this hook's internals.
- */
+import * as Location from 'expo-location';
+import { supabase } from '@/lib/supabase';
+import { CATEGORY_PIN_COLOR } from '@/types/activity';
+import type { Activity, ActivityCategory, Attendee } from '@/types/activity';
 
 const BASE_RADIUS_MILES = 2;
 const EXPANDED_RADIUS_MILES = 8;
+
+// Used only if location permission is denied — keeps the feed usable rather
+// than dead-ending on a blank map.
+const FALLBACK_LOCATION = { latitude: 32.0853, longitude: 34.7818 };
 
 interface UseNearbyActivitiesResult {
   todayActivities: Activity[];
@@ -23,6 +20,19 @@ interface UseNearbyActivitiesResult {
   refresh: () => void;
 }
 
+interface NearbyActivityRow {
+  id: string;
+  host_id: string;
+  title: string;
+  category: ActivityCategory;
+  cover_image_url: string | null;
+  start_time: string;
+  capacity: number | null;
+  latitude: number;
+  longitude: number;
+  distance_miles: number;
+}
+
 export function useNearbyActivities(): UseNearbyActivitiesResult {
   const [activities, setActivities] = useState<Activity[]>([]);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -31,13 +41,15 @@ export function useNearbyActivities(): UseNearbyActivitiesResult {
   const load = useCallback(async () => {
     setIsRefreshing(true);
 
-    let results = await mockFetchNearby(BASE_RADIUS_MILES);
+    const coords = await resolveLocation();
+
+    let results = await fetchNearby(coords, BASE_RADIUS_MILES);
     let expanded = false;
 
     // Cold-start safety net: silently widen the search before ever
     // surfacing an empty state to the person.
     if (results.length === 0) {
-      results = await mockFetchNearby(EXPANDED_RADIUS_MILES);
+      results = await fetchNearby(coords, EXPANDED_RADIUS_MILES);
       expanded = true;
     }
 
@@ -61,50 +73,92 @@ export function useNearbyActivities(): UseNearbyActivitiesResult {
     feedActivities,
     isRefreshing,
     radiusExpanded,
-    locationLabel: `Near Florentin, ${radiusExpanded ? EXPANDED_RADIUS_MILES : BASE_RADIUS_MILES}mi`,
+    locationLabel: `Nearby, ${radiusExpanded ? EXPANDED_RADIUS_MILES : BASE_RADIUS_MILES}mi`,
     refresh: load,
   };
 }
 
-async function mockFetchNearby(_radiusMiles: number): Promise<Activity[]> {
-  await new Promise((resolve) => setTimeout(resolve, 300));
+async function resolveLocation(): Promise<{ latitude: number; longitude: number }> {
+  const { status } = await Location.requestForegroundPermissionsAsync();
+  if (status !== 'granted') return FALLBACK_LOCATION;
 
-  const now = Date.now();
-  return [
-    {
-      id: '1',
-      hostId: 'host-1',
-      title: 'Stroller walk along the park',
-      category: 'walks',
-      coverImageUrl: null,
-      startTime: new Date(now + 2 * 3600 * 1000).toISOString(),
-      distanceMiles: 0.8,
-      latitude: 32.0891,
-      longitude: 34.7748,
-      attendeeCount: 6,
-      capacity: 10,
-      attendees: [
-        { id: 'a1', displayName: 'Maya', avatarUrl: null, avatarColor: '#8FB4C9' },
-        { id: 'a2', displayName: 'Noa', avatarUrl: null, avatarColor: '#C9A876' },
-        { id: 'a3', displayName: 'Lea', avatarUrl: null, avatarColor: '#7C9A82' },
-      ],
-    },
-    {
-      id: '2',
-      hostId: 'host-2',
-      title: 'Coffee and chat for new mothers',
-      category: 'coffee',
-      coverImageUrl: null,
-      startTime: new Date(now + 4 * 3600 * 1000).toISOString(),
-      distanceMiles: 1.2,
-      latitude: 32.0812,
-      longitude: 34.7801,
-      attendeeCount: 3,
-      capacity: 8,
-      attendees: [
-        { id: 'a4', displayName: 'Tal', avatarUrl: null, avatarColor: '#8FB4C9' },
-        { id: 'a5', displayName: 'Shira', avatarUrl: null, avatarColor: '#C9A876' },
-      ],
-    },
-  ];
+  try {
+    const position = await Location.getCurrentPositionAsync({
+      accuracy: Location.Accuracy.Balanced,
+    });
+    return { latitude: position.coords.latitude, longitude: position.coords.longitude };
+  } catch {
+    return FALLBACK_LOCATION;
+  }
+}
+
+async function fetchNearby(
+  coords: { latitude: number; longitude: number },
+  radiusMiles: number,
+): Promise<Activity[]> {
+  const { data: rows, error } = await supabase.rpc('nearby_activities', {
+    user_lat: coords.latitude,
+    user_lng: coords.longitude,
+    radius_miles: radiusMiles,
+  });
+  if (error) throw error;
+
+  const activityRows = (rows ?? []) as NearbyActivityRow[];
+  if (activityRows.length === 0) return [];
+
+  const activityIds = activityRows.map((row) => row.id);
+
+  const { data: attendeeRows, error: attendeeError } = await supabase
+    .from('activity_attendees')
+    .select('activity_id, status, user:profiles(id, display_name, avatar_url)')
+    .in('activity_id', activityIds)
+    .in('status', ['going', 'attended']);
+  if (attendeeError) throw attendeeError;
+
+  const attendeesByActivity = new Map<string, Attendee[]>();
+  for (const row of attendeeRows ?? []) {
+    const rawProfile = row.user as unknown;
+    const profile = (Array.isArray(rawProfile) ? rawProfile[0] : rawProfile) as
+      | { id: string; display_name: string; avatar_url: string | null }
+      | null
+      | undefined;
+    if (!profile) continue;
+    const list = attendeesByActivity.get(row.activity_id) ?? [];
+    list.push({
+      id: profile.id,
+      displayName: profile.display_name,
+      avatarUrl: profile.avatar_url,
+      avatarColor: colorForId(profile.id),
+    });
+    attendeesByActivity.set(row.activity_id, list);
+  }
+
+  return activityRows.map((row) => {
+    const attendees = attendeesByActivity.get(row.id) ?? [];
+    return {
+      id: row.id,
+      hostId: row.host_id,
+      title: row.title,
+      category: row.category,
+      coverImageUrl: row.cover_image_url,
+      startTime: row.start_time,
+      distanceMiles: row.distance_miles,
+      latitude: row.latitude,
+      longitude: row.longitude,
+      attendeeCount: attendees.length,
+      capacity: row.capacity,
+      attendees: attendees.slice(0, 5),
+    };
+  });
+}
+
+/** Deterministic accent color per person so avatars stay visually stable
+ *  across refreshes without needing a stored color column. */
+function colorForId(id: string): string {
+  const palette = Object.values(CATEGORY_PIN_COLOR);
+  let hash = 0;
+  for (let i = 0; i < id.length; i++) {
+    hash = (hash * 31 + id.charCodeAt(i)) >>> 0;
+  }
+  return palette[hash % palette.length];
 }

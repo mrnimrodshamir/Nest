@@ -1,5 +1,5 @@
 /**
- * Momzi typography tokens
+ * Monzy typography tokens
  *
  * Typeface: Plus Jakarta Sans — a geometric, modern-neutral sans (like
  * Instagram/Airbnb's custom faces) but warmer than Inter, which has become

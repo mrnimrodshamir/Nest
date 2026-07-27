@@ -1,12 +1,7 @@
 import { useCallback, useState } from 'react';
+import { supabase } from '@/lib/supabase';
 import type { ActivityDetail } from '@/types/activity';
 
-/**
- * TODO(supabase): swap the two mock calls below for real writes, e.g.
- *   supabase.from('activity_attendees').insert({ activity_id, user_id, status })
- *   supabase.from('activity_attendees').delete().match({ activity_id, user_id })
- * Optimistic update stays the same either way — revert on failure.
- */
 export function useActivityRsvp(initial: ActivityDetail) {
   const [activity, setActivity] = useState(initial);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -15,16 +10,17 @@ export function useActivityRsvp(initial: ActivityDetail) {
     const isFull =
       activity.capacity !== null && activity.attendeeCount >= activity.capacity;
     const previous = activity;
+    const nextStatus = isFull ? 'waitlisted' : 'going';
 
     setIsSubmitting(true);
     setActivity((current) => ({
       ...current,
-      viewerStatus: isFull ? 'waitlisted' : 'going',
+      viewerStatus: nextStatus,
       attendeeCount: isFull ? current.attendeeCount : current.attendeeCount + 1,
     }));
 
     try {
-      await mockPersistRsvp(activity.id, isFull ? 'waitlisted' : 'going');
+      await persistRsvp(activity.id, nextStatus);
     } catch {
       setActivity(previous); // revert on failure
     } finally {
@@ -46,7 +42,7 @@ export function useActivityRsvp(initial: ActivityDetail) {
     }));
 
     try {
-      await mockPersistRsvp(activity.id, 'none');
+      await persistRsvp(activity.id, 'none');
     } catch {
       setActivity(previous);
     } finally {
@@ -57,6 +53,29 @@ export function useActivityRsvp(initial: ActivityDetail) {
   return { activity, isSubmitting, join, leave };
 }
 
-async function mockPersistRsvp(_activityId: string, _status: string): Promise<void> {
-  await new Promise((resolve) => setTimeout(resolve, 250));
+async function persistRsvp(
+  activityId: string,
+  status: 'going' | 'waitlisted' | 'none',
+): Promise<void> {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not signed in');
+
+  if (status === 'none') {
+    const { error } = await supabase
+      .from('activity_attendees')
+      .delete()
+      .match({ activity_id: activityId, user_id: user.id });
+    if (error) throw error;
+    return;
+  }
+
+  const { error } = await supabase
+    .from('activity_attendees')
+    .upsert(
+      { activity_id: activityId, user_id: user.id, status },
+      { onConflict: 'activity_id,user_id' },
+    );
+  if (error) throw error;
 }
