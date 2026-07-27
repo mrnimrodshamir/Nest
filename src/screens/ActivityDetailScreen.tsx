@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, Image, ScrollView, Pressable, StyleSheet, Linking, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MapView, { Marker, PROVIDER_DEFAULT } from 'react-native-maps';
-import { ArrowLeft, DotsThree, SealCheck, NavigationArrow } from 'phosphor-react-native';
+import { ArrowLeft, DotsThree, SealCheck, NavigationArrow, ChatCircleDots } from 'phosphor-react-native';
 import { theme, typography, spacing, radius } from '@/theme';
 import type { ActivityDetail } from '@/types/activity';
 import { CATEGORY_LABELS } from '@/types/activity';
@@ -18,6 +18,9 @@ interface ActivityDetailScreenProps {
   onMessageHost: (hostId: string) => void;
   /** Called once the person successfully joins — screen can navigate to the group chat */
   onJoined: (activity: ActivityDetail) => void;
+  /** Host or anyone already going can reopen the group chat at any time */
+  onOpenChat?: () => void;
+  canOpenChat?: boolean;
 }
 
 export function ActivityDetailScreen({
@@ -26,6 +29,8 @@ export function ActivityDetailScreen({
   onReport,
   onMessageHost,
   onJoined,
+  onOpenChat,
+  canOpenChat = false,
 }: ActivityDetailScreenProps) {
   const { activity, isSubmitting, error, join, leave } = useActivityRsvp(initial);
 
@@ -127,6 +132,13 @@ export function ActivityDetailScreen({
             </View>
             <Text style={styles.messageLink}>Message</Text>
           </Pressable>
+
+          {canOpenChat && onOpenChat && (
+            <Pressable style={styles.chatRow} onPress={onOpenChat}>
+              <ChatCircleDots size={18} color={theme.brand.primary} weight="fill" />
+              <Text style={styles.chatRowLabel}>Open group chat</Text>
+            </Pressable>
+          )}
 
           <Text style={styles.sectionLabel}>About</Text>
           <Text style={styles.description}>{activity.description}</Text>
@@ -262,6 +274,17 @@ const styles = StyleSheet.create({
   hostName: { ...typography.bodyMedium, color: theme.text.primary },
   hostBio: { ...typography.footnote, color: theme.text.secondary, marginTop: 2 },
   messageLink: { ...typography.footnote, fontWeight: '600' as const, color: theme.text.accent },
+  chatRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    backgroundColor: theme.brand.primaryTint,
+    borderRadius: radius.md,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    marginBottom: spacing.lg,
+  },
+  chatRowLabel: { ...typography.bodyMedium, color: theme.brand.primaryPressed },
   sectionLabel: { ...typography.bodyMedium, color: theme.text.primary, marginBottom: spacing.sm },
   description: { ...typography.subhead, color: theme.text.secondary, lineHeight: 21, marginBottom: spacing.lg },
   mapPlaceholder: {

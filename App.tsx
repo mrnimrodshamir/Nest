@@ -18,6 +18,7 @@ import { DiscoverScreen } from '@/screens/DiscoverScreen';
 import { ActivityDetailScreen } from '@/screens/ActivityDetailScreen';
 import { CreateActivityScreen } from '@/screens/CreateActivityScreen';
 import { ShareActivityScreen } from '@/screens/ShareActivityScreen';
+import { ChatScreen } from '@/screens/ChatScreen';
 import { ProfileScreen } from '@/screens/ProfileScreen';
 import { CompleteAppleProfileScreen } from '@/screens/auth/CompleteAppleProfileScreen';
 import { AuthNavigator } from '@/navigation/AuthNavigator';
@@ -35,6 +36,7 @@ export type RootStackParamList = {
   ActivityDetail: { activityId: string };
   CreateActivity: undefined;
   ShareActivity: { activity: ShareableActivity };
+  Chat: { activityId: string; activityTitle: string };
   Profile: undefined;
 };
 
@@ -49,6 +51,7 @@ const linking: LinkingOptions<RootStackParamList> = {
       CreateActivity: 'create',
       Profile: 'profile',
       ShareActivity: 'share',
+      Chat: 'activity/:activityId/chat',
     },
   },
 };
@@ -113,6 +116,7 @@ function MainNavigator() {
           <ActivityDetailContainer
             activityId={route.params.activityId}
             onBack={() => navigation.goBack()}
+            navigation={navigation}
           />
         )}
       </Stack.Screen>
@@ -126,6 +130,15 @@ function MainNavigator() {
             onViewActivity={() =>
               navigation.replace('ActivityDetail', { activityId: route.params.activity.id })
             }
+          />
+        )}
+      </Stack.Screen>
+      <Stack.Screen name="Chat">
+        {({ route, navigation }) => (
+          <ChatScreen
+            activityId={route.params.activityId}
+            activityTitle={route.params.activityTitle}
+            onBack={() => navigation.goBack()}
           />
         )}
       </Stack.Screen>
@@ -162,9 +175,11 @@ function DiscoverScreenContainer({ navigation }: { navigation: any }) {
 function ActivityDetailContainer({
   activityId,
   onBack,
+  navigation,
 }: {
   activityId: string;
   onBack: () => void;
+  navigation: any;
 }) {
   const { detail, isLoading, error } = useActivityDetail(activityId);
 
@@ -177,17 +192,25 @@ function ActivityDetailContainer({
     );
   }
 
-  return <ActivityDetailWithRsvp detail={detail} onBack={onBack} />;
+  return <ActivityDetailWithRsvp detail={detail} onBack={onBack} navigation={navigation} />;
 }
 
 function ActivityDetailWithRsvp({
   detail,
   onBack,
+  navigation,
 }: {
   detail: NonNullable<ReturnType<typeof useActivityDetail>['detail']>;
   onBack: () => void;
+  navigation: any;
 }) {
   const { activity, isSubmitting, join, leave } = useActivityRsvp(detail);
+  const { session } = useAuth();
+  const isHost = session?.user.id === activity.hostId;
+
+  const openChat = () => {
+    navigation.navigate('Chat', { activityId: activity.id, activityTitle: activity.title });
+  };
 
   return (
     <ActivityDetailScreen
@@ -197,11 +220,11 @@ function ActivityDetailWithRsvp({
         // TODO: wire to reports table once the report flow UI exists
       }}
       onMessageHost={() => {
-        // TODO: wire to get_or_create_direct_chat once Chat is built
+        // TODO: wire to get_or_create_direct_chat once a direct-message UI exists
       }}
-      onJoined={() => {
-        // TODO: navigate into the activity's group chat once Chat is built
-      }}
+      onJoined={openChat}
+      onOpenChat={openChat}
+      canOpenChat={isHost || activity.viewerStatus === 'going'}
     />
   );
 }
