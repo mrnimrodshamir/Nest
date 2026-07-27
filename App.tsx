@@ -29,7 +29,10 @@ import { theme } from '@/theme';
 import { useAuth } from '@/hooks/useAuth';
 import { useActivityDetail } from '@/hooks/useActivityDetail';
 import { useActivityRsvp } from '@/hooks/useActivityRsvp';
+import { useActivityChatId } from '@/hooks/useActivityChatId';
+import { useDirectChatId } from '@/hooks/useDirectChatId';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
+import { supabase } from '@/lib/supabase';
 import type { Activity } from '@/types/activity';
 import type { CreateActivityInput } from '@/hooks/useCreateActivity';
 import type { ShareableActivity } from '@/utils/buildShareMessage';
@@ -40,7 +43,7 @@ export type RootStackParamList = {
   EditActivity: { activityId: string };
   CreateActivity: undefined;
   ShareActivity: { activity: ShareableActivity };
-  Chat: { activityId: string; activityTitle: string };
+  Chat: { kind: 'group' | 'direct'; activityId?: string; otherUserId?: string; title?: string };
   Profile: undefined;
 };
 
@@ -57,7 +60,10 @@ const linking: LinkingOptions<RootStackParamList> = {
       CreateActivity: 'create',
       Profile: 'profile',
       ShareActivity: 'share',
-      Chat: 'activity/:activityId/chat',
+      Chat: {
+        path: 'activity/:activityId/chat',
+        parse: { kind: () => 'group' as const },
+      },
     },
   },
 };
@@ -81,8 +87,9 @@ export default function App() {
       try {
         if (data?.kind === 'chat') {
           navigationRef.navigate('Chat', {
+            kind: 'group',
             activityId,
-            activityTitle: (data?.activityTitle as string) ?? '',
+            title: (data?.activityTitle as string) ?? undefined,
           });
         } else {
           navigationRef.navigate('ActivityDetail', { activityId });
@@ -178,13 +185,21 @@ function MainNavigator() {
         )}
       </Stack.Screen>
       <Stack.Screen name="Chat">
-        {({ route, navigation }) => (
-          <ChatScreen
-            activityId={route.params.activityId}
-            activityTitle={route.params.activityTitle}
-            onBack={() => navigation.goBack()}
-          />
-        )}
+        {({ route, navigation }) =>
+          route.params.kind === 'direct' && route.params.otherUserId ? (
+            <DirectChatContainer
+              otherUserId={route.params.otherUserId}
+              title={route.params.title}
+              onBack={() => navigation.goBack()}
+            />
+          ) : (
+            <GroupChatContainer
+              activityId={route.params.activityId!}
+              title={route.params.title}
+              onBack={() => navigation.goBack()}
+            />
+          )
+        }
       </Stack.Screen>
       <Stack.Screen name="Profile">
         {({ navigation }) => <ProfileScreen onBack={() => navigation.goBack()} />}
@@ -253,7 +268,7 @@ function ActivityDetailWithRsvp({
   const isHost = session?.user.id === activity.hostId;
 
   const openChat = () => {
-    navigation.navigate('Chat', { activityId: activity.id, activityTitle: activity.title });
+    navigation.navigate('Chat', { kind: 'group', activityId: activity.id, title: activity.title });
   };
 
   return (
@@ -264,7 +279,11 @@ function ActivityDetailWithRsvp({
         // TODO: wire to reports table once the report flow UI exists
       }}
       onMessageHost={() => {
-        // TODO: wire to get_or_create_direct_chat once a direct-message UI exists
+        navigation.navigate('Chat', {
+          kind: 'direct',
+          otherUserId: activity.hostId,
+          title: activity.host.displayName,
+        });
       }}
       onJoined={openChat}
       onOpenChat={openChat}
@@ -273,6 +292,50 @@ function ActivityDetailWithRsvp({
       onEdit={() => navigation.navigate('EditActivity', { activityId: activity.id })}
     />
   );
+}
+
+function GroupChatContainer({
+  activityId,
+  title,
+  onBack,
+}: {
+  activityId: string;
+  title?: string;
+  onBack: () => void;
+}) {
+  const { chatId, error } = useActivityChatId(activityId);
+  const [resolvedTitle, setResolvedTitle] = React.useState(title ?? '');
+
+  React.useEffect(() => {
+    if (title || resolvedTitle) return;
+    // Deep link / notification tap landed here without a title in the
+    // route params — fetch it so the header isn't blank.
+    supabase
+      .from('activities')
+      .select('title')
+      .eq('id', activityId)
+      .single()
+      .then(({ data }: { data: { title: string } | null }) => {
+        if (data?.title) setResolvedTitle(data.title);
+      });
+  }, [activityId, title, resolvedTitle]);
+
+  return (
+    <ChatScreen chatId={chatId} resolveError={error} title={resolvedTitle || 'Chat'} onBack={onBack} />
+  );
+}
+
+function DirectChatContainer({
+  otherUserId,
+  title,
+  onBack,
+}: {
+  otherUserId: string;
+  title?: string;
+  onBack: () => void;
+}) {
+  const { chatId, error } = useDirectChatId(otherUserId);
+  return <ChatScreen chatId={chatId} resolveError={error} title={title ?? 'Chat'} onBack={onBack} />;
 }
 
 function EditActivityContainer({

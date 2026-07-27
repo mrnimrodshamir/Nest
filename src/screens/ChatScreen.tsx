@@ -8,20 +8,24 @@ import {
   StyleSheet,
   KeyboardAvoidingView,
   Platform,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ArrowLeft, PaperPlaneTilt } from 'phosphor-react-native';
+import { ArrowLeft, PaperPlaneTilt, WarningCircle } from 'phosphor-react-native';
 import { theme, typography, spacing, radius } from '@/theme';
-import { useActivityChat, type ChatMessage } from '@/hooks/useActivityChat';
+import { useChatMessages, type ChatMessage } from '@/hooks/useChatMessages';
 
 interface ChatScreenProps {
-  activityId: string;
-  activityTitle: string;
+  /** Null while still resolving (or being created) — shows a loading state. */
+  chatId: string | null;
+  /** Set if chatId resolution itself failed (e.g. no shared activity yet). */
+  resolveError?: string | null;
+  title: string;
   onBack: () => void;
 }
 
-export function ChatScreen({ activityId, activityTitle, onBack }: ChatScreenProps) {
-  const { messages, isLoading, error, send } = useActivityChat(activityId);
+export function ChatScreen({ chatId, resolveError, title, onBack }: ChatScreenProps) {
+  const { messages, isLoading, error, send, retry } = useChatMessages(chatId);
   const [draft, setDraft] = useState('');
   const listRef = useRef<FlatList<ChatMessage>>(null);
 
@@ -37,55 +41,64 @@ export function ChatScreen({ activityId, activityTitle, onBack }: ChatScreenProp
         <Pressable onPress={onBack} style={styles.backButton} accessibilityLabel="Back">
           <ArrowLeft size={20} color={theme.text.primary} />
         </Pressable>
-        <Text style={styles.headerTitle} numberOfLines={1}>{activityTitle}</Text>
+        <Text style={styles.headerTitle} numberOfLines={1}>{title}</Text>
         <View style={styles.backButton} />
       </View>
 
-      <KeyboardAvoidingView
-        style={styles.flex}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 8 : 0}
-      >
-        <FlatList
-          ref={listRef}
-          data={messages}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.messageList}
-          renderItem={({ item }) => <MessageBubble message={item} />}
-          onContentSizeChange={() => listRef.current?.scrollToEnd({ animated: true })}
-          ListEmptyComponent={
-            !isLoading ? (
-              <View style={styles.emptyState}>
-                <Text style={styles.emptyTitle}>Say hello 👋</Text>
-                <Text style={styles.emptyBody}>
-                  This chat is just for people joining {activityTitle}.
-                </Text>
-              </View>
-            ) : null
-          }
-        />
-
-        {error && <Text style={styles.error}>{error}</Text>}
-
-        <View style={styles.inputRow}>
-          <TextInput
-            style={styles.input}
-            placeholder="Message"
-            placeholderTextColor={theme.text.muted}
-            value={draft}
-            onChangeText={setDraft}
-            multiline
-          />
-          <Pressable style={styles.sendButton} onPress={handleSend} accessibilityLabel="Send">
-            <PaperPlaneTilt size={18} color={theme.text.inverse} weight="fill" />
-          </Pressable>
+      {resolveError ? (
+        <View style={styles.centerState}>
+          <WarningCircle size={28} color={theme.text.muted} />
+          <Text style={styles.centerStateText}>{resolveError}</Text>
         </View>
-      </KeyboardAvoidingView>
+      ) : !chatId ? (
+        <View style={styles.centerState}>
+          <ActivityIndicator color={theme.brand.primary} />
+        </View>
+      ) : (
+        <KeyboardAvoidingView
+          style={styles.flex}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 8 : 0}
+        >
+          <FlatList
+            ref={listRef}
+            data={messages}
+            keyExtractor={(item) => item.id}
+            contentContainerStyle={styles.messageList}
+            renderItem={({ item }) => <MessageBubble message={item} onRetry={() => retry(item.id)} />}
+            onContentSizeChange={() => listRef.current?.scrollToEnd({ animated: true })}
+            ListEmptyComponent={
+              !isLoading ? (
+                <View style={styles.emptyState}>
+                  <Text style={styles.emptyTitle}>Say hello 👋</Text>
+                  <Text style={styles.emptyBody}>This is the start of your conversation.</Text>
+                </View>
+              ) : null
+            }
+          />
+
+          {error && <Text style={styles.error}>{error}</Text>}
+
+          <View style={styles.inputRow}>
+            <TextInput
+              style={styles.input}
+              placeholder="Message"
+              placeholderTextColor={theme.text.muted}
+              value={draft}
+              onChangeText={setDraft}
+              multiline
+            />
+            <Pressable style={styles.sendButton} onPress={handleSend} accessibilityLabel="Send">
+              <PaperPlaneTilt size={18} color={theme.text.inverse} weight="fill" />
+            </Pressable>
+          </View>
+        </KeyboardAvoidingView>
+      )}
     </SafeAreaView>
   );
 }
 
-function MessageBubble({ message }: { message: ChatMessage }) {
+function MessageBubble({ message, onRetry }: { message: ChatMessage; onRetry: () => void }) {
   return (
     <View style={[styles.bubbleRow, message.isMine && styles.bubbleRowMine]}>
       {!message.isMine && <Text style={styles.senderName}>{message.senderName}</Text>}
@@ -94,6 +107,12 @@ function MessageBubble({ message }: { message: ChatMessage }) {
           {message.content}
         </Text>
       </View>
+      {message.failed && (
+        <Pressable onPress={onRetry} style={styles.retryRow}>
+          <WarningCircle size={12} color={theme.semantic.danger} weight="fill" />
+          <Text style={styles.retryLabel}>Not sent — tap to retry</Text>
+        </Pressable>
+      )}
     </View>
   );
 }
@@ -117,6 +136,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   headerTitle: { ...typography.headline, color: theme.text.primary, flex: 1, textAlign: 'center', marginHorizontal: spacing.sm },
+  centerState: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.md, paddingHorizontal: spacing['2xl'] },
+  centerStateText: { ...typography.subhead, color: theme.text.secondary, textAlign: 'center' },
   messageList: { padding: spacing.lg, gap: spacing.sm, flexGrow: 1 },
   bubbleRow: { alignItems: 'flex-start', marginBottom: spacing.xs },
   bubbleRowMine: { alignItems: 'flex-end' },
@@ -131,6 +152,8 @@ const styles = StyleSheet.create({
   bubbleMine: { backgroundColor: theme.brand.primary, borderBottomRightRadius: radius.sm },
   bubbleText: { ...typography.body, color: theme.text.primary },
   bubbleTextMine: { color: theme.text.inverse },
+  retryRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 },
+  retryLabel: { ...typography.caption, color: theme.semantic.danger },
   emptyState: { alignItems: 'center', paddingTop: spacing['4xl'], paddingHorizontal: spacing['2xl'] },
   emptyTitle: { ...typography.title3, color: theme.text.primary, marginBottom: spacing.sm },
   emptyBody: { ...typography.subhead, color: theme.text.secondary, textAlign: 'center' },
