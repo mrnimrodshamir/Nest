@@ -306,7 +306,10 @@ export function useAuth(): UseAuthResult {
         avatar_url: avatarUrl,
         onboarding_completed: true,
       });
-      if (error) return error.message;
+      if (error) {
+        console.log('[Auth] Profile completion failed', error.message);
+        return "Couldn't save your profile. Please try again.";
+      }
 
       const { error: childError } = await supabase.from('children').insert({
         profile_id: userId,
@@ -314,7 +317,10 @@ export function useAuth(): UseAuthResult {
         birthdate: input.childBirthdate,
         is_default: true,
       });
-      if (childError) return childError.message;
+      if (childError) {
+        console.log('[Auth] Child creation failed during profile completion', childError.message);
+        return "Couldn't save your profile. Please try again.";
+      }
 
       track('sign_up_completed');
       track('onboarding_completed');
@@ -341,7 +347,10 @@ export function useAuth(): UseAuthResult {
     if (!session) return 'Not signed in.';
     track('account_deleted');
     const { data, error } = await supabase.functions.invoke('delete-account', { method: 'POST' });
-    if (error) return error.message ?? 'Could not delete your account. Please try again.';
+    if (error) {
+      console.log('[Auth] Account deletion failed', error.message);
+      return 'Could not delete your account. Please try again.';
+    }
     if (data?.error) return data.error as string;
     await supabase.auth.signOut();
     return null;
@@ -359,7 +368,8 @@ export function useAuth(): UseAuthResult {
         try {
           avatarUrl = await uploadAvatar(session.user.id, details.photoUri);
         } catch (err) {
-          return err instanceof Error ? err.message : "Couldn't upload your photo — please try again.";
+          console.log('[Auth] Avatar upload failed', err instanceof Error ? err.message : err);
+          return "Couldn't upload your photo — please try again.";
         }
       }
       const { error } = await supabase
@@ -370,7 +380,10 @@ export function useAuth(): UseAuthResult {
           ...(avatarUrl ? { avatar_url: avatarUrl } : {}),
         })
         .eq('id', session.user.id);
-      if (error) return error.message;
+      if (error) {
+        console.log('[Auth] Profile update failed', error.message);
+        return "Couldn't save your changes. Please try again.";
+      }
       await loadProfile(session.user.id);
       return null;
     },
@@ -384,7 +397,10 @@ export function useAuth(): UseAuthResult {
         .from('profiles')
         .update({ notification_preferences: prefs })
         .eq('id', session.user.id);
-      if (error) return error.message;
+      if (error) {
+        console.log('[Auth] Notification preferences update failed', error.message);
+        return "Couldn't save your changes. Please try again.";
+      }
       await loadProfile(session.user.id);
       return null;
     },

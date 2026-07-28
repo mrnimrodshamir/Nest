@@ -29,7 +29,8 @@ export function useReportAndBlock(): UseReportAndBlockResult {
       activity_id: input.activityId ?? null,
       reason: input.reason,
     });
-    return error?.message ?? null;
+    if (error) console.log('[ReportAndBlock] report failed', error.message);
+    return error ? "Couldn't send your report. Please try again." : null;
   }, []);
 
   const blockUser = useCallback(async (userId: string) => {
@@ -37,7 +38,8 @@ export function useReportAndBlock(): UseReportAndBlockResult {
     const blockerId = userData.user?.id;
     if (!blockerId) return 'Not signed in.';
     const { error } = await supabase.from('blocks').insert({ blocker_id: blockerId, blocked_id: userId });
-    return error?.message ?? null;
+    if (error) console.log('[ReportAndBlock] block failed', error.message);
+    return error ? "Couldn't block this person. Please try again." : null;
   }, []);
 
   const unblockUser = useCallback(async (userId: string) => {
@@ -45,7 +47,8 @@ export function useReportAndBlock(): UseReportAndBlockResult {
     const blockerId = userData.user?.id;
     if (!blockerId) return 'Not signed in.';
     const { error } = await supabase.from('blocks').delete().match({ blocker_id: blockerId, blocked_id: userId });
-    return error?.message ?? null;
+    if (error) console.log('[ReportAndBlock] unblock failed', error.message);
+    return error ? "Couldn't unblock this person. Please try again." : null;
   }, []);
 
   const isBlocked = useCallback(async (userId: string) => {

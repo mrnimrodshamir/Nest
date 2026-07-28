@@ -76,7 +76,10 @@ export function useChildren(profileId: string | null): UseChildrenResult {
         avatar_url: input.avatarUrl ?? null,
         is_default: makeDefault,
       });
-      if (insertError) return insertError.message;
+      if (insertError) {
+        console.log('[Children] add failed', insertError.message);
+        return "Couldn't add your child. Please try again.";
+      }
       await load();
       return null;
     },
@@ -89,7 +92,10 @@ export function useChildren(profileId: string | null): UseChildrenResult {
         .from('children')
         .update({ name: input.name, birthdate: input.birthdate, avatar_url: input.avatarUrl ?? null })
         .eq('id', id);
-      if (updateError) return updateError.message;
+      if (updateError) {
+        console.log('[Children] update failed', updateError.message);
+        return "Couldn't save your changes. Please try again.";
+      }
       await load();
       return null;
     },
@@ -100,7 +106,10 @@ export function useChildren(profileId: string | null): UseChildrenResult {
     async (id: string) => {
       const removingDefault = children.find((c) => c.id === id)?.isDefault ?? false;
       const { error: deleteError } = await supabase.from('children').delete().eq('id', id);
-      if (deleteError) return deleteError.message;
+      if (deleteError) {
+        console.log('[Children] remove failed', deleteError.message);
+        return "Couldn't remove this child. Please try again.";
+      }
       // Keep exactly one default whenever possible — promote the oldest
       // remaining child rather than leaving the mother with none set.
       if (removingDefault) {
@@ -124,9 +133,15 @@ export function useChildren(profileId: string | null): UseChildrenResult {
         .from('children')
         .update({ is_default: false })
         .eq('profile_id', profileId);
-      if (clearError) return clearError.message;
+      if (clearError) {
+        console.log('[Children] set default failed', clearError.message);
+        return "Couldn't update your default child. Please try again.";
+      }
       const { error: setError2 } = await supabase.from('children').update({ is_default: true }).eq('id', id);
-      if (setError2) return setError2.message;
+      if (setError2) {
+        console.log('[Children] set default failed', setError2.message);
+        return "Couldn't update your default child. Please try again.";
+      }
       await load();
       return null;
     },

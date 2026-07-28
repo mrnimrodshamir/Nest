@@ -4,7 +4,7 @@
     "slug": "nest",
     "version": "0.1.0",
     "orientation": "portrait",
-    "userInterfaceStyle": "automatic",
+    "userInterfaceStyle": "light",
     "scheme": "momzi",
     "icon": "./assets/icon.png",
     "ios": {
