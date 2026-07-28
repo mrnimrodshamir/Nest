@@ -25,6 +25,7 @@ import { ProfileScreen } from '@/screens/ProfileScreen';
 import { EditProfileScreen } from '@/screens/EditProfileScreen';
 import { MyActivitiesScreen } from '@/screens/MyActivitiesScreen';
 import { MessagesScreen } from '@/screens/MessagesScreen';
+import { BlockedUsersScreen } from '@/screens/BlockedUsersScreen';
 import { LaunchScreen } from '@/screens/LaunchScreen';
 import { CompleteAppleProfileScreen } from '@/screens/auth/CompleteAppleProfileScreen';
 import { AuthNavigator } from '@/navigation/AuthNavigator';
@@ -55,6 +56,7 @@ export type RootStackParamList = {
   EditProfile: undefined;
   MyActivities: undefined;
   Messages: undefined;
+  BlockedUsers: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -218,11 +220,15 @@ function MainNavigator() {
             onEditProfile={() => navigation.navigate('EditProfile')}
             onOpenMyActivities={() => navigation.navigate('MyActivities')}
             onOpenMessages={() => navigation.navigate('Messages')}
+            onOpenBlockedUsers={() => navigation.navigate('BlockedUsers')}
           />
         )}
       </Stack.Screen>
       <Stack.Screen name="EditProfile">
         {({ navigation }) => <EditProfileScreen onBack={() => navigation.goBack()} />}
+      </Stack.Screen>
+      <Stack.Screen name="BlockedUsers">
+        {({ navigation }) => <BlockedUsersScreen onBack={() => navigation.goBack()} />}
       </Stack.Screen>
       <Stack.Screen name="MyActivities">
         {({ navigation }) => (

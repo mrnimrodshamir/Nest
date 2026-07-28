@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, Image, Pressable, Switch, StyleSheet, ScrollView, Alert, Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Notifications from 'expo-notifications';
-import { ArrowLeft, SignOut, PencilSimple, CalendarBlank, ChatCircleDots, Trash } from 'phosphor-react-native';
+import { ArrowLeft, SignOut, PencilSimple, CalendarBlank, ChatCircleDots, Trash, ProhibitInset } from 'phosphor-react-native';
 import { theme, typography, spacing, radius } from '@/theme';
 import { useAuth } from '@/hooks/useAuth';
 import { useChildren } from '@/hooks/useChildren';
@@ -17,6 +17,7 @@ interface ProfileScreenProps {
   onEditProfile: () => void;
   onOpenMyActivities: () => void;
   onOpenMessages: () => void;
+  onOpenBlockedUsers: () => void;
 }
 
 const NOTIFICATION_LABELS: Record<keyof NotificationPreferences, string> = {
@@ -25,7 +26,13 @@ const NOTIFICATION_LABELS: Record<keyof NotificationPreferences, string> = {
   reminders: 'Reminders before activities',
 };
 
-export function ProfileScreen({ onBack, onEditProfile, onOpenMyActivities, onOpenMessages }: ProfileScreenProps) {
+export function ProfileScreen({
+  onBack,
+  onEditProfile,
+  onOpenMyActivities,
+  onOpenMessages,
+  onOpenBlockedUsers,
+}: ProfileScreenProps) {
   const { profile, session, signOut, deleteAccount, updateNotificationPreferences } = useAuth();
   const { children } = useChildren(session?.user.id ?? null);
   const [showNotificationSheet, setShowNotificationSheet] = useState(false);
@@ -143,6 +150,11 @@ export function ProfileScreen({ onBack, onEditProfile, onOpenMyActivities, onOpe
           </View>
         )}
 
+        <Pressable style={styles.blockedRow} onPress={onOpenBlockedUsers}>
+          <ProhibitInset size={16} color={theme.text.secondary} />
+          <Text style={styles.blockedRowLabel}>Blocked members</Text>
+        </Pressable>
+
         <View style={styles.legalRow}>
           <Pressable onPress={() => Linking.openURL(LEGAL_URLS.terms)}>
             <Text style={styles.legalLink}>Terms of Service</Text>
@@ -249,6 +261,8 @@ const styles = StyleSheet.create({
   infoLabel: { ...typography.subhead, color: theme.text.secondary },
   infoValue: { ...typography.subhead, color: theme.text.primary },
   privacyNote: { ...typography.caption, color: theme.text.muted },
+  blockedRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginTop: spacing.md },
+  blockedRowLabel: { ...typography.footnote, color: theme.text.secondary },
   legalRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: spacing.sm },
   legalLink: { ...typography.caption, color: theme.text.accent },
   legalDivider: { ...typography.caption, color: theme.text.muted },
