@@ -25,6 +25,7 @@ import { ProfileScreen } from '@/screens/ProfileScreen';
 import { LaunchScreen } from '@/screens/LaunchScreen';
 import { CompleteAppleProfileScreen } from '@/screens/auth/CompleteAppleProfileScreen';
 import { AuthNavigator } from '@/navigation/AuthNavigator';
+import { AppErrorBoundary } from '@/components/AppErrorBoundary';
 import { theme } from '@/theme';
 import { useAuth } from '@/hooks/useAuth';
 import { useActivityDetail } from '@/hooks/useActivityDetail';
@@ -117,32 +118,34 @@ export default function App() {
   }
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <SafeAreaProvider>
-        <NavigationContainer ref={navigationRef} linking={session && profile ? linking : undefined}>
-          {!session ? (
-            <AuthNavigator />
-          ) : !profile ? (
-            // Signed in but the profile row never got created (interrupted
-            // registration, or an Apple sign-in that didn't finish the
-            // completion step) — recover with the same completion form.
-            <CompleteAppleProfileScreen
-              input={{
-                phone: '',
-                babyName: '',
-                babyBirthdate: '',
-                photoUri: null,
-                fallbackFullName: null,
-                fallbackEmail: session.user.email ?? null,
-              }}
-            />
-          ) : (
-            <MainNavigator />
-          )}
-        </NavigationContainer>
-        <StatusBar style="dark" />
-      </SafeAreaProvider>
-    </GestureHandlerRootView>
+    <AppErrorBoundary>
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <SafeAreaProvider>
+          <NavigationContainer ref={navigationRef} linking={session && profile ? linking : undefined}>
+            {!session ? (
+              <AuthNavigator />
+            ) : !profile ? (
+              // Signed in but the profile row never got created (interrupted
+              // registration, or an Apple sign-in that didn't finish the
+              // completion step) — recover with the same completion form.
+              <CompleteAppleProfileScreen
+                input={{
+                  phone: '',
+                  babyName: '',
+                  babyBirthdate: '',
+                  photoUri: null,
+                  fallbackFullName: null,
+                  fallbackEmail: session.user.email ?? null,
+                }}
+              />
+            ) : (
+              <MainNavigator />
+            )}
+          </NavigationContainer>
+          <StatusBar style="dark" />
+        </SafeAreaProvider>
+      </GestureHandlerRootView>
+    </AppErrorBoundary>
   );
 }
 

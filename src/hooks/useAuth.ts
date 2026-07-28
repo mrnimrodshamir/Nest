@@ -57,22 +57,44 @@ export function useAuth(): UseAuthResult {
   const [isLoading, setIsLoading] = useState(true);
 
   const loadProfile = useCallback(async (userId: string) => {
-    const { data } = await supabase
-      .from('profiles')
-      .select(
-        'id, display_name, email, phone, avatar_url, baby_name, baby_birthdate, onboarding_completed, notification_preferences',
-      )
-      .eq('id', userId)
-      .maybeSingle();
-    setProfile(data ? mapProfile(data) : null);
+    try {
+      const { data } = await supabase
+        .from('profiles')
+        .select(
+          'id, display_name, email, phone, avatar_url, baby_name, baby_birthdate, onboarding_completed, notification_preferences',
+        )
+        .eq('id', userId)
+        .maybeSingle();
+      setProfile(data ? mapProfile(data) : null);
+    } catch (err) {
+      // A network blip here must not leave the app stuck mid-boot — fall
+      // back to "no profile yet" rather than never resolving.
+      console.log('[Auth] Failed to load profile', err instanceof Error ? err.message : err);
+      setProfile(null);
+    }
   }, []);
 
   useEffect(() => {
-    supabase.auth.getSession().then(async ({ data }) => {
-      setSession(data.session);
-      if (data.session) await loadProfile(data.session.user.id);
-      setIsLoading(false);
-    });
+    supabase.auth
+      .getSession()
+      .then(async ({ data }) => {
+        setSession(data.session);
+        if (data.session) await loadProfile(data.session.user.id);
+      })
+      .catch(async (err) => {
+        // A corrupted/unreadable persisted session must never hang the app
+        // on the launch screen forever or crash on every subsequent boot —
+        // clear it and drop the user back to a clean sign-in screen.
+        console.log('[Auth] Session restore failed, clearing local session', err instanceof Error ? err.message : err);
+        try {
+          await supabase.auth.signOut();
+        } catch {
+          // Best effort — proceed to the signed-out state regardless.
+        }
+        setSession(null);
+        setProfile(null);
+      })
+      .finally(() => setIsLoading(false));
 
     const { data: subscription } = supabase.auth.onAuthStateChange((_event, newSession) => {
       setSession(newSession);

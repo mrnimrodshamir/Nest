@@ -1,8 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { View, Text, Pressable, StyleSheet, Dimensions } from 'react-native';
+import { View, Text, Pressable, StyleSheet, Dimensions, FlatList } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MapView, { PROVIDER_DEFAULT, Region } from 'react-native-maps';
-import BottomSheet, { BottomSheetFlatList } from '@gorhom/bottom-sheet';
+import BottomSheet, { BottomSheetFlatList, BottomSheetView } from '@gorhom/bottom-sheet';
 import {
   Bell,
   MagnifyingGlass,
@@ -173,7 +173,7 @@ export function DiscoverScreen({
           </View>
         </View>
 
-        <BottomSheetFlatList
+        <FlatList
           horizontal
           showsHorizontalScrollIndicator={false}
           data={CATEGORIES}
@@ -197,26 +197,27 @@ export function DiscoverScreen({
         ref={sheetRef}
         index={SHEET_HALF_INDEX}
         snapPoints={SNAP_POINTS}
+        enableDynamicSizing={false}
         onChange={(index) => {
           sheetIndex.current = index;
         }}
         backgroundStyle={styles.sheetBackground}
         handleIndicatorStyle={styles.sheetHandle}
       >
-        <View style={styles.sheetHeader}>
+        <BottomSheetView style={styles.sheetHeader}>
           <Text style={styles.sheetTitle}>
             {showSkeleton ? 'Finding activities…' : `${filteredFeed.length} nearby`}
           </Text>
-        </View>
+        </BottomSheetView>
 
         {showSkeleton ? (
-          <View style={styles.listContent}>
+          <BottomSheetView style={styles.listContent}>
             {[0, 1, 2].map((i) => (
               <View key={i} style={styles.feedItem}>
                 <SkeletonCard />
               </View>
             ))}
-          </View>
+          </BottomSheetView>
         ) : (
           <BottomSheetFlatList
             ref={listRef}
