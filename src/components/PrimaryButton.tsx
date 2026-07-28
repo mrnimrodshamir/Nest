@@ -1,6 +1,7 @@
 import React from 'react';
 import { Pressable, Text, StyleSheet, ActivityIndicator, PressableProps } from 'react-native';
 import Animated, { useSharedValue, useAnimatedStyle, withSpring, useReducedMotion } from 'react-native-reanimated';
+import * as Haptics from 'expo-haptics';
 import { theme, typography, spacing, radius, pressFeedback } from '@/theme';
 
 interface PrimaryButtonProps extends Omit<PressableProps, 'style'> {
@@ -18,6 +19,7 @@ export function PrimaryButton({
   disabled,
   onPressIn,
   onPressOut,
+  onPress,
   ...pressableProps
 }: PrimaryButtonProps) {
   const isDisabled = disabled || loading;
@@ -45,6 +47,10 @@ export function PrimaryButton({
       onPressOut={(e) => {
         if (!reducedMotion) scale.value = withSpring(1, pressFeedback.spring);
         onPressOut?.(e);
+      }}
+      onPress={(e) => {
+        void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        onPress?.(e);
       }}
       {...pressableProps}
     >

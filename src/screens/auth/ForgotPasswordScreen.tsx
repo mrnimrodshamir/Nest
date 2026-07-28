@@ -74,9 +74,9 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: theme.background.app },
   content: { flex: 1, paddingHorizontal: spacing['2xl'], paddingTop: spacing.md },
   backButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     backgroundColor: theme.background.surface,
     alignItems: 'center',
     justifyContent: 'center',

@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import MapView, { Marker, PROVIDER_DEFAULT } from 'react-native-maps';
 import Animated, { useSharedValue, useAnimatedStyle, withSpring, useReducedMotion } from 'react-native-reanimated';
 import * as Notifications from 'expo-notifications';
+import * as Haptics from 'expo-haptics';
 import { ArrowLeft, DotsThree, NavigationArrow, ChatCircleDots, PencilSimple } from 'phosphor-react-native';
 import { theme, typography, spacing, radius } from '@/theme';
 import { PersonCard } from '@/components/PersonCard';
@@ -19,6 +20,8 @@ import { useReportAndBlock } from '@/hooks/useReportAndBlock';
 import { AddToCalendarSheet } from '@/components/AddToCalendarSheet';
 import { CoverImage } from '@/components/CoverImage';
 import { NotificationPermissionSheet } from '@/components/NotificationPermissionSheet';
+import { PhotoNudgeSheet } from '@/components/PhotoNudgeSheet';
+import { usePhotoNudge } from '@/hooks/usePhotoNudge';
 import { hasCalendarDrift, updateCalendarEvent, removeCalendarEvent } from '@/lib/activityCalendar';
 import {
   scheduleActivityReminders,
@@ -56,12 +59,14 @@ export function ActivityDetailScreen({
   onEdit,
 }: ActivityDetailScreenProps) {
   const { activity, isSubmitting, error, join, leave } = useActivityRsvp(initial);
-  const { profile, session } = useAuth();
+  const { profile, session, updateProfileDetails } = useAuth();
   const { children, setDefaultChild } = useChildren(session?.user.id ?? null);
   const { submitReport, blockUser } = useReportAndBlock();
+  const { shouldShow: shouldShowPhotoNudge, markShown: markPhotoNudgeShown } = usePhotoNudge();
   const remindersEnabled = profile?.notificationPreferences.reminders ?? true;
   const [showCalendarSheet, setShowCalendarSheet] = useState(false);
   const [showNotificationSheet, setShowNotificationSheet] = useState(false);
+  const [showPhotoNudge, setShowPhotoNudge] = useState(false);
   const [calendarNotice, setCalendarNotice] = useState<'changed' | 'cancelled' | null>(null);
   const reducedMotion = useReducedMotion();
   const ctaScale = useSharedValue(1);
@@ -170,6 +175,7 @@ export function ActivityDetailScreen({
   const performJoin = async () => {
     const joined = await join();
     if (joined) {
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       const { status } = await Notifications.getPermissionsAsync();
       if (status === 'undetermined') {
         setShowNotificationSheet(true);
@@ -207,14 +213,32 @@ export function ActivityDetailScreen({
       }
       await performJoin();
     } else {
-      await leave();
-      await cancelActivityReminders(activity.id);
+      Alert.alert('Leave this activity?', "You'll lose your spot, and it may fill up.", [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Leave',
+          style: 'destructive',
+          onPress: async () => {
+            await leave();
+            await cancelActivityReminders(activity.id);
+          },
+        },
+      ]);
     }
   };
 
   const proceedToCalendarStep = () => {
     setShowNotificationSheet(false);
     setShowCalendarSheet(true);
+  };
+
+  const handleCalendarSheetDismiss = async () => {
+    setShowCalendarSheet(false);
+    if (await shouldShowPhotoNudge(Boolean(profile?.avatarUrl))) {
+      setShowPhotoNudge(true);
+    } else {
+      onJoined(activity);
+    }
   };
 
   return (
@@ -419,11 +443,19 @@ export function ActivityDetailScreen({
         onDismiss={proceedToCalendarStep}
       />
 
-      <AddToCalendarSheet
-        visible={showCalendarSheet}
-        activity={calendarInfo}
-        onDismiss={() => {
-          setShowCalendarSheet(false);
+      <AddToCalendarSheet visible={showCalendarSheet} activity={calendarInfo} onDismiss={handleCalendarSheetDismiss} />
+
+      <PhotoNudgeSheet
+        visible={showPhotoNudge}
+        onAddPhoto={async (uri) => {
+          setShowPhotoNudge(false);
+          await markPhotoNudgeShown();
+          if (profile) await updateProfileDetails({ displayName: profile.displayName, phone: profile.phone, photoUri: uri });
+          onJoined(activity);
+        }}
+        onDismiss={async () => {
+          setShowPhotoNudge(false);
+          await markPhotoNudgeShown();
           onJoined(activity);
         }}
       />
@@ -442,8 +474,8 @@ const styles = StyleSheet.create({
   },
   heroActions: { flexDirection: 'row', gap: spacing.sm },
   roundButton: {
-    width: 32,
-    height: 32,
+    width: 44,
+    height: 44,
     borderRadius: radius.pill,
     backgroundColor: 'rgba(254,253,251,0.9)',
     alignItems: 'center',

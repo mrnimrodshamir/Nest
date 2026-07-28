@@ -46,6 +46,13 @@ export const colors = {
     100: '#F1EFE8',
     200: '#E3E0D6',
     400: '#A8A69C',
+    // 500 exists only for text.muted: at 400, muted text measures ~2.3:1
+    // against the app background — well under WCAG AA's 4.5:1 floor for
+    // small text, and text.muted is used for real content (chat sender
+    // names, profile context, timestamps), not decoration. 500 measures
+    // ~4.5:1. Kept separate from 400 so border.strong (which also uses
+    // 400) is untouched.
+    500: '#767368',
     600: '#726F65',
     800: '#3D3B36',
     900: '#2B2B28',     // primary text (not pure black)
@@ -77,7 +84,7 @@ export const theme = {
   text: {
     primary: colors.neutral[900],
     secondary: colors.neutral[600],
-    muted: colors.neutral[400],
+    muted: colors.neutral[500],
     inverse: colors.neutral[0],
     accent: colors.sage[700],
   },

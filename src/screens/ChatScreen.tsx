@@ -11,6 +11,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import * as Haptics from 'expo-haptics';
 import { ArrowLeft, PaperPlaneTilt, WarningCircle } from 'phosphor-react-native';
 import { theme, typography, spacing, radius } from '@/theme';
 import { useChatMessages, type ChatMessage } from '@/hooks/useChatMessages';
@@ -31,6 +32,7 @@ export function ChatScreen({ chatId, resolveError, title, onBack }: ChatScreenPr
 
   const handleSend = () => {
     if (!draft.trim()) return;
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     send(draft);
     setDraft('');
   };
@@ -128,9 +130,9 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
   },
   backButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     backgroundColor: theme.background.surface,
     alignItems: 'center',
     justifyContent: 'center',
@@ -180,8 +182,8 @@ const styles = StyleSheet.create({
     color: theme.text.primary,
   },
   sendButton: {
-    width: 40,
-    height: 40,
+    width: 44,
+    height: 44,
     borderRadius: radius.pill,
     backgroundColor: theme.brand.primary,
     alignItems: 'center',
