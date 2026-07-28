@@ -4,20 +4,21 @@ export interface NotificationPreferences {
   reminders: boolean;
 }
 
-/** Own full profile — matches the private `profiles` table (own row only). */
+/** Own full profile — matches the private `profiles` table (own row only).
+ *  Children live in their own table (see `Child`) — a mother can have any
+ *  number of them, not just the one this shape used to hardcode. */
 export interface Profile {
   id: string;
   displayName: string;
   email: string;
   phone: string | null;
   avatarUrl: string | null;
-  babyName: string | null;
-  babyBirthdate: string | null; // ISO date (yyyy-mm-dd)
   onboardingCompleted: boolean;
   notificationPreferences: NotificationPreferences;
 }
 
-/** Minimal public surface for other users — matches the `public_profiles` view. */
+/** Minimal public surface for other users — matches the `public_profiles`
+ *  view, which folds in each profile's *default* child for display. */
 export interface PublicProfile {
   id: string;
   displayName: string;
@@ -25,4 +26,5 @@ export interface PublicProfile {
   babyName: string | null;
   babyAgeMonths: number | null;
   verified: boolean;
+  memberSince: string;
 }

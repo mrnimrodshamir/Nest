@@ -29,7 +29,7 @@ export interface Activity {
   status: ActivityStatus;
   startTime: string; // ISO 8601
   durationMinutes: number;
-  distanceMiles: number;
+  distanceKm: number;
   latitude: number;
   longitude: number;
   attendees: Attendee[];

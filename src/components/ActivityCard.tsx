@@ -18,6 +18,9 @@ interface ActivityCardProps {
   variant?: 'feed' | 'rail';
   /** true when this activity's map pin is currently selected */
   highlighted?: boolean;
+  /** Distance from "you" isn't meaningful on lists of your own activities
+   *  (My Activities) — hide it there instead of showing a misleading 0km. */
+  hideDistance?: boolean;
 }
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
@@ -27,6 +30,7 @@ export function ActivityCard({
   onPress,
   variant = 'feed',
   highlighted = false,
+  hideDistance = false,
 }: ActivityCardProps) {
   const scale = useSharedValue(1);
 
@@ -95,7 +99,7 @@ export function ActivityCard({
 
         <Text style={styles.meta}>
           {formatStartTime(activity.startTime)}
-          {!isRail && ` · ${activity.distanceMiles.toFixed(1)}mi away`}
+          {!isRail && !hideDistance && ` · ${activity.distanceKm.toFixed(1)}km away`}
         </Text>
 
         {!isRail && activity.attendeeCount > 0 && (

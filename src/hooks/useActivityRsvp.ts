@@ -1,5 +1,6 @@
 import { useCallback, useState } from 'react';
 import { supabase } from '@/lib/supabase';
+import { track } from '@/lib/analytics';
 import type { ActivityDetail } from '@/types/activity';
 
 export function useActivityRsvp(initial: ActivityDetail) {
@@ -37,6 +38,7 @@ export function useActivityRsvp(initial: ActivityDetail) {
       );
       return false;
     }
+    track('activity_joined', { activity_id: activity.id });
     return true;
   }, [activity]);
 

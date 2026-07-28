@@ -1,10 +1,10 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { View, Text, Pressable, StyleSheet, Dimensions, FlatList } from 'react-native';
+import { View, Text, Pressable, StyleSheet, Dimensions, FlatList, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MapView, { PROVIDER_DEFAULT, Region } from 'react-native-maps';
 import BottomSheet, { BottomSheetFlatList, BottomSheetView } from '@gorhom/bottom-sheet';
 import {
-  Bell,
+  ChatCircleDots,
   MagnifyingGlass,
   Plus,
   UserCircle,
@@ -13,6 +13,7 @@ import {
   MapPinLine,
   WifiSlash,
   WarningCircle,
+  X,
 } from 'phosphor-react-native';
 import { theme, typography, spacing, radius, iconDefaults } from '@/theme';
 import { ActivityCard } from '@/components/ActivityCard';
@@ -20,6 +21,7 @@ import { ActivityMapPin } from '@/components/ActivityMapPin';
 import { CategoryChip } from '@/components/CategoryChip';
 import { StateCard } from '@/components/StateCard';
 import { SkeletonCard } from '@/components/SkeletonCard';
+import { FALLBACK_LOCATION } from '@/constants/location';
 import type { Activity, ActivityCategory } from '@/types/activity';
 import { CATEGORY_LABELS } from '@/types/activity';
 import { useNearbyActivities } from '@/hooks/useNearbyActivities';
@@ -44,22 +46,22 @@ const SHEET_HALF_INDEX = 1;
 
 interface DiscoverScreenProps {
   onOpenActivity: (activity: Activity) => void;
-  onOpenSearch: () => void;
-  onOpenNotifications: () => void;
+  onOpenMessages: () => void;
   onOpenProfile: () => void;
   onHostActivity: () => void;
 }
 
 export function DiscoverScreen({
   onOpenActivity,
-  onOpenSearch,
-  onOpenNotifications,
+  onOpenMessages,
   onOpenProfile,
   onHostActivity,
 }: DiscoverScreenProps) {
   const [selectedCategory, setSelectedCategory] = useState<ActivityCategory | 'all'>('all');
   const [selectedActivityId, setSelectedActivityId] = useState<string | null>(null);
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const mapRef = useRef<MapView>(null);
   const sheetRef = useRef<BottomSheet>(null);
@@ -83,19 +85,21 @@ export function DiscoverScreen({
 
   const showSkeleton = !hasLoadedOnce && isRefreshing;
 
-  const filteredFeed = useMemo(
-    () =>
+  const filteredFeed = useMemo(() => {
+    const byCategory =
       selectedCategory === 'all'
         ? feedActivities
-        : feedActivities.filter((a) => a.category === selectedCategory),
-    [feedActivities, selectedCategory],
-  );
+        : feedActivities.filter((a) => a.category === selectedCategory);
+    const query = searchQuery.trim().toLowerCase();
+    if (!query) return byCategory;
+    return byCategory.filter((a) => a.title.toLowerCase().includes(query));
+  }, [feedActivities, selectedCategory, searchQuery]);
 
   const initialRegion: Region = useMemo(() => {
     const first = feedActivities[0];
     return {
-      latitude: first?.latitude ?? 32.0853,
-      longitude: first?.longitude ?? 34.7818,
+      latitude: first?.latitude ?? FALLBACK_LOCATION.latitude,
+      longitude: first?.longitude ?? FALLBACK_LOCATION.longitude,
       latitudeDelta: 0.04,
       longitudeDelta: 0.04,
     };
@@ -158,20 +162,45 @@ export function DiscoverScreen({
       </MapView>
 
       <SafeAreaView edges={['top']} style={styles.headerOverlay} pointerEvents="box-none">
-        <View style={styles.headerRow}>
-          <Text style={styles.locationLabel}>{locationLabel}</Text>
-          <View style={styles.headerActions}>
-            <Pressable style={styles.iconButton} onPress={onOpenSearch} accessibilityLabel="Search">
-              <MagnifyingGlass size={iconDefaults.size.tabBar - 4} color={theme.text.primary} weight={iconDefaults.weight} />
-            </Pressable>
-            <Pressable style={styles.iconButton} onPress={onOpenNotifications} accessibilityLabel="Notifications">
-              <Bell size={iconDefaults.size.tabBar - 4} color={theme.text.primary} weight={iconDefaults.weight} />
-            </Pressable>
-            <Pressable style={styles.iconButton} onPress={onOpenProfile} accessibilityLabel="Profile">
-              <UserCircle size={iconDefaults.size.tabBar - 4} color={theme.text.primary} weight={iconDefaults.weight} />
+        {searchOpen ? (
+          <View style={styles.searchRow}>
+            <MagnifyingGlass size={16} color={theme.text.muted} weight={iconDefaults.weight} />
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Search activities"
+              placeholderTextColor={theme.text.muted}
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              autoFocus
+              returnKeyType="search"
+            />
+            <Pressable
+              onPress={() => {
+                setSearchOpen(false);
+                setSearchQuery('');
+              }}
+              accessibilityLabel="Close search"
+              hitSlop={8}
+            >
+              <X size={16} color={theme.text.secondary} />
             </Pressable>
           </View>
-        </View>
+        ) : (
+          <View style={styles.headerRow}>
+            <Text style={styles.locationLabel}>{locationLabel}</Text>
+            <View style={styles.headerActions}>
+              <Pressable style={styles.iconButton} onPress={() => setSearchOpen(true)} accessibilityLabel="Search">
+                <MagnifyingGlass size={iconDefaults.size.tabBar - 4} color={theme.text.primary} weight={iconDefaults.weight} />
+              </Pressable>
+              <Pressable style={styles.iconButton} onPress={onOpenMessages} accessibilityLabel="Messages">
+                <ChatCircleDots size={iconDefaults.size.tabBar - 4} color={theme.text.primary} weight={iconDefaults.weight} />
+              </Pressable>
+              <Pressable style={styles.iconButton} onPress={onOpenProfile} accessibilityLabel="Profile">
+                <UserCircle size={iconDefaults.size.tabBar - 4} color={theme.text.primary} weight={iconDefaults.weight} />
+              </Pressable>
+            </View>
+          </View>
+        )}
 
         <FlatList
           horizontal
@@ -251,7 +280,7 @@ export function DiscoverScreen({
             }
             contentContainerStyle={styles.listContent}
             onRefresh={refresh}
-            refreshing={false}
+            refreshing={hasLoadedOnce && isRefreshing}
           />
         )}
       </BottomSheet>
@@ -370,6 +399,18 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   headerActions: { flexDirection: 'row', gap: spacing.sm },
+  searchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginHorizontal: spacing.lg,
+    marginTop: spacing.sm,
+    backgroundColor: theme.background.surface,
+    borderRadius: radius.pill,
+    paddingHorizontal: spacing.lg,
+    height: 40,
+  },
+  searchInput: { flex: 1, ...typography.subhead, color: theme.text.primary, height: '100%' },
   iconButton: {
     width: 36,
     height: 36,

@@ -2,14 +2,12 @@ import { useCallback, useEffect, useState } from 'react';
 import * as Location from 'expo-location';
 import { supabase } from '@/lib/supabase';
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
+import { FALLBACK_LOCATION } from '@/constants/location';
 import type { Activity, ActivityCategory, ActivityStatus, Attendee } from '@/types/activity';
 
-const BASE_RADIUS_MILES = 2;
-const EXPANDED_RADIUS_MILES = 8;
-
-// Used only if location permission is denied — keeps the feed usable rather
-// than dead-ending on a blank map.
-const FALLBACK_LOCATION = { latitude: 32.0853, longitude: 34.7818 };
+const KM_PER_MILE = 1.60934;
+const BASE_RADIUS_KM = 3;
+const EXPANDED_RADIUS_KM = 13;
 
 interface UseNearbyActivitiesResult {
   todayActivities: Activity[];
@@ -63,13 +61,13 @@ export function useNearbyActivities(): UseNearbyActivitiesResult {
       const { coords, denied } = await resolveLocation();
       setLocationDenied(denied);
 
-      let results = await fetchNearby(coords, BASE_RADIUS_MILES);
+      let results = await fetchNearby(coords, BASE_RADIUS_KM);
       let expanded = false;
 
       // Cold-start safety net: silently widen the search before ever
       // surfacing an empty state to the person.
       if (results.length === 0) {
-        results = await fetchNearby(coords, EXPANDED_RADIUS_MILES);
+        results = await fetchNearby(coords, EXPANDED_RADIUS_KM);
         expanded = true;
       }
 
@@ -101,7 +99,7 @@ export function useNearbyActivities(): UseNearbyActivitiesResult {
     feedActivities,
     isRefreshing,
     radiusExpanded,
-    locationLabel: `Nearby, ${radiusExpanded ? EXPANDED_RADIUS_MILES : BASE_RADIUS_MILES}mi`,
+    locationLabel: `Nearby, ${radiusExpanded ? EXPANDED_RADIUS_KM : BASE_RADIUS_KM}km`,
     locationDenied,
     isOffline,
     error,
@@ -130,12 +128,14 @@ async function resolveLocation(): Promise<{ coords: { latitude: number; longitud
 
 async function fetchNearby(
   coords: { latitude: number; longitude: number },
-  radiusMiles: number,
+  radiusKm: number,
 ): Promise<Activity[]> {
+  // The underlying RPC still speaks miles — convert only at this boundary
+  // so the rest of the app (and the launch market's expected unit) is km.
   const { data: rows, error } = await supabase.rpc('nearby_activities', {
     user_lat: coords.latitude,
     user_lng: coords.longitude,
-    radius_miles: radiusMiles,
+    radius_miles: radiusKm / KM_PER_MILE,
   });
   if (error) throw error;
 
@@ -180,7 +180,7 @@ async function fetchNearby(
       status: row.status,
       startTime: row.start_time,
       durationMinutes: row.duration_minutes,
-      distanceMiles: row.distance_miles,
+      distanceKm: row.distance_miles * KM_PER_MILE,
       latitude: row.latitude,
       longitude: row.longitude,
       attendeeCount: attendees.length,

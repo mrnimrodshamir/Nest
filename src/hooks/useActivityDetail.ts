@@ -96,7 +96,7 @@ export function useActivityDetail(activityId: string): UseActivityDetailResult {
         }
       }
 
-      const distanceMiles = await estimateDistanceMiles(activityRow.latitude, activityRow.longitude);
+      const distanceKm = await estimateDistanceKm(activityRow.latitude, activityRow.longitude);
       if (cancelled) return;
 
       setDetail({
@@ -108,7 +108,7 @@ export function useActivityDetail(activityId: string): UseActivityDetailResult {
         status: activityRow.status,
         startTime: activityRow.start_time,
         durationMinutes: activityRow.duration_minutes,
-        distanceMiles,
+        distanceKm,
         latitude: activityRow.latitude,
         longitude: activityRow.longitude,
         attendees: attendees.slice(0, 5),
@@ -145,21 +145,21 @@ export function useActivityDetail(activityId: string): UseActivityDetailResult {
   return { detail, isLoading, error };
 }
 
-async function estimateDistanceMiles(lat: number, lng: number): Promise<number> {
+async function estimateDistanceKm(lat: number, lng: number): Promise<number> {
   try {
     const { status } = await Location.getForegroundPermissionsAsync();
     if (status !== 'granted') return 0;
     const position = await Location.getLastKnownPositionAsync();
     if (!position) return 0;
-    return haversineMiles(position.coords.latitude, position.coords.longitude, lat, lng);
+    return haversineKm(position.coords.latitude, position.coords.longitude, lat, lng);
   } catch {
     return 0;
   }
 }
 
-function haversineMiles(lat1: number, lon1: number, lat2: number, lon2: number): number {
+function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
   const toRad = (deg: number) => (deg * Math.PI) / 180;
-  const R = 3958.8; // Earth radius in miles
+  const R = 6371; // Earth radius in kilometres
   const dLat = toRad(lat2 - lat1);
   const dLon = toRad(lon2 - lon1);
   const a =

@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, Image, ScrollView, Pressable, StyleSheet, Linking, Platform } from 'react-native';
+import { View, Text, Image, ScrollView, Pressable, StyleSheet, Linking, Platform, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MapView, { Marker, PROVIDER_DEFAULT } from 'react-native-maps';
 import Animated, { useSharedValue, useAnimatedStyle, withSpring, useReducedMotion } from 'react-native-reanimated';
 import * as Notifications from 'expo-notifications';
-import { ArrowLeft, DotsThree, SealCheck, NavigationArrow, ChatCircleDots, PencilSimple } from 'phosphor-react-native';
+import { ArrowLeft, DotsThree, NavigationArrow, ChatCircleDots, PencilSimple } from 'phosphor-react-native';
 import { theme, typography, spacing, radius } from '@/theme';
 import type { ActivityDetail } from '@/types/activity';
 import { CATEGORY_LABELS } from '@/types/activity';
@@ -13,6 +13,8 @@ import { formatDuration } from '@/utils/formatDuration';
 import { formatAgeRange } from '@/utils/babyAge';
 import { useActivityRsvp } from '@/hooks/useActivityRsvp';
 import { useAuth } from '@/hooks/useAuth';
+import { useChildren } from '@/hooks/useChildren';
+import { useReportAndBlock } from '@/hooks/useReportAndBlock';
 import { AddToCalendarSheet } from '@/components/AddToCalendarSheet';
 import { CoverImage } from '@/components/CoverImage';
 import { NotificationPermissionSheet } from '@/components/NotificationPermissionSheet';
@@ -28,7 +30,6 @@ const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 interface ActivityDetailScreenProps {
   activity: ActivityDetail;
   onBack: () => void;
-  onReport: () => void;
   onMessageHost: (hostId: string) => void;
   /** Called once the person successfully joins — screen can navigate to the group chat */
   onJoined: (activity: ActivityDetail) => void;
@@ -43,7 +44,6 @@ interface ActivityDetailScreenProps {
 export function ActivityDetailScreen({
   activity: initial,
   onBack,
-  onReport,
   onMessageHost,
   onJoined,
   onOpenChat,
@@ -53,7 +53,9 @@ export function ActivityDetailScreen({
   onEdit,
 }: ActivityDetailScreenProps) {
   const { activity, isSubmitting, error, join, leave } = useActivityRsvp(initial);
-  const { profile } = useAuth();
+  const { profile, session } = useAuth();
+  const { children, setDefaultChild } = useChildren(session?.user.id ?? null);
+  const { submitReport, blockUser } = useReportAndBlock();
   const remindersEnabled = profile?.notificationPreferences.reminders ?? true;
   const [showCalendarSheet, setShowCalendarSheet] = useState(false);
   const [showNotificationSheet, setShowNotificationSheet] = useState(false);
@@ -117,21 +119,90 @@ export function ActivityDetailScreen({
     if (url) Linking.openURL(url);
   };
 
+  const promptReportReason = () => {
+    Alert.prompt(
+      'Report this activity',
+      "Tell us what's wrong — this goes to the Momzi team, not the host.",
+      async (reason) => {
+        if (!reason?.trim()) return;
+        const err = await submitReport({
+          reportedUserId: activity.host.id,
+          activityId: activity.id,
+          reason: reason.trim(),
+        });
+        Alert.alert(err ? "Couldn't send your report" : 'Report sent', err ?? "Thanks — we'll take a look.");
+      },
+      'plain-text',
+    );
+  };
+
+  const confirmBlockHost = () => {
+    Alert.alert(
+      `Block ${activity.host.displayName}?`,
+      "You won't see their activities or messages anymore. This can be undone from Profile settings.",
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Block',
+          style: 'destructive',
+          onPress: async () => {
+            const err = await blockUser(activity.host.id);
+            if (err) Alert.alert("Couldn't block", err);
+          },
+        },
+      ],
+    );
+  };
+
+  const handleMorePress = () => {
+    Alert.alert('Activity options', undefined, [
+      { text: 'Report this activity', onPress: promptReportReason },
+      { text: `Block ${activity.host.displayName}`, style: 'destructive', onPress: confirmBlockHost },
+      { text: 'Cancel', style: 'cancel' },
+    ]);
+  };
+
+  const isAgeRelevant = activity.babyMinAgeMonths !== null || activity.babyMaxAgeMonths !== null;
+
+  const performJoin = async () => {
+    const joined = await join();
+    if (joined) {
+      const { status } = await Notifications.getPermissionsAsync();
+      if (status === 'undetermined') {
+        setShowNotificationSheet(true);
+      } else {
+        scheduleActivityReminders(
+          { id: activity.id, title: activity.title, startsAt: new Date(activity.startTime) },
+          remindersEnabled,
+        );
+        setShowCalendarSheet(true);
+      }
+    }
+  };
+
   const handleJoinPress = async () => {
     if (activity.viewerStatus === 'none') {
-      const joined = await join();
-      if (joined) {
-        const { status } = await Notifications.getPermissionsAsync();
-        if (status === 'undetermined') {
-          setShowNotificationSheet(true);
-        } else {
-          scheduleActivityReminders(
-            { id: activity.id, title: activity.title, startsAt: new Date(activity.startTime) },
-            remindersEnabled,
-          );
-          setShowCalendarSheet(true);
-        }
+      // This activity cares about baby age and there's more than one child
+      // to choose from — ask which one it's for (this also becomes the new
+      // default child used for age-matching elsewhere in the app).
+      if (isAgeRelevant && children.length > 1) {
+        Alert.alert(
+          "Who's this for?",
+          `${activity.title} is for babies ${formatAgeRange(activity.babyMinAgeMonths, activity.babyMaxAgeMonths)}.`,
+          [
+            ...children.map((child) => ({
+              text: child.name,
+              onPress: async () => {
+                if (!child.isDefault) await setDefaultChild(child.id);
+                await performJoin();
+              },
+            })),
+            { text: 'Cancel', style: 'cancel' as const },
+          ],
+        );
+        return;
       }
+      await performJoin();
     } else {
       await leave();
       await cancelActivityReminders(activity.id);
@@ -162,7 +233,7 @@ export function ActivityDetailScreen({
                   <PencilSimple size={18} color={theme.text.primary} />
                 </Pressable>
               )}
-              <Pressable style={styles.roundButton} onPress={onReport} accessibilityLabel="More options">
+              <Pressable style={styles.roundButton} onPress={handleMorePress} accessibilityLabel="More options">
                 <DotsThree size={18} color={theme.text.primary} weight="bold" />
               </Pressable>
             </View>
@@ -195,7 +266,7 @@ export function ActivityDetailScreen({
           <Text style={styles.title}>{activity.title}</Text>
           <Text style={styles.meta}>
             {formatStartTime(activity.startTime)} · {formatDuration(activity.durationMinutes)} ·{' '}
-            {activity.distanceMiles.toFixed(1)}mi away
+            {activity.distanceKm.toFixed(1)}km away
           </Text>
           <Text style={styles.meta}>
             Baby age: {formatAgeRange(activity.babyMinAgeMonths, activity.babyMaxAgeMonths)}
@@ -212,10 +283,11 @@ export function ActivityDetailScreen({
             </View>
             <View style={styles.hostInfo}>
               <View style={styles.hostNameRow}>
+                {/* The verified badge is hidden until there's a real verification
+                    process behind it -- an unearned checkmark undermines trust
+                    rather than building it. `activity.host.verified` is still
+                    computed from `verified_at` for when that process exists. */}
                 <Text style={styles.hostName}>Hosted by {activity.host.displayName}</Text>
-                {activity.host.verified && (
-                  <SealCheck size={14} color={theme.brand.primary} weight="fill" />
-                )}
               </View>
               {activity.host.bio && <Text style={styles.hostBio}>{activity.host.bio}</Text>}
             </View>

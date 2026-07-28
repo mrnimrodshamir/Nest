@@ -4,6 +4,7 @@ import * as AppleAuthentication from 'expo-apple-authentication';
 import { supabase } from '@/lib/supabase';
 import { uploadAvatar } from '@/lib/uploadAvatar';
 import { clearPushRegistration } from '@/hooks/usePushNotifications';
+import { track } from '@/lib/analytics';
 import type { NotificationPreferences, Profile } from '@/types/profile';
 
 function isNetworkError(message: string): boolean {
@@ -16,17 +17,18 @@ export interface RegistrationInput {
   fullName: string;
   email: string;
   password: string;
-  phone: string;
-  babyName: string;
-  babyBirthdate: string; // ISO date, already converted from the years/months picker
-  photoUri: string | null;
+  childName: string;
+  childBirthdate: string; // ISO date, already converted from the years/months picker
+  /** All optional — collected later from Edit Profile, never required to finish signup. */
+  phone?: string;
+  photoUri?: string | null;
 }
 
 export interface AppleProfileInput {
-  phone: string;
-  babyName: string;
-  babyBirthdate: string;
-  photoUri: string | null;
+  childName: string;
+  childBirthdate: string;
+  phone?: string;
+  photoUri?: string | null;
   /** Only present on Apple's very first authorization for this account. */
   fallbackFullName: string | null;
   fallbackEmail: string | null;
@@ -47,7 +49,13 @@ interface UseAuthResult {
   ) => Promise<string | null>;
   resetPassword: (email: string) => Promise<string | null>;
   signOut: () => Promise<void>;
+  deleteAccount: () => Promise<string | null>;
   refreshProfile: () => Promise<void>;
+  updateProfileDetails: (details: {
+    displayName: string;
+    phone: string | null;
+    photoUri?: string | null;
+  }) => Promise<string | null>;
   updateNotificationPreferences: (prefs: NotificationPreferences) => Promise<string | null>;
 }
 
@@ -60,9 +68,7 @@ export function useAuth(): UseAuthResult {
     try {
       const { data } = await supabase
         .from('profiles')
-        .select(
-          'id, display_name, email, phone, avatar_url, baby_name, baby_birthdate, onboarding_completed, notification_preferences',
-        )
+        .select('id, display_name, email, phone, avatar_url, onboarding_completed, notification_preferences')
         .eq('id', userId)
         .maybeSingle();
       setProfile(data ? mapProfile(data) : null);
@@ -75,6 +81,7 @@ export function useAuth(): UseAuthResult {
   }, []);
 
   useEffect(() => {
+    track('app_opened');
     supabase.auth
       .getSession()
       .then(async ({ data }) => {
@@ -119,6 +126,7 @@ export function useAuth(): UseAuthResult {
   }, []);
 
   const register = useCallback(async (input: RegistrationInput, onStage?: (stage: RegistrationStage) => void) => {
+    track('sign_up_started');
     onStage?.('creating-account');
     const { data, error } = await supabase.auth.signUp({
       email: input.email,
@@ -149,15 +157,23 @@ export function useAuth(): UseAuthResult {
       id: userId,
       display_name: input.fullName,
       email: input.email,
-      phone: input.phone,
-      baby_name: input.babyName,
-      baby_birthdate: input.babyBirthdate,
+      phone: input.phone || null,
       avatar_url: avatarUrl,
       onboarding_completed: true,
     });
     if (profileError) return profileError.message;
 
+    const { error: childError } = await supabase.from('children').insert({
+      profile_id: userId,
+      name: input.childName,
+      birthdate: input.childBirthdate,
+      is_default: true,
+    });
+    if (childError) return childError.message;
+
     console.log('[Auth] Registration succeeded', { userId });
+    track('sign_up_completed');
+    track('onboarding_completed');
     await loadProfile(userId);
     return null;
   }, [loadProfile]);
@@ -222,6 +238,7 @@ export function useAuth(): UseAuthResult {
       // exactly once, right now. Carry it forward for the profile-completion
       // step since it won't be sent again on future logins.
       console.log('[Auth] Apple sign-in: first-time user, needs profile completion', { userId });
+      track('sign_up_started');
       const fullName = credential.fullName
         ? [credential.fullName.givenName, credential.fullName.familyName].filter(Boolean).join(' ')
         : null;
@@ -229,10 +246,8 @@ export function useAuth(): UseAuthResult {
       return {
         status: 'needs-profile' as const,
         input: {
-          phone: '',
-          babyName: '',
-          babyBirthdate: '',
-          photoUri: null,
+          childName: '',
+          childBirthdate: '',
           fallbackFullName: fullName || null,
           fallbackEmail: credential.email ?? data.user.email ?? null,
         },
@@ -287,14 +302,22 @@ export function useAuth(): UseAuthResult {
         id: userId,
         display_name: input.fallbackFullName ?? 'Momzi member',
         email: input.fallbackEmail ?? userData.user?.email ?? '',
-        phone: input.phone,
-        baby_name: input.babyName,
-        baby_birthdate: input.babyBirthdate,
+        phone: input.phone || null,
         avatar_url: avatarUrl,
         onboarding_completed: true,
       });
       if (error) return error.message;
 
+      const { error: childError } = await supabase.from('children').insert({
+        profile_id: userId,
+        name: input.childName,
+        birthdate: input.childBirthdate,
+        is_default: true,
+      });
+      if (childError) return childError.message;
+
+      track('sign_up_completed');
+      track('onboarding_completed');
       await loadProfile(userId);
       return null;
     },
@@ -314,9 +337,45 @@ export function useAuth(): UseAuthResult {
     console.log('[Auth] Signed out');
   }, [session]);
 
+  const deleteAccount = useCallback(async () => {
+    if (!session) return 'Not signed in.';
+    track('account_deleted');
+    const { data, error } = await supabase.functions.invoke('delete-account', { method: 'POST' });
+    if (error) return error.message ?? 'Could not delete your account. Please try again.';
+    if (data?.error) return data.error as string;
+    await supabase.auth.signOut();
+    return null;
+  }, [session]);
+
   const refreshProfile = useCallback(async () => {
     if (session) await loadProfile(session.user.id);
   }, [session, loadProfile]);
+
+  const updateProfileDetails = useCallback(
+    async (details: { displayName: string; phone: string | null; photoUri?: string | null }) => {
+      if (!session) return 'Not signed in';
+      let avatarUrl: string | undefined;
+      if (details.photoUri) {
+        try {
+          avatarUrl = await uploadAvatar(session.user.id, details.photoUri);
+        } catch (err) {
+          return err instanceof Error ? err.message : "Couldn't upload your photo — please try again.";
+        }
+      }
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          display_name: details.displayName,
+          phone: details.phone,
+          ...(avatarUrl ? { avatar_url: avatarUrl } : {}),
+        })
+        .eq('id', session.user.id);
+      if (error) return error.message;
+      await loadProfile(session.user.id);
+      return null;
+    },
+    [session, loadProfile],
+  );
 
   const updateNotificationPreferences = useCallback(
     async (prefs: NotificationPreferences) => {
@@ -342,7 +401,9 @@ export function useAuth(): UseAuthResult {
     completeAppleProfile,
     resetPassword,
     signOut,
+    deleteAccount,
     refreshProfile,
+    updateProfileDetails,
     updateNotificationPreferences,
   };
 }
@@ -353,8 +414,6 @@ function mapProfile(row: {
   email: string;
   phone: string | null;
   avatar_url: string | null;
-  baby_name: string | null;
-  baby_birthdate: string | null;
   onboarding_completed: boolean;
   notification_preferences: NotificationPreferences;
 }): Profile {
@@ -364,8 +423,6 @@ function mapProfile(row: {
     email: row.email,
     phone: row.phone,
     avatarUrl: row.avatar_url,
-    babyName: row.baby_name,
-    babyBirthdate: row.baby_birthdate,
     onboardingCompleted: row.onboarding_completed,
     notificationPreferences: row.notification_preferences,
   };

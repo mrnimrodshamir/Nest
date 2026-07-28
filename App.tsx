@@ -22,6 +22,9 @@ import { ShareActivityScreen } from '@/screens/ShareActivityScreen';
 import { ChatScreen } from '@/screens/ChatScreen';
 import { EditActivityScreen } from '@/screens/EditActivityScreen';
 import { ProfileScreen } from '@/screens/ProfileScreen';
+import { EditProfileScreen } from '@/screens/EditProfileScreen';
+import { MyActivitiesScreen } from '@/screens/MyActivitiesScreen';
+import { MessagesScreen } from '@/screens/MessagesScreen';
 import { LaunchScreen } from '@/screens/LaunchScreen';
 import { CompleteAppleProfileScreen } from '@/screens/auth/CompleteAppleProfileScreen';
 import { AuthNavigator } from '@/navigation/AuthNavigator';
@@ -36,6 +39,7 @@ import { useHasUnread } from '@/hooks/useHasUnread';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { supabase } from '@/lib/supabase';
 import { setActiveChat } from '@/lib/activeChatTracker';
+import { track } from '@/lib/analytics';
 import type { Activity } from '@/types/activity';
 import type { CreateActivityInput } from '@/hooks/useCreateActivity';
 import type { ShareableActivity } from '@/utils/buildShareMessage';
@@ -48,6 +52,9 @@ export type RootStackParamList = {
   ShareActivity: { activity: ShareableActivity };
   Chat: { kind: 'group' | 'direct'; activityId?: string; otherUserId?: string; title?: string };
   Profile: undefined;
+  EditProfile: undefined;
+  MyActivities: undefined;
+  Messages: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -130,10 +137,8 @@ export default function App() {
               // completion step) — recover with the same completion form.
               <CompleteAppleProfileScreen
                 input={{
-                  phone: '',
-                  babyName: '',
-                  babyBirthdate: '',
-                  photoUri: null,
+                  childName: '',
+                  childBirthdate: '',
                   fallbackFullName: null,
                   fallbackEmail: session.user.email ?? null,
                 }}
@@ -207,7 +212,40 @@ function MainNavigator() {
         }
       </Stack.Screen>
       <Stack.Screen name="Profile">
-        {({ navigation }) => <ProfileScreen onBack={() => navigation.goBack()} />}
+        {({ navigation }) => (
+          <ProfileScreen
+            onBack={() => navigation.goBack()}
+            onEditProfile={() => navigation.navigate('EditProfile')}
+            onOpenMyActivities={() => navigation.navigate('MyActivities')}
+            onOpenMessages={() => navigation.navigate('Messages')}
+          />
+        )}
+      </Stack.Screen>
+      <Stack.Screen name="EditProfile">
+        {({ navigation }) => <EditProfileScreen onBack={() => navigation.goBack()} />}
+      </Stack.Screen>
+      <Stack.Screen name="MyActivities">
+        {({ navigation }) => (
+          <MyActivitiesScreen
+            onBack={() => navigation.goBack()}
+            onOpenActivity={(activity) => navigation.navigate('ActivityDetail', { activityId: activity.id })}
+          />
+        )}
+      </Stack.Screen>
+      <Stack.Screen name="Messages">
+        {({ navigation }) => (
+          <MessagesScreen
+            onBack={() => navigation.goBack()}
+            onOpenConversation={(conversation) =>
+              navigation.navigate('Chat', {
+                kind: conversation.kind,
+                activityId: conversation.activityId ?? undefined,
+                otherUserId: conversation.otherUserId ?? undefined,
+                title: conversation.title,
+              })
+            }
+          />
+        )}
       </Stack.Screen>
     </Stack.Navigator>
   );
@@ -224,12 +262,7 @@ function DiscoverScreenContainer({ navigation }: { navigation: any }) {
   return (
     <DiscoverScreen
       onOpenActivity={handleOpenActivity}
-      onOpenSearch={() => {
-        // TODO: build the search + filters sheet
-      }}
-      onOpenNotifications={() => {
-        // TODO: build the notifications screen
-      }}
+      onOpenMessages={() => navigation.navigate('Messages')}
       onOpenProfile={() => navigation.navigate('Profile')}
       onHostActivity={() => navigation.navigate('CreateActivity')}
     />
@@ -274,6 +307,11 @@ function ActivityDetailWithRsvp({
   const { chatId } = useActivityChatId(activity.id);
   const hasUnread = useHasUnread(chatId);
 
+  useEffect(() => {
+    track('activity_viewed', { activity_id: activity.id });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activity.id]);
+
   const openChat = () => {
     navigation.navigate('Chat', { kind: 'group', activityId: activity.id, title: activity.title });
   };
@@ -282,9 +320,6 @@ function ActivityDetailWithRsvp({
     <ActivityDetailScreen
       activity={activity}
       onBack={onBack}
-      onReport={() => {
-        // TODO: wire to reports table once the report flow UI exists
-      }}
       onMessageHost={() => {
         navigation.navigate('Chat', {
           kind: 'direct',

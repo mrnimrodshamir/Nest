@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { uploadActivityCover, type CoverUploadStage } from '@/lib/uploadActivityCover';
 import { curatedCoverUrl } from '@/components/CuratedCover';
+import { track } from '@/lib/analytics';
 import type { ActivityCategory } from '@/types/activity';
 
 export interface CreateActivityInput {
@@ -97,6 +98,7 @@ export function useCreateActivity(): UseCreateActivityResult {
       }
     }
 
+    track('activity_created', { activity_id: activityId, category: input.activityType });
     setIsSubmitting(false);
     setStage(null);
     return activityId;

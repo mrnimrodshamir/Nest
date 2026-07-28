@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { supabase } from '@/lib/supabase';
+import { track } from '@/lib/analytics';
 
 export interface ChatMessage {
   id: string;
@@ -187,6 +188,8 @@ export function useChatMessages(chatId: string | null): UseChatMessagesResult {
       setMessages((current) =>
         current.map((m) => (m.id === tempId ? { ...m, id: data.id, createdAt: data.created_at } : m)),
       );
+      // Never track message content -- only that a send happened.
+      track('chat_message_sent', { chat_id: chatId });
     },
     [chatId],
   );

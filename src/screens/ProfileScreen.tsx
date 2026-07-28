@@ -1,17 +1,22 @@
 import React, { useState } from 'react';
-import { View, Text, Image, Pressable, Switch, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, Image, Pressable, Switch, StyleSheet, ScrollView, Alert, Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Notifications from 'expo-notifications';
-import { ArrowLeft, SignOut } from 'phosphor-react-native';
+import { ArrowLeft, SignOut, PencilSimple, CalendarBlank, ChatCircleDots, Trash } from 'phosphor-react-native';
 import { theme, typography, spacing, radius } from '@/theme';
 import { useAuth } from '@/hooks/useAuth';
+import { useChildren } from '@/hooks/useChildren';
 import { ensurePushRegistration } from '@/hooks/usePushNotifications';
 import { NotificationPermissionSheet } from '@/components/NotificationPermissionSheet';
-import { birthdateToMonths, formatBabyAge } from '@/utils/babyAge';
+import { LEGAL_URLS } from '@/constants/legal';
+import { formatBabyAge, birthdateToMonths } from '@/utils/babyAge';
 import type { NotificationPreferences } from '@/types/profile';
 
 interface ProfileScreenProps {
   onBack: () => void;
+  onEditProfile: () => void;
+  onOpenMyActivities: () => void;
+  onOpenMessages: () => void;
 }
 
 const NOTIFICATION_LABELS: Record<keyof NotificationPreferences, string> = {
@@ -20,13 +25,40 @@ const NOTIFICATION_LABELS: Record<keyof NotificationPreferences, string> = {
   reminders: 'Reminders before activities',
 };
 
-export function ProfileScreen({ onBack }: ProfileScreenProps) {
-  const { profile, signOut, updateNotificationPreferences } = useAuth();
+export function ProfileScreen({ onBack, onEditProfile, onOpenMyActivities, onOpenMessages }: ProfileScreenProps) {
+  const { profile, session, signOut, deleteAccount, updateNotificationPreferences } = useAuth();
+  const { children } = useChildren(session?.user.id ?? null);
   const [showNotificationSheet, setShowNotificationSheet] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
-  const babyAgeLabel = profile?.babyBirthdate
-    ? formatBabyAge(birthdateToMonths(profile.babyBirthdate))
-    : null;
+  const defaultChild = children.find((c) => c.isDefault) ?? children[0] ?? null;
+
+  const handleSignOut = () => {
+    Alert.alert('Sign out?', undefined, [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Sign out', style: 'destructive', onPress: signOut },
+    ]);
+  };
+
+  const handleDeleteAccount = () => {
+    Alert.alert(
+      'Delete your account?',
+      'This permanently removes your profile, children, activities, and messages. This cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete account',
+          style: 'destructive',
+          onPress: async () => {
+            setIsDeleting(true);
+            const err = await deleteAccount();
+            setIsDeleting(false);
+            if (err) Alert.alert("Couldn't delete your account", err);
+          },
+        },
+      ],
+    );
+  };
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
@@ -39,9 +71,7 @@ export function ProfileScreen({ onBack }: ProfileScreenProps) {
             <Image source={{ uri: profile.avatarUrl }} style={styles.avatar} />
           ) : (
             <View style={styles.avatarPlaceholder}>
-              <Text style={styles.avatarInitial}>
-                {profile?.displayName?.[0]?.toUpperCase() ?? '?'}
-              </Text>
+              <Text style={styles.avatarInitial}>{profile?.displayName?.[0]?.toUpperCase() ?? '?'}</Text>
             </View>
           )}
         </View>
@@ -49,15 +79,34 @@ export function ProfileScreen({ onBack }: ProfileScreenProps) {
         <Text style={styles.name}>{profile?.displayName ?? 'Momzi member'}</Text>
         <Text style={styles.email}>{profile?.email}</Text>
 
-        {profile?.babyName && (
+        <Pressable style={styles.editButton} onPress={onEditProfile}>
+          <PencilSimple size={14} color={theme.text.accent} />
+          <Text style={styles.editButtonLabel}>Edit profile</Text>
+        </Pressable>
+
+        {children.length > 0 && (
           <View style={styles.babyCard}>
-            <Text style={styles.babyCardLabel}>Baby</Text>
-            <Text style={styles.babyCardValue}>
-              {profile.babyName}
-              {babyAgeLabel ? ` · ${babyAgeLabel}` : ''}
-            </Text>
+            <Text style={styles.babyCardLabel}>{children.length > 1 ? 'Children' : 'Child'}</Text>
+            {children.map((child) => (
+              <Text key={child.id} style={styles.babyCardValue}>
+                {child.name}
+                {child.birthdate ? ` · ${formatBabyAge(birthdateToMonths(child.birthdate))}` : ''}
+                {children.length > 1 && child.id === defaultChild?.id ? ' (default)' : ''}
+              </Text>
+            ))}
           </View>
         )}
+
+        <View style={styles.actionsRow}>
+          <Pressable style={styles.actionButton} onPress={onOpenMyActivities}>
+            <CalendarBlank size={20} color={theme.text.accent} />
+            <Text style={styles.actionButtonLabel}>My Activities</Text>
+          </Pressable>
+          <Pressable style={styles.actionButton} onPress={onOpenMessages}>
+            <ChatCircleDots size={20} color={theme.text.accent} />
+            <Text style={styles.actionButtonLabel}>Messages</Text>
+          </Pressable>
+        </View>
 
         <View style={styles.infoCard}>
           <InfoRow label="Phone" value={profile?.phone ?? '—'} />
@@ -94,9 +143,24 @@ export function ProfileScreen({ onBack }: ProfileScreenProps) {
           </View>
         )}
 
-        <Pressable style={styles.signOutButton} onPress={signOut}>
+        <View style={styles.legalRow}>
+          <Pressable onPress={() => Linking.openURL(LEGAL_URLS.terms)}>
+            <Text style={styles.legalLink}>Terms of Service</Text>
+          </Pressable>
+          <Text style={styles.legalDivider}>·</Text>
+          <Pressable onPress={() => Linking.openURL(LEGAL_URLS.privacy)}>
+            <Text style={styles.legalLink}>Privacy Policy</Text>
+          </Pressable>
+        </View>
+
+        <Pressable style={styles.signOutButton} onPress={handleSignOut}>
           <SignOut size={18} color={theme.semantic.danger} />
           <Text style={styles.signOutLabel}>Sign out</Text>
+        </Pressable>
+
+        <Pressable style={styles.deleteButton} onPress={handleDeleteAccount} disabled={isDeleting}>
+          <Trash size={14} color={theme.text.muted} />
+          <Text style={styles.deleteButtonLabel}>{isDeleting ? 'Deleting…' : 'Delete account'}</Text>
         </Pressable>
       </ScrollView>
 
@@ -146,7 +210,9 @@ const styles = StyleSheet.create({
   },
   avatarInitial: { ...typography.display, fontSize: 32, color: theme.text.accent },
   name: { ...typography.title2, color: theme.text.primary },
-  email: { ...typography.subhead, color: theme.text.secondary, marginBottom: spacing.md },
+  email: { ...typography.subhead, color: theme.text.secondary },
+  editButton: { flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: spacing.md },
+  editButtonLabel: { ...typography.footnote, color: theme.text.accent, fontWeight: '600' as const },
   babyCard: {
     width: '100%',
     backgroundColor: theme.background.surface,
@@ -154,9 +220,22 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: theme.border.default,
+    gap: 4,
   },
   babyCardLabel: { ...typography.caption, color: theme.text.muted, marginBottom: 4 },
   babyCardValue: { ...typography.bodyMedium, color: theme.text.primary },
+  actionsRow: { flexDirection: 'row', gap: spacing.md, width: '100%' },
+  actionButton: {
+    flex: 1,
+    alignItems: 'center',
+    gap: spacing.xs,
+    backgroundColor: theme.background.surface,
+    borderRadius: radius.lg,
+    paddingVertical: spacing.lg,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: theme.border.default,
+  },
+  actionButtonLabel: { ...typography.footnote, fontWeight: '600' as const, color: theme.text.primary },
   infoCard: {
     width: '100%',
     backgroundColor: theme.background.surface,
@@ -170,13 +249,18 @@ const styles = StyleSheet.create({
   infoLabel: { ...typography.subhead, color: theme.text.secondary },
   infoValue: { ...typography.subhead, color: theme.text.primary },
   privacyNote: { ...typography.caption, color: theme.text.muted },
+  legalRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: spacing.sm },
+  legalLink: { ...typography.caption, color: theme.text.accent },
+  legalDivider: { ...typography.caption, color: theme.text.muted },
   signOutButton: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
-    marginTop: spacing['2xl'],
+    marginTop: spacing.xl,
     paddingVertical: spacing.sm,
     paddingHorizontal: spacing.lg,
   },
   signOutLabel: { ...typography.bodyMedium, color: theme.semantic.danger },
+  deleteButton: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, paddingVertical: spacing.sm },
+  deleteButtonLabel: { ...typography.caption, color: theme.text.muted },
 });
