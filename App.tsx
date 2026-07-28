@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo } from 'react';
-import { View, ActivityIndicator } from 'react-native';
+import { View, ActivityIndicator, Pressable, Text } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { NavigationContainer, LinkingOptions, createNavigationContainerRef } from '@react-navigation/native';
@@ -45,10 +45,18 @@ import { supabase } from '@/lib/supabase';
 import { setActiveChat } from '@/lib/activeChatTracker';
 import { track } from '@/lib/analytics';
 import { FALLBACK_LOCATION } from '@/constants/location';
+import { MOCK_ACTIVITIES, MOCK_ACTIVITIES_EMPTY } from '@/mocks/mockActivities';
 import type { Activity } from '@/types/activity';
 import type { Conversation } from '@/hooks/useConversations';
 import type { CreateActivityInput } from '@/hooks/useCreateActivity';
 import type { ShareableActivity } from '@/utils/buildShareMessage';
+
+/** UI-preview escape hatch: renders the real production screens/components
+ *  with mock data, skipping login and every backend call. Set only via
+ *  EXPO_PUBLIC_PREVIEW_MODE=true (a separate env, never in .env used for
+ *  real dev/preview/production builds) — must never be true in a build a
+ *  real user could install. */
+const PREVIEW_MODE = process.env.EXPO_PUBLIC_PREVIEW_MODE === 'true';
 
 export type TabParamList = {
   Discovery: undefined;
@@ -139,7 +147,7 @@ export default function App() {
     return () => subscription.remove();
   }, []);
 
-  if (!fontsLoaded || authLoading) {
+  if (!fontsLoaded || (!PREVIEW_MODE && authLoading)) {
     return <LaunchScreen />;
   }
 
@@ -147,8 +155,10 @@ export default function App() {
     <AppErrorBoundary>
       <GestureHandlerRootView style={{ flex: 1 }}>
         <SafeAreaProvider>
-          <NavigationContainer ref={navigationRef} linking={session && profile ? linking : undefined}>
-            {!session ? (
+          <NavigationContainer ref={navigationRef} linking={session && profile && !PREVIEW_MODE ? linking : undefined}>
+            {PREVIEW_MODE ? (
+              <MainNavigator />
+            ) : !session ? (
               <AuthNavigator />
             ) : !profile ? (
               // Signed in but the profile row never got created (interrupted
@@ -319,12 +329,35 @@ function DiscoverScreenContainer({ navigation }: { navigation: any }) {
     },
     [navigation],
   );
+  const [previewShowEmpty, setPreviewShowEmpty] = React.useState(false);
 
   return (
-    <DiscoverScreen
-      onOpenActivity={handleOpenActivity}
-      onHostActivity={() => navigation.getParent()?.navigate('CreateActivity')}
-    />
+    <View style={{ flex: 1 }}>
+      <DiscoverScreen
+        onOpenActivity={handleOpenActivity}
+        onHostActivity={() => navigation.getParent()?.navigate('CreateActivity')}
+        mockActivities={PREVIEW_MODE ? (previewShowEmpty ? MOCK_ACTIVITIES_EMPTY : MOCK_ACTIVITIES) : undefined}
+      />
+      {PREVIEW_MODE && (
+        <Pressable
+          onPress={() => setPreviewShowEmpty((v) => !v)}
+          style={{
+            position: 'absolute',
+            top: 108,
+            right: 20,
+            backgroundColor: theme.text.primary,
+            paddingHorizontal: 14,
+            paddingVertical: 8,
+            borderRadius: 999,
+            opacity: 0.92,
+          }}
+        >
+          <Text style={{ color: theme.text.inverse, fontSize: 12, fontWeight: '700' }}>
+            Preview: {previewShowEmpty ? 'show populated' : 'show empty state'}
+          </Text>
+        </Pressable>
+      )}
+    </View>
   );
 }
 

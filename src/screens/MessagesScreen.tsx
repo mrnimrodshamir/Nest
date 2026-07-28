@@ -32,7 +32,7 @@ export function MessagesScreen({ onOpenConversation }: MessagesScreenProps) {
           !isLoading ? (
             <StateCard
               icon={ChatCircleDots}
-              title={error ?? 'No conversations yet'}
+              title={error ?? 'No messages yet'}
               body={
                 error
                   ? 'Pull down to try again.'

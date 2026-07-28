@@ -39,17 +39,18 @@ export interface Activity {
   babyMaxAgeMonths: number | null;
 }
 
-/** Pin color per category — reuses the same brand ramps as everywhere else,
- *  so the map reads as the same product as the feed, not a bolted-on view. */
+/** One distinct color per category so the map is scannable at a glance —
+ *  each still drawn from a calm, muted, brand-consistent palette (no neon,
+ *  no loud saturation), not just the three core brand ramps repeated. */
 export const CATEGORY_PIN_COLOR: Record<ActivityCategory, string> = {
-  stroller_walk: '#7C9A82',
-  baby_playtime: '#7C9A82',
-  picnic: '#7C9A82',
-  coffee_meetup: '#C9A876',
-  workshop: '#C9A876',
-  fitness: '#8FB4C9',
-  yoga: '#8FB4C9',
-  other: '#A8A69C',
+  stroller_walk: '#7C9A82', // sage — brand primary
+  coffee_meetup: '#C9A876', // sand — brand secondary
+  baby_playtime: '#D98C72', // warm terracotta
+  picnic: '#9CAA5C', // moss green
+  fitness: '#6FA8A0', // teal
+  yoga: '#9CA8D6', // soft periwinkle
+  workshop: '#B695C0', // muted plum
+  other: '#A8A69C', // neutral
 };
 
 export const CATEGORY_EMOJI: Record<ActivityCategory, string> = {

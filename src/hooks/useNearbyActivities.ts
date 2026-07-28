@@ -38,15 +38,27 @@ interface NearbyActivityRow {
   distance_miles: number;
 }
 
-export function useNearbyActivities(): UseNearbyActivitiesResult {
-  const [activities, setActivities] = useState<Activity[]>([]);
+interface UseNearbyActivitiesOptions {
+  /** Dependency-injection escape hatch for UI preview builds — when set,
+   *  the hook returns this data immediately and never touches location
+   *  permissions, network status, or Supabase. Never set in production. */
+  mockActivities?: Activity[];
+}
+
+export function useNearbyActivities(options?: UseNearbyActivitiesOptions): UseNearbyActivitiesResult {
+  const [activities, setActivities] = useState<Activity[]>(options?.mockActivities ?? []);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [radiusExpanded, setRadiusExpanded] = useState(false);
   const [locationDenied, setLocationDenied] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { isOffline } = useNetworkStatus();
+  const mockActivities = options?.mockActivities;
 
   const load = useCallback(async () => {
+    if (mockActivities) {
+      setActivities(mockActivities);
+      return;
+    }
     if (isOffline) {
       // Don't even attempt the round trip — surface the offline state
       // immediately rather than waiting on a request that will time out.

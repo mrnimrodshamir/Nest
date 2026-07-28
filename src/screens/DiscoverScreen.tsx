@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { View, Text, Pressable, StyleSheet, Dimensions, FlatList, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Animated, { useSharedValue, useAnimatedStyle, withTiming, useReducedMotion } from 'react-native-reanimated';
 import MapView, { PROVIDER_DEFAULT, Region } from 'react-native-maps';
 import BottomSheet, { BottomSheetFlatList, BottomSheetView } from '@gorhom/bottom-sheet';
 import {
@@ -48,9 +49,12 @@ const SHEET_FULL_INDEX = 2;
 interface DiscoverScreenProps {
   onOpenActivity: (activity: Activity) => void;
   onHostActivity: () => void;
+  /** UI-preview escape hatch — when set, the screen never touches location
+   *  permissions or Supabase. Never set in production. */
+  mockActivities?: Activity[];
 }
 
-export function DiscoverScreen({ onOpenActivity, onHostActivity }: DiscoverScreenProps) {
+export function DiscoverScreen({ onOpenActivity, onHostActivity, mockActivities }: DiscoverScreenProps) {
   const [selectedCategory, setSelectedCategory] = useState<ActivityCategory | 'all'>('all');
   const [selectedActivityId, setSelectedActivityId] = useState<string | null>(null);
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
@@ -61,6 +65,11 @@ export function DiscoverScreen({ onOpenActivity, onHostActivity }: DiscoverScree
   // bottom-sheet snap points either way, so dragging the sheet manually
   // still keeps the toggle in sync.
   const [viewMode, setViewMode] = useState<'map' | 'list'>('map');
+  const reducedMotion = useReducedMotion();
+  const togglePillX = useSharedValue(0);
+  const togglePillStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: togglePillX.value }],
+  }));
 
   const mapRef = useRef<MapView>(null);
   const sheetRef = useRef<BottomSheet>(null);
@@ -76,7 +85,7 @@ export function DiscoverScreen({ onOpenActivity, onHostActivity }: DiscoverScree
     isOffline,
     isRefreshing,
     error,
-  } = useNearbyActivities();
+  } = useNearbyActivities(mockActivities ? { mockActivities } : undefined);
 
   useEffect(() => {
     if (!isRefreshing) setHasLoadedOnce(true);
@@ -90,9 +99,23 @@ export function DiscoverScreen({ onOpenActivity, onHostActivity }: DiscoverScree
         ? feedActivities
         : feedActivities.filter((a) => a.category === selectedCategory);
     const query = searchQuery.trim().toLowerCase();
-    if (!query) return byCategory;
-    return byCategory.filter((a) => a.title.toLowerCase().includes(query));
+    const matched = query ? byCategory.filter((a) => a.title.toLowerCase().includes(query)) : byCategory;
+
+    // Soonest first — that's the actual planning question ("what can I join
+    // today"), not just "what's nearby". Distance only breaks ties between
+    // activities starting at the same time.
+    return [...matched].sort((a, b) => {
+      const timeDiff = new Date(a.startTime).getTime() - new Date(b.startTime).getTime();
+      return timeDiff !== 0 ? timeDiff : a.distanceKm - b.distanceKm;
+    });
   }, [feedActivities, selectedCategory, searchQuery]);
+
+  const greeting = useMemo(() => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good morning';
+    if (hour < 18) return 'Good afternoon';
+    return 'Good evening';
+  }, []);
 
   const initialRegion: Region = useMemo(() => {
     const first = feedActivities[0];
@@ -186,13 +209,18 @@ export function DiscoverScreen({ onOpenActivity, onHostActivity }: DiscoverScree
           </View>
         ) : (
           <View style={styles.headerRow}>
-            <Text style={styles.locationLabel}>{locationLabel}</Text>
+            <View>
+              <Text style={styles.greeting}>{greeting}</Text>
+              <Text style={styles.locationLabel}>{locationLabel}</Text>
+            </View>
             <View style={styles.headerActions}>
               <View style={styles.viewToggle}>
+                <Animated.View style={[styles.viewTogglePill, togglePillStyle]} />
                 <Pressable
-                  style={[styles.viewToggleOption, viewMode === 'map' && styles.viewToggleOptionSelected]}
+                  style={styles.viewToggleOption}
                   onPress={() => {
                     setViewMode('map');
+                    togglePillX.value = reducedMotion ? 0 : withTiming(0, { duration: 220 });
                     sheetRef.current?.snapToIndex(SHEET_PEEK_INDEX);
                   }}
                   accessibilityLabel="Map view"
@@ -200,9 +228,10 @@ export function DiscoverScreen({ onOpenActivity, onHostActivity }: DiscoverScree
                   <MapTrifold size={16} color={viewMode === 'map' ? theme.text.inverse : theme.text.secondary} weight={iconDefaults.weight} />
                 </Pressable>
                 <Pressable
-                  style={[styles.viewToggleOption, viewMode === 'list' && styles.viewToggleOptionSelected]}
+                  style={styles.viewToggleOption}
                   onPress={() => {
                     setViewMode('list');
+                    togglePillX.value = reducedMotion ? 40 : withTiming(40, { duration: 220 });
                     sheetRef.current?.snapToIndex(SHEET_FULL_INDEX);
                   }}
                   accessibilityLabel="List view"
@@ -405,6 +434,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.sm,
   },
+  greeting: {
+    ...typography.caption,
+    color: theme.text.secondary,
+    marginBottom: 2,
+  },
   locationLabel: {
     ...typography.bodyMedium,
     color: theme.text.primary,
@@ -443,7 +477,15 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   viewToggleOption: { width: 38, height: 38, borderRadius: radius.sm, alignItems: 'center', justifyContent: 'center' },
-  viewToggleOptionSelected: { backgroundColor: theme.brand.primary },
+  viewTogglePill: {
+    position: 'absolute',
+    top: 3,
+    left: 3,
+    width: 38,
+    height: 38,
+    borderRadius: radius.sm,
+    backgroundColor: theme.brand.primary,
+  },
   chipRow: { paddingHorizontal: spacing.lg, paddingTop: spacing.md },
   fab: {
     position: 'absolute',

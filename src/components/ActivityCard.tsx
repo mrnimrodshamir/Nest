@@ -4,6 +4,8 @@ import Animated, {
   useAnimatedStyle,
   useSharedValue,
   withSpring,
+  FadeInUp,
+  ReduceMotion,
 } from 'react-native-reanimated';
 import { theme, typography, spacing, radius, pressFeedback } from '@/theme';
 import type { Activity } from '@/types/activity';
@@ -57,6 +59,11 @@ export function ActivityCard({
       onPress={() => onPress(activity)}
       onPressIn={handlePressIn}
       onPressOut={handlePressOut}
+      // A quiet rise-and-fade the moment each card mounts — every activity
+      // gets a little presence, not just the ones you interact with.
+      // .reduceMotion(System) makes it a no-op under the OS accessibility
+      // setting automatically, no extra state needed here.
+      entering={FadeInUp.duration(280).reduceMotion(ReduceMotion.System)}
       style={[
         styles.card,
         isRail ? styles.cardRail : styles.cardFeed,
