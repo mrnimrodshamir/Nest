@@ -4,13 +4,13 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import MapView, { PROVIDER_DEFAULT, Region } from 'react-native-maps';
 import BottomSheet, { BottomSheetFlatList, BottomSheetView } from '@gorhom/bottom-sheet';
 import {
-  ChatCircleDots,
   MagnifyingGlass,
   Plus,
-  UserCircle,
   Compass,
   FunnelSimpleX,
   MapPinLine,
+  MapTrifold,
+  ListBullets,
   WifiSlash,
   WarningCircle,
   X,
@@ -43,25 +43,24 @@ const CATEGORIES: Array<{ key: ActivityCategory | 'all'; label: string }> = [
 const SNAP_POINTS = ['15%', '50%', '92%'];
 const SHEET_PEEK_INDEX = 0;
 const SHEET_HALF_INDEX = 1;
+const SHEET_FULL_INDEX = 2;
 
 interface DiscoverScreenProps {
   onOpenActivity: (activity: Activity) => void;
-  onOpenMessages: () => void;
-  onOpenProfile: () => void;
   onHostActivity: () => void;
 }
 
-export function DiscoverScreen({
-  onOpenActivity,
-  onOpenMessages,
-  onOpenProfile,
-  onHostActivity,
-}: DiscoverScreenProps) {
+export function DiscoverScreen({ onOpenActivity, onHostActivity }: DiscoverScreenProps) {
   const [selectedCategory, setSelectedCategory] = useState<ActivityCategory | 'all'>('all');
   const [selectedActivityId, setSelectedActivityId] = useState<string | null>(null);
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  // Map and List are two views of the same screen -- an explicit toggle,
+  // not just an implicit sheet-drag gesture. Reflects and drives the same
+  // bottom-sheet snap points either way, so dragging the sheet manually
+  // still keeps the toggle in sync.
+  const [viewMode, setViewMode] = useState<'map' | 'list'>('map');
 
   const mapRef = useRef<MapView>(null);
   const sheetRef = useRef<BottomSheet>(null);
@@ -189,14 +188,30 @@ export function DiscoverScreen({
           <View style={styles.headerRow}>
             <Text style={styles.locationLabel}>{locationLabel}</Text>
             <View style={styles.headerActions}>
+              <View style={styles.viewToggle}>
+                <Pressable
+                  style={[styles.viewToggleOption, viewMode === 'map' && styles.viewToggleOptionSelected]}
+                  onPress={() => {
+                    setViewMode('map');
+                    sheetRef.current?.snapToIndex(SHEET_PEEK_INDEX);
+                  }}
+                  accessibilityLabel="Map view"
+                >
+                  <MapTrifold size={16} color={viewMode === 'map' ? theme.text.inverse : theme.text.secondary} weight={iconDefaults.weight} />
+                </Pressable>
+                <Pressable
+                  style={[styles.viewToggleOption, viewMode === 'list' && styles.viewToggleOptionSelected]}
+                  onPress={() => {
+                    setViewMode('list');
+                    sheetRef.current?.snapToIndex(SHEET_FULL_INDEX);
+                  }}
+                  accessibilityLabel="List view"
+                >
+                  <ListBullets size={16} color={viewMode === 'list' ? theme.text.inverse : theme.text.secondary} weight={iconDefaults.weight} />
+                </Pressable>
+              </View>
               <Pressable style={styles.iconButton} onPress={() => setSearchOpen(true)} accessibilityLabel="Search">
                 <MagnifyingGlass size={iconDefaults.size.tabBar - 4} color={theme.text.primary} weight={iconDefaults.weight} />
-              </Pressable>
-              <Pressable style={styles.iconButton} onPress={onOpenMessages} accessibilityLabel="Messages">
-                <ChatCircleDots size={iconDefaults.size.tabBar - 4} color={theme.text.primary} weight={iconDefaults.weight} />
-              </Pressable>
-              <Pressable style={styles.iconButton} onPress={onOpenProfile} accessibilityLabel="Profile">
-                <UserCircle size={iconDefaults.size.tabBar - 4} color={theme.text.primary} weight={iconDefaults.weight} />
               </Pressable>
             </View>
           </View>
@@ -229,6 +244,7 @@ export function DiscoverScreen({
         enableDynamicSizing={false}
         onChange={(index) => {
           sheetIndex.current = index;
+          setViewMode(index >= SHEET_FULL_INDEX ? 'list' : 'map');
         }}
         backgroundStyle={styles.sheetBackground}
         handleIndicatorStyle={styles.sheetHandle}
@@ -412,13 +428,22 @@ const styles = StyleSheet.create({
   },
   searchInput: { flex: 1, ...typography.subhead, color: theme.text.primary, height: '100%' },
   iconButton: {
-    width: 36,
-    height: 36,
+    width: 44,
+    height: 44,
     borderRadius: radius.md,
     backgroundColor: theme.background.surface,
     alignItems: 'center',
     justifyContent: 'center',
   },
+  viewToggle: {
+    flexDirection: 'row',
+    backgroundColor: theme.background.surface,
+    borderRadius: radius.md,
+    padding: 3,
+    gap: 2,
+  },
+  viewToggleOption: { width: 38, height: 38, borderRadius: radius.sm, alignItems: 'center', justifyContent: 'center' },
+  viewToggleOptionSelected: { backgroundColor: theme.brand.primary },
   chipRow: { paddingHorizontal: spacing.lg, paddingTop: spacing.md },
   fab: {
     position: 'absolute',

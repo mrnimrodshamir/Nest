@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, Image, ScrollView, Pressable, StyleSheet, Linking, Platform, Alert } from 'react-native';
+import { View, Text, ScrollView, Pressable, StyleSheet, Linking, Platform, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MapView, { Marker, PROVIDER_DEFAULT } from 'react-native-maps';
 import Animated, { useSharedValue, useAnimatedStyle, withSpring, useReducedMotion } from 'react-native-reanimated';
 import * as Notifications from 'expo-notifications';
 import { ArrowLeft, DotsThree, NavigationArrow, ChatCircleDots, PencilSimple } from 'phosphor-react-native';
 import { theme, typography, spacing, radius } from '@/theme';
+import { PersonCard } from '@/components/PersonCard';
 import type { ActivityDetail } from '@/types/activity';
 import { CATEGORY_LABELS } from '@/types/activity';
 import { formatStartTime } from '@/utils/formatStartTime';
@@ -31,6 +32,7 @@ interface ActivityDetailScreenProps {
   activity: ActivityDetail;
   onBack: () => void;
   onMessageHost: (hostId: string) => void;
+  onOpenPerson: (userId: string) => void;
   /** Called once the person successfully joins — screen can navigate to the group chat */
   onJoined: (activity: ActivityDetail) => void;
   /** Host or anyone already going can reopen the group chat at any time */
@@ -45,6 +47,7 @@ export function ActivityDetailScreen({
   activity: initial,
   onBack,
   onMessageHost,
+  onOpenPerson,
   onJoined,
   onOpenChat,
   canOpenChat = false,
@@ -272,27 +275,42 @@ export function ActivityDetailScreen({
             Baby age: {formatAgeRange(activity.babyMinAgeMonths, activity.babyMaxAgeMonths)}
           </Text>
 
-          <Pressable
-            style={styles.hostRow}
-            onPress={() => onMessageHost(activity.host.id)}
-          >
-            <View style={[styles.hostAvatar, { backgroundColor: activity.host.avatarColor }]}>
-              {activity.host.avatarUrl && (
-                <Image source={{ uri: activity.host.avatarUrl }} style={StyleSheet.absoluteFill} />
-              )}
-            </View>
-            <View style={styles.hostInfo}>
-              <View style={styles.hostNameRow}>
-                {/* The verified badge is hidden until there's a real verification
-                    process behind it -- an unearned checkmark undermines trust
-                    rather than building it. `activity.host.verified` is still
-                    computed from `verified_at` for when that process exists. */}
-                <Text style={styles.hostName}>Hosted by {activity.host.displayName}</Text>
+          {/* People, promoted above the fold -- this is who you'd actually be
+              meeting, and it comes before the description/location details. */}
+          <View style={styles.peopleCard}>
+            <Text style={styles.peopleCardLabel}>WHO'S MEETING UP</Text>
+            <PersonCard
+              size="row"
+              name={activity.host.displayName}
+              avatarUrl={activity.host.avatarUrl}
+              subtitle={activity.host.bio ?? 'Hosting'}
+              onPress={() => onOpenPerson(activity.host.id)}
+              accessoryRight={
+                <Pressable onPress={() => onMessageHost(activity.host.id)} hitSlop={8}>
+                  <Text style={styles.messageLink}>Message</Text>
+                </Pressable>
+              }
+            />
+            {activity.attendees.length > 0 && (
+              <View style={styles.attendeeRow}>
+                {activity.attendees.slice(0, 6).map((attendee, index) => (
+                  <View key={attendee.id} style={index === 0 ? undefined : styles.attendeeOverlap}>
+                    <PersonCard
+                      size="compact"
+                      name={attendee.displayName}
+                      avatarUrl={attendee.avatarUrl}
+                      onPress={() => onOpenPerson(attendee.id)}
+                    />
+                  </View>
+                ))}
+                <Text style={styles.attendeeCount}>
+                  {activity.attendeeCount} going
+                  {spotsLeft !== null && spotsLeft > 0 && ` · ${spotsLeft} spots left`}
+                </Text>
               </View>
-              {activity.host.bio && <Text style={styles.hostBio}>{activity.host.bio}</Text>}
-            </View>
-            <Text style={styles.messageLink}>Message</Text>
-          </Pressable>
+            )}
+            <Text style={styles.tapHint}>Tap anyone to see their profile →</Text>
+          </View>
 
           {canOpenChat && onOpenChat && (
             <Pressable style={styles.chatRow} onPress={onOpenChat}>
@@ -360,23 +378,6 @@ export function ActivityDetailScreen({
               </Pressable>
             </View>
           )}
-
-          <Text style={styles.sectionLabel}>Who's going</Text>
-          <View style={styles.attendeeRow}>
-            {activity.attendees.slice(0, 5).map((attendee, index) => (
-              <View
-                key={attendee.id}
-                style={[
-                  styles.attendeeAvatar,
-                  { backgroundColor: attendee.avatarColor, marginLeft: index === 0 ? 0 : -10 },
-                ]}
-              />
-            ))}
-            <Text style={styles.attendeeCount}>
-              {activity.attendeeCount} going
-              {spotsLeft !== null && spotsLeft > 0 && ` · ${spotsLeft} spots left`}
-            </Text>
-          </View>
         </View>
       </ScrollView>
 
@@ -466,21 +467,17 @@ const styles = StyleSheet.create({
   statusPillTextFull: { color: theme.brand.secondary },
   title: { ...typography.title2, color: theme.text.primary, marginBottom: 4 },
   meta: { ...typography.subhead, color: theme.text.secondary, marginBottom: spacing.lg },
-  hostRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: spacing.md,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderColor: theme.border.default,
+  peopleCard: {
+    backgroundColor: theme.brand.primaryTint,
+    borderRadius: radius.lg,
+    padding: spacing.lg,
     marginBottom: spacing.lg,
+    gap: spacing.md,
   },
-  hostAvatar: { width: 40, height: 40, borderRadius: radius.pill, marginRight: spacing.md },
-  hostInfo: { flex: 1 },
-  hostNameRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  hostName: { ...typography.bodyMedium, color: theme.text.primary },
-  hostBio: { ...typography.footnote, color: theme.text.secondary, marginTop: 2 },
+  peopleCardLabel: { ...typography.caption, fontWeight: '700' as const, color: theme.brand.primaryPressed, letterSpacing: 0.4 },
   messageLink: { ...typography.footnote, fontWeight: '600' as const, color: theme.text.accent },
+  attendeeOverlap: { marginLeft: -10 },
+  tapHint: { ...typography.caption, color: theme.brand.primaryPressed },
   chatRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -535,14 +532,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xs,
   },
   calendarNoticeButtonLabel: { ...typography.caption, color: theme.text.inverse, fontWeight: '600' as const },
-  attendeeRow: { flexDirection: 'row', alignItems: 'center' },
-  attendeeAvatar: {
-    width: 32,
-    height: 32,
-    borderRadius: radius.pill,
-    borderWidth: 2,
-    borderColor: theme.background.surface,
-  },
+  attendeeRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap' },
   attendeeCount: { ...typography.footnote, color: theme.text.secondary, marginLeft: spacing.md },
   ctaBar: {
     padding: spacing.lg,

@@ -1,28 +1,25 @@
 import React from 'react';
-import { View, Text, Image, Pressable, FlatList, StyleSheet } from 'react-native';
+import { View, Text, FlatList, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ArrowLeft, ChatCircleDots } from 'phosphor-react-native';
+import { ChatCircleDots, UsersThree, User } from 'phosphor-react-native';
 import { theme, typography, spacing, radius } from '@/theme';
 import { StateCard } from '@/components/StateCard';
+import { PersonCard } from '@/components/PersonCard';
 import { useConversations, type Conversation } from '@/hooks/useConversations';
+import { formatRelativeTime } from '@/utils/formatRelativeTime';
 
 interface MessagesScreenProps {
-  onBack: () => void;
   onOpenConversation: (conversation: Conversation) => void;
 }
 
-export function MessagesScreen({ onBack, onOpenConversation }: MessagesScreenProps) {
+/** The Chats tab -- one unified inbox for activity group chats and direct
+ *  chats. No separate "direct messages" screen exists anywhere else. */
+export function MessagesScreen({ onOpenConversation }: MessagesScreenProps) {
   const { conversations, isLoading, error, refresh } = useConversations();
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-      <View style={styles.header}>
-        <Pressable onPress={onBack} style={styles.backButton} accessibilityLabel="Back">
-          <ArrowLeft size={20} color={theme.text.primary} />
-        </Pressable>
-        <Text style={styles.headerTitle}>Messages</Text>
-        <View style={styles.backButton} />
-      </View>
+      <Text style={styles.headerTitle}>Chats</Text>
 
       <FlatList
         data={conversations}
@@ -53,70 +50,54 @@ export function MessagesScreen({ onBack, onOpenConversation }: MessagesScreenPro
 }
 
 function ConversationRow({ conversation, onPress }: { conversation: Conversation; onPress: () => void }) {
+  const KindIcon = conversation.kind === 'group' ? UsersThree : User;
   return (
-    <Pressable style={styles.row} onPress={onPress}>
-      <View style={styles.avatar}>
-        {conversation.avatarUrl ? (
-          <Image source={{ uri: conversation.avatarUrl }} style={StyleSheet.absoluteFill} />
-        ) : (
-          <Text style={styles.avatarInitial}>{conversation.title[0]?.toUpperCase() ?? '?'}</Text>
-        )}
-      </View>
-      <View style={styles.rowBody}>
-        <Text style={styles.rowTitle} numberOfLines={1}>
-          {conversation.title}
-        </Text>
-        <Text style={styles.rowPreview} numberOfLines={1}>
-          {conversation.subtitle}
-        </Text>
-      </View>
-      {conversation.hasUnread && <View style={styles.unreadDot} />}
-    </Pressable>
+    <View style={styles.rowWrap}>
+      <PersonCard
+        size="row"
+        name={conversation.title}
+        avatarUrl={conversation.avatarUrl}
+        subtitle={conversation.subtitle}
+        onPress={onPress}
+        badge={
+          <View style={styles.kindBadge}>
+            <KindIcon size={10} color={theme.text.muted} weight="bold" />
+          </View>
+        }
+        accessoryRight={
+          <View style={styles.accessory}>
+            {conversation.lastMessageAt && (
+              <Text style={styles.timestamp}>{formatRelativeTime(conversation.lastMessageAt)}</Text>
+            )}
+            {conversation.hasUnread && <View style={styles.unreadDot} />}
+          </View>
+        }
+      />
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: theme.background.app },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm,
-  },
-  backButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: theme.background.surface,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  headerTitle: { ...typography.headline, color: theme.text.primary },
+  headerTitle: { ...typography.title1, color: theme.text.primary, paddingHorizontal: spacing.lg, paddingVertical: spacing.md },
   listContent: { paddingHorizontal: spacing.lg, paddingBottom: spacing['4xl'], gap: spacing.sm },
   emptyContent: { flexGrow: 1 },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
+  rowWrap: {
     backgroundColor: theme.background.surface,
     borderRadius: radius.lg,
     padding: spacing.md,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: theme.border.default,
   },
-  avatar: {
-    width: 48,
-    height: 48,
-    borderRadius: radius.pill,
-    backgroundColor: theme.brand.primaryTint,
+  kindBadge: {
+    width: 16,
+    height: 16,
+    borderRadius: radius.sm,
+    backgroundColor: theme.background.app,
     alignItems: 'center',
     justifyContent: 'center',
-    overflow: 'hidden',
   },
-  avatarInitial: { ...typography.headline, color: theme.text.accent },
-  rowBody: { flex: 1, gap: 2 },
-  rowTitle: { ...typography.bodyMedium, color: theme.text.primary },
-  rowPreview: { ...typography.footnote, color: theme.text.secondary },
+  accessory: { alignItems: 'flex-end', gap: 4 },
+  timestamp: { ...typography.caption, color: theme.text.muted },
   unreadDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: theme.semantic.danger },
 });

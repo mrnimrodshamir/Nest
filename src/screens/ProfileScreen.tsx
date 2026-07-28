@@ -1,22 +1,31 @@
 import React, { useState } from 'react';
-import { View, Text, Image, Pressable, Switch, StyleSheet, ScrollView, Alert, Linking } from 'react-native';
+import { View, Text, Switch, StyleSheet, ScrollView, Alert, Pressable, Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Notifications from 'expo-notifications';
-import { ArrowLeft, SignOut, PencilSimple, CalendarBlank, ChatCircleDots, Trash, ProhibitInset } from 'phosphor-react-native';
+import {
+  CalendarBlank,
+  PencilSimple,
+  Baby,
+  ProhibitInset,
+  BellSimple,
+  FileText,
+  ShieldCheck,
+  SignOut,
+  Trash,
+  CaretRight,
+} from 'phosphor-react-native';
 import { theme, typography, spacing, radius } from '@/theme';
+import { PersonCard } from '@/components/PersonCard';
 import { useAuth } from '@/hooks/useAuth';
 import { useChildren } from '@/hooks/useChildren';
 import { ensurePushRegistration } from '@/hooks/usePushNotifications';
 import { NotificationPermissionSheet } from '@/components/NotificationPermissionSheet';
 import { LEGAL_URLS } from '@/constants/legal';
-import { formatBabyAge, birthdateToMonths } from '@/utils/babyAge';
 import type { NotificationPreferences } from '@/types/profile';
 
 interface ProfileScreenProps {
-  onBack: () => void;
   onEditProfile: () => void;
   onOpenMyActivities: () => void;
-  onOpenMessages: () => void;
   onOpenBlockedUsers: () => void;
 }
 
@@ -26,19 +35,13 @@ const NOTIFICATION_LABELS: Record<keyof NotificationPreferences, string> = {
   reminders: 'Reminders before activities',
 };
 
-export function ProfileScreen({
-  onBack,
-  onEditProfile,
-  onOpenMyActivities,
-  onOpenMessages,
-  onOpenBlockedUsers,
-}: ProfileScreenProps) {
+/** The Profile tab -- the permanent home for every personal and account
+ *  destination. A living identity page, not just a settings list. */
+export function ProfileScreen({ onEditProfile, onOpenMyActivities, onOpenBlockedUsers }: ProfileScreenProps) {
   const { profile, session, signOut, deleteAccount, updateNotificationPreferences } = useAuth();
   const { children } = useChildren(session?.user.id ?? null);
   const [showNotificationSheet, setShowNotificationSheet] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-
-  const defaultChild = children.find((c) => c.isDefault) ?? children[0] ?? null;
 
   const handleSignOut = () => {
     Alert.alert('Sign out?', undefined, [
@@ -67,65 +70,39 @@ export function ProfileScreen({
     );
   };
 
+  const childSummary =
+    children.length === 0
+      ? undefined
+      : children.length === 1
+        ? `Mom of ${children[0].name}`
+        : `Mom of ${children.length} children`;
+
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-      <Pressable onPress={onBack} style={styles.backButton} accessibilityLabel="Back">
-        <ArrowLeft size={20} color={theme.text.primary} />
-      </Pressable>
       <ScrollView contentContainerStyle={styles.content}>
-        <View style={styles.avatarWrap}>
-          {profile?.avatarUrl ? (
-            <Image source={{ uri: profile.avatarUrl }} style={styles.avatar} />
-          ) : (
-            <View style={styles.avatarPlaceholder}>
-              <Text style={styles.avatarInitial}>{profile?.displayName?.[0]?.toUpperCase() ?? '?'}</Text>
-            </View>
-          )}
-        </View>
-
-        <Text style={styles.name}>{profile?.displayName ?? 'Momzi member'}</Text>
+        <PersonCard size="hero" name={profile?.displayName ?? 'Momzi member'} avatarUrl={profile?.avatarUrl ?? null} subtitle={childSummary} />
         <Text style={styles.email}>{profile?.email}</Text>
 
-        <Pressable style={styles.editButton} onPress={onEditProfile}>
+        <Pressable style={styles.editLink} onPress={onEditProfile}>
           <PencilSimple size={14} color={theme.text.accent} />
-          <Text style={styles.editButtonLabel}>Edit profile</Text>
+          <Text style={styles.editLinkLabel}>Edit profile</Text>
         </Pressable>
 
-        {children.length > 0 && (
-          <View style={styles.babyCard}>
-            <Text style={styles.babyCardLabel}>{children.length > 1 ? 'Children' : 'Child'}</Text>
-            {children.map((child) => (
-              <Text key={child.id} style={styles.babyCardValue}>
-                {child.name}
-                {child.birthdate ? ` · ${formatBabyAge(birthdateToMonths(child.birthdate))}` : ''}
-                {children.length > 1 && child.id === defaultChild?.id ? ' (default)' : ''}
-              </Text>
-            ))}
-          </View>
-        )}
+        <MenuSection>
+          <MenuRow icon={CalendarBlank} label="My Activities" onPress={onOpenMyActivities} />
+          <MenuRow icon={PencilSimple} label="Edit Profile" onPress={onEditProfile} />
+          <MenuRow icon={Baby} label="Children" onPress={onEditProfile} isLast />
+        </MenuSection>
 
-        <View style={styles.actionsRow}>
-          <Pressable style={styles.actionButton} onPress={onOpenMyActivities}>
-            <CalendarBlank size={20} color={theme.text.accent} />
-            <Text style={styles.actionButtonLabel}>My Activities</Text>
-          </Pressable>
-          <Pressable style={styles.actionButton} onPress={onOpenMessages}>
-            <ChatCircleDots size={20} color={theme.text.accent} />
-            <Text style={styles.actionButtonLabel}>Messages</Text>
-          </Pressable>
+        <View style={styles.sectionHeader}>
+          <BellSimple size={16} color={theme.text.secondary} />
+          <Text style={styles.sectionHeaderLabel}>Notification settings</Text>
         </View>
-
-        <View style={styles.infoCard}>
-          <InfoRow label="Phone" value={profile?.phone ?? '—'} />
-          <Text style={styles.privacyNote}>Your phone number is private and never shown to other members.</Text>
-        </View>
-
         {profile && (
-          <View style={styles.infoCard}>
-            <Text style={styles.babyCardLabel}>Notifications</Text>
+          <View style={styles.notificationCard}>
             {(Object.keys(NOTIFICATION_LABELS) as Array<keyof NotificationPreferences>).map((key) => (
-              <View key={key} style={styles.infoRow}>
-                <Text style={styles.infoLabel}>{NOTIFICATION_LABELS[key]}</Text>
+              <View key={key} style={styles.notificationRow}>
+                <Text style={styles.notificationLabel}>{NOTIFICATION_LABELS[key]}</Text>
                 <Switch
                   value={profile.notificationPreferences[key]}
                   onValueChange={async (value) => {
@@ -150,20 +127,14 @@ export function ProfileScreen({
           </View>
         )}
 
-        <Pressable style={styles.blockedRow} onPress={onOpenBlockedUsers}>
-          <ProhibitInset size={16} color={theme.text.secondary} />
-          <Text style={styles.blockedRowLabel}>Blocked members</Text>
-        </Pressable>
+        <MenuSection>
+          <MenuRow icon={ProhibitInset} label="Blocked members" onPress={onOpenBlockedUsers} isLast />
+        </MenuSection>
 
-        <View style={styles.legalRow}>
-          <Pressable onPress={() => Linking.openURL(LEGAL_URLS.terms)}>
-            <Text style={styles.legalLink}>Terms of Service</Text>
-          </Pressable>
-          <Text style={styles.legalDivider}>·</Text>
-          <Pressable onPress={() => Linking.openURL(LEGAL_URLS.privacy)}>
-            <Text style={styles.legalLink}>Privacy Policy</Text>
-          </Pressable>
-        </View>
+        <MenuSection>
+          <MenuRow icon={FileText} label="Terms of Service" onPress={() => Linking.openURL(LEGAL_URLS.terms)} />
+          <MenuRow icon={ShieldCheck} label="Privacy Policy" onPress={() => Linking.openURL(LEGAL_URLS.privacy)} isLast />
+        </MenuSection>
 
         <Pressable style={styles.signOutButton} onPress={handleSignOut}>
           <SignOut size={18} color={theme.semantic.danger} />
@@ -188,67 +159,71 @@ export function ProfileScreen({
   );
 }
 
-function InfoRow({ label, value }: { label: string; value: string }) {
+function MenuSection({ children }: { children: React.ReactNode }) {
+  return <View style={styles.menuSection}>{children}</View>;
+}
+
+function MenuRow({
+  icon: Icon,
+  label,
+  onPress,
+  isLast = false,
+  disabled = false,
+}: {
+  icon: React.ComponentType<{ size: number; color: string }>;
+  label: string;
+  onPress: () => void;
+  isLast?: boolean;
+  disabled?: boolean;
+}) {
   return (
-    <View style={styles.infoRow}>
-      <Text style={styles.infoLabel}>{label}</Text>
-      <Text style={styles.infoValue}>{value}</Text>
-    </View>
+    <Pressable
+      style={[styles.menuRow, !isLast && styles.menuRowDivider]}
+      onPress={onPress}
+      disabled={disabled}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+    >
+      <Icon size={18} color={theme.text.secondary} />
+      <Text style={styles.menuRowLabel}>{label}</Text>
+      {!disabled && <CaretRight size={14} color={theme.text.muted} />}
+    </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: theme.background.app },
-  backButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: theme.background.surface,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginLeft: spacing.lg,
-    marginTop: spacing.sm,
-  },
-  content: { alignItems: 'center', padding: spacing['2xl'], gap: spacing.md },
-  avatarWrap: { marginBottom: spacing.sm },
-  avatar: { width: 96, height: 96, borderRadius: radius.pill },
-  avatarPlaceholder: {
-    width: 96,
-    height: 96,
-    borderRadius: radius.pill,
-    backgroundColor: theme.brand.primaryTint,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  avatarInitial: { ...typography.display, fontSize: 32, color: theme.text.accent },
-  name: { ...typography.title2, color: theme.text.primary },
-  email: { ...typography.subhead, color: theme.text.secondary },
-  editButton: { flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: spacing.md },
-  editButtonLabel: { ...typography.footnote, color: theme.text.accent, fontWeight: '600' as const },
-  babyCard: {
+  content: { alignItems: 'center', padding: spacing['2xl'], gap: spacing.sm },
+  email: { ...typography.subhead, color: theme.text.secondary, marginTop: -spacing.xs },
+  editLink: { flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: spacing.sm },
+  editLinkLabel: { ...typography.footnote, color: theme.text.accent, fontWeight: '600' as const },
+  menuSection: {
     width: '100%',
     backgroundColor: theme.background.surface,
     borderRadius: radius.lg,
-    padding: spacing.lg,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: theme.border.default,
-    gap: 4,
+    overflow: 'hidden',
   },
-  babyCardLabel: { ...typography.caption, color: theme.text.muted, marginBottom: 4 },
-  babyCardValue: { ...typography.bodyMedium, color: theme.text.primary },
-  actionsRow: { flexDirection: 'row', gap: spacing.md, width: '100%' },
-  actionButton: {
-    flex: 1,
+  menuRow: {
+    flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.xs,
-    backgroundColor: theme.background.surface,
-    borderRadius: radius.lg,
-    paddingVertical: spacing.lg,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: theme.border.default,
+    gap: spacing.md,
+    paddingHorizontal: spacing.lg,
+    minHeight: 52,
   },
-  actionButtonLabel: { ...typography.footnote, fontWeight: '600' as const, color: theme.text.primary },
-  infoCard: {
+  menuRowDivider: { borderBottomWidth: StyleSheet.hairlineWidth, borderColor: theme.border.default },
+  menuRowLabel: { ...typography.bodyMedium, color: theme.text.primary, flex: 1 },
+  sectionHeader: {
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingHorizontal: spacing.xs,
+    marginTop: spacing.sm,
+  },
+  sectionHeaderLabel: { ...typography.footnote, fontWeight: '600' as const, color: theme.text.secondary },
+  notificationCard: {
     width: '100%',
     backgroundColor: theme.background.surface,
     borderRadius: radius.lg,
@@ -257,15 +232,8 @@ const styles = StyleSheet.create({
     borderColor: theme.border.default,
     gap: spacing.sm,
   },
-  infoRow: { flexDirection: 'row', justifyContent: 'space-between' },
-  infoLabel: { ...typography.subhead, color: theme.text.secondary },
-  infoValue: { ...typography.subhead, color: theme.text.primary },
-  privacyNote: { ...typography.caption, color: theme.text.muted },
-  blockedRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginTop: spacing.md },
-  blockedRowLabel: { ...typography.footnote, color: theme.text.secondary },
-  legalRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: spacing.sm },
-  legalLink: { ...typography.caption, color: theme.text.accent },
-  legalDivider: { ...typography.caption, color: theme.text.muted },
+  notificationRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  notificationLabel: { ...typography.subhead, color: theme.text.secondary },
   signOutButton: {
     flexDirection: 'row',
     alignItems: 'center',

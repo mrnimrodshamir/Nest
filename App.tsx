@@ -5,6 +5,8 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { NavigationContainer, LinkingOptions, createNavigationContainerRef } from '@react-navigation/native';
 import * as Notifications from 'expo-notifications';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { Compass, ChatCircleDots, UserCircle } from 'phosphor-react-native';
 import { useFonts } from '@expo-google-fonts/plus-jakarta-sans/useFonts';
 import {
   PlusJakartaSans_400Regular,
@@ -26,6 +28,7 @@ import { EditProfileScreen } from '@/screens/EditProfileScreen';
 import { MyActivitiesScreen } from '@/screens/MyActivitiesScreen';
 import { MessagesScreen } from '@/screens/MessagesScreen';
 import { BlockedUsersScreen } from '@/screens/BlockedUsersScreen';
+import { PublicProfileScreen } from '@/screens/PublicProfileScreen';
 import { LaunchScreen } from '@/screens/LaunchScreen';
 import { CompleteAppleProfileScreen } from '@/screens/auth/CompleteAppleProfileScreen';
 import { AuthNavigator } from '@/navigation/AuthNavigator';
@@ -41,37 +44,51 @@ import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { supabase } from '@/lib/supabase';
 import { setActiveChat } from '@/lib/activeChatTracker';
 import { track } from '@/lib/analytics';
+import { FALLBACK_LOCATION } from '@/constants/location';
 import type { Activity } from '@/types/activity';
+import type { Conversation } from '@/hooks/useConversations';
 import type { CreateActivityInput } from '@/hooks/useCreateActivity';
 import type { ShareableActivity } from '@/utils/buildShareMessage';
 
+export type TabParamList = {
+  Discovery: undefined;
+  Chats: undefined;
+  Profile: undefined;
+};
+
 export type RootStackParamList = {
-  Discover: undefined;
+  Tabs: undefined;
   ActivityDetail: { activityId: string };
   EditActivity: { activityId: string };
   CreateActivity: undefined;
   ShareActivity: { activity: ShareableActivity };
   Chat: { kind: 'group' | 'direct'; activityId?: string; otherUserId?: string; title?: string };
-  Profile: undefined;
+  PublicProfile: { userId: string };
   EditProfile: undefined;
   MyActivities: undefined;
-  Messages: undefined;
   BlockedUsers: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
+const Tab = createBottomTabNavigator<TabParamList>();
 const navigationRef = createNavigationContainerRef<RootStackParamList>();
 
 const linking: LinkingOptions<RootStackParamList> = {
   prefixes: ['momzi://'],
   config: {
     screens: {
-      Discover: '',
+      Tabs: {
+        screens: {
+          Discovery: '',
+          Chats: 'chats',
+          Profile: 'profile',
+        },
+      },
       ActivityDetail: 'activity/:activityId',
       EditActivity: 'activity/:activityId/edit',
       CreateActivity: 'create',
-      Profile: 'profile',
       ShareActivity: 'share',
+      PublicProfile: 'member/:userId',
       Chat: {
         path: 'activity/:activityId/chat',
         parse: { kind: () => 'group' as const },
@@ -156,14 +173,18 @@ export default function App() {
   );
 }
 
+/** The permanent three-tab structure: Discovery, Chats, Profile. Everything
+ *  else (activity detail, chat threads, public profiles, edit screens) is a
+ *  root-stack screen pushed *over* the tabs, so the tab bar hides while
+ *  drilled in and reappears on the way back — standard iOS behavior, and it
+ *  keeps ActivityDetail/Chat/PublicProfile as single shared screens instead
+ *  of duplicating them per tab. */
 function MainNavigator() {
   usePushNotifications();
 
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="Discover">
-        {({ navigation }) => <DiscoverScreenContainer navigation={navigation} />}
-      </Stack.Screen>
+      <Stack.Screen name="Tabs" component={Tabs} />
       <Stack.Screen name="ActivityDetail">
         {({ route, navigation }) => (
           <ActivityDetailContainer
@@ -213,14 +234,14 @@ function MainNavigator() {
           )
         }
       </Stack.Screen>
-      <Stack.Screen name="Profile">
-        {({ navigation }) => (
-          <ProfileScreen
+      <Stack.Screen name="PublicProfile">
+        {({ route, navigation }) => (
+          <PublicProfileScreen
+            userId={route.params.userId}
             onBack={() => navigation.goBack()}
-            onEditProfile={() => navigation.navigate('EditProfile')}
-            onOpenMyActivities={() => navigation.navigate('MyActivities')}
-            onOpenMessages={() => navigation.navigate('Messages')}
-            onOpenBlockedUsers={() => navigation.navigate('BlockedUsers')}
+            onMessage={(userId, displayName) =>
+              navigation.navigate('Chat', { kind: 'direct', otherUserId: userId, title: displayName })
+            }
           />
         )}
       </Stack.Screen>
@@ -238,12 +259,34 @@ function MainNavigator() {
           />
         )}
       </Stack.Screen>
-      <Stack.Screen name="Messages">
+    </Stack.Navigator>
+  );
+}
+
+function Tabs() {
+  return (
+    <Tab.Navigator
+      screenOptions={{
+        headerShown: false,
+        tabBarActiveTintColor: theme.brand.primary,
+        tabBarInactiveTintColor: theme.text.muted,
+        tabBarStyle: { backgroundColor: theme.background.surface, borderTopColor: theme.border.default },
+      }}
+    >
+      <Tab.Screen
+        name="Discovery"
+        options={{ tabBarIcon: ({ color, size }) => <Compass size={size} color={color} weight="fill" /> }}
+      >
+        {({ navigation }) => <DiscoverScreenContainer navigation={navigation} />}
+      </Tab.Screen>
+      <Tab.Screen
+        name="Chats"
+        options={{ tabBarIcon: ({ color, size }) => <ChatCircleDots size={size} color={color} weight="fill" /> }}
+      >
         {({ navigation }) => (
           <MessagesScreen
-            onBack={() => navigation.goBack()}
-            onOpenConversation={(conversation) =>
-              navigation.navigate('Chat', {
+            onOpenConversation={(conversation: Conversation) =>
+              navigation.getParent()?.navigate('Chat', {
                 kind: conversation.kind,
                 activityId: conversation.activityId ?? undefined,
                 otherUserId: conversation.otherUserId ?? undefined,
@@ -252,15 +295,27 @@ function MainNavigator() {
             }
           />
         )}
-      </Stack.Screen>
-    </Stack.Navigator>
+      </Tab.Screen>
+      <Tab.Screen
+        name="Profile"
+        options={{ tabBarIcon: ({ color, size }) => <UserCircle size={size} color={color} weight="fill" /> }}
+      >
+        {({ navigation }) => (
+          <ProfileScreen
+            onEditProfile={() => navigation.getParent()?.navigate('EditProfile')}
+            onOpenMyActivities={() => navigation.getParent()?.navigate('MyActivities')}
+            onOpenBlockedUsers={() => navigation.getParent()?.navigate('BlockedUsers')}
+          />
+        )}
+      </Tab.Screen>
+    </Tab.Navigator>
   );
 }
 
 function DiscoverScreenContainer({ navigation }: { navigation: any }) {
   const handleOpenActivity = useCallback(
     (activity: Activity) => {
-      navigation.navigate('ActivityDetail', { activityId: activity.id });
+      navigation.getParent()?.navigate('ActivityDetail', { activityId: activity.id });
     },
     [navigation],
   );
@@ -268,9 +323,7 @@ function DiscoverScreenContainer({ navigation }: { navigation: any }) {
   return (
     <DiscoverScreen
       onOpenActivity={handleOpenActivity}
-      onOpenMessages={() => navigation.navigate('Messages')}
-      onOpenProfile={() => navigation.navigate('Profile')}
-      onHostActivity={() => navigation.navigate('CreateActivity')}
+      onHostActivity={() => navigation.getParent()?.navigate('CreateActivity')}
     />
   );
 }
@@ -333,6 +386,7 @@ function ActivityDetailWithRsvp({
           title: activity.host.displayName,
         });
       }}
+      onOpenPerson={(userId: string) => navigation.navigate('PublicProfile', { userId })}
       onJoined={openChat}
       onOpenChat={openChat}
       canOpenChat={isHost || activity.viewerStatus === 'going'}
@@ -458,10 +512,8 @@ function CreateActivityContainer({ navigation }: { navigation: any }) {
   );
 }
 
-const FALLBACK_LOCATION = { latitude: 32.0853, longitude: 34.7818 };
-
 function useInitialLocation() {
-  const [coords, setCoords] = React.useState(FALLBACK_LOCATION);
+  const [coords, setCoords] = React.useState<{ latitude: number; longitude: number }>(FALLBACK_LOCATION);
 
   React.useEffect(() => {
     let cancelled = false;
