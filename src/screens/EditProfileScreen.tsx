@@ -167,7 +167,7 @@ function ChildrenEditor({ children, onAdd, onUpdate, onRemove, onSetDefault }: C
           <Pressable
             onPress={() => onSetDefault(child.id)}
             accessibilityLabel={child.isDefault ? `${child.name} is the default child` : `Set ${child.name} as default`}
-            hitSlop={8}
+            hitSlop={13}
           >
             <Star size={18} color={child.isDefault ? theme.brand.secondary : theme.border.strong} weight={child.isDefault ? 'fill' : 'regular'} />
           </Pressable>
@@ -178,11 +178,11 @@ function ChildrenEditor({ children, onAdd, onUpdate, onRemove, onSetDefault }: C
               {child.isDefault ? ' · Default for matching' : ''}
             </Text>
           </View>
-          <Pressable onPress={() => startEdit(child)} accessibilityLabel={`Edit ${child.name}`} hitSlop={8}>
+          <Pressable onPress={() => startEdit(child)} accessibilityLabel={`Edit ${child.name}`} hitSlop={14}>
             <PencilSimple size={16} color={theme.text.secondary} />
           </Pressable>
           {children.length > 1 && (
-            <Pressable onPress={() => confirmRemove(child)} accessibilityLabel={`Remove ${child.name}`} hitSlop={8}>
+            <Pressable onPress={() => confirmRemove(child)} accessibilityLabel={`Remove ${child.name}`} hitSlop={14}>
               <Trash size={16} color={theme.semantic.danger} />
             </Pressable>
           )}

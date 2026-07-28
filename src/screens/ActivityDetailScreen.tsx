@@ -252,7 +252,7 @@ export function ActivityDetailScreen({
           />
           <SafeAreaView edges={['top']} style={styles.heroOverlay}>
             <Pressable style={styles.roundButton} onPress={onBack} accessibilityLabel="Back">
-              <ArrowLeft size={18} color={theme.text.primary} />
+              <ArrowLeft size={20} color={theme.text.primary} />
             </Pressable>
             <View style={styles.heroActions}>
               {isHost && onEdit && (
@@ -310,7 +310,7 @@ export function ActivityDetailScreen({
               subtitle={activity.host.bio ?? 'Hosting'}
               onPress={() => onOpenPerson(activity.host.id)}
               accessoryRight={
-                <Pressable onPress={() => onMessageHost(activity.host.id)} hitSlop={8}>
+                <Pressable onPress={() => onMessageHost(activity.host.id)} hitSlop={12}>
                   <Text style={styles.messageLink}>Message</Text>
                 </Pressable>
               }
@@ -491,7 +491,7 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   categoryPillText: { ...typography.caption, color: theme.text.accent },
-  statusPillCancelled: { backgroundColor: '#F5DFDA' },
+  statusPillCancelled: { backgroundColor: theme.semantic.dangerTint },
   statusPillTextCancelled: { color: theme.semantic.danger },
   statusPillEnded: { backgroundColor: theme.background.app },
   statusPillTextEnded: { color: theme.text.muted },

@@ -87,7 +87,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing.sm,
-    backgroundColor: '#25D366',
+    backgroundColor: '#25D366', // WhatsApp's own brand green — intentionally off-palette
     borderRadius: radius.md,
     paddingVertical: spacing.md,
     width: '100%',

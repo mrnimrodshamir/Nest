@@ -45,7 +45,7 @@ export function PersonCard({
         disabled={!onPress}
         accessibilityLabel={accessibilityLabel ?? name}
         accessibilityRole={onPress ? 'button' : undefined}
-        hitSlop={4}
+        hitSlop={6}
         style={styles.compactAvatar}
       >
         {avatarUrl ? (

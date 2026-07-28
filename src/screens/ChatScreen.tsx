@@ -62,22 +62,26 @@ export function ChatScreen({ chatId, resolveError, title, onBack }: ChatScreenPr
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
           keyboardVerticalOffset={Platform.OS === 'ios' ? 8 : 0}
         >
-          <FlatList
-            ref={listRef}
-            data={messages}
-            keyExtractor={(item) => item.id}
-            contentContainerStyle={styles.messageList}
-            renderItem={({ item }) => <MessageBubble message={item} onRetry={() => retry(item.id)} />}
-            onContentSizeChange={() => listRef.current?.scrollToEnd({ animated: true })}
-            ListEmptyComponent={
-              !isLoading ? (
+          {isLoading && messages.length === 0 ? (
+            <View style={styles.centerState}>
+              <ActivityIndicator color={theme.brand.primary} />
+            </View>
+          ) : (
+            <FlatList
+              ref={listRef}
+              data={messages}
+              keyExtractor={(item) => item.id}
+              contentContainerStyle={styles.messageList}
+              renderItem={({ item }) => <MessageBubble message={item} onRetry={() => retry(item.id)} />}
+              onContentSizeChange={() => listRef.current?.scrollToEnd({ animated: true })}
+              ListEmptyComponent={
                 <View style={styles.emptyState}>
                   <Text style={styles.emptyTitle}>Say hello 👋</Text>
                   <Text style={styles.emptyBody}>This is the start of your conversation.</Text>
                 </View>
-              ) : null
-            }
-          />
+              }
+            />
+          )}
 
           {error && <Text style={styles.error}>{error}</Text>}
 
@@ -110,7 +114,7 @@ function MessageBubble({ message, onRetry }: { message: ChatMessage; onRetry: ()
         </Text>
       </View>
       {message.failed && (
-        <Pressable onPress={onRetry} style={styles.retryRow}>
+        <Pressable onPress={onRetry} style={styles.retryRow} hitSlop={10}>
           <WarningCircle size={12} color={theme.semantic.danger} weight="fill" />
           <Text style={styles.retryLabel}>Not sent — tap to retry</Text>
         </Pressable>

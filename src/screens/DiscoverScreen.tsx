@@ -186,7 +186,7 @@ export function DiscoverScreen({ onOpenActivity, onHostActivity, mockActivities 
       <SafeAreaView edges={['top']} style={styles.headerOverlay} pointerEvents="box-none">
         {searchOpen ? (
           <View style={styles.searchRow}>
-            <MagnifyingGlass size={16} color={theme.text.muted} weight={iconDefaults.weight} />
+            <MagnifyingGlass size={iconDefaults.size.inline} color={theme.text.muted} weight={iconDefaults.weight} />
             <TextInput
               style={styles.searchInput}
               placeholder="Search activities"

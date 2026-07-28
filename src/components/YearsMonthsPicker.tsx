@@ -55,6 +55,7 @@ function Stepper({
       <View style={styles.stepperControls}>
         <Pressable
           style={styles.stepperButton}
+          hitSlop={6}
           onPress={() => onChange(Math.max(min, value - 1))}
           accessibilityLabel={`Decrease ${label.toLowerCase()}`}
         >
@@ -63,6 +64,7 @@ function Stepper({
         <Text style={styles.stepperValue}>{value}</Text>
         <Pressable
           style={styles.stepperButton}
+          hitSlop={6}
           onPress={() => onChange(Math.min(max, value + 1))}
           accessibilityLabel={`Increase ${label.toLowerCase()}`}
         >

@@ -52,7 +52,7 @@ export function BlockedUsersScreen({ onBack }: BlockedUsersScreenProps) {
               )}
             </View>
             <Text style={styles.rowName}>{item.displayName}</Text>
-            <Pressable style={styles.unblockButton} onPress={() => confirmUnblock(item)}>
+            <Pressable style={styles.unblockButton} onPress={() => confirmUnblock(item)} hitSlop={10}>
               <Text style={styles.unblockLabel}>Unblock</Text>
             </Pressable>
           </View>

@@ -53,7 +53,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: spacing.xl,
   },
-  iconCircleWarning: { backgroundColor: '#FBEFD7' },
+  iconCircleWarning: { backgroundColor: theme.semantic.warningTint },
   title: {
     ...typography.title3,
     color: theme.text.primary,

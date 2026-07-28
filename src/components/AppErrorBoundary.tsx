@@ -51,10 +51,10 @@ export class AppErrorBoundary extends React.Component<Props, State> {
     if (this.state.hasError) {
       return (
         <View style={styles.container}>
-          <Text style={styles.title}>Something went wrong</Text>
+          <Text style={styles.title}>We hit a snag</Text>
           <Text style={styles.body}>
-            Momzi ran into a problem and needs to reset your session. Your account is safe — you'll
-            just need to sign in again.
+            Momzi needs to reset your session to keep going. Your account is safe — you'll just
+            need to sign in again.
           </Text>
           <PrimaryButton
             label="Reset and continue"

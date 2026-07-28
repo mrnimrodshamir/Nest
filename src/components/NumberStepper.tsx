@@ -15,6 +15,7 @@ export function NumberStepper({ value, min, max, onChange }: NumberStepperProps)
     <View style={styles.controls}>
       <Pressable
         style={styles.button}
+        hitSlop={6}
         onPress={() => onChange(Math.max(min, value - 1))}
         accessibilityLabel="Decrease"
       >
@@ -23,6 +24,7 @@ export function NumberStepper({ value, min, max, onChange }: NumberStepperProps)
       <Text style={styles.value}>{value}</Text>
       <Pressable
         style={styles.button}
+        hitSlop={6}
         onPress={() => onChange(Math.min(max, value + 1))}
         accessibilityLabel="Increase"
       >

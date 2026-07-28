@@ -239,10 +239,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.sm,
     marginTop: spacing.xl,
-    paddingVertical: spacing.sm,
     paddingHorizontal: spacing.lg,
+    minHeight: 44,
   },
   signOutLabel: { ...typography.bodyMedium, color: theme.semantic.danger },
-  deleteButton: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, paddingVertical: spacing.sm },
+  deleteButton: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, minHeight: 44 },
   deleteButtonLabel: { ...typography.caption, color: theme.text.muted },
 });

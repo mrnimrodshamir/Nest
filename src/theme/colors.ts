@@ -62,7 +62,9 @@ export const colors = {
   semantic: {
     success: '#7C9A82', // reuse sage, avoid a jarring green
     warning: '#E8B04B',
+    warningTint: '#FBEFD7',
     danger: '#E2725B',
+    dangerTint: '#F5DFDA',
     info: '#8FB4C9',    // reuse sky
   },
 

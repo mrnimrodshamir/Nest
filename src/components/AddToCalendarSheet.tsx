@@ -39,7 +39,7 @@ export function AddToCalendarSheet({ visible, activity, onDismiss }: AddToCalend
         <View style={styles.sheet}>
           <View style={styles.header}>
             <Text style={styles.title}>Add to your calendar?</Text>
-            <Pressable onPress={onDismiss} style={styles.closeButton} accessibilityLabel="Close">
+            <Pressable onPress={onDismiss} style={styles.closeButton} hitSlop={8} accessibilityLabel="Close">
               <X size={16} color={theme.text.secondary} />
             </Pressable>
           </View>
