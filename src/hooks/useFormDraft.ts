@@ -16,7 +16,12 @@ export function useFormDraft<T extends object>(key: string) {
 
   useEffect(() => {
     AsyncStorage.getItem(DRAFT_PREFIX + key).then((raw) => {
-      setInitialDraft(raw ? (JSON.parse(raw) as T) : null);
+      if (!raw) return setInitialDraft(null);
+      try {
+        setInitialDraft(JSON.parse(raw) as T);
+      } catch {
+        setInitialDraft(null);
+      }
     });
   }, [key]);
 

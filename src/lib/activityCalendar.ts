@@ -22,7 +22,12 @@ const STORAGE_PREFIX = 'momzi.calendarEvent.';
 
 async function getStoredLink(activityId: string): Promise<StoredCalendarLink | null> {
   const raw = await AsyncStorage.getItem(STORAGE_PREFIX + activityId);
-  return raw ? (JSON.parse(raw) as StoredCalendarLink) : null;
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw) as StoredCalendarLink;
+  } catch {
+    return null;
+  }
 }
 
 async function setStoredLink(activityId: string, link: StoredCalendarLink | null): Promise<void> {

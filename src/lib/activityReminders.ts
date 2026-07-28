@@ -13,7 +13,12 @@ const REMINDER_OFFSETS_HOURS = [24, 2];
 
 async function getStoredIds(activityId: string): Promise<string[]> {
   const raw = await AsyncStorage.getItem(STORAGE_PREFIX + activityId);
-  return raw ? (JSON.parse(raw) as string[]) : [];
+  if (!raw) return [];
+  try {
+    return JSON.parse(raw) as string[];
+  } catch {
+    return [];
+  }
 }
 
 async function setStoredIds(activityId: string, ids: string[]): Promise<void> {
