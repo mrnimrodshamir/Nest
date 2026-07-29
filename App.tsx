@@ -174,12 +174,13 @@ function AppInner() {
       : !profile || !profile.onboardingCompleted
         ? 'complete-profile'
         : 'main-navigator';
-  console.log('[App] routing decision', {
-    route: routeDecision,
-    hasSession: Boolean(session),
-    hasProfile: Boolean(profile),
-    onboardingCompleted: profile?.onboardingCompleted ?? null,
-  });
+  if (!PREVIEW_MODE && session) {
+    if (routeDecision === 'complete-profile') {
+      console.log('[ROUTING 01] authenticated incomplete', { hasProfile: Boolean(profile) });
+    } else if (routeDecision === 'main-navigator') {
+      console.log('[ROUTING 02] authenticated complete');
+    }
+  }
 
   return (
     <AppErrorBoundary>
@@ -228,6 +229,10 @@ function AppInner() {
  *  of duplicating them per tab. */
 function MainNavigator() {
   usePushNotifications();
+
+  useEffect(() => {
+    console.log('[MAIN 01] main navigator mounted');
+  }, []);
 
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
@@ -367,6 +372,10 @@ function DiscoverScreenContainer({ navigation }: { navigation: any }) {
     [navigation],
   );
   const [previewShowEmpty, setPreviewShowEmpty] = React.useState(false);
+
+  useEffect(() => {
+    console.log('[HOME 01] initial screen mounted');
+  }, []);
 
   return (
     <View style={{ flex: 1 }}>

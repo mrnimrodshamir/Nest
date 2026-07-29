@@ -7,7 +7,6 @@ import { supabase } from '@/lib/supabase';
 export type AnalyticsEvent =
   | 'app_opened'
   | 'sign_up_started'
-  | 'sign_up_pending_confirmation'
   | 'sign_up_completed'
   | 'onboarding_completed'
   | 'activity_viewed'

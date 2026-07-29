@@ -11,8 +11,8 @@ import {
   Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ArrowLeft, EnvelopeSimple } from 'phosphor-react-native';
-import { theme, typography, spacing, radius } from '@/theme';
+import { ArrowLeft } from 'phosphor-react-native';
+import { theme, typography, spacing } from '@/theme';
 import { FormField } from '@/components/FormField';
 import { PrimaryButton } from '@/components/PrimaryButton';
 import { Checkbox } from '@/components/Checkbox';
@@ -58,7 +58,6 @@ export function SignUpScreen({ onBack }: SignUpScreenProps) {
   const [formError, setFormError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [stage, setStage] = useState<RegistrationStage | null>(null);
-  const [pendingConfirmationEmail, setPendingConfirmationEmail] = useState<string | null>(null);
 
   const emailRef = useRef<TextInput>(null);
   const passwordRef = useRef<TextInput>(null);
@@ -112,13 +111,11 @@ export function SignUpScreen({ onBack }: SignUpScreenProps) {
 
       if (result.status === 'error') {
         setFormError(result.message); // form data preserved — nothing is cleared here
-      } else if (result.status === 'needs-email-confirmation') {
-        clear();
-        setPendingConfirmationEmail(email.trim());
       } else {
         clear();
         // 'signed-in' — the root navigator swaps to the main app automatically
-        // once useAuth's session/profile state updates.
+        // once useAuth's shared session/profile state updates. No email
+        // confirmation step: registration goes straight into the app.
       }
     } finally {
       setIsSubmitting(false);
@@ -126,27 +123,6 @@ export function SignUpScreen({ onBack }: SignUpScreenProps) {
       inFlightRef.current = false;
     }
   };
-
-  if (pendingConfirmationEmail) {
-    return (
-      <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-        <View style={styles.confirmContent}>
-          <View style={styles.confirmIcon}>
-            <EnvelopeSimple size={32} color={theme.brand.primary} weight="duotone" />
-          </View>
-          <Text style={styles.title}>Check your inbox</Text>
-          <Text style={styles.subtitle}>
-            We sent a confirmation link to{'\n'}
-            <Text style={styles.confirmEmail}>{pendingConfirmationEmail}</Text>
-            {'\n'}Tap it to finish setting up your account.
-          </Text>
-          <Pressable onPress={onBack} style={styles.backToLoginLink} hitSlop={8}>
-            <Text style={styles.backToLoginLabel}>Back to login</Text>
-          </Pressable>
-        </View>
-      </SafeAreaView>
-    );
-  }
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
@@ -247,22 +223,4 @@ const styles = StyleSheet.create({
   legalLink: { color: theme.text.accent, fontFamily: typography.bodyMedium.fontFamily },
   termsError: { ...typography.caption, color: theme.semantic.danger },
   formError: { ...typography.footnote, color: theme.semantic.danger, textAlign: 'center' },
-  confirmContent: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: spacing['3xl'],
-  },
-  confirmIcon: {
-    width: 72,
-    height: 72,
-    borderRadius: radius.pill,
-    backgroundColor: theme.brand.primaryTint,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: spacing.xl,
-  },
-  confirmEmail: { fontFamily: typography.bodyMedium.fontFamily, color: theme.text.primary },
-  backToLoginLink: { marginTop: spacing['2xl'], minHeight: 44, justifyContent: 'center' },
-  backToLoginLabel: { ...typography.bodyMedium, color: theme.text.accent },
 });
