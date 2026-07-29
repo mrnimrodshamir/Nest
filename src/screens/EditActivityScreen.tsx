@@ -1,10 +1,11 @@
 import React from 'react';
-import { View, Text, Pressable, Alert, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, Pressable, Alert, ActivityIndicator, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ArrowLeft } from 'phosphor-react-native';
 import { theme, typography, spacing } from '@/theme';
 import { ActivityForm } from '@/components/ActivityForm';
 import { useEditActivity } from '@/hooks/useEditActivity';
+import { useHostAttendance } from '@/hooks/useHostAttendance';
 import type { ActivityDetail } from '@/types/activity';
 import type { CreateActivityInput } from '@/hooks/useCreateActivity';
 
@@ -17,6 +18,11 @@ interface EditActivityScreenProps {
 
 export function EditActivityScreen({ activity, onBack, onSaved, onCancelled }: EditActivityScreenProps) {
   const { isSubmitting, stage, error, update, cancelActivity } = useEditActivity(activity.id);
+  // ActivityForm reads initialValues.hostChildIds into local state once, on
+  // mount — so the form must not render until this resolves, or a host
+  // editing any field (even just fixing a typo) would silently save her
+  // attendance back to "alone".
+  const { childIds: hostChildIds, isLoading: isLoadingAttendance } = useHostAttendance(activity.id);
 
   const handleSubmit = async (input: CreateActivityInput) => {
     const success = await update(input);
@@ -52,33 +58,40 @@ export function EditActivityScreen({ activity, onBack, onSaved, onCancelled }: E
           <View style={styles.backButton} />
         </View>
 
-        <ActivityForm
-          initialValues={{
-            activityType: activity.category,
-            title: activity.title,
-            description: activity.description,
-            startsAt: new Date(activity.startTime),
-            durationMinutes: activity.durationMinutes,
-            latitude: activity.latitude,
-            longitude: activity.longitude,
-            locationName: activity.location.label,
-            maxParticipants: activity.capacity,
-            babyMinAgeMonths: activity.babyMinAgeMonths,
-            babyMaxAgeMonths: activity.babyMaxAgeMonths,
-            notes: activity.notes ?? '',
-            coverImageUrl: activity.coverImageUrl,
-          }}
-          submitLabel="Save changes"
-          isSubmitting={isSubmitting}
-          stage={stage}
-          error={error}
-          onSubmit={handleSubmit}
-          footer={
-            <Pressable style={styles.cancelButton} onPress={handleCancelActivity} disabled={isSubmitting}>
-              <Text style={styles.cancelButtonLabel}>Cancel this activity</Text>
-            </Pressable>
-          }
-        />
+        {isLoadingAttendance ? (
+          <View style={styles.loadingState}>
+            <ActivityIndicator color={theme.brand.primary} />
+          </View>
+        ) : (
+          <ActivityForm
+            initialValues={{
+              activityType: activity.category,
+              title: activity.title,
+              description: activity.description,
+              startsAt: new Date(activity.startTime),
+              durationMinutes: activity.durationMinutes,
+              latitude: activity.latitude,
+              longitude: activity.longitude,
+              locationName: activity.location.label,
+              maxParticipants: activity.capacity,
+              babyMinAgeMonths: activity.babyMinAgeMonths,
+              babyMaxAgeMonths: activity.babyMaxAgeMonths,
+              notes: activity.notes ?? '',
+              coverImageUrl: activity.coverImageUrl,
+              hostChildIds,
+            }}
+            submitLabel="Save changes"
+            isSubmitting={isSubmitting}
+            stage={stage}
+            error={error}
+            onSubmit={handleSubmit}
+            footer={
+              <Pressable style={styles.cancelButton} onPress={handleCancelActivity} disabled={isSubmitting}>
+                <Text style={styles.cancelButtonLabel}>Cancel this activity</Text>
+              </Pressable>
+            }
+          />
+        )}
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -103,6 +116,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   headerTitle: { ...typography.headline, color: theme.text.primary },
+  loadingState: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   cancelButton: { alignItems: 'center', paddingVertical: spacing.md, marginTop: spacing.sm },
   cancelButtonLabel: { ...typography.bodyMedium, color: theme.semantic.danger },
 });
