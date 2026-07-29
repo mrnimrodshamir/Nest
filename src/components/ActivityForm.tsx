@@ -12,7 +12,9 @@ import { Checkbox } from '@/components/Checkbox';
 import { PrimaryButton } from '@/components/PrimaryButton';
 import { CoverImage } from '@/components/CoverImage';
 import { CuratedCover, parseCuratedCover } from '@/components/CuratedCover';
+import { ComingWithSelector } from '@/components/ComingWithSelector';
 import { useAuth } from '@/hooks/useAuth';
+import { useChildren } from '@/hooks/useChildren';
 import { CATEGORY_LABELS, DURATION_OPTIONS_MINUTES } from '@/types/activity';
 import type { ActivityCategory } from '@/types/activity';
 import { formatDuration } from '@/utils/formatDuration';
@@ -40,6 +42,10 @@ export interface ActivityFormInitialValues {
   babyMaxAgeMonths: number | null;
   notes: string;
   coverImageUrl?: string | null;
+  /** Empty means "coming alone". Omit entirely to default to alone (used
+   *  by the Edit Activity form, which doesn't currently pre-load the
+   *  activity's existing selection — see useEditActivity). */
+  hostChildIds?: string[];
 }
 
 interface ActivityFormProps {
@@ -62,7 +68,9 @@ export function ActivityForm({
   onSubmit,
   footer,
 }: ActivityFormProps) {
-  const { profile } = useAuth();
+  const { profile, session } = useAuth();
+  const { children } = useChildren(session?.user.id ?? null);
+  const [hostChildIds, setHostChildIds] = useState<string[]>(initialValues?.hostChildIds ?? []);
 
   const [activityType, setActivityType] = useState<ActivityCategory>(
     initialValues?.activityType ?? 'stroller_walk',
@@ -126,6 +134,7 @@ export function ActivityForm({
       notes: notes.trim(),
       coverUri,
       curatedCover: coverUri ? null : curatedCover,
+      hostChildIds,
     });
   };
 
@@ -288,6 +297,8 @@ export function ActivityForm({
           </View>
         </View>
       )}
+
+      <ComingWithSelector children={children} selectedChildIds={hostChildIds} onChange={setHostChildIds} />
 
       <Field label="Notes / what to bring">
         <TextInput

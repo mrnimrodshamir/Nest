@@ -22,20 +22,24 @@ function normalizeEmail(email: string): string {
 
 export type RegistrationStage = 'creating-account' | 'uploading-photo' | 'saving-profile';
 
+export interface RegistrationChildInput {
+  name: string;
+  birthdate: string; // ISO date (YYYY-MM-DD)
+}
+
 export interface RegistrationInput {
   fullName: string;
   email: string;
   password: string;
-  childName: string;
-  childBirthdate: string; // ISO date, already converted from the years/months picker
+  /** At least one required — the first entry becomes the default child. */
+  children: RegistrationChildInput[];
   /** All optional — collected later from Edit Profile, never required to finish signup. */
   phone?: string;
   photoUri?: string | null;
 }
 
 export interface AppleProfileInput {
-  childName: string;
-  childBirthdate: string;
+  children: RegistrationChildInput[];
   phone?: string;
   photoUri?: string | null;
   /** Only present on Apple's very first authorization for this account. */
@@ -170,8 +174,10 @@ export function useAuth(): UseAuthResult {
         options: {
           data: {
             full_name: input.fullName.trim(),
-            child_name: input.childName.trim(),
-            child_birthdate: input.childBirthdate,
+            children: input.children.map((child) => ({
+              name: child.name.trim(),
+              birthdate: child.birthdate,
+            })),
           },
         },
       });
@@ -309,8 +315,7 @@ export function useAuth(): UseAuthResult {
       return {
         status: 'needs-profile' as const,
         input: {
-          childName: '',
-          childBirthdate: '',
+          children: [],
           fallbackFullName: fullName || null,
           fallbackEmail: credential.email ?? data.user.email ?? null,
         },
@@ -379,21 +384,23 @@ export function useAuth(): UseAuthResult {
         return "Couldn't save your profile. Please try again.";
       }
 
-      // Guard against re-inserting a second child if this step is retried
-      // after the profile update succeeded but a prior attempt's child
-      // insert already went through.
+      // Guard against re-inserting children if this step is retried after
+      // the profile update succeeded but a prior attempt's child insert
+      // already went through.
       const { data: existingChildren } = await supabase
         .from('children')
         .select('id')
         .eq('profile_id', userId)
         .limit(1);
-      if (!existingChildren?.length) {
-        const { error: childError } = await supabase.from('children').insert({
-          profile_id: userId,
-          name: input.childName,
-          birthdate: input.childBirthdate,
-          is_default: true,
-        });
+      if (!existingChildren?.length && input.children.length > 0) {
+        const { error: childError } = await supabase.from('children').insert(
+          input.children.map((child, index) => ({
+            profile_id: userId,
+            name: child.name,
+            birthdate: child.birthdate,
+            is_default: index === 0,
+          })),
+        );
         if (childError) {
           console.log('[Auth] Child creation failed during profile completion', childError.message);
           return "Couldn't save your profile. Please try again.";

@@ -44,15 +44,31 @@ export function useEditActivity(activityId: string) {
         baby_min_age_months: input.babyMinAgeMonths,
         baby_max_age_months: input.babyMaxAgeMonths,
         notes: input.notes || null,
+        host_coming_alone: input.hostChildIds.length === 0,
         ...coverUpdate,
       })
       .eq('id', activityId);
-    setIsSubmitting(false);
-    setStage(null);
     if (updateError) {
-      setError(updateError.message);
+      console.log('[EditActivity] Activity update failed', updateError.message);
+      setIsSubmitting(false);
+      setStage(null);
+      setError("Couldn't save your changes. Please try again.");
       return false;
     }
+
+    // Replace the host's child selection wholesale — simpler and safer
+    // than diffing, and this table is small (a handful of rows per
+    // activity at most).
+    await supabase.from('activity_host_children').delete().eq('activity_id', activityId);
+    if (input.hostChildIds.length > 0) {
+      const { error: childrenError } = await supabase.from('activity_host_children').insert(
+        input.hostChildIds.map((childId) => ({ activity_id: activityId, child_id: childId })),
+      );
+      if (childrenError) console.log('[EditActivity] Saving host children failed', childrenError.message);
+    }
+
+    setIsSubmitting(false);
+    setStage(null);
     return true;
   };
 
@@ -65,7 +81,8 @@ export function useEditActivity(activityId: string) {
       .eq('id', activityId);
     setIsSubmitting(false);
     if (cancelError) {
-      setError(cancelError.message);
+      console.log('[EditActivity] Cancel failed', cancelError.message);
+      setError("Couldn't cancel this activity. Please try again.");
       return false;
     }
     return true;

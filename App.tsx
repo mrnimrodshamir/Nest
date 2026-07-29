@@ -166,8 +166,7 @@ export default function App() {
               // completion step) — recover with the same completion form.
               <CompleteAppleProfileScreen
                 input={{
-                  childName: '',
-                  childBirthdate: '',
+                  children: [],
                   fallbackFullName: null,
                   fallbackEmail: session.user.email ?? null,
                 }}

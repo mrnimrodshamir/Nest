@@ -9,14 +9,15 @@ export function yearsMonthsToBirthdate(years: number, months: number): string {
   return date.toISOString().slice(0, 10);
 }
 
-export function birthdateToYearsMonths(isoDate: string): { years: number; months: number } {
-  const totalMonths = birthdateToMonths(isoDate);
+export function birthdateToYearsMonths(isoDate: string, now: Date = new Date()): { years: number; months: number } {
+  const totalMonths = birthdateToMonths(isoDate, now);
   return { years: Math.floor(totalMonths / 12), months: totalMonths % 12 };
 }
 
-export function birthdateToMonths(isoDate: string): number {
+/** `now` defaults to the device's current date/time — pass an explicit
+ *  value only for deterministic testing of age boundaries. */
+export function birthdateToMonths(isoDate: string, now: Date = new Date()): number {
   const birth = new Date(isoDate);
-  const now = new Date();
   let months = (now.getFullYear() - birth.getFullYear()) * 12 + (now.getMonth() - birth.getMonth());
   if (now.getDate() < birth.getDate()) months -= 1;
   return Math.max(0, months);

@@ -22,6 +22,8 @@ export interface CreateActivityInput {
   coverUri: string | null;
   /** Set when the host chose a curated gradient instead of uploading. */
   curatedCover: ActivityCategory | null;
+  /** Empty means the host is coming alone. */
+  hostChildIds: string[];
 }
 
 export type CreateActivityStage = 'saving' | CoverUploadStage;
@@ -75,18 +77,30 @@ export function useCreateActivity(): UseCreateActivityResult {
         baby_max_age_months: input.babyMaxAgeMonths,
         notes: input.notes || null,
         cover_image_url: initialCoverUrl,
+        host_coming_alone: input.hostChildIds.length === 0,
       })
       .select('id')
       .single();
 
     if (insertError) {
-      setError(insertError.message);
+      console.log('[CreateActivity] Activity insert failed', insertError.message);
+      setError("Couldn't create your activity. Please try again.");
       setIsSubmitting(false);
       setStage(null);
       return null;
     }
 
     const activityId = data.id as string;
+
+    if (input.hostChildIds.length > 0) {
+      const { error: childrenError } = await supabase.from('activity_host_children').insert(
+        input.hostChildIds.map((childId) => ({ activity_id: activityId, child_id: childId })),
+      );
+      // Non-blocking — RLS already verified ownership; a failure here would
+      // only be a transient network issue. The activity itself is created
+      // either way rather than losing the mother's other input.
+      if (childrenError) console.log('[CreateActivity] Saving host children failed', childrenError.message);
+    }
 
     if (input.coverUri) {
       try {

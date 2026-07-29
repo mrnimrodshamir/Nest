@@ -16,10 +16,9 @@ import { theme, typography, spacing, radius } from '@/theme';
 import { FormField } from '@/components/FormField';
 import { PrimaryButton } from '@/components/PrimaryButton';
 import { Checkbox } from '@/components/Checkbox';
-import { YearsMonthsPicker } from '@/components/YearsMonthsPicker';
+import { OnboardingChildrenEditor, type OnboardingChild } from '@/components/OnboardingChildrenEditor';
 import { LEGAL_URLS } from '@/constants/legal';
 import { isValidEmail, isValidPassword, isNonEmpty } from '@/utils/validation';
-import { yearsMonthsToBirthdate } from '@/utils/babyAge';
 import { useAuth, type RegistrationStage } from '@/hooks/useAuth';
 import { useFormDraft } from '@/hooks/useFormDraft';
 
@@ -30,10 +29,10 @@ interface SignUpScreenProps {
 interface DraftFields {
   fullName: string;
   email: string;
-  childName: string;
-  childYears: number;
-  childMonths: number;
+  children: OnboardingChild[];
 }
+
+const EMPTY_CHILD: OnboardingChild = { name: '', birthdate: null };
 
 const STAGE_LABELS: Record<RegistrationStage, string> = {
   'creating-account': 'Creating your account…',
@@ -51,12 +50,11 @@ export function SignUpScreen({ onBack }: SignUpScreenProps) {
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [childName, setChildName] = useState('');
-  const [childYears, setChildYears] = useState(0);
-  const [childMonths, setChildMonths] = useState(3);
+  const [children, setChildren] = useState<OnboardingChild[]>([EMPTY_CHILD]);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
 
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [childErrors, setChildErrors] = useState<Array<{ name?: string; birthdate?: string }>>([]);
   const [formError, setFormError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [stage, setStage] = useState<RegistrationStage | null>(null);
@@ -64,21 +62,18 @@ export function SignUpScreen({ onBack }: SignUpScreenProps) {
 
   const emailRef = useRef<TextInput>(null);
   const passwordRef = useRef<TextInput>(null);
-  const childNameRef = useRef<TextInput>(null);
 
   // Restore a draft left behind by a closed app or dropped connection.
   useEffect(() => {
     if (!initialDraft) return;
     setFullName(initialDraft.fullName);
     setEmail(initialDraft.email);
-    setChildName(initialDraft.childName);
-    setChildYears(initialDraft.childYears);
-    setChildMonths(initialDraft.childMonths);
+    if (initialDraft.children?.length) setChildren(initialDraft.children);
   }, [initialDraft]);
 
   useEffect(() => {
-    save({ fullName, email, childName, childYears, childMonths });
-  }, [fullName, email, childName, childYears, childMonths, save]);
+    save({ fullName, email, children });
+  }, [fullName, email, children, save]);
 
   const handleSubmit = async () => {
     if (isSubmitting) return; // debounce duplicate submissions
@@ -86,10 +81,16 @@ export function SignUpScreen({ onBack }: SignUpScreenProps) {
     if (!isNonEmpty(fullName)) errors.fullName = 'Enter your name';
     if (!isValidEmail(email)) errors.email = 'Enter a valid email address';
     if (!isValidPassword(password)) errors.password = 'Password must be at least 8 characters';
-    if (!isNonEmpty(childName)) errors.childName = "Enter your child's name";
+    const perChild = children.map((child) => {
+      const e: { name?: string; birthdate?: string } = {};
+      if (!isNonEmpty(child.name)) e.name = "Enter your child's name";
+      if (!child.birthdate) e.birthdate = "Select your child's date of birth";
+      return e;
+    });
     if (!acceptedTerms) errors.terms = 'Please accept the Terms and Privacy Policy to continue';
     setFieldErrors(errors);
-    if (Object.keys(errors).length > 0) return;
+    setChildErrors(perChild);
+    if (Object.keys(errors).length > 0 || perChild.some((e) => e.name || e.birthdate)) return;
 
     setFormError(null);
     setIsSubmitting(true);
@@ -98,8 +99,7 @@ export function SignUpScreen({ onBack }: SignUpScreenProps) {
         fullName: fullName.trim(),
         email: email.trim(),
         password,
-        childName: childName.trim(),
-        childBirthdate: yearsMonthsToBirthdate(childYears, childMonths),
+        children: children.map((child) => ({ name: child.name.trim(), birthdate: child.birthdate! })),
       },
       setStage,
     );
@@ -187,32 +187,11 @@ export function SignUpScreen({ onBack }: SignUpScreenProps) {
               isPassword
               textContentType="newPassword"
               autoComplete="password-new"
-              returnKeyType="next"
-              onSubmitEditing={() => childNameRef.current?.focus()}
+              returnKeyType="done"
               error={fieldErrors.password}
             />
 
-            <FormField
-              ref={childNameRef}
-              label="Child's name"
-              placeholder="Child's name"
-              value={childName}
-              onChangeText={setChildName}
-              autoCapitalize="words"
-              returnKeyType="done"
-              error={fieldErrors.childName}
-            />
-            <View style={styles.ageField}>
-              <Text style={styles.ageLabel}>Child's age</Text>
-              <YearsMonthsPicker
-                years={childYears}
-                months={childMonths}
-                onChange={(y, m) => {
-                  setChildYears(y);
-                  setChildMonths(m);
-                }}
-              />
-            </View>
+            <OnboardingChildrenEditor children={children} onChange={setChildren} errors={childErrors} />
 
             <Checkbox checked={acceptedTerms} onToggle={() => setAcceptedTerms((v) => !v)}>
               I agree to Momzi's{' '}
@@ -256,8 +235,6 @@ const styles = StyleSheet.create({
   title: { ...typography.title1, color: theme.text.primary, marginTop: spacing.xl },
   subtitle: { ...typography.body, color: theme.text.secondary, marginBottom: spacing.xl },
   form: { gap: spacing.lg },
-  ageField: { gap: spacing.sm },
-  ageLabel: { ...typography.footnote, color: theme.text.secondary },
   legalLink: { color: theme.text.accent, fontFamily: typography.bodyMedium.fontFamily },
   termsError: { ...typography.caption, color: theme.semantic.danger },
   formError: { ...typography.footnote, color: theme.semantic.danger, textAlign: 'center' },

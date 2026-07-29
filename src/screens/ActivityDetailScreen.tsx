@@ -14,10 +14,12 @@ import { formatStartTime } from '@/utils/formatStartTime';
 import { formatDuration } from '@/utils/formatDuration';
 import { formatAgeRange } from '@/utils/babyAge';
 import { useActivityRsvp } from '@/hooks/useActivityRsvp';
+import { useActivityAttendance } from '@/hooks/useActivityAttendance';
 import { useAuth } from '@/hooks/useAuth';
 import { useChildren } from '@/hooks/useChildren';
 import { useReportAndBlock } from '@/hooks/useReportAndBlock';
 import { AddToCalendarSheet } from '@/components/AddToCalendarSheet';
+import { JoinActivitySheet } from '@/components/JoinActivitySheet';
 import { CoverImage } from '@/components/CoverImage';
 import { NotificationPermissionSheet } from '@/components/NotificationPermissionSheet';
 import { PhotoNudgeSheet } from '@/components/PhotoNudgeSheet';
@@ -59,6 +61,7 @@ export function ActivityDetailScreen({
   onEdit,
 }: ActivityDetailScreenProps) {
   const { activity, isSubmitting, error, join, leave } = useActivityRsvp(initial);
+  const attendance = useActivityAttendance(activity.id);
   const { profile, session, updateProfileDetails } = useAuth();
   const { children, setDefaultChild } = useChildren(session?.user.id ?? null);
   const { submitReport, blockUser } = useReportAndBlock();
@@ -171,9 +174,16 @@ export function ActivityDetailScreen({
   };
 
   const isAgeRelevant = activity.babyMinAgeMonths !== null || activity.babyMaxAgeMonths !== null;
+  const [showJoinSheet, setShowJoinSheet] = useState(false);
 
-  const performJoin = async () => {
-    const joined = await join();
+  const performJoin = async (childIds: string[]) => {
+    // Whichever child she's coming with becomes the default used for
+    // age-matching elsewhere in the app — mirrors the age-eligibility
+    // guidance the join sheet already shows for this activity.
+    const firstChild = children.find((c) => childIds.includes(c.id));
+    if (firstChild && !firstChild.isDefault) await setDefaultChild(firstChild.id);
+    const joined = await join(childIds);
+    setShowJoinSheet(false);
     if (joined) {
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       const { status } = await Notifications.getPermissionsAsync();
@@ -191,27 +201,11 @@ export function ActivityDetailScreen({
 
   const handleJoinPress = async () => {
     if (activity.viewerStatus === 'none') {
-      // This activity cares about baby age and there's more than one child
-      // to choose from — ask which one it's for (this also becomes the new
-      // default child used for age-matching elsewhere in the app).
-      if (isAgeRelevant && children.length > 1) {
-        Alert.alert(
-          "Who's this for?",
-          `${activity.title} is for babies ${formatAgeRange(activity.babyMinAgeMonths, activity.babyMaxAgeMonths)}.`,
-          [
-            ...children.map((child) => ({
-              text: child.name,
-              onPress: async () => {
-                if (!child.isDefault) await setDefaultChild(child.id);
-                await performJoin();
-              },
-            })),
-            { text: 'Cancel', style: 'cancel' as const },
-          ],
-        );
+      if (children.length > 0) {
+        setShowJoinSheet(true);
         return;
       }
-      await performJoin();
+      await performJoin([]);
     } else {
       Alert.alert('Leave this activity?', "You'll lose your spot, and it may fill up.", [
         { text: 'Cancel', style: 'cancel' },
@@ -307,7 +301,9 @@ export function ActivityDetailScreen({
               size="row"
               name={activity.host.displayName}
               avatarUrl={activity.host.avatarUrl}
-              subtitle={activity.host.bio ?? 'Hosting'}
+              subtitle={[activity.host.bio ?? 'Hosting', attendance[activity.host.id]?.summary]
+                .filter(Boolean)
+                .join(' · ')}
               onPress={() => onOpenPerson(activity.host.id)}
               accessoryRight={
                 <Pressable onPress={() => onMessageHost(activity.host.id)} hitSlop={12}>
@@ -444,6 +440,20 @@ export function ActivityDetailScreen({
       />
 
       <AddToCalendarSheet visible={showCalendarSheet} activity={calendarInfo} onDismiss={handleCalendarSheetDismiss} />
+
+      <JoinActivitySheet
+        visible={showJoinSheet}
+        activityTitle={activity.title}
+        ageHint={
+          isAgeRelevant
+            ? `${activity.title} is for babies ${formatAgeRange(activity.babyMinAgeMonths, activity.babyMaxAgeMonths)}.`
+            : null
+        }
+        children={children}
+        isSubmitting={isSubmitting}
+        onConfirm={performJoin}
+        onDismiss={() => setShowJoinSheet(false)}
+      />
 
       <PhotoNudgeSheet
         visible={showPhotoNudge}

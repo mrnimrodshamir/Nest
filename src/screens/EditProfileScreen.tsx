@@ -6,9 +6,9 @@ import { theme, typography, spacing, radius } from '@/theme';
 import { FormField } from '@/components/FormField';
 import { PrimaryButton } from '@/components/PrimaryButton';
 import { AvatarPicker } from '@/components/AvatarPicker';
-import { YearsMonthsPicker } from '@/components/YearsMonthsPicker';
+import { DateOfBirthField } from '@/components/DateOfBirthField';
 import { isNonEmpty, isValidPhone } from '@/utils/validation';
-import { yearsMonthsToBirthdate, birthdateToYearsMonths, formatBabyAge, birthdateToMonths } from '@/utils/babyAge';
+import { formatBabyAge, birthdateToMonths } from '@/utils/babyAge';
 import { useAuth } from '@/hooks/useAuth';
 import { useChildren } from '@/hooks/useChildren';
 import type { Child } from '@/types/child';
@@ -118,36 +118,32 @@ interface ChildrenEditorProps {
 function ChildrenEditor({ children, onAdd, onUpdate, onRemove, onSetDefault }: ChildrenEditorProps) {
   const [editingId, setEditingId] = useState<string | 'new' | null>(null);
   const [name, setName] = useState('');
-  const [years, setYears] = useState(0);
-  const [months, setMonths] = useState(3);
+  const [birthdate, setBirthdate] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
   const startAdd = () => {
     setEditingId('new');
     setName('');
-    setYears(0);
-    setMonths(3);
+    setBirthdate(null);
     setError(null);
   };
 
   const startEdit = (child: Child) => {
     setEditingId(child.id);
     setName(child.name);
-    if (child.birthdate) {
-      const age = birthdateToYearsMonths(child.birthdate);
-      setYears(age.years);
-      setMonths(age.months);
-    }
+    setBirthdate(child.birthdate);
     setError(null);
   };
 
   const handleSave = async () => {
     if (!isNonEmpty(name)) return setError("Enter the child's name");
+    if (!birthdate) return setError("Select the child's date of birth");
     setIsSaving(true);
-    const birthdate = yearsMonthsToBirthdate(years, months);
     const result =
-      editingId === 'new' ? await onAdd({ name: name.trim(), birthdate }) : await onUpdate(editingId!, { name: name.trim(), birthdate });
+      editingId === 'new'
+        ? await onAdd({ name: name.trim(), birthdate })
+        : await onUpdate(editingId!, { name: name.trim(), birthdate });
     setIsSaving(false);
     if (result) setError(result);
     else setEditingId(null);
@@ -192,10 +188,7 @@ function ChildrenEditor({ children, onAdd, onUpdate, onRemove, onSetDefault }: C
       {editingId ? (
         <View style={styles.childEditor}>
           <FormField label="Child's name" value={name} onChangeText={setName} autoCapitalize="words" />
-          <View style={styles.ageField}>
-            <Text style={styles.ageLabel}>Age</Text>
-            <YearsMonthsPicker years={years} months={months} onChange={(y, m) => { setYears(y); setMonths(m); }} />
-          </View>
+          <DateOfBirthField value={birthdate} onChange={setBirthdate} />
           {error && <Text style={styles.formError}>{error}</Text>}
           <View style={styles.childEditorActions}>
             <Pressable style={styles.childCancel} onPress={() => setEditingId(null)}>
@@ -251,8 +244,6 @@ const styles = StyleSheet.create({
   childName: { ...typography.bodyMedium, color: theme.text.primary },
   childAge: { ...typography.caption, color: theme.text.muted },
   childEditor: { gap: spacing.md, paddingTop: spacing.sm, borderTopWidth: StyleSheet.hairlineWidth, borderColor: theme.border.default },
-  ageField: { gap: spacing.sm },
-  ageLabel: { ...typography.footnote, color: theme.text.secondary },
   childEditorActions: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   childCancel: { paddingVertical: spacing.sm, paddingHorizontal: spacing.md },
   childCancelLabel: { ...typography.bodyMedium, color: theme.text.secondary },

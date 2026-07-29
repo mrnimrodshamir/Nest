@@ -8,7 +8,7 @@ export function useActivityRsvp(initial: ActivityDetail) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const join = useCallback(async () => {
+  const join = useCallback(async (childIds: string[] = []) => {
     const previous = activity;
     setError(null);
     setIsSubmitting(true);
@@ -26,6 +26,7 @@ export function useActivityRsvp(initial: ActivityDetail) {
 
     const { error: rpcError } = await supabase.rpc('join_activity', {
       p_activity_id: activity.id,
+      p_child_ids: childIds,
     });
 
     setIsSubmitting(false);
