@@ -35,6 +35,7 @@ import { AuthNavigator } from '@/navigation/AuthNavigator';
 import { AppErrorBoundary } from '@/components/AppErrorBoundary';
 import { theme } from '@/theme';
 import { useAuth, AuthProvider } from '@/hooks/useAuth';
+import { computeRouteDecision } from '@/lib/routing';
 import { useActivityDetail } from '@/hooks/useActivityDetail';
 import { useActivityRsvp } from '@/hooks/useActivityRsvp';
 import { useActivityChatId } from '@/hooks/useActivityChatId';
@@ -167,13 +168,7 @@ function AppInner() {
     return <LaunchScreen />;
   }
 
-  const routeDecision = PREVIEW_MODE
-    ? 'preview-mode'
-    : !session
-      ? 'auth-navigator'
-      : !profile || !profile.onboardingCompleted
-        ? 'complete-profile'
-        : 'main-navigator';
+  const routeDecision = PREVIEW_MODE ? 'preview-mode' : computeRouteDecision(session, profile);
   if (!PREVIEW_MODE && session) {
     if (routeDecision === 'complete-profile') {
       console.log('[ROUTING 01] onboarding route selected', { hasProfile: Boolean(profile) });
