@@ -160,10 +160,18 @@ export default function App() {
               <MainNavigator />
             ) : !session ? (
               <AuthNavigator />
-            ) : !profile ? (
-              // Signed in but the profile row never got created (interrupted
-              // registration, or an Apple sign-in that didn't finish the
-              // completion step) — recover with the same completion form.
+            ) : !profile || !profile.onboardingCompleted ? (
+              // Signed in but the profile is missing OR still a stub (the
+              // auth-user-creation trigger now creates a profile row for
+              // every account, including a first-time Apple sign-in before
+              // she's entered any children — onboarding_completed stays
+              // false until completeAppleProfile finishes). Checking
+              // existence alone used to be correct when no row existed at
+              // all until profile completion; now it must also check
+              // completeness, or a first-time Apple user's session update
+              // here can race ahead of AuthNavigator's own explicit
+              // navigation to this same screen and land her in the main
+              // app with zero children instead.
               <CompleteAppleProfileScreen
                 input={{
                   children: [],
