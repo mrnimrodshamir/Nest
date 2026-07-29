@@ -189,6 +189,23 @@ export function useAuth(): UseAuthResult {
       const userId = data.user?.id;
       if (!userId) return { status: 'error', message: 'Something went wrong. Please try again.' };
 
+      // Supabase's anti-enumeration behavior: signUp() with an email that
+      // already has an account (confirmed OR unconfirmed) never returns an
+      // error — it returns success with a synthetic user object whose
+      // identities array is empty, so a bad actor can't use signup to
+      // probe which emails are registered. That's the only reliable
+      // signal; error/session alone can't distinguish this from a genuine
+      // new signup pending confirmation. Verified directly against the
+      // live Auth API (both confirmed and unconfirmed existing emails
+      // return identities: [] with no error).
+      if (data.user?.identities?.length === 0) {
+        console.log('[Auth] Registration attempted for an existing email', { userId });
+        return {
+          status: 'error',
+          message: 'An account already exists with this email. Try logging in instead.',
+        };
+      }
+
       let avatarUrl: string | null = null;
       if (input.photoUri) {
         onStage?.('uploading-photo');

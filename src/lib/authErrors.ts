@@ -19,7 +19,7 @@ export function mapAuthError(message: string): string {
   if (/password should be at least|password.*(weak|short|characters)/.test(m)) {
     return 'Password must be at least 8 characters.';
   }
-  if (/invalid email/.test(m)) {
+  if (/invalid email|unable to validate email|invalid format/.test(m)) {
     return 'Enter a valid email address.';
   }
   if (/network|fetch failed|timed? ?out|offline/.test(m)) {
