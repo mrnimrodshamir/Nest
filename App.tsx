@@ -176,9 +176,9 @@ function AppInner() {
         : 'main-navigator';
   if (!PREVIEW_MODE && session) {
     if (routeDecision === 'complete-profile') {
-      console.log('[ROUTING 01] authenticated incomplete', { hasProfile: Boolean(profile) });
+      console.log('[ROUTING 01] onboarding route selected', { hasProfile: Boolean(profile) });
     } else if (routeDecision === 'main-navigator') {
-      console.log('[ROUTING 02] authenticated complete');
+      console.log('[ROUTING 02] main route selected');
     }
   }
 

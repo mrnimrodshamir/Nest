@@ -88,8 +88,11 @@ export function DiscoverScreen({ onOpenActivity, onHostActivity, mockActivities 
   } = useNearbyActivities(mockActivities ? { mockActivities } : undefined);
 
   useEffect(() => {
-    if (!isRefreshing) setHasLoadedOnce(true);
-  }, [isRefreshing]);
+    if (!isRefreshing && !hasLoadedOnce) {
+      console.log('[HOME 02] initial data load completed');
+      setHasLoadedOnce(true);
+    }
+  }, [isRefreshing, hasLoadedOnce]);
 
   const showSkeleton = !hasLoadedOnce && isRefreshing;
 

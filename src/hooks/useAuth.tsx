@@ -6,6 +6,7 @@ import { uploadAvatar } from '@/lib/uploadAvatar';
 import { clearPushRegistration } from '@/hooks/usePushNotifications';
 import { track } from '@/lib/analytics';
 import { mapAuthError } from '@/lib/authErrors';
+import { completeOnboardingCore } from '@/lib/completeOnboarding';
 import type { NotificationPreferences, Profile } from '@/types/profile';
 
 /** Guards against ASAuthorizationController being presented twice at once
@@ -130,35 +131,20 @@ function useAuthState(): UseAuthResult {
   // Apple went through this client function directly — divergent code
   // for the same operation, which is exactly the kind of duplication
   // that makes "both flows break at the same shared point" hard to
-  // reason about). Deliberately ordered and idempotent per spec:
-  // profile fields, then children, then confirm at least one child
-  // exists, then (only then) onboarding_completed = true, then refresh
-  // the single shared AuthProvider state. Any failure returns a friendly
-  // message and leaves onboarding_completed untouched (false) so the
-  // user can safely retry or reopen the app later — never left with
-  // onboarding_completed=true and zero children.
+  // reason about). The ordered, idempotent DB sequence itself lives in
+  // completeOnboardingCore (src/lib/completeOnboarding.ts) — a plain
+  // function with no React/Expo dependency, so the exact same production
+  // logic can be exercised directly from a Node integration test against
+  // the real Supabase project, not a reimplementation or a mock. This
+  // wrapper only owns the React-specific pieces: onStage UI callbacks,
+  // avatar upload, analytics, and refreshing the shared AuthProvider
+  // state afterward.
   const completeOnboarding = useCallback(
     async (
       userId: string,
       input: OnboardingCompletionInput,
       onStage?: (stage: RegistrationStage) => void,
     ): Promise<string | null> => {
-      console.log('[ONBOARDING 01] submit started');
-
-      const { data: existingProfile } = await supabase
-        .from('profiles')
-        .select('id, onboarding_completed')
-        .eq('id', userId)
-        .maybeSingle();
-      if (existingProfile?.onboarding_completed) {
-        // Idempotent: re-entering this form after a completed signup
-        // (e.g. a retried tap whose first attempt actually succeeded)
-        // does no further writes, just refreshes and returns.
-        console.log('[ONBOARDING 00] already complete — refreshing shared state only');
-        await loadProfile(userId);
-        return null;
-      }
-
       onStage?.('creating-account');
 
       let avatarUrl: string | null = null;
@@ -173,78 +159,34 @@ function useAuthState(): UseAuthResult {
       }
 
       onStage?.('saving-profile');
-      const profileUpdate: Record<string, unknown> = { phone: input.phone || null };
-      if (input.displayName) profileUpdate.display_name = input.displayName;
-      if (input.email) profileUpdate.email = input.email;
-      if (avatarUrl) profileUpdate.avatar_url = avatarUrl;
+      const result = await completeOnboardingCore(
+        supabase,
+        userId,
+        {
+          children: input.children,
+          phone: input.phone,
+          avatarUrl,
+          displayName: input.displayName,
+          email: input.email,
+        },
+        (message, meta) => console.log(message, meta ?? ''),
+      );
 
-      const { error: profileError } = await supabase.from('profiles').update(profileUpdate).eq('id', userId);
-      if (profileError) {
-        console.log('[Auth] Onboarding profile update failed', profileError.message);
-        return "Couldn't save your profile. Please try again.";
+      if (result.status === 'error') return result.message;
+      if (result.status === 'already-complete') {
+        // Idempotent: re-entering this form after a completed signup
+        // (e.g. a retried tap whose first attempt actually succeeded)
+        // does no further writes, just refreshes shared state and returns.
+        await loadProfile(userId);
+        return null;
       }
-      console.log('[ONBOARDING 02] profile update complete');
-
-      // Idempotent: only insert children if none exist yet for this
-      // profile — a retried tap after a prior attempt's child insert
-      // already succeeded must not create duplicates.
-      const { data: existingChildren } = await supabase
-        .from('children')
-        .select('id')
-        .eq('profile_id', userId)
-        .limit(1);
-
-      if (!existingChildren?.length) {
-        if (input.children.length === 0) {
-          console.log('[Auth] Onboarding: no children provided and none exist yet');
-          return "Add at least one child to finish setting up your account.";
-        }
-        const { error: childError } = await supabase.from('children').insert(
-          input.children.map((child, index) => ({
-            profile_id: userId,
-            name: child.name,
-            birthdate: child.birthdate,
-            is_default: index === 0,
-          })),
-        );
-        if (childError) {
-          console.log('[Auth] Onboarding child insert failed', childError.message);
-          return "Couldn't save your child's information. Please try again.";
-        }
-      }
-      console.log('[ONBOARDING 03] children insert complete');
-
-      // Confirm at least one child genuinely exists in the database
-      // before ever setting onboarding_completed — this is the step
-      // that was previously missing: onboarding_completed used to be
-      // set in the same UPDATE as other profile fields, before children
-      // were confirmed inserted, so a failed/slow child insert could
-      // leave onboarding_completed=true with zero children.
-      const { count: childCount, error: countError } = await supabase
-        .from('children')
-        .select('id', { count: 'exact', head: true })
-        .eq('profile_id', userId);
-      if (countError || !childCount) {
-        console.log('[Auth] Onboarding: child confirmation found zero children', { countError: countError?.message ?? null });
-        return "Couldn't confirm your child was saved. Please try again.";
-      }
-
-      const { error: completeError } = await supabase
-        .from('profiles')
-        .update({ onboarding_completed: true })
-        .eq('id', userId);
-      if (completeError) {
-        console.log('[Auth] Onboarding completion flag update failed', completeError.message);
-        return "Couldn't finish setting up your account. Please try again.";
-      }
-      console.log('[ONBOARDING 04] onboardingCompleted update complete');
 
       track('sign_up_completed');
       track('onboarding_completed');
 
-      console.log('[ONBOARDING 05] shared profile refresh started');
+      console.log('[ONBOARDING 06] auth refresh started');
       await loadProfile(userId);
-      console.log('[ONBOARDING 06] shared profile refresh complete');
+      console.log('[ONBOARDING 07] auth refresh completed');
 
       return null;
     },
@@ -275,9 +217,12 @@ function useAuthState(): UseAuthResult {
       .finally(() => setIsLoading(false));
 
     const { data: subscription } = supabase.auth.onAuthStateChange((_event, newSession) => {
+      console.log('[AUTH 01] auth event received', { event: _event });
       setSession(newSession);
+      console.log('[AUTH 02] session stored', { hasSession: Boolean(newSession) });
       if (newSession) {
-        loadProfile(newSession.user.id);
+        console.log('[AUTH 03] profile fetch started');
+        loadProfile(newSession.user.id).then(() => console.log('[AUTH 04] profile fetch completed'));
       } else {
         setProfile(null);
       }
