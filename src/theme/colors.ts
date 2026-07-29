@@ -21,6 +21,21 @@ export const colors = {
     900: '#334536',
   },
 
+  // Rose — warm blush/rose family (primary actions, checkbox, links,
+  // decorative shapes). Only the 700 shade clears WCAG AA (4.5:1) against
+  // white button text — 233/143/131 (500) and lighter only reach ~2.4:1,
+  // so those stay reserved for tints, chips, and decorative surfaces,
+  // never text-bearing buttons or link text.
+  rose: {
+    50: '#FDF3F5',
+    100: '#F8DEE3',
+    200: '#F3B6C2', // blush pink
+    300: '#EFA3B3', // soft rose
+    500: '#E98F83', // muted coral
+    700: '#A95F70', // deep rose — buttons, checkboxes, active icons, links
+    900: '#8B4E5D', // pressed state
+  },
+
   // Secondary — warm sand (host/create actions, warm accents)
   sand: {
     50: '#FAF5EC',
@@ -88,20 +103,27 @@ export const theme = {
     secondary: colors.neutral[600],
     muted: colors.neutral[500],
     inverse: colors.neutral[0],
-    accent: colors.sage[700],
+    accent: colors.rose[700], // links, active text — deep rose
   },
   border: {
     default: colors.neutral[200],
     strong: colors.neutral[400],
   },
   brand: {
-    primary: colors.sage[500],
-    primaryPressed: colors.sage[700],
-    primaryTint: colors.sage[100],
+    // Primary CTA moved from sage to deep rose — warmer, more emotional,
+    // more distinctly "Momzi" than the previous cream-and-sage identity.
+    // Sage remains as a supporting color (semantic.success is already
+    // sage-based and untouched by this change).
+    primary: colors.rose[700],
+    primaryPressed: colors.rose[900],
+    primaryTint: colors.rose[100],
     secondary: colors.sand[500], // Host / create actions
     secondaryTint: colors.sand[100],
     accent: colors.sky[500],     // Chat / info accents
     accentTint: colors.sky[100],
+    rose: colors.rose[500],      // muted coral — small highlights, icons
+    roseBlush: colors.rose[200], // decorative surfaces, focus rings
+    sage: colors.sage[500],      // supporting color — success, calm accents
   },
   semantic: colors.semantic,
 } as const;

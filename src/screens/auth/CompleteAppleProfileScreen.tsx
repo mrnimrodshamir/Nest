@@ -57,6 +57,7 @@ export function CompleteAppleProfileScreen({ input }: CompleteAppleProfileScreen
   }, [childName, childYears, childMonths, save]);
 
   const handleSubmit = async () => {
+    if (isSubmitting) return; // debounce duplicate submissions
     const errors: Record<string, string> = {};
     if (!isNonEmpty(childName)) errors.childName = "Enter your child's name";
     if (!acceptedTerms) errors.terms = 'Please accept the Terms and Privacy Policy to continue';

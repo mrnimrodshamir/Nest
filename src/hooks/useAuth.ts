@@ -1,14 +1,23 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import { supabase } from '@/lib/supabase';
 import { uploadAvatar } from '@/lib/uploadAvatar';
 import { clearPushRegistration } from '@/hooks/usePushNotifications';
 import { track } from '@/lib/analytics';
+import { mapAuthError } from '@/lib/authErrors';
 import type { NotificationPreferences, Profile } from '@/types/profile';
 
-function isNetworkError(message: string): boolean {
-  return /network|fetch failed|timed? ?out|offline/i.test(message);
+/** Guards against ASAuthorizationController being presented twice at once
+ *  (a real crash on-device: "already presenting a view controller"). React
+ *  state (`appleLoading`) alone can't prevent this — a fast double-tap can
+ *  fire both onPress handlers before the disabled-button re-render commits.
+ *  Module-level (not per-hook-instance) since every screen that calls
+ *  signInWithApple must share the same lock. */
+let appleSignInInFlight = false;
+
+function normalizeEmail(email: string): string {
+  return email.trim().toLowerCase();
 }
 
 export type RegistrationStage = 'creating-account' | 'uploading-photo' | 'saving-profile';
@@ -34,12 +43,20 @@ export interface AppleProfileInput {
   fallbackEmail: string | null;
 }
 
+export type RegisterResult =
+  | { status: 'signed-in' }
+  | { status: 'needs-email-confirmation' }
+  | { status: 'error'; message: string };
+
 interface UseAuthResult {
   session: Session | null;
   profile: Profile | null;
   isLoading: boolean;
   signIn: (email: string, password: string) => Promise<string | null>;
-  register: (input: RegistrationInput, onStage?: (stage: RegistrationStage) => void) => Promise<string | null>;
+  register: (
+    input: RegistrationInput,
+    onStage?: (stage: RegistrationStage) => void,
+  ) => Promise<RegisterResult>;
   signInWithApple: () => Promise<
     { status: 'signed-in' } | { status: 'needs-profile'; input: AppleProfileInput } | { status: 'error'; message: string } | { status: 'cancelled' }
   >;
@@ -116,77 +133,128 @@ export function useAuth(): UseAuthResult {
   }, [loadProfile]);
 
   const signIn = useCallback(async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { error } = await supabase.auth.signInWithPassword({
+      email: normalizeEmail(email),
+      password,
+    });
     if (error) {
+      // Never log the password; error.message from Supabase Auth never
+      // includes credential values, only a classification like "Invalid
+      // login credentials".
       console.log('[Auth] Email sign-in failed', error.message);
-      return isNetworkError(error.message) ? 'No internet connection — please try again.' : error.message;
+      return mapAuthError(error.message);
     }
     console.log('[Auth] Email sign-in succeeded');
     return null;
   }, []);
 
-  const register = useCallback(async (input: RegistrationInput, onStage?: (stage: RegistrationStage) => void) => {
-    track('sign_up_started');
-    onStage?.('creating-account');
-    const { data, error } = await supabase.auth.signUp({
-      email: input.email,
-      password: input.password,
-    });
-    if (error) {
-      console.log('[Auth] Registration failed at signUp', error.message);
-      return isNetworkError(error.message) ? 'No internet connection — please try again.' : error.message;
-    }
+  const register = useCallback(
+    async (input: RegistrationInput, onStage?: (stage: RegistrationStage) => void): Promise<RegisterResult> => {
+      track('sign_up_started');
+      onStage?.('creating-account');
 
-    const userId = data.user?.id;
-    if (!userId) return 'Could not create account — please try again.';
-
-    let avatarUrl: string | null = null;
-    if (input.photoUri) {
-      onStage?.('uploading-photo');
-      try {
-        avatarUrl = await uploadAvatar(userId, input.photoUri);
-      } catch (err) {
-        // Photo upload is optional — never block account creation on it.
-        console.log('[Auth] Avatar upload failed, continuing without it', err instanceof Error ? err.message : err);
-        avatarUrl = null;
+      // Name and child info ride along as signup metadata rather than a
+      // separate client-side insert — a `profiles`/`children` row is
+      // created for every new auth user by a database trigger (see
+      // migration `handle_new_user_profile_and_child_trigger`), in the
+      // same transaction as the auth.users insert. That matters because
+      // this project requires email confirmation: signUp() returns no
+      // active session until the user confirms, so a client-side insert
+      // right here would run with no auth.uid() and be rejected by RLS
+      // (this was the "new row violates row-level security policy for
+      // table profiles" bug) — the trigger runs as SECURITY DEFINER and
+      // isn't subject to that timing at all.
+      const { data, error } = await supabase.auth.signUp({
+        email: normalizeEmail(input.email),
+        password: input.password,
+        options: {
+          data: {
+            full_name: input.fullName.trim(),
+            child_name: input.childName.trim(),
+            child_birthdate: input.childBirthdate,
+          },
+        },
+      });
+      if (error) {
+        console.log('[Auth] Registration failed at signUp', error.message);
+        return { status: 'error', message: mapAuthError(error.message) };
       }
-    }
 
-    onStage?.('saving-profile');
-    const { error: profileError } = await supabase.from('profiles').insert({
-      id: userId,
-      display_name: input.fullName,
-      email: input.email,
-      phone: input.phone || null,
-      avatar_url: avatarUrl,
-      onboarding_completed: true,
-    });
-    if (profileError) return profileError.message;
+      const userId = data.user?.id;
+      if (!userId) return { status: 'error', message: 'Something went wrong. Please try again.' };
 
-    const { error: childError } = await supabase.from('children').insert({
-      profile_id: userId,
-      name: input.childName,
-      birthdate: input.childBirthdate,
-      is_default: true,
-    });
-    if (childError) return childError.message;
+      let avatarUrl: string | null = null;
+      if (input.photoUri) {
+        onStage?.('uploading-photo');
+        try {
+          avatarUrl = await uploadAvatar(userId, input.photoUri);
+        } catch (err) {
+          // Photo upload is optional — never block account creation on it.
+          console.log('[Auth] Avatar upload failed, continuing without it', err instanceof Error ? err.message : err);
+        }
+      }
 
-    console.log('[Auth] Registration succeeded', { userId });
-    track('sign_up_completed');
-    track('onboarding_completed');
-    await loadProfile(userId);
-    return null;
-  }, [loadProfile]);
+      if (!data.session) {
+        // Email confirmation is required — there's no session to act on
+        // yet (any further write here would hit the same RLS wall the
+        // trigger exists to avoid). The trigger has already created the
+        // profile and child; the user completes sign-in once they confirm.
+        console.log('[Auth] Registration pending email confirmation', { userId });
+        track('sign_up_pending_confirmation');
+        return { status: 'needs-email-confirmation' };
+      }
+
+      onStage?.('saving-profile');
+      if (avatarUrl) {
+        const { error: avatarError } = await supabase
+          .from('profiles')
+          .update({ avatar_url: avatarUrl })
+          .eq('id', userId);
+        if (avatarError) console.log('[Auth] Saving avatar_url failed', avatarError.message);
+      }
+
+      console.log('[Auth] Registration succeeded', { userId });
+      track('sign_up_completed');
+      track('onboarding_completed');
+      await loadProfile(userId);
+      return { status: 'signed-in' };
+    },
+    [loadProfile],
+  );
 
   const signInWithApple = useCallback(async () => {
+    if (appleSignInInFlight) {
+      // A fast double-tap can fire two onPress handlers before the
+      // disabled-button re-render commits — React state can't prevent
+      // that, only a synchronous lock can. Presenting a second native
+      // ASAuthorizationController while one is already up is a real crash
+      // on-device, not just a bad UX. Silently ignore the second call.
+      console.log('[Auth] Apple sign-in: ignored duplicate concurrent request');
+      return { status: 'cancelled' as const };
+    }
+    appleSignInInFlight = true;
     console.log('[Auth] Apple sign-in: requesting native credential');
     try {
-      const credential = await AppleAuthentication.signInAsync({
-        requestedScopes: [
-          AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
-          AppleAuthentication.AppleAuthenticationScope.EMAIL,
-        ],
-      });
+      let credential: AppleAuthentication.AppleAuthenticationCredential;
+      try {
+        credential = await AppleAuthentication.signInAsync({
+          requestedScopes: [
+            AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+            AppleAuthentication.AppleAuthenticationScope.EMAIL,
+          ],
+        });
+      } catch (err: any) {
+        console.log('[Auth] Apple sign-in: native request failed', err?.code ?? err?.message);
+        if (err?.code === 'ERR_REQUEST_CANCELED') return { status: 'cancelled' as const };
+        if (err?.code === 'ERR_REQUEST_NOT_HANDLED' || err?.code === 'ERR_REQUEST_NOT_INTERACTIVE') {
+          return {
+            status: 'error' as const,
+            message: 'Sign in with Apple is not available on this device right now.',
+          };
+        }
+        return { status: 'error' as const, message: 'Sign in with Apple failed. Please try again.' };
+      }
+
       console.log('[Auth] Apple sign-in: credential received', {
         hasIdentityToken: Boolean(credential.identityToken),
         hasEmail: Boolean(credential.email),
@@ -206,38 +274,33 @@ export function useAuth(): UseAuthResult {
       });
       if (error) {
         console.log('[Auth] Apple sign-in: Supabase error', error.message);
-        if (isNetworkError(error.message)) {
-          return { status: 'error' as const, message: 'No internet connection — please try again.' };
-        }
-        if (/already registered|already exists|user_already_exists/i.test(error.message)) {
-          return {
-            status: 'error' as const,
-            message:
-              'An account already exists with this email. Try logging in with email and password instead.',
-          };
-        }
-        return { status: 'error' as const, message: error.message };
+        return { status: 'error' as const, message: mapAuthError(error.message) };
       }
 
       const userId = data.user?.id;
-      if (!userId) return { status: 'error' as const, message: 'Sign in with Apple failed.' };
+      if (!userId) return { status: 'error' as const, message: 'Sign in with Apple failed. Please try again.' };
 
+      // The auth-user-creation trigger already created a profile row for
+      // every account (Apple included) — a bare existence check would
+      // wrongly treat a brand-new, still-incomplete stub row as "fully
+      // signed in". `onboarding_completed` is the real signal.
       const { data: existingProfile } = await supabase
         .from('profiles')
-        .select('id')
+        .select('id, onboarding_completed')
         .eq('id', userId)
         .maybeSingle();
 
-      if (existingProfile) {
+      if (existingProfile?.onboarding_completed) {
         console.log('[Auth] Apple sign-in: returning user', { userId });
         await loadProfile(userId);
         return { status: 'signed-in' as const };
       }
 
-      // First-ever authorization for this account — Apple gives us name/email
-      // exactly once, right now. Carry it forward for the profile-completion
-      // step since it won't be sent again on future logins.
-      console.log('[Auth] Apple sign-in: first-time user, needs profile completion', { userId });
+      // New account, or an interrupted signup that never finished
+      // completeAppleProfile. Apple only ever sends fullName/email on the
+      // very first authorization for this app+Apple ID — carry whatever
+      // we got forward since a retry won't receive it again.
+      console.log('[Auth] Apple sign-in: needs profile completion', { userId });
       track('sign_up_started');
       const fullName = credential.fullName
         ? [credential.fullName.givenName, credential.fullName.familyName].filter(Boolean).join(' ')
@@ -253,18 +316,14 @@ export function useAuth(): UseAuthResult {
         },
       };
     } catch (err: any) {
-      console.log('[Auth] Apple sign-in: exception', err?.code ?? err?.message);
-      if (err?.code === 'ERR_REQUEST_CANCELED') return { status: 'cancelled' as const };
-      if (err?.code === 'ERR_REQUEST_NOT_HANDLED' || err?.code === 'ERR_REQUEST_NOT_INTERACTIVE') {
-        return {
-          status: 'error' as const,
-          message: 'Sign in with Apple is not available on this device right now.',
-        };
-      }
-      if (isNetworkError(err?.message ?? '')) {
-        return { status: 'error' as const, message: 'No internet connection — please try again.' };
-      }
-      return { status: 'error' as const, message: err?.message ?? 'Sign in with Apple failed.' };
+      // Belt-and-braces: nothing above should throw uncaught (native
+      // request and Supabase errors are already handled), but a crash-free
+      // guarantee means even an unexpected exception here must resolve to
+      // a value, never propagate.
+      console.log('[Auth] Apple sign-in: unexpected exception', err?.message ?? err);
+      return { status: 'error' as const, message: 'Sign in with Apple failed. Please try again.' };
+    } finally {
+      appleSignInInFlight = false;
     }
   }, [loadProfile]);
 
@@ -275,13 +334,17 @@ export function useAuth(): UseAuthResult {
       const userId = userData.user?.id;
       if (!userId) return 'Not signed in.';
 
-      // Do not create duplicate profiles for the same account.
+      // The auth-user-creation trigger already inserted a stub profile row
+      // for this account (display name only, onboarding_completed=false) —
+      // this step UPDATEs it, it never INSERTs. Only skip entirely if
+      // onboarding was already finished (re-entering this screen after a
+      // completed signup shouldn't redo work or touch the child again).
       const { data: existingProfile } = await supabase
         .from('profiles')
-        .select('id')
+        .select('id, onboarding_completed')
         .eq('id', userId)
         .maybeSingle();
-      if (existingProfile) {
+      if (existingProfile?.onboarding_completed) {
         await loadProfile(userId);
         return null;
       }
@@ -298,28 +361,43 @@ export function useAuth(): UseAuthResult {
       }
 
       onStage?.('saving-profile');
-      const { error } = await supabase.from('profiles').insert({
-        id: userId,
-        display_name: input.fallbackFullName ?? 'Momzi member',
-        email: input.fallbackEmail ?? userData.user?.email ?? '',
+      // Apple only sends fullName/email on the very first authorization —
+      // a retry after an interrupted signup won't have them again, so
+      // don't overwrite the stub's existing (non-null) values with null.
+      const profileUpdate: Record<string, unknown> = {
         phone: input.phone || null,
-        avatar_url: avatarUrl,
         onboarding_completed: true,
-      });
+      };
+      if (input.fallbackFullName) profileUpdate.display_name = input.fallbackFullName;
+      if (input.fallbackEmail) profileUpdate.email = input.fallbackEmail;
+      else if (userData.user?.email) profileUpdate.email = userData.user.email;
+      if (avatarUrl) profileUpdate.avatar_url = avatarUrl;
+
+      const { error } = await supabase.from('profiles').update(profileUpdate).eq('id', userId);
       if (error) {
         console.log('[Auth] Profile completion failed', error.message);
         return "Couldn't save your profile. Please try again.";
       }
 
-      const { error: childError } = await supabase.from('children').insert({
-        profile_id: userId,
-        name: input.childName,
-        birthdate: input.childBirthdate,
-        is_default: true,
-      });
-      if (childError) {
-        console.log('[Auth] Child creation failed during profile completion', childError.message);
-        return "Couldn't save your profile. Please try again.";
+      // Guard against re-inserting a second child if this step is retried
+      // after the profile update succeeded but a prior attempt's child
+      // insert already went through.
+      const { data: existingChildren } = await supabase
+        .from('children')
+        .select('id')
+        .eq('profile_id', userId)
+        .limit(1);
+      if (!existingChildren?.length) {
+        const { error: childError } = await supabase.from('children').insert({
+          profile_id: userId,
+          name: input.childName,
+          birthdate: input.childBirthdate,
+          is_default: true,
+        });
+        if (childError) {
+          console.log('[Auth] Child creation failed during profile completion', childError.message);
+          return "Couldn't save your profile. Please try again.";
+        }
       }
 
       track('sign_up_completed');
@@ -331,8 +409,18 @@ export function useAuth(): UseAuthResult {
   );
 
   const resetPassword = useCallback(async (email: string) => {
-    const { error } = await supabase.auth.resetPasswordForEmail(email);
-    return error?.message ?? null;
+    const { error } = await supabase.auth.resetPasswordForEmail(normalizeEmail(email), {
+      redirectTo: 'momzi://reset-password',
+    });
+    if (error) {
+      console.log('[Auth] Password reset request failed', error.message);
+      // Deliberately the same friendly message regardless of whether the
+      // email exists — Supabase itself returns success either way by
+      // default, so this only fires for real failures (rate limit,
+      // network), never to confirm/deny an account's existence.
+      return mapAuthError(error.message);
+    }
+    return null;
   }, []);
 
   const signOut = useCallback(async () => {

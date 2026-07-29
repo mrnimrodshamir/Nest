@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -7,11 +7,12 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  TextInput,
   Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ArrowLeft } from 'phosphor-react-native';
-import { theme, typography, spacing } from '@/theme';
+import { ArrowLeft, EnvelopeSimple } from 'phosphor-react-native';
+import { theme, typography, spacing, radius } from '@/theme';
 import { FormField } from '@/components/FormField';
 import { PrimaryButton } from '@/components/PrimaryButton';
 import { Checkbox } from '@/components/Checkbox';
@@ -59,6 +60,11 @@ export function SignUpScreen({ onBack }: SignUpScreenProps) {
   const [formError, setFormError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [stage, setStage] = useState<RegistrationStage | null>(null);
+  const [pendingConfirmationEmail, setPendingConfirmationEmail] = useState<string | null>(null);
+
+  const emailRef = useRef<TextInput>(null);
+  const passwordRef = useRef<TextInput>(null);
+  const childNameRef = useRef<TextInput>(null);
 
   // Restore a draft left behind by a closed app or dropped connection.
   useEffect(() => {
@@ -75,6 +81,7 @@ export function SignUpScreen({ onBack }: SignUpScreenProps) {
   }, [fullName, email, childName, childYears, childMonths, save]);
 
   const handleSubmit = async () => {
+    if (isSubmitting) return; // debounce duplicate submissions
     const errors: Record<string, string> = {};
     if (!isNonEmpty(fullName)) errors.fullName = 'Enter your name';
     if (!isValidEmail(email)) errors.email = 'Enter a valid email address';
@@ -98,9 +105,39 @@ export function SignUpScreen({ onBack }: SignUpScreenProps) {
     );
     setIsSubmitting(false);
     setStage(null);
-    if (result) setFormError(result);
-    else clear();
+
+    if (result.status === 'error') {
+      setFormError(result.message); // form data preserved — nothing is cleared here
+    } else if (result.status === 'needs-email-confirmation') {
+      clear();
+      setPendingConfirmationEmail(email.trim());
+    } else {
+      clear();
+      // 'signed-in' — the root navigator swaps to the main app automatically
+      // once useAuth's session/profile state updates.
+    }
   };
+
+  if (pendingConfirmationEmail) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+        <View style={styles.confirmContent}>
+          <View style={styles.confirmIcon}>
+            <EnvelopeSimple size={32} color={theme.brand.primary} weight="duotone" />
+          </View>
+          <Text style={styles.title}>Check your inbox</Text>
+          <Text style={styles.subtitle}>
+            We sent a confirmation link to{'\n'}
+            <Text style={styles.confirmEmail}>{pendingConfirmationEmail}</Text>
+            {'\n'}Tap it to finish setting up your account.
+          </Text>
+          <Pressable onPress={onBack} style={styles.backToLoginLink} hitSlop={8}>
+            <Text style={styles.backToLoginLabel}>Back to login</Text>
+          </Pressable>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
@@ -120,9 +157,14 @@ export function SignUpScreen({ onBack }: SignUpScreenProps) {
               value={fullName}
               onChangeText={setFullName}
               autoCapitalize="words"
+              textContentType="name"
+              autoComplete="name"
+              returnKeyType="next"
+              onSubmitEditing={() => emailRef.current?.focus()}
               error={fieldErrors.fullName}
             />
             <FormField
+              ref={emailRef}
               label="Email"
               placeholder="you@example.com"
               value={email}
@@ -130,23 +172,34 @@ export function SignUpScreen({ onBack }: SignUpScreenProps) {
               autoCapitalize="none"
               autoCorrect={false}
               keyboardType="email-address"
+              textContentType="username"
+              autoComplete="email"
+              returnKeyType="next"
+              onSubmitEditing={() => passwordRef.current?.focus()}
               error={fieldErrors.email}
             />
             <FormField
+              ref={passwordRef}
               label="Password"
               placeholder="At least 8 characters"
               value={password}
               onChangeText={setPassword}
-              secureTextEntry
+              isPassword
+              textContentType="newPassword"
+              autoComplete="password-new"
+              returnKeyType="next"
+              onSubmitEditing={() => childNameRef.current?.focus()}
               error={fieldErrors.password}
             />
 
             <FormField
+              ref={childNameRef}
               label="Child's name"
               placeholder="Child's name"
               value={childName}
               onChangeText={setChildName}
               autoCapitalize="words"
+              returnKeyType="done"
               error={fieldErrors.childName}
             />
             <View style={styles.ageField}>
@@ -208,4 +261,22 @@ const styles = StyleSheet.create({
   legalLink: { color: theme.text.accent, fontFamily: typography.bodyMedium.fontFamily },
   termsError: { ...typography.caption, color: theme.semantic.danger },
   formError: { ...typography.footnote, color: theme.semantic.danger, textAlign: 'center' },
+  confirmContent: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: spacing['3xl'],
+  },
+  confirmIcon: {
+    width: 72,
+    height: 72,
+    borderRadius: radius.pill,
+    backgroundColor: theme.brand.primaryTint,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.xl,
+  },
+  confirmEmail: { fontFamily: typography.bodyMedium.fontFamily, color: theme.text.primary },
+  backToLoginLink: { marginTop: spacing['2xl'], minHeight: 44, justifyContent: 'center' },
+  backToLoginLabel: { ...typography.bodyMedium, color: theme.text.accent },
 });

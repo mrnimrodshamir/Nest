@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -7,10 +7,11 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  TextInput,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ArrowLeft } from 'phosphor-react-native';
-import { theme, typography, spacing } from '@/theme';
+import { ArrowLeft, AppleLogo } from 'phosphor-react-native';
+import { theme, typography, spacing, radius } from '@/theme';
 import { FormField } from '@/components/FormField';
 import { PrimaryButton } from '@/components/PrimaryButton';
 import { isValidEmail, isNonEmpty } from '@/utils/validation';
@@ -19,17 +20,26 @@ import { useAuth } from '@/hooks/useAuth';
 interface SignInScreenProps {
   onBack: () => void;
   onForgotPassword: () => void;
+  appleLoading?: boolean;
+  onContinueWithApple?: () => void;
 }
 
-export function SignInScreen({ onBack, onForgotPassword }: SignInScreenProps) {
+export function SignInScreen({
+  onBack,
+  onForgotPassword,
+  appleLoading = false,
+  onContinueWithApple,
+}: SignInScreenProps) {
   const { signIn } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fieldErrors, setFieldErrors] = useState<{ email?: string; password?: string }>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const passwordRef = useRef<TextInput>(null);
 
   const handleSubmit = async () => {
+    if (isSubmitting) return; // debounce duplicate submissions
     const errors: typeof fieldErrors = {};
     if (!isValidEmail(email)) errors.email = 'Enter a valid email address';
     if (!isNonEmpty(password)) errors.password = 'Enter your password';
@@ -38,9 +48,9 @@ export function SignInScreen({ onBack, onForgotPassword }: SignInScreenProps) {
 
     setFormError(null);
     setIsSubmitting(true);
-    const result = await signIn(email.trim(), password);
+    const result = await signIn(email, password);
     setIsSubmitting(false);
-    if (result) setFormError(result);
+    if (result) setFormError(result); // form data (email/password) preserved on error
   };
 
   return (
@@ -63,24 +73,54 @@ export function SignInScreen({ onBack, onForgotPassword }: SignInScreenProps) {
               autoCapitalize="none"
               autoCorrect={false}
               keyboardType="email-address"
+              textContentType="username"
+              autoComplete="email"
+              returnKeyType="next"
+              onSubmitEditing={() => passwordRef.current?.focus()}
               error={fieldErrors.email}
             />
             <FormField
+              ref={passwordRef}
               label="Password"
               placeholder="Your password"
               value={password}
               onChangeText={setPassword}
-              secureTextEntry
+              isPassword
+              textContentType="password"
+              autoComplete="password"
+              returnKeyType="go"
+              onSubmitEditing={handleSubmit}
               error={fieldErrors.password}
             />
 
-            <Pressable onPress={onForgotPassword} style={styles.forgotLink}>
+            <Pressable onPress={onForgotPassword} style={styles.forgotLink} hitSlop={8}>
               <Text style={styles.forgotLinkLabel}>Forgot password?</Text>
             </Pressable>
 
             {formError && <Text style={styles.formError}>{formError}</Text>}
 
             <PrimaryButton label="Log in" onPress={handleSubmit} loading={isSubmitting} />
+
+            {onContinueWithApple && (
+              <>
+                <View style={styles.dividerRow}>
+                  <View style={styles.dividerLine} />
+                  <Text style={styles.dividerLabel}>or</Text>
+                  <View style={styles.dividerLine} />
+                </View>
+
+                <Pressable
+                  style={[styles.appleButton, appleLoading && styles.appleButtonDisabled]}
+                  onPress={onContinueWithApple}
+                  disabled={appleLoading}
+                  accessibilityLabel="Continue with Apple"
+                  accessibilityRole="button"
+                >
+                  <AppleLogo size={18} color={theme.text.inverse} weight="fill" />
+                  <Text style={styles.appleButtonLabel}>Continue with Apple</Text>
+                </Pressable>
+              </>
+            )}
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -91,7 +131,7 @@ export function SignInScreen({ onBack, onForgotPassword }: SignInScreenProps) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: theme.background.app },
   flex: { flex: 1 },
-  content: { flexGrow: 1, paddingHorizontal: spacing['2xl'], paddingTop: spacing.md },
+  content: { flexGrow: 1, paddingHorizontal: spacing['2xl'], paddingTop: spacing.md, paddingBottom: spacing['3xl'] },
   backButton: {
     width: 44,
     height: 44,
@@ -104,7 +144,22 @@ const styles = StyleSheet.create({
   title: { ...typography.title1, color: theme.text.primary },
   subtitle: { ...typography.body, color: theme.text.secondary, marginBottom: spacing['2xl'] },
   form: { gap: spacing.lg },
-  forgotLink: { alignSelf: 'flex-end' },
+  forgotLink: { alignSelf: 'flex-end', minHeight: 44, justifyContent: 'center' },
   forgotLinkLabel: { ...typography.footnote, color: theme.text.accent },
   formError: { ...typography.footnote, color: theme.semantic.danger, textAlign: 'center' },
+  dividerRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginTop: spacing.xs },
+  dividerLine: { flex: 1, height: StyleSheet.hairlineWidth, backgroundColor: theme.border.default },
+  dividerLabel: { ...typography.footnote, color: theme.text.muted },
+  appleButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    backgroundColor: theme.text.primary,
+    borderRadius: radius.md,
+    paddingVertical: spacing.md,
+    minHeight: 52,
+  },
+  appleButtonLabel: { ...typography.bodyMedium, color: theme.text.inverse },
+  appleButtonDisabled: { opacity: 0.6 },
 });
