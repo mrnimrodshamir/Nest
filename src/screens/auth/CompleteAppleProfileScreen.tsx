@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { theme, typography, spacing } from '@/theme';
@@ -42,6 +42,7 @@ export function CompleteAppleProfileScreen({ input }: CompleteAppleProfileScreen
   const [formError, setFormError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [stage, setStage] = useState<RegistrationStage | null>(null);
+  const inFlightRef = useRef(false);
 
   useEffect(() => {
     if (!initialDraft?.children?.length) return;
@@ -53,7 +54,7 @@ export function CompleteAppleProfileScreen({ input }: CompleteAppleProfileScreen
   }, [children, save]);
 
   const handleSubmit = async () => {
-    if (isSubmitting) return; // debounce duplicate submissions
+    if (inFlightRef.current) return; // synchronous — checked before any state/render
     const errors: Record<string, string> = {};
     const perChild = children.map((child) => {
       const e: { name?: string; birthdate?: string } = {};
@@ -66,19 +67,24 @@ export function CompleteAppleProfileScreen({ input }: CompleteAppleProfileScreen
     setChildErrors(perChild);
     if (Object.keys(errors).length > 0 || perChild.some((e) => e.name || e.birthdate)) return;
 
+    inFlightRef.current = true;
     setFormError(null);
     setIsSubmitting(true);
-    const result = await completeAppleProfile(
-      {
-        ...input,
-        children: children.map((child) => ({ name: child.name.trim(), birthdate: child.birthdate! })),
-      },
-      setStage,
-    );
-    setIsSubmitting(false);
-    setStage(null);
-    if (result) setFormError(result);
-    else clear();
+    try {
+      const result = await completeAppleProfile(
+        {
+          ...input,
+          children: children.map((child) => ({ name: child.name.trim(), birthdate: child.birthdate! })),
+        },
+        setStage,
+      );
+      if (result) setFormError(result);
+      else clear();
+    } finally {
+      setIsSubmitting(false);
+      setStage(null);
+      inFlightRef.current = false;
+    }
   };
 
   return (

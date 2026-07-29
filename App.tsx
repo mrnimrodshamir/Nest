@@ -34,7 +34,7 @@ import { CompleteAppleProfileScreen } from '@/screens/auth/CompleteAppleProfileS
 import { AuthNavigator } from '@/navigation/AuthNavigator';
 import { AppErrorBoundary } from '@/components/AppErrorBoundary';
 import { theme } from '@/theme';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth, AuthProvider } from '@/hooks/useAuth';
 import { useActivityDetail } from '@/hooks/useActivityDetail';
 import { useActivityRsvp } from '@/hooks/useActivityRsvp';
 import { useActivityChatId } from '@/hooks/useActivityChatId';
@@ -106,6 +106,22 @@ const linking: LinkingOptions<RootStackParamList> = {
 };
 
 export default function App() {
+  return (
+    <AuthProvider>
+      <AppInner />
+    </AuthProvider>
+  );
+}
+
+/** Everything that used to be in App() — split out only so AuthProvider
+ *  can wrap it. useAuth() (and every other useAuth() call anywhere in the
+ *  tree — AuthNavigator, ActivityDetailScreen, EditProfileScreen,
+ *  ProfileScreen, every auth screen) now reads from the single shared
+ *  provider above instead of each creating its own independent session/
+ *  profile state and its own supabase.auth.onAuthStateChange
+ *  subscription. See useAuth.tsx's AuthProvider doc comment for why that
+ *  duplication was a real bug, not just wasteful. */
+function AppInner() {
   const [fontsLoaded] = useFonts({
     PlusJakartaSans_400Regular,
     PlusJakartaSans_500Medium,
@@ -151,11 +167,25 @@ export default function App() {
     return <LaunchScreen />;
   }
 
+  const routeDecision = PREVIEW_MODE
+    ? 'preview-mode'
+    : !session
+      ? 'auth-navigator'
+      : !profile || !profile.onboardingCompleted
+        ? 'complete-profile'
+        : 'main-navigator';
+  console.log('[App] routing decision', {
+    route: routeDecision,
+    hasSession: Boolean(session),
+    hasProfile: Boolean(profile),
+    onboardingCompleted: profile?.onboardingCompleted ?? null,
+  });
+
   return (
     <AppErrorBoundary>
       <GestureHandlerRootView style={{ flex: 1 }}>
         <SafeAreaProvider>
-          <NavigationContainer ref={navigationRef} linking={session && profile && !PREVIEW_MODE ? linking : undefined}>
+          <NavigationContainer ref={navigationRef} linking={session && profile?.onboardingCompleted && !PREVIEW_MODE ? linking : undefined}>
             {PREVIEW_MODE ? (
               <MainNavigator />
             ) : !session ? (

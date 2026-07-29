@@ -5,25 +5,35 @@ import { WelcomeScreen } from '@/screens/auth/WelcomeScreen';
 import { SignInScreen } from '@/screens/auth/SignInScreen';
 import { SignUpScreen } from '@/screens/auth/SignUpScreen';
 import { ForgotPasswordScreen } from '@/screens/auth/ForgotPasswordScreen';
-import { CompleteAppleProfileScreen } from '@/screens/auth/CompleteAppleProfileScreen';
-import { useAuth, type AppleProfileInput } from '@/hooks/useAuth';
+import { useAuth } from '@/hooks/useAuth';
 
 export type AuthStackParamList = {
   Welcome: undefined;
   SignIn: undefined;
   SignUp: undefined;
   ForgotPassword: undefined;
-  CompleteAppleProfile: { input: AppleProfileInput };
 };
 
 const Stack = createNativeStackNavigator<AuthStackParamList>();
 
-type AppleNavTarget = { navigate: (screen: 'CompleteAppleProfile', params: { input: AppleProfileInput }) => void };
-
 /** Shared by every screen that offers "Continue with Apple" (Welcome and
  *  Sign In) so the loading/guard state and result handling stay identical
- *  regardless of where the button was tapped. */
-function useAppleSignIn(navigation: AppleNavTarget) {
+ *  regardless of where the button was tapped.
+ *
+ *  Deliberately does NOT navigate anywhere for a 'needs-profile' result.
+ *  It used to call navigation.navigate('CompleteAppleProfile', ...) on
+ *  this screen's own stack — but App.tsx's top-level session/profile gate
+ *  reacts to the exact same auth state (now shared via AuthProvider) and
+ *  independently decides to swap the whole navigator tree away from
+ *  AuthNavigator the moment the profile look-up resolves. Those two
+ *  things racing — an imperative .navigate() call against a navigator
+ *  that App.tsx can unmount out from under it at any moment — is exactly
+ *  the kind of concurrent-tree-mutation React Navigation does not handle
+ *  safely, and was found to be the real crash mechanism (not just the
+ *  double-tap re-entrancy issue fixed earlier). App.tsx's reactive gate
+ *  is now the ONLY thing that ever decides to show the profile-completion
+ *  screen — this handler only has to react to a real, final error. */
+function useAppleSignIn() {
   const { signInWithApple } = useAuth();
   const [appleLoading, setAppleLoading] = useState(false);
   // Belt-and-braces UI-level guard alongside the hook's own re-entrancy
@@ -37,25 +47,25 @@ function useAppleSignIn(navigation: AppleNavTarget) {
     setAppleLoading(true);
     try {
       const result = await signInWithApple();
-      if (result.status === 'needs-profile') {
-        navigation.navigate('CompleteAppleProfile', { input: result.input });
-      } else if (result.status === 'error' && result.message) {
+      console.log('[AuthNavigator] signInWithApple resolved', { status: result.status });
+      if (result.status === 'error' && result.message) {
         Alert.alert("Couldn't sign in", result.message);
       }
-      // 'signed-in' -> session updates and the root navigator swaps to the
-      // main app automatically. 'cancelled' -> quietly stay put.
+      // 'signed-in' / 'needs-profile' -> the shared session/profile state
+      // (already updated by signInWithApple itself before it returned)
+      // drives App.tsx's routing reactively. 'cancelled' -> stay put.
     } finally {
       // Always release, on every path — success, cancel, or error.
       setAppleLoading(false);
       inFlightRef.current = false;
     }
-  }, [navigation, signInWithApple]);
+  }, [signInWithApple]);
 
   return { appleLoading, onContinueWithApple };
 }
 
-function WelcomeContainer({ navigation }: { navigation: AppleNavTarget & { navigate: (screen: 'SignUp' | 'SignIn') => void } }) {
-  const { appleLoading, onContinueWithApple } = useAppleSignIn(navigation);
+function WelcomeContainer({ navigation }: { navigation: { navigate: (screen: 'SignUp' | 'SignIn') => void } }) {
+  const { appleLoading, onContinueWithApple } = useAppleSignIn();
   return (
     <WelcomeScreen
       appleLoading={appleLoading}
@@ -69,9 +79,9 @@ function WelcomeContainer({ navigation }: { navigation: AppleNavTarget & { navig
 function SignInContainer({
   navigation,
 }: {
-  navigation: AppleNavTarget & { navigate: (screen: 'ForgotPassword') => void; goBack: () => void };
+  navigation: { navigate: (screen: 'ForgotPassword') => void; goBack: () => void };
 }) {
-  const { appleLoading, onContinueWithApple } = useAppleSignIn(navigation);
+  const { appleLoading, onContinueWithApple } = useAppleSignIn();
   return (
     <SignInScreen
       onBack={() => navigation.goBack()}
@@ -96,9 +106,6 @@ export function AuthNavigator() {
       </Stack.Screen>
       <Stack.Screen name="ForgotPassword">
         {({ navigation }) => <ForgotPasswordScreen onBack={() => navigation.goBack()} />}
-      </Stack.Screen>
-      <Stack.Screen name="CompleteAppleProfile">
-        {({ route }) => <CompleteAppleProfileScreen input={route.params.input} />}
       </Stack.Screen>
     </Stack.Navigator>
   );

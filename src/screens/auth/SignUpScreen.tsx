@@ -62,6 +62,10 @@ export function SignUpScreen({ onBack }: SignUpScreenProps) {
 
   const emailRef = useRef<TextInput>(null);
   const passwordRef = useRef<TextInput>(null);
+  // Synchronous guard alongside isSubmitting (state) — a fast double-tap
+  // can fire two onPress handlers before the disabled-button re-render
+  // commits, same class of gap as the Apple sign-in double-tap issue.
+  const inFlightRef = useRef(false);
 
   // Restore a draft left behind by a closed app or dropped connection.
   useEffect(() => {
@@ -76,7 +80,7 @@ export function SignUpScreen({ onBack }: SignUpScreenProps) {
   }, [fullName, email, children, save]);
 
   const handleSubmit = async () => {
-    if (isSubmitting) return; // debounce duplicate submissions
+    if (inFlightRef.current) return; // synchronous — checked before any state/render
     const errors: Record<string, string> = {};
     if (!isNonEmpty(fullName)) errors.fullName = 'Enter your name';
     if (!isValidEmail(email)) errors.email = 'Enter a valid email address';
@@ -92,29 +96,34 @@ export function SignUpScreen({ onBack }: SignUpScreenProps) {
     setChildErrors(perChild);
     if (Object.keys(errors).length > 0 || perChild.some((e) => e.name || e.birthdate)) return;
 
+    inFlightRef.current = true;
     setFormError(null);
     setIsSubmitting(true);
-    const result = await register(
-      {
-        fullName: fullName.trim(),
-        email: email.trim(),
-        password,
-        children: children.map((child) => ({ name: child.name.trim(), birthdate: child.birthdate! })),
-      },
-      setStage,
-    );
-    setIsSubmitting(false);
-    setStage(null);
+    try {
+      const result = await register(
+        {
+          fullName: fullName.trim(),
+          email: email.trim(),
+          password,
+          children: children.map((child) => ({ name: child.name.trim(), birthdate: child.birthdate! })),
+        },
+        setStage,
+      );
 
-    if (result.status === 'error') {
-      setFormError(result.message); // form data preserved — nothing is cleared here
-    } else if (result.status === 'needs-email-confirmation') {
-      clear();
-      setPendingConfirmationEmail(email.trim());
-    } else {
-      clear();
-      // 'signed-in' — the root navigator swaps to the main app automatically
-      // once useAuth's session/profile state updates.
+      if (result.status === 'error') {
+        setFormError(result.message); // form data preserved — nothing is cleared here
+      } else if (result.status === 'needs-email-confirmation') {
+        clear();
+        setPendingConfirmationEmail(email.trim());
+      } else {
+        clear();
+        // 'signed-in' — the root navigator swaps to the main app automatically
+        // once useAuth's session/profile state updates.
+      }
+    } finally {
+      setIsSubmitting(false);
+      setStage(null);
+      inFlightRef.current = false;
     }
   };
 

@@ -37,20 +37,26 @@ export function SignInScreen({
   const [formError, setFormError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const passwordRef = useRef<TextInput>(null);
+  const inFlightRef = useRef(false);
 
   const handleSubmit = async () => {
-    if (isSubmitting) return; // debounce duplicate submissions
+    if (inFlightRef.current) return; // synchronous — checked before any state/render
     const errors: typeof fieldErrors = {};
     if (!isValidEmail(email)) errors.email = 'Enter a valid email address';
     if (!isNonEmpty(password)) errors.password = 'Enter your password';
     setFieldErrors(errors);
     if (Object.keys(errors).length > 0) return;
 
+    inFlightRef.current = true;
     setFormError(null);
     setIsSubmitting(true);
-    const result = await signIn(email, password);
-    setIsSubmitting(false);
-    if (result) setFormError(result); // form data (email/password) preserved on error
+    try {
+      const result = await signIn(email, password);
+      if (result) setFormError(result); // form data (email/password) preserved on error
+    } finally {
+      setIsSubmitting(false);
+      inFlightRef.current = false;
+    }
   };
 
   return (

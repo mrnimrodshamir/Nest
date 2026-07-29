@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import { supabase } from '@/lib/supabase';
@@ -80,7 +80,19 @@ interface UseAuthResult {
   updateNotificationPreferences: (prefs: NotificationPreferences) => Promise<string | null>;
 }
 
-export function useAuth(): UseAuthResult {
+/** The actual implementation — called exactly once, inside AuthProvider.
+ *  Every screen consumes the single resulting state via useAuth() (a
+ *  context read) instead of calling this directly, which used to create
+ *  a brand new independent session/profile state and a brand new
+ *  supabase.auth.onAuthStateChange subscription per call site (App.tsx,
+ *  AuthNavigator's Apple-sign-in containers, ActivityDetailScreen,
+ *  EditProfileScreen, ProfileScreen, every auth screen — a dozen+
+ *  places). Duplicate listeners aren't just wasteful: each one resolves
+ *  its own loadProfile() fetch on its own timing, so two instances could
+ *  (and did) observe "session exists, profile still a stub" at different
+ *  moments and make different UI decisions from it — see the App.tsx
+ *  history around the Apple sign-in profile-completion race. */
+function useAuthState(): UseAuthResult {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -302,6 +314,7 @@ export function useAuth(): UseAuthResult {
 
       const userId = data.user?.id;
       if (!userId) return { status: 'error' as const, message: 'Sign in with Apple failed. Please try again.' };
+      console.log('[Auth] Apple sign-in: Supabase session established', { userId, hasSession: Boolean(data.session) });
 
       // The auth-user-creation trigger already created a profile row for
       // every account (Apple included) — a bare existence check would
@@ -312,22 +325,46 @@ export function useAuth(): UseAuthResult {
         .select('id, onboarding_completed')
         .eq('id', userId)
         .maybeSingle();
+      console.log('[Auth] Apple sign-in: profile lookup complete', {
+        userId,
+        profileExists: Boolean(existingProfile),
+        onboardingCompleted: existingProfile?.onboarding_completed ?? null,
+      });
 
       if (existingProfile?.onboarding_completed) {
-        console.log('[Auth] Apple sign-in: returning user', { userId });
+        console.log('[Auth] Apple sign-in: returning user, loading profile', { userId });
         await loadProfile(userId);
+        console.log('[Auth] Apple sign-in: returning user, profile loaded — signed-in');
         return { status: 'signed-in' as const };
       }
 
       // New account, or an interrupted signup that never finished
       // completeAppleProfile. Apple only ever sends fullName/email on the
-      // very first authorization for this app+Apple ID — carry whatever
-      // we got forward since a retry won't receive it again.
+      // very first authorization for this app+Apple ID — persist whatever
+      // we got into the stub profile row *now*, since a retry won't
+      // receive it again and no caller can be relied on to carry it
+      // forward (see the App.tsx routing note on why the completion
+      // screen is reached reactively, not via a passed navigation param).
       console.log('[Auth] Apple sign-in: needs profile completion', { userId });
       track('sign_up_started');
       const fullName = credential.fullName
         ? [credential.fullName.givenName, credential.fullName.familyName].filter(Boolean).join(' ')
         : null;
+
+      if (fullName) {
+        console.log('[Auth] Apple sign-in: persisting captured display name to stub profile', { userId });
+        const { error: nameError } = await supabase
+          .from('profiles')
+          .update({ display_name: fullName })
+          .eq('id', userId);
+        if (nameError) console.log('[Auth] Apple sign-in: persisting display name failed', nameError.message);
+      }
+
+      // Update the shared context's profile state too, so anything
+      // reading it (App.tsx's routing gate included) sees the real name
+      // immediately rather than waiting on its own separate fetch.
+      await loadProfile(userId);
+      console.log('[Auth] Apple sign-in: needs-profile result ready, shared profile state refreshed', { userId });
 
       return {
         status: 'needs-profile' as const,
@@ -534,6 +571,24 @@ export function useAuth(): UseAuthResult {
     updateProfileDetails,
     updateNotificationPreferences,
   };
+}
+
+const AuthContext = createContext<UseAuthResult | null>(null);
+
+/** Wraps the whole app, once, in App.tsx. Owns the single session/profile
+ *  state and the single onAuthStateChange subscription that every screen
+ *  reads via useAuth(). */
+export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const value = useAuthState();
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+}
+
+export function useAuth(): UseAuthResult {
+  const value = useContext(AuthContext);
+  if (!value) {
+    throw new Error('useAuth() must be called within <AuthProvider>');
+  }
+  return value;
 }
 
 function mapProfile(row: {
