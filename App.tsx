@@ -36,9 +36,8 @@ import { AppErrorBoundary } from '@/components/AppErrorBoundary';
 import { theme } from '@/theme';
 import { useAuth, AuthProvider } from '@/hooks/useAuth';
 import { computeRouteDecision } from '@/lib/routing';
-import { DISABLE_AUTH_WORKLETS } from '@/diagnostics/diagnosticFlags';
-import { SessionRestoredScreen } from '@/screens/diagnostics/SessionRestoredScreen';
-import { ProfileCompletionCanary } from '@/screens/diagnostics/ProfileCompletionCanary';
+import { SessionLoadedCheckpoint } from '@/screens/diagnostics/SessionLoadedCheckpoint';
+import { ProfileLoadedCheckpoint } from '@/screens/diagnostics/ProfileLoadedCheckpoint';
 import { useActivityDetail } from '@/hooks/useActivityDetail';
 import { useActivityRsvp } from '@/hooks/useActivityRsvp';
 import { useActivityChatId } from '@/hooks/useActivityChatId';
@@ -133,11 +132,14 @@ function AppInner() {
     PlusJakartaSans_700Bold,
   });
   const { session, profile, isLoading: authLoading } = useAuth();
-  // Diagnostic-only (EXPO_PUBLIC_DISABLE_AUTH_WORKLETS): manual gates past
-  // SessionRestoredScreen/ProfileCompletionCanary into the real screens.
-  // Unconditional useState calls — never skipped, regardless of the flag.
-  const [showRealMain, setShowRealMain] = useState(false);
-  const [showRealProfileScreen, setShowRealProfileScreen] = useState(false);
+  // Brute-force stability checkpoints: once per app session, require a
+  // manual tap between session becoming non-null and mounting any real
+  // onboarding/main UI, and again between a complete profile and
+  // MainNavigator mounting — see SessionLoadedCheckpoint/
+  // ProfileLoadedCheckpoint. A crash on either side of a tap identifies
+  // which side is at fault.
+  const [sessionCheckpointPassed, setSessionCheckpointPassed] = useState(false);
+  const [profileCheckpointPassed, setProfileCheckpointPassed] = useState(false);
 
   useEffect(() => {
     // Safe fallback if the tapped notification references content that no
@@ -194,6 +196,8 @@ function AppInner() {
               <MainNavigator />
             ) : !session ? (
               <AuthNavigator />
+            ) : !sessionCheckpointPassed ? (
+              <SessionLoadedCheckpoint onContinue={() => setSessionCheckpointPassed(true)} />
             ) : !profile || !profile.onboardingCompleted ? (
               // Signed in but the profile is missing OR still a stub (the
               // auth-user-creation trigger now creates a profile row for
@@ -206,19 +210,15 @@ function AppInner() {
               // here can race ahead of AuthNavigator's own explicit
               // navigation to this same screen and land her in the main
               // app with zero children instead.
-              DISABLE_AUTH_WORKLETS && !showRealProfileScreen ? (
-                <ProfileCompletionCanary onContinue={() => setShowRealProfileScreen(true)} />
-              ) : (
-                <CompleteAppleProfileScreen
-                  input={{
-                    children: [],
-                    fallbackFullName: null,
-                    fallbackEmail: session.user.email ?? null,
-                  }}
-                />
-              )
-            ) : DISABLE_AUTH_WORKLETS && !showRealMain ? (
-              <SessionRestoredScreen onContinue={() => setShowRealMain(true)} />
+              <CompleteAppleProfileScreen
+                input={{
+                  children: [],
+                  fallbackFullName: null,
+                  fallbackEmail: session.user.email ?? null,
+                }}
+              />
+            ) : !profileCheckpointPassed ? (
+              <ProfileLoadedCheckpoint onContinue={() => setProfileCheckpointPassed(true)} />
             ) : (
               <MainNavigator />
             )}

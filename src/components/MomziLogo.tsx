@@ -1,20 +1,20 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import Svg, { Circle, Path } from 'react-native-svg';
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withSpring,
-  withTiming,
-  useReducedMotion,
-  runOnJS,
-} from 'react-native-reanimated';
 
 /**
  * Real Momzi brand paths (from assets/brand/momzi-logo-master.svg, viewBox
- * 0 0 1024 1024). Split left/right so the two halves can animate in from
- * opposite sides independently — this is the only place that needs to
+ * 0 0 1024 1024). Split left/right — this is the only place that needs to
  * change if the artwork itself changes.
+ *
+ * The entrance-animation variant (AnimatedMomziLogo, built on
+ * react-native-reanimated) has been removed from the app's auth/onboarding/
+ * launch path entirely — it was the source of a native SIGABRT crash
+ * (RNWorklets::AnimationFrameBatchinator::flush() -> Hermes
+ * throwPendingError) when the screen showing it was unmounted by App.tsx's
+ * reactive routing switch while its worklet-driven entrance animation was
+ * still in flight. Only this static logo is used anywhere a screen can be
+ * unmounted out from under it during the session transition.
  */
 const COLORS = {
   leftBody: '#F28C86',
@@ -65,8 +65,6 @@ function RightHalf({ size }: { size: number }) {
   );
 }
 
-/** Static logo — for headers, welcome screen, anywhere the entrance
- *  animation shouldn't replay. */
 export function MomziLogo({ size = 96 }: { size?: number }) {
   return (
     <View style={{ width: size, height: size }}>
@@ -76,71 +74,6 @@ export function MomziLogo({ size = 96 }: { size?: number }) {
       <View style={StyleSheet.absoluteFill}>
         <RightHalf size={size} />
       </View>
-    </View>
-  );
-}
-
-interface AnimatedMomziLogoProps {
-  size?: number;
-  /** Called once the entrance settle animation finishes (or immediately,
-   *  under reduced motion). Screens should never delay routing waiting on
-   *  this — it's for optional idle-state chaining, not a gate. */
-  onSettled?: () => void;
-}
-
-/** Entrance animation: left mother+baby slide in from the left, right from
- *  the right, both settle into place with a soft spring. Respects
- *  Reduce Motion by cross-fading instead of sliding. */
-export function AnimatedMomziLogo({ size = 140, onSettled }: AnimatedMomziLogoProps) {
-  const reducedMotion = useReducedMotion();
-  const progress = useSharedValue(0);
-
-  useEffect(() => {
-    if (reducedMotion) {
-      progress.value = withTiming(1, { duration: 350 }, (finished) => {
-        // withTiming's completion callback runs on the UI thread as a
-        // worklet under react-native-worklets (the Reanimated 4 runtime) —
-        // calling a plain JS closure (onSettled, which sets React state on
-        // whatever screen is still mounted) directly from here, without
-        // marshaling through runOnJS, is exactly the class of bug that
-        // produces an uncaught throw inside
-        // RNWorklets::AnimationFrameBatchinator::flush(), invisible to any
-        // JS-side try/catch or React error boundary.
-        if (finished && onSettled) runOnJS(onSettled)();
-      });
-    } else {
-      progress.value = withSpring(
-        1,
-        { damping: 14, stiffness: 120, mass: 0.9 },
-        (finished) => {
-          if (finished && onSettled) runOnJS(onSettled)();
-        },
-      );
-    }
-    // Intentionally runs once on mount only.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const slideDistance = size * 0.6;
-
-  const leftStyle = useAnimatedStyle(() => ({
-    opacity: progress.value,
-    transform: [{ translateX: reducedMotion ? 0 : (1 - progress.value) * -slideDistance }],
-  }));
-
-  const rightStyle = useAnimatedStyle(() => ({
-    opacity: progress.value,
-    transform: [{ translateX: reducedMotion ? 0 : (1 - progress.value) * slideDistance }],
-  }));
-
-  return (
-    <View style={{ width: size, height: size }}>
-      <Animated.View style={[StyleSheet.absoluteFill, leftStyle]}>
-        <LeftHalf size={size} />
-      </Animated.View>
-      <Animated.View style={[StyleSheet.absoluteFill, rightStyle]}>
-        <RightHalf size={size} />
-      </Animated.View>
     </View>
   );
 }

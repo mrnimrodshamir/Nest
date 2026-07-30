@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { ArrowLeft } from 'phosphor-react-native';
 import { theme, typography, spacing } from '@/theme';
 import { FormField } from '@/components/FormField';
-import { AuthButton } from '@/components/AuthButton';
+import { StaticPrimaryButton } from '@/components/StaticPrimaryButton';
 import { isValidEmail } from '@/utils/validation';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -61,7 +61,7 @@ export function ForgotPasswordScreen({ onBack }: ForgotPasswordScreenProps) {
                 keyboardType="email-address"
                 error={error}
               />
-              <AuthButton label="Send reset link" onPress={handleSubmit} loading={isSubmitting} />
+              <StaticPrimaryButton label="Send reset link" onPress={handleSubmit} loading={isSubmitting} />
             </View>
           </>
         )}

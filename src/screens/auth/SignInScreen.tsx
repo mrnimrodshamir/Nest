@@ -13,7 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { ArrowLeft, AppleLogo } from 'phosphor-react-native';
 import { theme, typography, spacing, radius } from '@/theme';
 import { FormField } from '@/components/FormField';
-import { AuthButton } from '@/components/AuthButton';
+import { StaticPrimaryButton } from '@/components/StaticPrimaryButton';
 import { isValidEmail, isNonEmpty } from '@/utils/validation';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -105,7 +105,7 @@ export function SignInScreen({
 
             {formError && <Text style={styles.formError}>{formError}</Text>}
 
-            <AuthButton label="Log in" onPress={handleSubmit} loading={isSubmitting} />
+            <StaticPrimaryButton label="Log in" onPress={handleSubmit} loading={isSubmitting} />
 
             {onContinueWithApple && (
               <>
