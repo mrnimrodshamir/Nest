@@ -25,8 +25,6 @@ export function MessagesScreen({ onOpenConversation }: MessagesScreenProps) {
         data={conversations}
         keyExtractor={(item) => item.chatId}
         contentContainerStyle={conversations.length === 0 ? styles.emptyContent : styles.listContent}
-        refreshing={isLoading}
-        onRefresh={refresh}
         renderItem={({ item }) => <ConversationRow conversation={item} onPress={() => onOpenConversation(item)} />}
         ListEmptyComponent={
           !isLoading ? (

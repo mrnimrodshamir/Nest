@@ -327,8 +327,6 @@ export function DiscoverScreen({ onOpenActivity, onHostActivity, mockActivities 
               />
             }
             contentContainerStyle={styles.listContent}
-            onRefresh={refresh}
-            refreshing={hasLoadedOnce && isRefreshing}
           />
         )}
       </BottomSheet>

@@ -40,8 +40,6 @@ export function BlockedUsersScreen({ onBack }: BlockedUsersScreenProps) {
         data={blockedUsers}
         keyExtractor={(item) => item.id}
         contentContainerStyle={blockedUsers.length === 0 ? styles.emptyContent : styles.listContent}
-        refreshing={isLoading}
-        onRefresh={refresh}
         renderItem={({ item }) => (
           <View style={styles.row}>
             <View style={styles.avatar}>
