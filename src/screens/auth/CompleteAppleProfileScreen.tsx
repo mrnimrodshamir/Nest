@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { theme, typography, spacing } from '@/theme';
-import { PrimaryButton } from '@/components/PrimaryButton';
+import { AuthButton } from '@/components/AuthButton';
 import { Checkbox } from '@/components/Checkbox';
 import { OnboardingChildrenEditor, type OnboardingChild } from '@/components/OnboardingChildrenEditor';
 import { isNonEmpty } from '@/utils/validation';
@@ -113,7 +113,7 @@ export function CompleteAppleProfileScreen({ input }: CompleteAppleProfileScreen
 
             {formError && <Text style={styles.formError}>{formError}</Text>}
 
-            <PrimaryButton
+            <AuthButton
               label={isSubmitting ? (stage ? STAGE_LABELS[stage] : 'Please wait…') : 'Start discovering'}
               onPress={handleSubmit}
               loading={isSubmitting}

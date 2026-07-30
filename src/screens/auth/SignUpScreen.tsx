@@ -14,7 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { ArrowLeft } from 'phosphor-react-native';
 import { theme, typography, spacing } from '@/theme';
 import { FormField } from '@/components/FormField';
-import { PrimaryButton } from '@/components/PrimaryButton';
+import { AuthButton } from '@/components/AuthButton';
 import { Checkbox } from '@/components/Checkbox';
 import { OnboardingChildrenEditor, type OnboardingChild } from '@/components/OnboardingChildrenEditor';
 import { LEGAL_URLS } from '@/constants/legal';
@@ -192,7 +192,7 @@ export function SignUpScreen({ onBack }: SignUpScreenProps) {
 
             {formError && <Text style={styles.formError}>{formError}</Text>}
 
-            <PrimaryButton
+            <AuthButton
               label={isSubmitting ? (stage ? STAGE_LABELS[stage] : 'Please wait…') : 'Create account'}
               onPress={handleSubmit}
               loading={isSubmitting}

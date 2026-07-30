@@ -3,8 +3,9 @@ import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppleLogo } from 'phosphor-react-native';
 import { theme, typography, spacing, radius } from '@/theme';
-import { AnimatedMomziLogo } from '@/components/MomziLogo';
-import { PrimaryButton } from '@/components/PrimaryButton';
+import { AnimatedMomziLogo, MomziLogo } from '@/components/MomziLogo';
+import { AuthButton } from '@/components/AuthButton';
+import { DISABLE_AUTH_WORKLETS } from '@/diagnostics/diagnosticFlags';
 
 interface WelcomeScreenProps {
   onContinueWithApple: () => void;
@@ -27,7 +28,7 @@ export function WelcomeScreen({
 
       <SafeAreaView style={styles.content} edges={['top', 'bottom']}>
         <View style={styles.hero}>
-          <AnimatedMomziLogo size={128} />
+          {DISABLE_AUTH_WORKLETS ? <MomziLogo size={128} /> : <AnimatedMomziLogo size={128} />}
           <Text style={styles.wordmark}>Momzi</Text>
           <Text style={styles.tagline}>Motherhood is better together.</Text>
           <Text style={styles.subtagline}>
@@ -47,7 +48,7 @@ export function WelcomeScreen({
             <Text style={styles.appleButtonLabel}>Continue with Apple</Text>
           </Pressable>
 
-          <PrimaryButton label="Sign up with email" onPress={onSignUpWithEmail} />
+          <AuthButton label="Sign up with email" onPress={onSignUpWithEmail} />
 
           <Pressable style={styles.loginLink} onPress={onLogIn} hitSlop={8}>
             <Text style={styles.loginLinkLabel}>

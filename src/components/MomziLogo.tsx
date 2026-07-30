@@ -7,6 +7,7 @@ import Animated, {
   withSpring,
   withTiming,
   useReducedMotion,
+  runOnJS,
 } from 'react-native-reanimated';
 
 /**
@@ -97,14 +98,22 @@ export function AnimatedMomziLogo({ size = 140, onSettled }: AnimatedMomziLogoPr
   useEffect(() => {
     if (reducedMotion) {
       progress.value = withTiming(1, { duration: 350 }, (finished) => {
-        if (finished && onSettled) runOnJSSafe(onSettled);
+        // withTiming's completion callback runs on the UI thread as a
+        // worklet under react-native-worklets (the Reanimated 4 runtime) —
+        // calling a plain JS closure (onSettled, which sets React state on
+        // whatever screen is still mounted) directly from here, without
+        // marshaling through runOnJS, is exactly the class of bug that
+        // produces an uncaught throw inside
+        // RNWorklets::AnimationFrameBatchinator::flush(), invisible to any
+        // JS-side try/catch or React error boundary.
+        if (finished && onSettled) runOnJS(onSettled)();
       });
     } else {
       progress.value = withSpring(
         1,
         { damping: 14, stiffness: 120, mass: 0.9 },
         (finished) => {
-          if (finished && onSettled) runOnJSSafe(onSettled);
+          if (finished && onSettled) runOnJS(onSettled)();
         },
       );
     }
@@ -134,12 +143,4 @@ export function AnimatedMomziLogo({ size = 140, onSettled }: AnimatedMomziLogoPr
       </Animated.View>
     </View>
   );
-}
-
-// Reanimated worklets can't call arbitrary JS directly by default in this
-// setup without the babel plugin's auto-workletization handling callbacks —
-// withSpring/withTiming callbacks already run on the JS thread in
-// react-native-reanimated 3, so this is a plain passthrough for clarity.
-function runOnJSSafe(fn: () => void) {
-  fn();
 }
