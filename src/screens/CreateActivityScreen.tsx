@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, Pressable, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ArrowLeft } from 'phosphor-react-native';
 import { theme, typography, spacing } from '@/theme';
 import { ActivityForm } from '@/components/ActivityForm';
+import { PrimaryButton } from '@/components/PrimaryButton';
 import { useCreateActivity, type CreateActivityInput } from '@/hooks/useCreateActivity';
 
 interface CreateActivityScreenProps {
@@ -19,11 +20,32 @@ export function CreateActivityScreen({
   initialLatitude,
   initialLongitude,
 }: CreateActivityScreenProps) {
-  const { isSubmitting, stage, error, submit } = useCreateActivity();
+  const { isSubmitting, stage, error, submit, retryHostJoin } = useCreateActivity();
+  // Set only when the activity itself was created but the host's own
+  // join failed — the activity is real and must never be silently
+  // discarded or re-created; the user retries just the join step.
+  const [pendingJoin, setPendingJoin] = useState<{ activityId: string; input: CreateActivityInput } | null>(null);
 
   const handleSubmit = async (input: CreateActivityInput) => {
-    const activityId = await submit(input);
-    if (activityId) onCreated(activityId, input);
+    const result = await submit(input);
+    if (result.status === 'success') {
+      setPendingJoin(null);
+      onCreated(result.activityId, input);
+    } else if (result.status === 'partial') {
+      setPendingJoin({ activityId: result.activityId, input });
+    } else {
+      setPendingJoin(null);
+    }
+  };
+
+  const handleRetryJoin = async () => {
+    if (!pendingJoin) return;
+    const joined = await retryHostJoin(pendingJoin.activityId, pendingJoin.input.hostChildIds);
+    if (joined) {
+      const { activityId, input } = pendingJoin;
+      setPendingJoin(null);
+      onCreated(activityId, input);
+    }
   };
 
   return (
@@ -61,6 +83,18 @@ export function CreateActivityScreen({
           stage={stage}
           error={error}
           onSubmit={handleSubmit}
+          footer={
+            pendingJoin ? (
+              <View style={styles.retryRow}>
+                <PrimaryButton
+                  label="Retry joining your activity"
+                  onPress={handleRetryJoin}
+                  loading={isSubmitting}
+                  variant="outline"
+                />
+              </View>
+            ) : undefined
+          }
         />
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -86,4 +120,5 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   headerTitle: { ...typography.headline, color: theme.text.primary },
+  retryRow: { marginTop: spacing.sm },
 });

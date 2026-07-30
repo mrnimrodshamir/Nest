@@ -65,22 +65,29 @@ export function useActivityDetail(activityId: string): UseActivityDetailResult {
       ]);
       if (cancelled) return;
 
-      const attendees: Attendee[] = (attendeeRows ?? []).flatMap((row) => {
-        const rawProfile = row.user as unknown;
-        const profile = (Array.isArray(rawProfile) ? rawProfile[0] : rawProfile) as
-          | { id: string; display_name: string; avatar_url: string | null }
-          | null
-          | undefined;
-        if (!profile) return [];
-        return [
-          {
-            id: profile.id,
-            displayName: profile.display_name,
-            avatarUrl: profile.avatar_url,
-            avatarColor: colorForId(profile.id),
-          },
-        ];
-      });
+      // The host is now always a genuine activity_attendees row (auto-joined
+      // at creation time), so she'd otherwise appear twice — once in the
+      // "hosting" row above, once in this avatar list. attendeeCount stays
+      // the raw row count (host included, per spec); only the rendered
+      // avatar list excludes her.
+      const attendees: Attendee[] = (attendeeRows ?? [])
+        .filter((row) => row.user_id !== activityRow.host_id)
+        .flatMap((row) => {
+          const rawProfile = row.user as unknown;
+          const profile = (Array.isArray(rawProfile) ? rawProfile[0] : rawProfile) as
+            | { id: string; display_name: string; avatar_url: string | null }
+            | null
+            | undefined;
+          if (!profile) return [];
+          return [
+            {
+              id: profile.id,
+              displayName: profile.display_name,
+              avatarUrl: profile.avatar_url,
+              avatarColor: colorForId(profile.id),
+            },
+          ];
+        });
 
       let viewerStatus: ActivityDetail['viewerStatus'] = 'none';
       const user = userData.user;
@@ -112,12 +119,17 @@ export function useActivityDetail(activityId: string): UseActivityDetailResult {
         latitude: activityRow.latitude,
         longitude: activityRow.longitude,
         attendees: attendees.slice(0, 5),
-        attendeeCount: attendees.length,
+        // Raw row count — includes the host, per spec, even though the
+        // rendered avatar list above excludes her to avoid a duplicate.
+        attendeeCount: attendeeRows?.length ?? 0,
         capacity: activityRow.capacity,
         babyMinAgeMonths: activityRow.baby_min_age_months,
         babyMaxAgeMonths: activityRow.baby_max_age_months,
-        description: activityRow.description ?? '',
-        notes: activityRow.notes,
+        // New activities only ever write to `description`; older rows may
+        // still have their optional text in the legacy `notes` column —
+        // merge here so every screen downstream sees one field.
+        description: activityRow.description || activityRow.notes || '',
+        notes: null,
         location: {
           label: activityRow.address_label,
           latitude: activityRow.latitude,

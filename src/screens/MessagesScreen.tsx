@@ -30,12 +30,8 @@ export function MessagesScreen({ onOpenConversation }: MessagesScreenProps) {
           !isLoading ? (
             <StateCard
               icon={ChatCircleDots}
-              title={error ?? 'No messages yet'}
-              body={
-                error
-                  ? 'Pull down to try again.'
-                  : "When you join or host an activity, you'll be able to chat with everyone here."
-              }
+              title={error ? "Couldn't load your messages." : 'No conversations yet'}
+              body={error ? 'Tap below to try again.' : 'Join or host an activity to start chatting.'}
               ctaLabel={error ? 'Try again' : undefined}
               onCtaPress={error ? refresh : undefined}
               tone={error ? 'warning' : 'default'}

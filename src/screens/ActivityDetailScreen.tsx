@@ -340,15 +340,12 @@ export function ActivityDetailScreen({
             </Pressable>
           )}
 
-          <Text style={styles.sectionLabel}>About</Text>
-          <Text style={styles.description}>{activity.description}</Text>
-
-          {activity.notes && (
+          {activity.description ? (
             <>
-              <Text style={styles.sectionLabel}>What to bring</Text>
-              <Text style={styles.description}>{activity.notes}</Text>
+              <Text style={styles.sectionLabel}>Details</Text>
+              <Text style={styles.description}>{activity.description}</Text>
             </>
-          )}
+          ) : null}
 
           <Text style={styles.sectionLabel}>Location</Text>
           <View style={styles.mapPlaceholder}>
@@ -403,28 +400,39 @@ export function ActivityDetailScreen({
 
       <View style={styles.ctaBar}>
         {error && <Text style={styles.ctaError}>{error}</Text>}
-        <AnimatedPressable
-          style={[
-            styles.ctaButton,
-            activity.viewerStatus === 'going' && styles.ctaButtonGoing,
-            !canJoin && activity.viewerStatus === 'none' && styles.ctaButtonDisabled,
-            ctaAnimatedStyle,
-          ]}
-          onPress={handleJoinPress}
-          disabled={isSubmitting || (!canJoin && activity.viewerStatus === 'none')}
-        >
-          <Text
+        {isHost ? (
+          // The creator is always a participant (host auto-join happens at
+          // creation time) — never show a normal Join/Leave affordance for
+          // her own activity, even if a legacy row is somehow missing its
+          // host attendee row (activity.hostId is the authoritative check
+          // here, not viewerStatus, which depends on that row existing).
+          <View style={[styles.ctaButton, styles.ctaButtonGoing]}>
+            <Text style={[styles.ctaLabel, styles.ctaLabelGoing]}>You're hosting</Text>
+          </View>
+        ) : (
+          <AnimatedPressable
             style={[
-              styles.ctaLabel,
-              activity.viewerStatus === 'going' && styles.ctaLabelGoing,
+              styles.ctaButton,
+              activity.viewerStatus === 'going' && styles.ctaButtonGoing,
+              !canJoin && activity.viewerStatus === 'none' && styles.ctaButtonDisabled,
+              ctaAnimatedStyle,
             ]}
+            onPress={handleJoinPress}
+            disabled={isSubmitting || (!canJoin && activity.viewerStatus === 'none')}
           >
-            {isCancelled && 'This activity was cancelled'}
-            {!isCancelled && isEnded && 'This activity has ended'}
-            {!isCancelled && !isEnded && activity.viewerStatus === 'going' && "You're going"}
-            {!isCancelled && !isEnded && activity.viewerStatus === 'none' && (isFull ? 'Activity full' : 'Join this activity')}
-          </Text>
-        </AnimatedPressable>
+            <Text
+              style={[
+                styles.ctaLabel,
+                activity.viewerStatus === 'going' && styles.ctaLabelGoing,
+              ]}
+            >
+              {isCancelled && 'This activity was cancelled'}
+              {!isCancelled && isEnded && 'This activity has ended'}
+              {!isCancelled && !isEnded && activity.viewerStatus === 'going' && "You're going"}
+              {!isCancelled && !isEnded && activity.viewerStatus === 'none' && (isFull ? 'Activity full' : 'Join this activity')}
+            </Text>
+          </AnimatedPressable>
+        )}
       </View>
 
       <NotificationPermissionSheet

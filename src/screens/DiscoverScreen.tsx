@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { View, Text, Pressable, StyleSheet, Dimensions, FlatList, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native';
 import Animated, { useSharedValue, useAnimatedStyle, withTiming, useReducedMotion } from 'react-native-reanimated';
 import MapView, { PROVIDER_DEFAULT, Region } from 'react-native-maps';
 import BottomSheet, { BottomSheetFlatList, BottomSheetView } from '@gorhom/bottom-sheet';
@@ -93,6 +94,18 @@ export function DiscoverScreen({ onOpenActivity, onHostActivity, mockActivities 
       setHasLoadedOnce(true);
     }
   }, [isRefreshing, hasLoadedOnce]);
+
+  // DiscoverScreen stays mounted underneath CreateActivity/ActivityDetail
+  // (they're pushed as root-stack screens over the tabs, not separate tab
+  // instances), so a newly created or joined activity would otherwise
+  // never appear until the app restarts. Refetch every time this tab
+  // regains focus, not just on first mount.
+  useFocusEffect(
+    useCallback(() => {
+      refresh();
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []),
+  );
 
   const showSkeleton = !hasLoadedOnce && isRefreshing;
 

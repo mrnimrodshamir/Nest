@@ -9,14 +9,11 @@ interface StaticPrimaryButtonProps extends Omit<PressableProps, 'style'> {
   variant?: 'primary' | 'secondary' | 'outline';
 }
 
-/** Diagnostic-mode counterpart to PrimaryButton (src/components/PrimaryButton.tsx)
+/** Non-Reanimated counterpart to PrimaryButton (src/components/PrimaryButton.tsx)
  *  — same visual API and appearance, but zero Reanimated: no shared
  *  value, no useAnimatedStyle, no press-feedback spring, no
- *  Animated.createAnimatedComponent. Kept as a fully separate component
- *  (never a conditional branch inside PrimaryButton) so no Reanimated
- *  hook is ever called, even conditionally, when
- *  EXPO_PUBLIC_DISABLE_AUTH_WORKLETS is set — see AuthButton.tsx, which
- *  picks between this and PrimaryButton before rendering. */
+ *  Animated.createAnimatedComponent. Used by every auth/onboarding
+ *  screen's primary action. */
 export function StaticPrimaryButton({
   label,
   loading = false,

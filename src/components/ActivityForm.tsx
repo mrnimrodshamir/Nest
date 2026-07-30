@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, TextInput, Pressable, ScrollView, StyleSheet } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { Camera } from 'phosphor-react-native';
@@ -80,7 +80,14 @@ export function ActivityForm({
     parseCuratedCover(initialValues?.coverImageUrl ?? null),
   );
   const [title, setTitle] = useState(initialValues?.title ?? '');
-  const [description, setDescription] = useState(initialValues?.description ?? '');
+  // "Details" is the one optional free-text field — for an existing
+  // activity being edited, fall back to its legacy `notes` value if
+  // `description` is empty, so pre-merge activities don't appear to have
+  // silently lost that text. New activities only ever write to
+  // `description` going forward (see useCreateActivity.ts).
+  const [description, setDescription] = useState(
+    initialValues?.description || initialValues?.notes || '',
+  );
   const [startsAt, setStartsAt] = useState(() => {
     if (initialValues) return initialValues.startsAt;
     const d = new Date();
@@ -110,15 +117,27 @@ export function ActivityForm({
   const [minMonths, setMinMonths] = useState(initialMin.months);
   const [maxYears, setMaxYears] = useState(initialMax.years);
   const [maxMonths, setMaxMonths] = useState(initialMax.months);
-  const [notes, setNotes] = useState(initialValues?.notes ?? '');
   const [validationError, setValidationError] = useState<string | null>(null);
+  // Synchronous guard alongside isSubmitting (state) — a fast double-tap
+  // can fire two onPress handlers before the disabled-button re-render
+  // commits, same pattern used for auth screens' submit buttons.
+  const inFlightRef = useRef(false);
+
+  // Releases the guard once the parent's async submit resolves (success,
+  // partial failure, or error) — ActivityForm doesn't await onSubmit
+  // itself, so it only knows submission finished via this prop flipping
+  // back to false.
+  useEffect(() => {
+    if (!isSubmitting) inFlightRef.current = false;
+  }, [isSubmitting]);
 
   const handleSubmit = () => {
+    if (inFlightRef.current) return;
     if (!title.trim()) return setValidationError('Give your activity a title');
-    if (!description.trim()) return setValidationError('Add a short description');
     if (!locationName.trim()) return setValidationError('Name the public place you picked');
     setValidationError(null);
 
+    inFlightRef.current = true;
     onSubmit({
       activityType,
       title: title.trim(),
@@ -131,7 +150,9 @@ export function ActivityForm({
       maxParticipants: noLimit ? null : maxParticipants,
       babyMinAgeMonths: anyAge ? null : minYears * 12 + minMonths,
       babyMaxAgeMonths: anyAge ? null : maxYears * 12 + maxMonths,
-      notes: notes.trim(),
+      // New activities only ever write to `description` — `notes` is kept
+      // in the DB for legacy rows but is never populated for new ones.
+      notes: '',
       coverUri,
       curatedCover: coverUri ? null : curatedCover,
       hostChildIds,
@@ -300,21 +321,10 @@ export function ActivityForm({
 
       <ComingWithSelector children={children} selectedChildIds={hostChildIds} onChange={setHostChildIds} />
 
-      <Field label="Notes / what to bring">
+      <Field label="Details (optional)">
         <TextInput
           style={[styles.input, styles.textArea]}
-          placeholder="e.g. Bring water, stroller-friendly, shade available"
-          placeholderTextColor={theme.text.muted}
-          value={notes}
-          onChangeText={setNotes}
-          multiline
-        />
-      </Field>
-
-      <Field label="Description">
-        <TextInput
-          style={[styles.input, styles.textArea]}
-          placeholder="Tell people what to expect"
+          placeholder="Example: Bring water and a mat. We'll meet near the main entrance."
           placeholderTextColor={theme.text.muted}
           value={description}
           onChangeText={setDescription}
