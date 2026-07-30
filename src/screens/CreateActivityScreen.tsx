@@ -79,7 +79,11 @@ export function CreateActivityScreen({
             notes: '',
           }}
           submitLabel="Create activity"
-          isSubmitting={isSubmitting}
+          // Also disabled while a host-join retry is pending — the activity
+          // already exists at this point, so tapping "Create activity"
+          // again would create a second one instead of finishing the first.
+          // The retry footer button below is the only way forward here.
+          isSubmitting={isSubmitting || Boolean(pendingJoin)}
           stage={stage}
           error={error}
           onSubmit={handleSubmit}

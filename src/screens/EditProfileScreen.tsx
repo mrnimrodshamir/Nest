@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, Pressable, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ArrowLeft, PencilSimple, Star, Trash, Plus } from 'phosphor-react-native';
@@ -27,6 +27,9 @@ export function EditProfileScreen({ onBack }: EditProfileScreenProps) {
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  // Synchronous guard alongside isSaving (state) — a fast double-tap can
+  // fire two onPress handlers before the disabled-button re-render commits.
+  const inFlightRef = useRef(false);
 
   useEffect(() => {
     if (profile) {
@@ -36,12 +39,14 @@ export function EditProfileScreen({ onBack }: EditProfileScreenProps) {
   }, [profile]);
 
   const handleSave = async () => {
+    if (inFlightRef.current) return;
     const errors: Record<string, string> = {};
     if (!isNonEmpty(displayName)) errors.displayName = 'Enter your name';
     if (phone.trim() && !isValidPhone(phone)) errors.phone = 'Enter a valid phone number';
     setFieldErrors(errors);
     if (Object.keys(errors).length > 0) return;
 
+    inFlightRef.current = true;
     setFormError(null);
     setIsSaving(true);
     const result = await updateProfileDetails({
@@ -50,6 +55,7 @@ export function EditProfileScreen({ onBack }: EditProfileScreenProps) {
       photoUri,
     });
     setIsSaving(false);
+    inFlightRef.current = false;
     if (result) setFormError(result);
     else onBack();
   };
@@ -121,6 +127,10 @@ function ChildrenEditor({ children, onAdd, onUpdate, onRemove, onSetDefault }: C
   const [birthdate, setBirthdate] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  // Without this, a fast double-tap on "Save" while adding a new child can
+  // fire onAdd() twice before the disabled-button re-render commits,
+  // creating two duplicate child rows.
+  const inFlightRef = useRef(false);
 
   const startAdd = () => {
     setEditingId('new');
@@ -137,14 +147,17 @@ function ChildrenEditor({ children, onAdd, onUpdate, onRemove, onSetDefault }: C
   };
 
   const handleSave = async () => {
+    if (inFlightRef.current) return;
     if (!isNonEmpty(name)) return setError("Enter the child's name");
     if (!birthdate) return setError("Select the child's date of birth");
+    inFlightRef.current = true;
     setIsSaving(true);
     const result =
       editingId === 'new'
         ? await onAdd({ name: name.trim(), birthdate })
         : await onUpdate(editingId!, { name: name.trim(), birthdate });
     setIsSaving(false);
+    inFlightRef.current = false;
     if (result) setError(result);
     else setEditingId(null);
   };

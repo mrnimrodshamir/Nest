@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ArrowLeft } from 'phosphor-react-native';
@@ -18,16 +18,23 @@ export function ForgotPasswordScreen({ onBack }: ForgotPasswordScreenProps) {
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [sent, setSent] = useState(false);
+  // Synchronous guard alongside isSubmitting (state) — a fast double-tap
+  // can fire two onPress handlers before the disabled-button re-render
+  // commits, same pattern used across the app's other submit buttons.
+  const inFlightRef = useRef(false);
 
   const handleSubmit = async () => {
+    if (inFlightRef.current) return;
     if (!isValidEmail(email)) {
       setError('Enter a valid email address');
       return;
     }
+    inFlightRef.current = true;
     setError(null);
     setIsSubmitting(true);
     const result = await resetPassword(email.trim());
     setIsSubmitting(false);
+    inFlightRef.current = false;
     if (result) setError(result);
     else setSent(true);
   };
