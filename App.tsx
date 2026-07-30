@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo } from 'react';
 import { View, ActivityIndicator, Pressable, Text } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -36,8 +36,6 @@ import { AppErrorBoundary } from '@/components/AppErrorBoundary';
 import { theme } from '@/theme';
 import { useAuth, AuthProvider } from '@/hooks/useAuth';
 import { computeRouteDecision } from '@/lib/routing';
-import { SessionLoadedCheckpoint } from '@/screens/diagnostics/SessionLoadedCheckpoint';
-import { ProfileLoadedCheckpoint } from '@/screens/diagnostics/ProfileLoadedCheckpoint';
 import { useActivityDetail } from '@/hooks/useActivityDetail';
 import { useActivityRsvp } from '@/hooks/useActivityRsvp';
 import { useActivityChatId } from '@/hooks/useActivityChatId';
@@ -132,14 +130,6 @@ function AppInner() {
     PlusJakartaSans_700Bold,
   });
   const { session, profile, isLoading: authLoading } = useAuth();
-  // Brute-force stability checkpoints: once per app session, require a
-  // manual tap between session becoming non-null and mounting any real
-  // onboarding/main UI, and again between a complete profile and
-  // MainNavigator mounting — see SessionLoadedCheckpoint/
-  // ProfileLoadedCheckpoint. A crash on either side of a tap identifies
-  // which side is at fault.
-  const [sessionCheckpointPassed, setSessionCheckpointPassed] = useState(false);
-  const [profileCheckpointPassed, setProfileCheckpointPassed] = useState(false);
 
   useEffect(() => {
     // Safe fallback if the tapped notification references content that no
@@ -196,8 +186,6 @@ function AppInner() {
               <MainNavigator />
             ) : !session ? (
               <AuthNavigator />
-            ) : !sessionCheckpointPassed ? (
-              <SessionLoadedCheckpoint onContinue={() => setSessionCheckpointPassed(true)} />
             ) : !profile || !profile.onboardingCompleted ? (
               // Signed in but the profile is missing OR still a stub (the
               // auth-user-creation trigger now creates a profile row for
@@ -217,8 +205,6 @@ function AppInner() {
                   fallbackEmail: session.user.email ?? null,
                 }}
               />
-            ) : !profileCheckpointPassed ? (
-              <ProfileLoadedCheckpoint onContinue={() => setProfileCheckpointPassed(true)} />
             ) : (
               <MainNavigator />
             )}
