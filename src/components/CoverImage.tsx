@@ -1,7 +1,8 @@
 import React from 'react';
 import { Image, StyleSheet, StyleProp, ViewStyle, ImageStyle } from 'react-native';
 import type { ActivityCategory } from '@/types/activity';
-import { CuratedCover, parseCuratedCover } from '@/components/CuratedCover';
+import { parseCuratedCover } from '@/components/CuratedCover';
+import { CategoryArtwork } from '@/components/CategoryArtwork';
 
 interface CoverImageProps {
   url: string | null;
@@ -9,12 +10,16 @@ interface CoverImageProps {
   style?: StyleProp<ViewStyle>;
 }
 
-/** Renders whatever cover an activity has: an uploaded photo, a curated
- *  gradient (url starts with "curated:"), or — if somehow neither — the
- *  curated gradient for its category, so a cover is never truly blank. */
+/** The one rendering entry point for an activity's cover, used identically
+ *  by Discovery cards, Activity Detail, Chats rows, and the Create
+ *  Activity preview — so all four surfaces are guaranteed to show the
+ *  same image for the same activity. Priority: an uploaded photo always
+ *  wins; otherwise the category's automatic artwork renders via
+ *  CategoryArtwork (final bundled asset if one exists, else the
+ *  temporary hand-authored SVG scene) — never a blank cover. */
 export function CoverImage({ url, fallbackCategory, style }: CoverImageProps) {
   const curatedCategory = parseCuratedCover(url);
-  if (curatedCategory) return <CuratedCover category={curatedCategory} style={style} />;
+  if (curatedCategory) return <CategoryArtwork category={curatedCategory} style={style} />;
   if (url) {
     return (
       <Image
@@ -24,7 +29,7 @@ export function CoverImage({ url, fallbackCategory, style }: CoverImageProps) {
       />
     );
   }
-  return <CuratedCover category={fallbackCategory} style={style} />;
+  return <CategoryArtwork category={fallbackCategory} style={style} />;
 }
 
 const styles = StyleSheet.create({

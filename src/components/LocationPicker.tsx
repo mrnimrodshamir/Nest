@@ -4,6 +4,7 @@ import MapView, { PROVIDER_DEFAULT, type Region } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { MagnifyingGlass, MapPin, X } from 'phosphor-react-native';
 import { theme, typography, spacing, radius } from '@/theme';
+import { usePlaceSearch, type PlaceResult } from '@/hooks/usePlaceSearch';
 
 interface LocationPickerProps {
   latitude: number;
@@ -21,13 +22,18 @@ interface LocationPickerProps {
 
 const DELTA = 0.02;
 
-/** Wolt/Uber-style picker — the map itself is the primary input. A pin
- *  stays fixed in the visual center; the mother drags the map underneath
- *  it, and once it settles we reverse-geocode the center point and fill
- *  the location name automatically. Search is a secondary shortcut: pick
- *  a result and the map recenters there, same settle-and-geocode flow.
- *  Coordinates are always preserved even if reverse geocoding comes back
- *  empty — a name is a convenience, the pin position is the real data. */
+/** Wolt/Uber-style picker — the map itself is the primary input and works
+ *  fully on its own. A pin stays fixed in the visual center; the mother
+ *  drags the map underneath it, and once it settles we reverse-geocode the
+ *  center point and fill the location name automatically. Coordinates are
+ *  always preserved even if reverse geocoding comes back empty — a name is
+ *  a convenience, the pin position is the real data.
+ *
+ *  Search is a secondary shortcut on top of that, backed by the
+ *  search-places Edge Function (Google Places Text Search, proxied so the
+ *  API key never reaches the client) — see usePlaceSearch. If search is
+ *  unavailable or fails for any reason, dragging the map keeps working
+ *  exactly as before; nothing about it depends on search succeeding. */
 export function LocationPicker({
   latitude,
   longitude,
@@ -35,14 +41,12 @@ export function LocationPicker({
   onChangeLocationName,
   autoCenterOnMount = false,
 }: LocationPickerProps) {
-  const [query, setQuery] = useState('');
-  const [isSearching, setIsSearching] = useState(false);
-  const [searchError, setSearchError] = useState<string | null>(null);
   const [isResolving, setIsResolving] = useState(false);
   const mapRef = useRef<MapView>(null);
-  // Guards against a slow geocode response landing after a newer drag —
-  // only the most recent request is allowed to write back a result.
+  // Guards against a slow reverse-geocode response landing after a newer
+  // drag — only the most recent request is allowed to write back a result.
   const requestId = useRef(0);
+  const search = usePlaceSearch({ latitude, longitude });
 
   useEffect(() => {
     if (!autoCenterOnMount) return;
@@ -93,34 +97,14 @@ export function LocationPicker({
     void resolveName(region.latitude, region.longitude);
   };
 
-  const handleSearch = async () => {
-    if (!query.trim()) return;
-    setIsSearching(true);
-    setSearchError(null);
-    const thisRequest = ++requestId.current;
-    try {
-      const results = await Location.geocodeAsync(query.trim());
-      if (thisRequest !== requestId.current) return;
-      if (results.length === 0) {
-        setSearchError('No matching place found — try a more specific search');
-        return;
-      }
-      const { latitude: lat, longitude: lng } = results[0];
-      onChangeCoordinates(lat, lng);
-      // Use what the mother actually typed as the initial name — it's
-      // usually more recognizable than whatever a reverse-geocode returns
-      // (e.g. "HaYarkon Park" vs. a street address) — then let a
-      // background reverse-geocode refine it if it finds something.
-      onChangeLocationName?.(query.trim());
-      mapRef.current?.animateToRegion(
-        { latitude: lat, longitude: lng, latitudeDelta: DELTA, longitudeDelta: DELTA },
-        400,
-      );
-    } catch {
-      if (thisRequest === requestId.current) setSearchError('Search failed — check your connection and try again');
-    } finally {
-      if (thisRequest === requestId.current) setIsSearching(false);
-    }
+  const handleSelectResult = (result: PlaceResult) => {
+    onChangeCoordinates(result.latitude, result.longitude);
+    onChangeLocationName?.(result.name);
+    mapRef.current?.animateToRegion(
+      { latitude: result.latitude, longitude: result.longitude, latitudeDelta: DELTA, longitudeDelta: DELTA },
+      400,
+    );
+    search.clear();
   };
 
   return (
@@ -131,23 +115,44 @@ export function LocationPicker({
           style={styles.searchInput}
           placeholder="Search for a place or address"
           placeholderTextColor={theme.text.muted}
-          value={query}
-          onChangeText={(text) => {
-            setQuery(text);
-            if (searchError) setSearchError(null);
-          }}
-          onSubmitEditing={handleSearch}
+          value={search.query}
+          onChangeText={search.setQuery}
           returnKeyType="search"
         />
-        {isSearching ? (
+        {search.status === 'loading' ? (
           <ActivityIndicator color={theme.text.muted} size="small" style={styles.searchTrailing} />
-        ) : query.length > 0 ? (
-          <Pressable onPress={() => setQuery('')} hitSlop={8} style={styles.searchTrailing}>
+        ) : search.query.length > 0 ? (
+          <Pressable onPress={search.clear} hitSlop={8} style={styles.searchTrailing}>
             <X size={16} color={theme.text.muted} />
           </Pressable>
         ) : null}
       </View>
-      {searchError && <Text style={styles.error}>{searchError}</Text>}
+
+      {search.status === 'results' && (
+        <View style={styles.resultsList}>
+          {search.results.map((result) => (
+            <Pressable key={result.id} style={styles.resultRow} onPress={() => handleSelectResult(result)}>
+              <MapPin size={16} color={theme.brand.primary} />
+              <View style={styles.resultBody}>
+                <Text style={styles.resultName} numberOfLines={1}>
+                  {result.name}
+                </Text>
+                {result.formattedAddress ? (
+                  <Text style={styles.resultAddress} numberOfLines={1}>
+                    {result.formattedAddress}
+                  </Text>
+                ) : null}
+              </View>
+            </Pressable>
+          ))}
+        </View>
+      )}
+      {search.status === 'empty' && (
+        <Text style={styles.searchStatusText}>No matching places found — try a more specific search</Text>
+      )}
+      {(search.status === 'error' || search.status === 'unavailable') && search.errorMessage && (
+        <Text style={styles.searchStatusText}>{search.errorMessage}</Text>
+      )}
 
       <View style={styles.mapWrapper}>
         <MapView
@@ -196,7 +201,26 @@ const styles = StyleSheet.create({
     color: theme.text.primary,
   },
   searchTrailing: { marginLeft: spacing.xs },
-  error: { ...typography.caption, color: theme.semantic.danger },
+  searchStatusText: { ...typography.caption, color: theme.text.muted },
+  resultsList: {
+    backgroundColor: theme.background.surface,
+    borderWidth: 1,
+    borderColor: theme.border.default,
+    borderRadius: radius.md,
+    overflow: 'hidden',
+  },
+  resultRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: theme.border.default,
+  },
+  resultBody: { flex: 1 },
+  resultName: { ...typography.bodyMedium, color: theme.text.primary },
+  resultAddress: { ...typography.caption, color: theme.text.muted },
   mapWrapper: {
     height: 220,
     borderRadius: radius.lg,

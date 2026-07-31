@@ -5,23 +5,26 @@ import Svg, { Circle, Path, Ellipse } from 'react-native-svg';
 import type { ActivityCategory, CategoryArtFamily } from '@/types/activity';
 import { CATEGORY_ART_FAMILY } from '@/types/activity';
 
-/** Automatic default cover art. Every activity gets one of four coherent
- *  illustration "families" (grouped by category mood — see
- *  CATEGORY_ART_FAMILY) showing several mothers together, never one
- *  isolated figure — Momzi sells companionship, not a solo stroller walk.
+/** TEMPORARY FALLBACK — not the final visual requirement. Rendered only by
+ *  CategoryArtwork.tsx, and only for categories that don't have a final
+ *  bundled photo/illustration yet (see activityArtManifest.ts /
+ *  activityArtAssets.ts). Every category falls back to this today.
  *
- *  No external image-generation tool is available in this environment, so
- *  this is hand-authored vector art rather than illustrated/AI artwork —
- *  built from the same visual vocabulary as the Momzi brand mark itself
- *  (src/components/MomziLogo.tsx: a circle head + a soft curved body),
- *  multiplied into small groups, for real brand coherence rather than a
- *  disconnected asset. Referenced via a `curated:` URL scheme in
- *  cover_image_url for activities created before this system existed
- *  (isCuratedCover/parseCuratedCover) — new activities simply leave
- *  cover_image_url null and let CoverImage's fallbackCategory render this
- *  automatically, so improving the art later updates every activity
- *  automatically instead of freezing old ones to whatever existed at
- *  creation time. */
+ *  Hand-authored vector art (four coherent illustration "families" —
+ *  see CATEGORY_ART_FAMILY — each showing several mothers together,
+ *  never one isolated figure) built from the same visual vocabulary as
+ *  the Momzi brand mark (src/components/MomziLogo.tsx: a circle head + a
+ *  soft curved body). It exists because no image-generation tool is
+ *  available in this environment to produce the premium
+ *  editorial/photographic artwork the product actually calls for — it is
+ *  a structural placeholder (no emoji, no lonely figure, no flat
+ *  clipart), not a substitute for real art direction. Do not present
+ *  this as the completed visual requirement.
+ *
+ *  Referenced via a `curated:` URL scheme in cover_image_url for
+ *  activities created before this system existed (parseCuratedCover) —
+ *  current activities simply leave cover_image_url null and let
+ *  CoverImage/CategoryArtwork render the category's art automatically. */
 
 const FAMILY_GRADIENT: Record<CategoryArtFamily, [string, string]> = {
   outdoors: ['#C7D9CA', '#7C9A82'],
