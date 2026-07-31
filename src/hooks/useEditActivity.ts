@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { uploadActivityCover, type CoverUploadStage } from '@/lib/uploadActivityCover';
-import { curatedCoverUrl } from '@/components/CuratedCover';
 import type { CreateActivityInput } from '@/hooks/useCreateActivity';
 
 export function useEditActivity(activityId: string) {
@@ -14,8 +13,9 @@ export function useEditActivity(activityId: string) {
     setStage('saving');
     setError(null);
 
-    // A new local photo takes priority; otherwise a curated pick updates
-    // the cover; if neither changed, leave cover_image_url untouched.
+    // A new local photo, if picked, replaces the cover; otherwise leave
+    // cover_image_url untouched (null still auto-renders the category
+    // illustration via CoverImage's fallbackCategory).
     let coverUpdate: { cover_image_url?: string } = {};
     if (input.coverUri) {
       try {
@@ -24,8 +24,6 @@ export function useEditActivity(activityId: string) {
       } catch {
         // Non-blocking — keep whatever cover the activity already had.
       }
-    } else if (input.curatedCover) {
-      coverUpdate = { cover_image_url: curatedCoverUrl(input.curatedCover) };
     }
 
     setStage('saving');

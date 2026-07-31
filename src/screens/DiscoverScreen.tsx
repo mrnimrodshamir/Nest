@@ -2,7 +2,6 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { View, Text, Pressable, StyleSheet, Dimensions, FlatList, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
-import Animated, { useSharedValue, useAnimatedStyle, withTiming, useReducedMotion } from 'react-native-reanimated';
 import MapView, { PROVIDER_DEFAULT, Region } from 'react-native-maps';
 import BottomSheet, { BottomSheetFlatList, BottomSheetView } from '@gorhom/bottom-sheet';
 import {
@@ -39,10 +38,10 @@ const CATEGORIES: Array<{ key: ActivityCategory | 'all'; label: string }> = [
   { key: 'workshop', label: CATEGORY_LABELS.workshop },
 ];
 
-// Peek = mostly map, a hint of the list. Half = default — real cards visible
-// immediately even in a sparse market, map still gives spatial context.
-// Full = scrollable list, map reduced to a strip.
-const SNAP_POINTS = ['15%', '50%', '92%'];
+// Peek = mostly map, a hint of the list — the default, and what Discovery
+// always returns to when this tab regains focus. Half = real cards visible
+// immediately once expanded. Full = scrollable list, map reduced to a strip.
+const SNAP_POINTS = ['22%', '50%', '92%'];
 const SHEET_PEEK_INDEX = 0;
 const SHEET_HALF_INDEX = 1;
 const SHEET_FULL_INDEX = 2;
@@ -61,27 +60,23 @@ export function DiscoverScreen({ onOpenActivity, onHostActivity, mockActivities 
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  // Map and List are two views of the same screen -- an explicit toggle,
-  // not just an implicit sheet-drag gesture. Reflects and drives the same
-  // bottom-sheet snap points either way, so dragging the sheet manually
-  // still keeps the toggle in sync.
+  // Map and List are two views of the same screen — an explicit toggle,
+  // not just an implicit sheet-drag gesture. Plain state, no Reanimated:
+  // the segmented pill used to be driven by a shared value, which — inside
+  // a screen hosting a BottomSheetFlatList — is exactly the class of
+  // Reanimated/native-layout interaction that caused this session's other
+  // crashes. A static background swap can't desync from what's on screen.
   const [viewMode, setViewMode] = useState<'map' | 'list'>('map');
-  const reducedMotion = useReducedMotion();
-  const togglePillX = useSharedValue(0);
-  const togglePillStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: togglePillX.value }],
-  }));
 
   const mapRef = useRef<MapView>(null);
   const sheetRef = useRef<BottomSheet>(null);
   const listRef = useRef<React.ElementRef<typeof BottomSheetFlatList>>(null);
-  const sheetIndex = useRef(SHEET_HALF_INDEX);
+  const sheetIndex = useRef(SHEET_PEEK_INDEX);
 
   const {
     feedActivities,
     radiusExpanded,
     refresh,
-    locationLabel,
     locationDenied,
     isOffline,
     isRefreshing,
@@ -96,13 +91,18 @@ export function DiscoverScreen({ onOpenActivity, onHostActivity, mockActivities 
   }, [isRefreshing, hasLoadedOnce]);
 
   // DiscoverScreen stays mounted underneath CreateActivity/ActivityDetail
-  // (they're pushed as root-stack screens over the tabs, not separate tab
-  // instances), so a newly created or joined activity would otherwise
-  // never appear until the app restarts. Refetch every time this tab
-  // regains focus, not just on first mount.
+  // (pushed as root-stack screens over the tabs, not separate tab
+  // instances), so every time this tab regains focus: refetch (a newly
+  // created/joined activity must appear without an app restart) and reset
+  // the sheet + toggle to the same predictable collapsed state — never
+  // restore whatever expanded/list state was left behind, which is what
+  // made the sheet feel like it "randomly" covered the map on return.
   useFocusEffect(
     useCallback(() => {
       refresh();
+      sheetRef.current?.snapToIndex(SHEET_PEEK_INDEX);
+      sheetIndex.current = SHEET_PEEK_INDEX;
+      setViewMode('map');
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []),
   );
@@ -225,32 +225,30 @@ export function DiscoverScreen({ onOpenActivity, onHostActivity, mockActivities 
           </View>
         ) : (
           <View style={styles.headerRow}>
-            <View>
-              <Text style={styles.greeting}>{greeting}</Text>
-              <Text style={styles.locationLabel}>{locationLabel}</Text>
-            </View>
+            <Text style={styles.greeting}>{greeting}</Text>
             <View style={styles.headerActions}>
               <View style={styles.viewToggle}>
-                <Animated.View style={[styles.viewTogglePill, togglePillStyle]} />
                 <Pressable
-                  style={styles.viewToggleOption}
+                  style={[styles.viewToggleOption, viewMode === 'map' && styles.viewToggleOptionSelected]}
                   onPress={() => {
                     setViewMode('map');
-                    togglePillX.value = reducedMotion ? 0 : withTiming(0, { duration: 220 });
+                    sheetIndex.current = SHEET_PEEK_INDEX;
                     sheetRef.current?.snapToIndex(SHEET_PEEK_INDEX);
                   }}
                   accessibilityLabel="Map view"
+                  accessibilityState={{ selected: viewMode === 'map' }}
                 >
                   <MapTrifold size={16} color={viewMode === 'map' ? theme.text.inverse : theme.text.secondary} weight={iconDefaults.weight} />
                 </Pressable>
                 <Pressable
-                  style={styles.viewToggleOption}
+                  style={[styles.viewToggleOption, viewMode === 'list' && styles.viewToggleOptionSelected]}
                   onPress={() => {
                     setViewMode('list');
-                    togglePillX.value = reducedMotion ? 40 : withTiming(40, { duration: 220 });
+                    sheetIndex.current = SHEET_FULL_INDEX;
                     sheetRef.current?.snapToIndex(SHEET_FULL_INDEX);
                   }}
                   accessibilityLabel="List view"
+                  accessibilityState={{ selected: viewMode === 'list' }}
                 >
                   <ListBullets size={16} color={viewMode === 'list' ? theme.text.inverse : theme.text.secondary} weight={iconDefaults.weight} />
                 </Pressable>
@@ -284,7 +282,7 @@ export function DiscoverScreen({ onOpenActivity, onHostActivity, mockActivities 
 
       <BottomSheet
         ref={sheetRef}
-        index={SHEET_HALF_INDEX}
+        index={SHEET_PEEK_INDEX}
         snapPoints={SNAP_POINTS}
         enableDynamicSizing={false}
         onChange={(index) => {
@@ -424,10 +422,10 @@ function DiscoverEmptyState({
   return (
     <StateCard
       icon={Compass}
-      title={radiusExpanded ? 'Be the first here' : 'Nothing nearby just yet'}
+      title={radiusExpanded ? 'No activities nearby yet' : 'Nothing nearby just yet'}
       body={
         radiusExpanded
-          ? 'No one has hosted near you yet — the easiest way to meet mothers close by is to start something small yourself.'
+          ? 'Be the first to host an activity in your area.'
           : "We're widening your search radius to find something for you."
       }
       ctaLabel={radiusExpanded ? 'Host an activity' : undefined}
@@ -449,18 +447,8 @@ const styles = StyleSheet.create({
     paddingTop: spacing.sm,
   },
   greeting: {
-    ...typography.caption,
-    color: theme.text.secondary,
-    marginBottom: 2,
-  },
-  locationLabel: {
     ...typography.bodyMedium,
     color: theme.text.primary,
-    backgroundColor: theme.background.surface,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderRadius: radius.pill,
-    overflow: 'hidden',
   },
   headerActions: { flexDirection: 'row', gap: spacing.sm },
   searchRow: {
@@ -490,21 +478,19 @@ const styles = StyleSheet.create({
     padding: 3,
     gap: 2,
   },
-  viewToggleOption: { width: 38, height: 38, borderRadius: radius.sm, alignItems: 'center', justifyContent: 'center' },
-  viewTogglePill: {
-    position: 'absolute',
-    top: 3,
-    left: 3,
+  viewToggleOption: {
     width: 38,
     height: 38,
     borderRadius: radius.sm,
-    backgroundColor: theme.brand.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
+  viewToggleOptionSelected: { backgroundColor: theme.brand.primary },
   chipRow: { paddingHorizontal: spacing.lg, paddingTop: spacing.md },
   fab: {
     position: 'absolute',
     right: spacing.xl,
-    bottom: SCREEN_HEIGHT * 0.5 + spacing.xl, // sits above the default half-open sheet
+    bottom: SCREEN_HEIGHT * 0.25 + spacing.xl, // sits just above the default ~22% peek sheet
     width: 56,
     height: 56,
     borderRadius: radius.pill,

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
-import type { Child } from '@/types/child';
+import type { Child, ChildSex } from '@/types/child';
 
 interface ChildRow {
   id: string;
@@ -8,16 +8,25 @@ interface ChildRow {
   birthdate: string | null;
   avatar_url: string | null;
   is_default: boolean;
+  sex: ChildSex | null;
 }
 
 function mapChild(row: ChildRow): Child {
-  return { id: row.id, name: row.name, birthdate: row.birthdate, avatarUrl: row.avatar_url, isDefault: row.is_default };
+  return {
+    id: row.id,
+    name: row.name,
+    birthdate: row.birthdate,
+    avatarUrl: row.avatar_url,
+    isDefault: row.is_default,
+    sex: row.sex,
+  };
 }
 
 export interface AddChildInput {
   name: string;
   birthdate: string | null;
   avatarUrl?: string | null;
+  sex?: ChildSex | null;
 }
 
 interface UseChildrenResult {
@@ -50,7 +59,7 @@ export function useChildren(profileId: string | null): UseChildrenResult {
     setError(null);
     const { data, error: fetchError } = await supabase
       .from('children')
-      .select('id, name, birthdate, avatar_url, is_default')
+      .select('id, name, birthdate, avatar_url, is_default, sex')
       .eq('profile_id', profileId)
       .order('created_at', { ascending: true });
     if (fetchError) {
@@ -74,6 +83,7 @@ export function useChildren(profileId: string | null): UseChildrenResult {
         name: input.name,
         birthdate: input.birthdate,
         avatar_url: input.avatarUrl ?? null,
+        sex: input.sex ?? null,
         is_default: makeDefault,
       });
       if (insertError) {
@@ -90,7 +100,12 @@ export function useChildren(profileId: string | null): UseChildrenResult {
     async (id: string, input: AddChildInput) => {
       const { error: updateError } = await supabase
         .from('children')
-        .update({ name: input.name, birthdate: input.birthdate, avatar_url: input.avatarUrl ?? null })
+        .update({
+          name: input.name,
+          birthdate: input.birthdate,
+          avatar_url: input.avatarUrl ?? null,
+          sex: input.sex ?? null,
+        })
         .eq('id', id);
       if (updateError) {
         console.log('[Children] update failed', updateError.message);

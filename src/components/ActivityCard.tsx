@@ -1,13 +1,6 @@
 import React from 'react';
 import { View, Text, Image, Pressable, StyleSheet } from 'react-native';
-import Animated, {
-  useAnimatedStyle,
-  useSharedValue,
-  withSpring,
-  FadeInUp,
-  ReduceMotion,
-} from 'react-native-reanimated';
-import { theme, typography, spacing, radius, pressFeedback } from '@/theme';
+import { theme, typography, spacing, radius } from '@/theme';
 import type { Activity } from '@/types/activity';
 import { CATEGORY_LABELS } from '@/types/activity';
 import { CoverImage } from '@/components/CoverImage';
@@ -25,8 +18,11 @@ interface ActivityCardProps {
   hideDistance?: boolean;
 }
 
-const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
-
+/** No Reanimated here — this renders inside a BottomSheetFlatList, and a
+ *  shared-value-driven press/entrance animation on a list item scrolling
+ *  inside a bottom sheet is exactly the class of Reanimated + native-layout
+ *  interaction that caused this session's other crashes. Pressable's own
+ *  native opacity feedback is enough. */
 export function ActivityCard({
   activity,
   onPress,
@@ -34,41 +30,18 @@ export function ActivityCard({
   highlighted = false,
   hideDistance = false,
 }: ActivityCardProps) {
-  const scale = useSharedValue(1);
-
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
-  }));
-
-  const handlePressIn = () => {
-    scale.value = withSpring(pressFeedback.scale, pressFeedback.spring);
-  };
-  const handlePressOut = () => {
-    scale.value = withSpring(1, pressFeedback.spring);
-  };
-
   const isRail = variant === 'rail';
   const visibleAttendees = activity.attendees.slice(0, 3);
-  const overflowCount = Math.max(
-    0,
-    activity.attendeeCount - visibleAttendees.length,
-  );
+  const overflowCount = Math.max(0, activity.attendeeCount - visibleAttendees.length);
 
   return (
-    <AnimatedPressable
+    <Pressable
       onPress={() => onPress(activity)}
-      onPressIn={handlePressIn}
-      onPressOut={handlePressOut}
-      // A quiet rise-and-fade the moment each card mounts — every activity
-      // gets a little presence, not just the ones you interact with.
-      // .reduceMotion(System) makes it a no-op under the OS accessibility
-      // setting automatically, no extra state needed here.
-      entering={FadeInUp.duration(280).reduceMotion(ReduceMotion.System)}
-      style={[
+      style={({ pressed }) => [
         styles.card,
         isRail ? styles.cardRail : styles.cardFeed,
         highlighted && styles.cardHighlighted,
-        animatedStyle,
+        pressed && styles.cardPressed,
       ]}
       accessibilityRole="button"
       accessibilityLabel={`${activity.title}, ${formatStartTime(activity.startTime)}`}
@@ -79,15 +52,10 @@ export function ActivityCard({
           fallbackCategory={activity.category}
           style={StyleSheet.absoluteFill}
         />
-      </View>
-
-      <View style={styles.body}>
         {!isRail && (
           <View style={styles.pillRow}>
             <View style={styles.categoryPill}>
-              <Text style={styles.categoryPillText}>
-                {CATEGORY_LABELS[activity.category]}
-              </Text>
+              <Text style={styles.categoryPillText}>{CATEGORY_LABELS[activity.category]}</Text>
             </View>
             {activity.status === 'full' && (
               <View style={[styles.categoryPill, styles.fullPill]}>
@@ -96,47 +64,42 @@ export function ActivityCard({
             )}
           </View>
         )}
+      </View>
 
-        <Text
-          style={isRail ? styles.titleRail : styles.titleFeed}
-          numberOfLines={isRail ? 2 : 1}
-        >
+      <View style={styles.body}>
+        <Text style={isRail ? styles.titleRail : styles.titleFeed} numberOfLines={isRail ? 2 : 1}>
           {activity.title}
         </Text>
 
-        <Text style={styles.meta}>
-          {formatStartTime(activity.startTime)}
-          {!isRail && !hideDistance && ` · ${activity.distanceKm.toFixed(1)}km away`}
-        </Text>
+        <View style={styles.metaRow}>
+          <Text style={styles.meta} numberOfLines={1}>
+            {formatStartTime(activity.startTime)}
+            {!isRail && !hideDistance && ` · ${activity.distanceKm.toFixed(1)}km`}
+          </Text>
 
-        {!isRail && activity.attendeeCount > 0 && (
-          <View style={styles.attendeeRow}>
-            {visibleAttendees.map((attendee, index) => (
-              <View
-                key={attendee.id}
-                style={[
-                  styles.avatar,
-                  { backgroundColor: attendee.avatarColor, marginLeft: index === 0 ? 0 : -8 },
-                ]}
-              >
-                {attendee.avatarUrl && (
-                  <Image
-                    source={{ uri: attendee.avatarUrl }}
-                    style={StyleSheet.absoluteFill}
-                    resizeMode="cover"
-                  />
-                )}
-              </View>
-            ))}
-            <Text style={styles.attendeeCount}>
-              {overflowCount > 0
-                ? `+${overflowCount} more going`
-                : `${activity.attendeeCount} going`}
-            </Text>
-          </View>
-        )}
+          {!isRail && activity.attendeeCount > 0 && (
+            <View style={styles.attendeeRow}>
+              {visibleAttendees.map((attendee, index) => (
+                <View
+                  key={attendee.id}
+                  style={[
+                    styles.avatar,
+                    { backgroundColor: attendee.avatarColor, marginLeft: index === 0 ? 0 : -8 },
+                  ]}
+                >
+                  {attendee.avatarUrl && (
+                    <Image source={{ uri: attendee.avatarUrl }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+                  )}
+                </View>
+              ))}
+              <Text style={styles.attendeeCount}>
+                {overflowCount > 0 ? `+${overflowCount}` : activity.attendeeCount}
+              </Text>
+            </View>
+          )}
+        </View>
       </View>
-    </AnimatedPressable>
+    </Pressable>
   );
 }
 
@@ -149,8 +112,8 @@ const styles = StyleSheet.create({
   },
   cardFeed: {
     width: '100%',
-    borderRadius: radius.xl,
-    marginBottom: spacing.md,
+    borderRadius: radius.lg,
+    marginBottom: spacing.sm,
   },
   cardRail: {
     width: 150,
@@ -161,25 +124,24 @@ const styles = StyleSheet.create({
     borderColor: theme.brand.primary,
     borderWidth: 1.5,
   },
+  cardPressed: { opacity: 0.85 },
   image: {
     backgroundColor: theme.brand.accentTint,
+    justifyContent: 'flex-start',
   },
   imageFeed: {
-    height: 130,
+    height: 96,
+    padding: spacing.sm,
   },
   imageRail: {
     height: 80,
   },
-  body: {
-    padding: spacing.md,
-  },
-  pillRow: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.sm },
+  pillRow: { flexDirection: 'row', gap: spacing.xs, alignSelf: 'flex-start' },
   categoryPill: {
-    alignSelf: 'flex-start',
-    backgroundColor: theme.brand.primaryTint,
+    backgroundColor: 'rgba(254,253,251,0.92)',
     borderRadius: radius.pill,
-    paddingHorizontal: spacing.md,
-    paddingVertical: 4,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 3,
   },
   categoryPillText: {
     ...typography.caption,
@@ -187,10 +149,15 @@ const styles = StyleSheet.create({
   },
   fullPill: { backgroundColor: theme.brand.secondaryTint },
   fullPillText: { color: theme.brand.secondary },
+  body: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+  },
   titleFeed: {
-    ...typography.headline,
+    ...typography.subhead,
+    fontWeight: '600' as const,
     color: theme.text.primary,
-    marginBottom: 4,
+    marginBottom: 2,
   },
   titleRail: {
     ...typography.subhead,
@@ -198,26 +165,28 @@ const styles = StyleSheet.create({
     color: theme.text.primary,
     marginBottom: 4,
   },
+  metaRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   meta: {
     ...typography.footnote,
     color: theme.text.secondary,
+    flexShrink: 1,
   },
   attendeeRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: spacing.sm,
+    marginLeft: spacing.sm,
   },
   avatar: {
-    width: 24,
-    height: 24,
+    width: 20,
+    height: 20,
     borderRadius: radius.pill,
-    borderWidth: 2,
+    borderWidth: 1.5,
     borderColor: theme.background.surface,
     overflow: 'hidden',
   },
   attendeeCount: {
     ...typography.caption,
     color: theme.text.secondary,
-    marginLeft: spacing.sm,
+    marginLeft: 4,
   },
 });

@@ -1,7 +1,6 @@
 import { useCallback, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { uploadActivityCover, type CoverUploadStage } from '@/lib/uploadActivityCover';
-import { curatedCoverUrl } from '@/components/CuratedCover';
 import { track } from '@/lib/analytics';
 import type { ActivityCategory } from '@/types/activity';
 
@@ -18,10 +17,10 @@ export interface CreateActivityInput {
   babyMinAgeMonths: number | null;
   babyMaxAgeMonths: number | null;
   notes: string;
-  /** Local file URI from the picker — takes priority over a curated cover. */
+  /** Local file URI from the picker — an optional override; a null
+   *  cover_image_url auto-renders the category's illustration everywhere
+   *  via CoverImage's fallbackCategory (see CuratedCover.tsx). */
   coverUri: string | null;
-  /** Set when the host chose a curated gradient instead of uploading. */
-  curatedCover: ActivityCategory | null;
   /** Empty means the host is coming alone. */
   hostChildIds: string[];
 }
@@ -83,11 +82,10 @@ export function useCreateActivity(): UseCreateActivityResult {
         return { status: 'error', message: 'Not signed in' };
       }
 
-      // The activity row needs to exist first — cover uploads are stored at
-      // activity-covers/{activityId}/..., and RLS checks that path against
-      // the activities table.
-      const initialCoverUrl = input.curatedCover ? curatedCoverUrl(input.curatedCover) : null;
-
+      // cover_image_url starts null — CoverImage's fallbackCategory renders
+      // the category illustration automatically until/unless a photo is
+      // uploaded below, so covers stay correct even if the category
+      // changes later via edit.
       const { data, error: insertError } = await supabase
         .from('activities')
         .insert({
@@ -104,7 +102,7 @@ export function useCreateActivity(): UseCreateActivityResult {
           baby_min_age_months: input.babyMinAgeMonths,
           baby_max_age_months: input.babyMaxAgeMonths,
           notes: input.notes || null,
-          cover_image_url: initialCoverUrl,
+          cover_image_url: null,
           host_coming_alone: input.hostChildIds.length === 0,
         })
         .select('id')

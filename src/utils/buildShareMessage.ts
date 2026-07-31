@@ -1,6 +1,6 @@
 import { formatDuration } from '@/utils/formatDuration';
 import { formatAgeRange } from '@/utils/babyAge';
-import { CATEGORY_EMOJI } from '@/types/activity';
+import { CATEGORY_LABELS } from '@/types/activity';
 import type { ActivityCategory } from '@/types/activity';
 
 export interface ShareableActivity {
@@ -27,7 +27,7 @@ export function buildShareMessage(activity: ShareableActivity): string {
   const ageLabel = formatAgeRange(activity.babyMinAgeMonths, activity.babyMaxAgeMonths);
 
   return [
-    `${CATEGORY_EMOJI[activity.category]} ${activity.title}`,
+    `${CATEGORY_LABELS[activity.category]} · ${activity.title}`,
     `📍 ${activity.locationName}`,
     `🕙 ${dateLabel} ${timeLabel} · ${formatDuration(activity.durationMinutes)}`,
     `👶 ${ageLabel}`,

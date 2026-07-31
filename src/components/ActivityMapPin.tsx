@@ -1,9 +1,31 @@
-import React, { useEffect } from 'react';
-import { StyleSheet } from 'react-native';
-import Animated, { useSharedValue, useAnimatedStyle, withSpring, useReducedMotion } from 'react-native-reanimated';
+import React from 'react';
+import { View, StyleSheet } from 'react-native';
 import { Marker } from 'react-native-maps';
-import { theme, springs } from '@/theme';
-import type { Activity } from '@/types/activity';
+import {
+  PersonSimpleWalk,
+  Coffee,
+  Baby,
+  Basket,
+  Barbell,
+  PersonSimpleTaiChi,
+  PaintBrush,
+  Sparkle,
+  Park,
+  Sun,
+  ForkKnife,
+  Umbrella,
+  House,
+  BookOpenText,
+  MusicNotes,
+  SwimmingPool,
+  Buildings,
+  PawPrint,
+  ShoppingBagOpen,
+  Martini,
+  HandsPraying,
+} from 'phosphor-react-native';
+import { theme } from '@/theme';
+import type { Activity, ActivityCategory } from '@/types/activity';
 import { CATEGORY_PIN_COLOR } from '@/types/activity';
 
 interface ActivityMapPinProps {
@@ -12,43 +34,73 @@ interface ActivityMapPinProps {
   onPress: (activity: Activity) => void;
 }
 
+const CATEGORY_ICON: Record<ActivityCategory, React.ComponentType<{ size: number; color: string; weight?: 'fill' | 'bold' }>> = {
+  stroller_walk: PersonSimpleWalk,
+  coffee_meetup: Coffee,
+  baby_playtime: Baby,
+  playground_meetup: Park,
+  picnic: Basket,
+  breakfast_meetup: Sun,
+  lunch_meetup: ForkKnife,
+  beach: Umbrella,
+  indoor_playground: House,
+  story_time: BookOpenText,
+  music_activity: MusicNotes,
+  swimming: SwimmingPool,
+  fitness: Barbell,
+  yoga: PersonSimpleTaiChi,
+  workshop: PaintBrush,
+  museum: Buildings,
+  zoo: PawPrint,
+  shopping_together: ShoppingBagOpen,
+  moms_night_out: Martini,
+  support_circle: HandsPraying,
+  other: Sparkle,
+};
+
+/** A compact category-symbol marker — communicates activity type at a
+ *  glance, without a tap. No Reanimated: selection state is a plain style
+ *  swap, not a shared-value-driven scale, since markers re-render on every
+ *  native map region/layout change and that's exactly the interaction
+ *  class that caused this session's other Reanimated-related crashes. */
 export function ActivityMapPin({ activity, selected, onPress }: ActivityMapPinProps) {
   const color = CATEGORY_PIN_COLOR[activity.category];
-  const reducedMotion = useReducedMotion();
-  const scale = useSharedValue(1);
-
-  useEffect(() => {
-    scale.value = reducedMotion ? (selected ? 1.4 : 1) : withSpring(selected ? 1.4 : 1, springs.snappy);
-  }, [selected, reducedMotion, scale]);
-
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
-  }));
+  const Icon = CATEGORY_ICON[activity.category];
 
   return (
     <Marker
       coordinate={{ latitude: activity.latitude, longitude: activity.longitude }}
       onPress={() => onPress(activity)}
-      // tracksViewChanges only during the selection transition — leaving
-      // this permanently true tanks map performance with many pins
+      // tracksViewChanges only while selected — leaving this permanently
+      // true tanks map performance with many pins.
       tracksViewChanges={selected}
+      anchor={{ x: 0.5, y: 0.5 }}
     >
-      <Animated.View
-        style={[styles.pin, { backgroundColor: color }, selected && styles.pinSelected, animatedStyle]}
-      />
+      <View style={[styles.pin, { backgroundColor: color }, selected && styles.pinSelected]}>
+        <Icon size={selected ? 18 : 14} color={theme.text.inverse} weight="fill" />
+      </View>
     </Marker>
   );
 }
 
 const styles = StyleSheet.create({
   pin: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
+    width: 30,
+    height: 30,
+    borderRadius: 15,
     borderWidth: 2,
     borderColor: theme.background.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.15,
+    shadowRadius: 3,
+    shadowOffset: { width: 0, height: 1 },
   },
   pinSelected: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     borderWidth: 3,
   },
 });

@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, TextInput, Pressable, ScrollView, StyleSheet } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
-import { Camera } from 'phosphor-react-native';
+import { CaretDown, CaretUp, Camera } from 'phosphor-react-native';
 import { theme, typography, spacing, radius } from '@/theme';
 import { CategoryChip } from '@/components/CategoryChip';
 import { DateTimeField } from '@/components/DateTimeField';
@@ -11,13 +11,13 @@ import { YearsMonthsPicker } from '@/components/YearsMonthsPicker';
 import { Checkbox } from '@/components/Checkbox';
 import { PrimaryButton } from '@/components/PrimaryButton';
 import { CoverImage } from '@/components/CoverImage';
-import { CuratedCover, parseCuratedCover } from '@/components/CuratedCover';
 import { ComingWithSelector } from '@/components/ComingWithSelector';
 import { useAuth } from '@/hooks/useAuth';
 import { useChildren } from '@/hooks/useChildren';
 import { CATEGORY_LABELS, DURATION_OPTIONS_MINUTES } from '@/types/activity';
 import type { ActivityCategory } from '@/types/activity';
 import { formatDuration } from '@/utils/formatDuration';
+import { generateActivityTitle } from '@/utils/generateActivityTitle';
 import type { CreateActivityInput, CreateActivityStage } from '@/hooks/useCreateActivity';
 
 const ACTIVITY_TYPES = Object.keys(CATEGORY_LABELS) as ActivityCategory[];
@@ -68,18 +68,35 @@ export function ActivityForm({
   onSubmit,
   footer,
 }: ActivityFormProps) {
-  const { profile, session } = useAuth();
+  const { session } = useAuth();
   const { children } = useChildren(session?.user.id ?? null);
   const [hostChildIds, setHostChildIds] = useState<string[]>(initialValues?.hostChildIds ?? []);
+  // Auto-select the host's default (or only) child the first time her
+  // children finish loading — never for Edit, which pre-loads the
+  // activity's real existing selection via initialValues.hostChildIds.
+  // Fires once; after that the host's own taps are never overridden.
+  const didAutoSelectChild = useRef(false);
+  useEffect(() => {
+    if (initialValues) return;
+    if (didAutoSelectChild.current) return;
+    if (children.length === 0) return;
+    didAutoSelectChild.current = true;
+    const defaultChild = children.find((c) => c.isDefault) ?? children[0];
+    setHostChildIds([defaultChild.id]);
+  }, [children, initialValues]);
 
   const [activityType, setActivityType] = useState<ActivityCategory>(
     initialValues?.activityType ?? 'stroller_walk',
   );
   const [coverUri, setCoverUri] = useState<string | null>(null);
-  const [curatedCover, setCuratedCover] = useState<ActivityCategory | null>(
-    parseCuratedCover(initialValues?.coverImageUrl ?? null),
-  );
+
+  // The title is generated from type + date/time + location and kept in
+  // sync automatically — a host only ever types one by hand if she taps
+  // "Customize title". Editing an existing activity starts customized
+  // (it already has a real title) so it's never silently rewritten.
+  const [titleCustomized, setTitleCustomized] = useState(!!initialValues);
   const [title, setTitle] = useState(initialValues?.title ?? '');
+
   // "Details" is the one optional free-text field — for an existing
   // activity being edited, fall back to its legacy `notes` value if
   // `description` is empty, so pre-merge activities don't appear to have
@@ -118,6 +135,7 @@ export function ActivityForm({
   const [maxYears, setMaxYears] = useState(initialMax.years);
   const [maxMonths, setMaxMonths] = useState(initialMax.months);
   const [validationError, setValidationError] = useState<string | null>(null);
+  const [moreOpen, setMoreOpen] = useState(false);
   // Synchronous guard alongside isSubmitting (state) — a fast double-tap
   // can fire two onPress handlers before the disabled-button re-render
   // commits, same pattern used for auth screens' submit buttons.
@@ -130,6 +148,11 @@ export function ActivityForm({
   useEffect(() => {
     if (!isSubmitting) inFlightRef.current = false;
   }, [isSubmitting]);
+
+  useEffect(() => {
+    if (titleCustomized) return;
+    setTitle(generateActivityTitle(activityType, startsAt, locationName));
+  }, [activityType, startsAt, locationName, titleCustomized]);
 
   const handleSubmit = () => {
     if (inFlightRef.current) return;
@@ -154,7 +177,6 @@ export function ActivityForm({
       // in the DB for legacy rows but is never populated for new ones.
       notes: '',
       coverUri,
-      curatedCover: coverUri ? null : curatedCover,
       hostChildIds,
     });
   };
@@ -170,11 +192,8 @@ export function ActivityForm({
     });
     if (!result.canceled && result.assets[0]) {
       setCoverUri(result.assets[0].uri);
-      setCuratedCover(null);
     }
   };
-
-  const previewCoverUrl = coverUri ? null : curatedCover ? null : initialValues?.coverImageUrl ?? null;
 
   return (
     <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
@@ -190,48 +209,34 @@ export function ActivityForm({
         ))}
       </View>
 
-      <Text style={styles.sectionLabel}>Cover photo</Text>
       <View style={styles.coverPreview}>
-        {coverUri ? (
-          <CoverImage url={coverUri} fallbackCategory={activityType} style={styles.coverPreviewFill} />
-        ) : curatedCover ? (
-          <CuratedCover category={curatedCover} style={styles.coverPreviewFill} />
-        ) : previewCoverUrl ? (
-          <CoverImage url={previewCoverUrl} fallbackCategory={activityType} style={styles.coverPreviewFill} />
-        ) : (
-          <CuratedCover category={activityType} style={styles.coverPreviewFill} />
-        )}
-      </View>
-      <Pressable style={styles.uploadCoverButton} onPress={handlePickCoverPhoto}>
-        <Camera size={16} color={theme.text.primary} />
-        <Text style={styles.uploadCoverLabel}>Upload a photo</Text>
-      </Pressable>
-      <Text style={styles.curatedLabel}>Or choose a curated cover</Text>
-      <View style={styles.curatedRow}>
-        {ACTIVITY_TYPES.map((type) => (
-          <Pressable
-            key={type}
-            style={[styles.curatedSwatch, curatedCover === type && !coverUri && styles.curatedSwatchSelected]}
-            onPress={() => {
-              setCuratedCover(type);
-              setCoverUri(null);
-            }}
-            accessibilityLabel={`Use curated cover for ${CATEGORY_LABELS[type]}`}
-          >
-            <CuratedCover category={type} style={styles.curatedSwatchFill} />
-          </Pressable>
-        ))}
+        <CoverImage
+          url={coverUri ?? initialValues?.coverImageUrl ?? null}
+          fallbackCategory={activityType}
+          style={styles.coverPreviewFill}
+        />
       </View>
 
-      <Field label="Title">
-        <TextInput
-          style={styles.input}
-          placeholder="Stroller walk along the park"
-          placeholderTextColor={theme.text.muted}
-          value={title}
-          onChangeText={setTitle}
-        />
-      </Field>
+      {titleCustomized ? (
+        <Field label="Title">
+          <TextInput
+            style={styles.input}
+            placeholder="Stroller walk along the park"
+            placeholderTextColor={theme.text.muted}
+            value={title}
+            onChangeText={setTitle}
+          />
+        </Field>
+      ) : (
+        <View style={styles.generatedTitleRow}>
+          <Text style={styles.generatedTitle} numberOfLines={2}>
+            {title}
+          </Text>
+          <Pressable onPress={() => setTitleCustomized(true)} hitSlop={8}>
+            <Text style={styles.customizeLink}>Customize title</Text>
+          </Pressable>
+        </View>
+      )}
 
       <DateTimeField
         label="Date and start time"
@@ -278,64 +283,79 @@ export function ActivityForm({
         />
       </Field>
 
-      <Text style={styles.sectionLabel}>Max participants</Text>
-      <View style={styles.row}>
-        {!noLimit && <NumberStepper value={maxParticipants} min={2} max={100} onChange={setMaxParticipants} />}
-        <View style={styles.inlineCheckbox}>
-          <Checkbox checked={noLimit} onToggle={() => setNoLimit((v) => !v)}>
-            No limit
-          </Checkbox>
-        </View>
-      </View>
-
-      <Text style={styles.sectionLabel}>Baby age range</Text>
-      <Checkbox checked={anyAge} onToggle={() => setAnyAge((v) => !v)}>
-        Any age welcome
-      </Checkbox>
-      {!anyAge && (
-        <View style={styles.ageRangeGroup}>
-          <View>
-            <Text style={styles.ageRangeLabel}>Minimum age</Text>
-            <YearsMonthsPicker
-              years={minYears}
-              months={minMonths}
-              onChange={(y, m) => {
-                setMinYears(y);
-                setMinMonths(m);
-              }}
-            />
-          </View>
-          <View>
-            <Text style={styles.ageRangeLabel}>Maximum age</Text>
-            <YearsMonthsPicker
-              years={maxYears}
-              months={maxMonths}
-              onChange={(y, m) => {
-                setMaxYears(y);
-                setMaxMonths(m);
-              }}
-            />
-          </View>
-        </View>
-      )}
-
       <ComingWithSelector children={children} selectedChildIds={hostChildIds} onChange={setHostChildIds} />
 
-      <Field label="Details (optional)">
-        <TextInput
-          style={[styles.input, styles.textArea]}
-          placeholder="Example: Bring water and a mat. We'll meet near the main entrance."
-          placeholderTextColor={theme.text.muted}
-          value={description}
-          onChangeText={setDescription}
-          multiline
-        />
-      </Field>
+      <Pressable style={styles.moreToggle} onPress={() => setMoreOpen((v) => !v)}>
+        <Text style={styles.moreToggleLabel}>More options</Text>
+        {moreOpen ? (
+          <CaretUp size={16} color={theme.text.secondary} />
+        ) : (
+          <CaretDown size={16} color={theme.text.secondary} />
+        )}
+      </Pressable>
 
-      <View style={styles.hostRow}>
-        <View style={styles.hostAvatar} />
-        <Text style={styles.hostLabel}>Hosted by {profile?.displayName ?? 'you'}</Text>
-      </View>
+      {moreOpen && (
+        <View style={styles.moreSection}>
+          <Pressable style={styles.uploadCoverButton} onPress={handlePickCoverPhoto}>
+            <Camera size={16} color={theme.text.primary} />
+            <Text style={styles.uploadCoverLabel}>
+              {coverUri ? 'Change your photo' : 'Upload your own photo'}
+            </Text>
+          </Pressable>
+
+          <Text style={styles.sectionLabel}>Max participants</Text>
+          <View style={styles.row}>
+            {!noLimit && <NumberStepper value={maxParticipants} min={2} max={100} onChange={setMaxParticipants} />}
+            <View style={styles.inlineCheckbox}>
+              <Checkbox checked={noLimit} onToggle={() => setNoLimit((v) => !v)}>
+                No limit
+              </Checkbox>
+            </View>
+          </View>
+
+          <Text style={styles.sectionLabel}>Baby age range</Text>
+          <Checkbox checked={anyAge} onToggle={() => setAnyAge((v) => !v)}>
+            Any age welcome
+          </Checkbox>
+          {!anyAge && (
+            <View style={styles.ageRangeGroup}>
+              <View>
+                <Text style={styles.ageRangeLabel}>Minimum age</Text>
+                <YearsMonthsPicker
+                  years={minYears}
+                  months={minMonths}
+                  onChange={(y, m) => {
+                    setMinYears(y);
+                    setMinMonths(m);
+                  }}
+                />
+              </View>
+              <View>
+                <Text style={styles.ageRangeLabel}>Maximum age</Text>
+                <YearsMonthsPicker
+                  years={maxYears}
+                  months={maxMonths}
+                  onChange={(y, m) => {
+                    setMaxYears(y);
+                    setMaxMonths(m);
+                  }}
+                />
+              </View>
+            </View>
+          )}
+
+          <Field label="Details (optional)">
+            <TextInput
+              style={[styles.input, styles.textArea]}
+              placeholder="Example: Bring water and a mat. We'll meet near the main entrance."
+              placeholderTextColor={theme.text.muted}
+              value={description}
+              onChangeText={setDescription}
+              multiline
+            />
+          </Field>
+        </View>
+      )}
 
       {(validationError || error) && <Text style={styles.formError}>{validationError ?? error}</Text>}
 
@@ -383,15 +403,6 @@ const styles = StyleSheet.create({
   inlineCheckbox: { flex: 1 },
   ageRangeGroup: { gap: spacing.lg },
   ageRangeLabel: { ...typography.footnote, color: theme.text.secondary, marginBottom: spacing.xs },
-  hostRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: spacing.sm },
-  hostAvatar: {
-    width: 36,
-    height: 36,
-    borderRadius: radius.pill,
-    backgroundColor: theme.brand.primaryTint,
-    overflow: 'hidden',
-  },
-  hostLabel: { ...typography.subhead, color: theme.text.secondary },
   formError: { ...typography.footnote, color: theme.semantic.danger, textAlign: 'center' },
   coverPreview: {
     height: 140,
@@ -400,6 +411,9 @@ const styles = StyleSheet.create({
     backgroundColor: theme.background.surface,
   },
   coverPreviewFill: { flex: 1 },
+  generatedTitleRow: { gap: spacing.xs },
+  generatedTitle: { ...typography.headline, color: theme.text.primary },
+  customizeLink: { ...typography.footnote, color: theme.brand.primary },
   uploadCoverButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -412,16 +426,13 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
   },
   uploadCoverLabel: { ...typography.bodyMedium, color: theme.text.primary },
-  curatedLabel: { ...typography.footnote, color: theme.text.secondary },
-  curatedRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
-  curatedSwatch: {
-    width: 52,
-    height: 52,
-    borderRadius: radius.md,
-    overflow: 'hidden',
-    borderWidth: 2,
-    borderColor: 'transparent',
+  moreToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.xs,
+    paddingVertical: spacing.sm,
   },
-  curatedSwatchSelected: { borderColor: theme.brand.primary },
-  curatedSwatchFill: { flex: 1 },
+  moreToggleLabel: { ...typography.bodyMedium, color: theme.text.secondary },
+  moreSection: { gap: spacing.lg },
 });
