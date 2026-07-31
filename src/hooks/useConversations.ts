@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
+import type { ActivityCategory, ActivityStatus } from '@/types/activity';
 
 export interface Conversation {
   chatId: string;
@@ -14,6 +15,17 @@ export interface Conversation {
   lastMessageAt: string | null;
   lastMessagePreview: string;
   hasUnread: boolean;
+  /** Group chats only — drives the Upcoming/Past split and the richer row
+   *  content (thumbnail, date, location, participant count). Null for
+   *  direct chats, which aren't tied to an activity. */
+  activity: {
+    category: ActivityCategory;
+    startTime: string;
+    status: ActivityStatus;
+    locationLabel: string;
+    attendeeCount: number;
+    coverImageUrl: string | null;
+  } | null;
 }
 
 interface UseConversationsResult {
@@ -79,16 +91,40 @@ export function useConversations(): UseConversationsResult {
         .map((c) => c.activity_id as string);
       const directOtherUserIds = Array.from(otherUserIdByChat.values());
 
-      const [{ data: activityRows }, { data: profileRows }] = await Promise.all([
+      const [{ data: activityRows }, { data: profileRows }, { data: attendeeRows }] = await Promise.all([
         groupActivityIds.length > 0
-          ? supabase.from('activities').select('id, title, cover_image_url').in('id', groupActivityIds)
-          : Promise.resolve({ data: [] as { id: string; title: string; cover_image_url: string | null }[] }),
+          ? supabase
+              .from('activities')
+              .select('id, title, cover_image_url, category, start_time, status, address_label')
+              .in('id', groupActivityIds)
+          : Promise.resolve({
+              data: [] as {
+                id: string;
+                title: string;
+                cover_image_url: string | null;
+                category: ActivityCategory;
+                start_time: string;
+                status: ActivityStatus;
+                address_label: string;
+              }[],
+            }),
         directOtherUserIds.length > 0
           ? supabase.from('public_profiles').select('id, display_name, avatar_url').in('id', directOtherUserIds)
           : Promise.resolve({ data: [] as { id: string; display_name: string; avatar_url: string | null }[] }),
+        groupActivityIds.length > 0
+          ? supabase
+              .from('activity_attendees')
+              .select('activity_id')
+              .in('activity_id', groupActivityIds)
+              .in('status', ['going', 'attended'])
+          : Promise.resolve({ data: [] as { activity_id: string }[] }),
       ]);
       const activityById = new Map((activityRows ?? []).map((a) => [a.id, a]));
       const profileById = new Map((profileRows ?? []).map((p) => [p.id, p]));
+      const attendeeCountByActivity = new Map<string, number>();
+      for (const row of attendeeRows ?? []) {
+        attendeeCountByActivity.set(row.activity_id, (attendeeCountByActivity.get(row.activity_id) ?? 0) + 1);
+      }
 
       const result: Conversation[] = (chatRows ?? []).map((chat) => {
         const lastMessage = lastMessageByChat.get(chat.id);
@@ -111,21 +147,32 @@ export function useConversations(): UseConversationsResult {
             lastMessageAt: lastMessage?.created_at ?? null,
             lastMessagePreview: lastMessage?.content ?? '',
             hasUnread,
+            activity: null,
           };
         }
 
-        const activity = chat.activity_id ? activityById.get(chat.activity_id) : null;
+        const activityRow = chat.activity_id ? activityById.get(chat.activity_id) : null;
         return {
           chatId: chat.id,
           kind: 'group' as const,
-          title: activity?.title ?? 'Activity chat',
+          title: activityRow?.title ?? 'Activity chat',
           subtitle: lastMessage?.content ?? 'Say hello 👋',
-          avatarUrl: activity?.cover_image_url ?? null,
+          avatarUrl: activityRow?.cover_image_url ?? null,
           otherUserId: null,
           activityId: chat.activity_id,
           lastMessageAt: lastMessage?.created_at ?? null,
           lastMessagePreview: lastMessage?.content ?? '',
           hasUnread,
+          activity: activityRow
+            ? {
+                category: activityRow.category,
+                startTime: activityRow.start_time,
+                status: activityRow.status,
+                locationLabel: activityRow.address_label,
+                attendeeCount: attendeeCountByActivity.get(activityRow.id) ?? 0,
+                coverImageUrl: activityRow.cover_image_url,
+              }
+            : null,
         };
       });
 

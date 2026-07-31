@@ -5,7 +5,6 @@ import * as Notifications from 'expo-notifications';
 import {
   CalendarBlank,
   PencilSimple,
-  Baby,
   ProhibitInset,
   BellSimple,
   FileText,
@@ -90,8 +89,7 @@ export function ProfileScreen({ onEditProfile, onOpenMyActivities, onOpenBlocked
 
         <MenuSection>
           <MenuRow icon={CalendarBlank} label="My Activities" onPress={onOpenMyActivities} />
-          <MenuRow icon={PencilSimple} label="Edit Profile" onPress={onEditProfile} />
-          <MenuRow icon={Baby} label="Children" onPress={onEditProfile} isLast />
+          <MenuRow icon={PencilSimple} label="Edit Profile & Children" onPress={onEditProfile} isLast />
         </MenuSection>
 
         <View style={styles.sectionHeader}>

@@ -272,6 +272,8 @@ export function ActivityForm({
           setLatitude(lat);
           setLongitude(lng);
         }}
+        onChangeLocationName={setLocationName}
+        autoCenterOnMount={!initialValues}
       />
       <Field label="Location name">
         <TextInput
