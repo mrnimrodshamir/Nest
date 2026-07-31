@@ -13,7 +13,7 @@ export interface CalendarUrlActivityInfo {
  *  importable from activityCalendar.ts without pulling expo-calendar into
  *  every consumer. Builds a prefilled Google Calendar "render" URL rather
  *  than using the Google Calendar API, so no OAuth is needed; opening it
- *  shows a draft event the mother reviews and saves herself, never a
+ *  shows a draft event the parent reviews and saves themselves, never a
  *  silent create. */
 export function buildGoogleCalendarUrl(activity: CalendarUrlActivityInfo): string {
   const endDate = new Date(activity.startsAt.getTime() + activity.durationMinutes * 60000);

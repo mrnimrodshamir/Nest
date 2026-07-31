@@ -115,7 +115,7 @@ interface ChildrenEditorProps {
 }
 
 /** Inline add/edit — no separate screen needed for something this small.
- *  Kept simple deliberately: a mother with one child never sees anything
+ *  Kept simple deliberately: a parent with one child never sees anything
  *  but that child and an unobtrusive "+ Add another child". */
 function ChildrenEditor({ children, onAdd, onUpdate, onRemove, onSetDefault }: ChildrenEditorProps) {
   const [editingId, setEditingId] = useState<string | 'new' | null>(null);
@@ -158,9 +158,9 @@ function ChildrenEditor({ children, onAdd, onUpdate, onRemove, onSetDefault }: C
       editingId === 'new'
         ? await onAdd({ name: name.trim(), birthdate, sex })
         : await onUpdate(editingId!, { name: name.trim(), birthdate, sex });
-    // A newly-added child auto-becomes default only when she's the first
+    // A newly-added child auto-becomes default only when it's the first
     // child (useChildren's own rule); the "Use as default child" toggle
-    // here only needs to act when the mother explicitly wants to switch
+    // here only needs to act when the parent explicitly wants to switch
     // the default onto this child.
     if (!result && makeDefault && editingId !== 'new') {
       await onSetDefault(editingId as string);

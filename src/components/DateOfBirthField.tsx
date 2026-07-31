@@ -6,7 +6,7 @@ import { birthdateToMonths, formatBabyAge } from '@/utils/babyAge';
 
 interface DateOfBirthFieldProps {
   label?: string;
-  /** ISO date (YYYY-MM-DD), or null before the mother has picked one. */
+  /** ISO date (YYYY-MM-DD), or null before the parent has picked one. */
   value: string | null;
   onChange: (isoDate: string) => void;
   /** Oldest supported child age — defaults to 6 years back, matching the

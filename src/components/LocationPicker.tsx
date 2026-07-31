@@ -12,9 +12,9 @@ interface LocationPickerProps {
   onChangeCoordinates: (latitude: number, longitude: number) => void;
   /** Called whenever the map settles on a new spot (drag) or a search
    *  result is picked — the host screen owns the actual "Location name"
-   *  text field and can still let the mother edit it by hand afterward. */
+   *  text field and can still let the parent edit it by hand afterward. */
   onChangeLocationName?: (name: string) => void;
-  /** Centers on the mother's current location on first mount, when
+  /** Centers on the parent's current location on first mount, when
    *  permission is already granted — only appropriate for a brand-new
    *  activity, never when editing one that already has a real location. */
   autoCenterOnMount?: boolean;
@@ -23,7 +23,7 @@ interface LocationPickerProps {
 const DELTA = 0.02;
 
 /** Wolt/Uber-style picker — the map itself is the primary input and works
- *  fully on its own. A pin stays fixed in the visual center; the mother
+ *  fully on its own. A pin stays fixed in the visual center; the parent
  *  drags the map underneath it, and once it settles we reverse-geocode the
  *  center point and fill the location name automatically. Coordinates are
  *  always preserved even if reverse geocoding comes back empty — a name is
@@ -85,7 +85,7 @@ export function LocationPicker({
       }
     } catch {
       // Reverse geocoding failing is non-fatal — the coordinates the
-      // mother actually chose are already saved via onChangeCoordinates.
+      // parent actually chose are already saved via onChangeCoordinates.
     } finally {
       if (thisRequest === requestId.current) setIsResolving(false);
     }

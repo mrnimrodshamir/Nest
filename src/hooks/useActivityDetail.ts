@@ -66,10 +66,10 @@ export function useActivityDetail(activityId: string): UseActivityDetailResult {
       if (cancelled) return;
 
       // The host is now always a genuine activity_attendees row (auto-joined
-      // at creation time), so she'd otherwise appear twice — once in the
+      // at creation time), so they'd otherwise appear twice — once in the
       // "hosting" row above, once in this avatar list. attendeeCount stays
       // the raw row count (host included, per spec); only the rendered
-      // avatar list excludes her.
+      // avatar list excludes them.
       const attendees: Attendee[] = (attendeeRows ?? [])
         .filter((row) => row.user_id !== activityRow.host_id)
         .flatMap((row) => {
@@ -120,7 +120,7 @@ export function useActivityDetail(activityId: string): UseActivityDetailResult {
         longitude: activityRow.longitude,
         attendees: attendees.slice(0, 5),
         // Raw row count — includes the host, per spec, even though the
-        // rendered avatar list above excludes her to avoid a duplicate.
+        // rendered avatar list above excludes them to avoid a duplicate.
         attendeeCount: attendeeRows?.length ?? 0,
         capacity: activityRow.capacity,
         babyMinAgeMonths: activityRow.baby_min_age_months,

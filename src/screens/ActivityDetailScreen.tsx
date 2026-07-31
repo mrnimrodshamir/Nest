@@ -182,7 +182,7 @@ export function ActivityDetailScreen({
   const [showJoinSheet, setShowJoinSheet] = useState(false);
 
   const performJoin = async (childIds: string[]) => {
-    // Whichever child she's coming with becomes the default used for
+    // Whichever child the parent is coming with becomes the default used for
     // age-matching elsewhere in the app — mirrors the age-eligibility
     // guidance the join sheet already shows for this activity.
     const firstChild = children.find((c) => childIds.includes(c.id));
@@ -419,7 +419,7 @@ export function ActivityDetailScreen({
         {isHost ? (
           // The creator is always a participant (host auto-join happens at
           // creation time) — never show a normal Join/Leave affordance for
-          // her own activity, even if a legacy row is somehow missing its
+          // their own activity, even if a legacy row is somehow missing its
           // host attendee row (activity.hostId is the authoritative check
           // here, not viewerStatus, which depends on that row existing).
           <View style={[styles.ctaButton, styles.ctaButtonGoing]}>

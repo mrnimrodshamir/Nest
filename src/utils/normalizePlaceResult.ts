@@ -5,7 +5,7 @@ export type { PlaceResult } from './buildPlaceResult';
 
 /** Turns one raw expo-location geocode candidate into a PlaceResult ready
  *  for display — reverse-geocodes it for a human name/address, falling
- *  back to the mother's own typed query text if that comes back empty
+ *  back to the parent's own typed query text if that comes back empty
  *  (coordinates are still valid either way, so a result is never dropped
  *  just because reverse geocoding didn't find a name for it). The actual
  *  shape-building logic lives in buildPlaceResult.ts (pure, no

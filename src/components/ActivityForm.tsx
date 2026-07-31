@@ -77,7 +77,7 @@ export function ActivityForm({
   const { session } = useAuth();
   const { children } = useChildren(session?.user.id ?? null);
   const [hostChildIds, setHostChildIds] = useState<string[]>(initialValues?.hostChildIds ?? []);
-  // Auto-select the host's default (or only) child the first time her
+  // Auto-select the host's default (or only) child the first time their
   // children finish loading — never for Edit, which pre-loads the
   // activity's real existing selection via initialValues.hostChildIds.
   // Fires once; after that the host's own taps are never overridden.
@@ -97,7 +97,7 @@ export function ActivityForm({
   const [coverUri, setCoverUri] = useState<string | null>(null);
 
   // The title is generated from type + date/time + location and kept in
-  // sync automatically — a host only ever types one by hand if she taps
+  // sync automatically — a host only ever types one by hand if they tap
   // "Customize title" (and can tap back to "Use automatic title" any
   // time). Editing an existing activity starts customized (it already
   // has a real title) so it's never silently rewritten.

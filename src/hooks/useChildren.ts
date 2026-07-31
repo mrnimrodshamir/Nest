@@ -40,8 +40,8 @@ interface UseChildrenResult {
   setDefaultChild: (id: string) => Promise<string | null>;
 }
 
-/** A mother's children, each a separate record (not repeated profile
- *  fields) so she can add, edit, and remove them independently. Exactly one
+/** A parent's children, each a separate record (not repeated profile
+ *  fields) so they can add, edit, and remove them independently. Exactly one
  *  is marked default (enforced by a DB partial unique index) — used
  *  wherever the app needs "the" child, e.g. age-matching on Discover. */
 export function useChildren(profileId: string | null): UseChildrenResult {
@@ -126,7 +126,7 @@ export function useChildren(profileId: string | null): UseChildrenResult {
         return "Couldn't remove this child. Please try again.";
       }
       // Keep exactly one default whenever possible — promote the oldest
-      // remaining child rather than leaving the mother with none set.
+      // remaining child rather than leaving the parent with none set.
       if (removingDefault) {
         const remaining = children.filter((c) => c.id !== id);
         if (remaining.length > 0) {

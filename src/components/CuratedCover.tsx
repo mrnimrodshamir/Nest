@@ -11,7 +11,7 @@ import { CATEGORY_ART_FAMILY } from '@/types/activity';
  *  activityArtAssets.ts). Every category falls back to this today.
  *
  *  Hand-authored vector art (four coherent illustration "families" —
- *  see CATEGORY_ART_FAMILY — each showing several mothers together,
+ *  see CATEGORY_ART_FAMILY — each showing several parents together,
  *  never one isolated figure) built from the same visual vocabulary as
  *  the Momzi brand mark (src/components/MomziLogo.tsx: a circle head + a
  *  soft curved body). It exists because no image-generation tool is
@@ -51,11 +51,12 @@ export function parseCuratedCover(url: string | null): ActivityCategory | null {
   return url.slice(CURATED_PREFIX.length) as ActivityCategory;
 }
 
-/** One simplified mother figure — a head circle plus a soft rounded body,
+/** One simplified parent figure — a head circle plus a soft rounded body,
  *  the same two-shape vocabulary as the brand mark. Deliberately abstract
- *  (no facial features) so a small group reads as "mothers together" at
- *  a glance without drifting into a cartoon-character look. */
-function MotherFigure({ x, y, scale, color }: { x: number; y: number; scale: number; color: string }) {
+ *  (no facial features, no gender markers) so a small group reads as
+ *  "parents together" at a glance without drifting into a cartoon-character
+ *  look. */
+function ParentFigure({ x, y, scale, color }: { x: number; y: number; scale: number; color: string }) {
   return (
     <>
       <Ellipse cx={x} cy={y + 46 * scale} rx={30 * scale} ry={38 * scale} fill={color} opacity={0.92} />
@@ -70,9 +71,9 @@ function FamilyScene({ family }: { family: CategoryArtFamily }) {
     <Svg width="100%" height="100%" viewBox="0 0 300 160" preserveAspectRatio="xMidYMid slice">
       {/* Ground line — gives every scene a shared sense of place without a photo. */}
       <Path d="M 0 138 Q 150 118 300 138 L 300 160 L 0 160 Z" fill="#000000" opacity={0.05} />
-      <MotherFigure x={104} y={78} scale={0.85} color={colors[0]} />
-      <MotherFigure x={160} y={70} scale={1} color={colors[1]} />
-      <MotherFigure x={210} y={82} scale={0.8} color={colors[2]} />
+      <ParentFigure x={104} y={78} scale={0.85} color={colors[0]} />
+      <ParentFigure x={160} y={70} scale={1} color={colors[1]} />
+      <ParentFigure x={210} y={82} scale={0.8} color={colors[2]} />
     </Svg>
   );
 }

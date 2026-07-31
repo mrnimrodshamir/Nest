@@ -30,7 +30,7 @@ interface UseMyActivitiesResult {
   refresh: () => Promise<void>;
 }
 
-/** Everything a mother has hosted or joined, split into upcoming/past. Both
+/** Everything a parent has hosted or joined, split into upcoming/past. Both
  *  roles reuse the same `ActivityCard` component the Discover feed already
  *  uses — just tagged with a "Hosting"/"Going" role. */
 export function useMyActivities(): UseMyActivitiesResult {

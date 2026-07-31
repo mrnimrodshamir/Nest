@@ -5,7 +5,7 @@ export interface NotificationPreferences {
 }
 
 /** Own full profile — matches the private `profiles` table (own row only).
- *  Children live in their own table (see `Child`) — a mother can have any
+ *  Children live in their own table (see `Child`) — a parent can have any
  *  number of them, not just the one this shape used to hardcode. */
 export interface Profile {
   id: string;

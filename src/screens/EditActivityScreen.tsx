@@ -20,7 +20,7 @@ export function EditActivityScreen({ activity, onBack, onSaved, onCancelled }: E
   const { isSubmitting, stage, error, update, cancelActivity } = useEditActivity(activity.id);
   // ActivityForm reads initialValues.hostChildIds into local state once, on
   // mount — so the form must not render until this resolves, or a host
-  // editing any field (even just fixing a typo) would silently save her
+  // editing any field (even just fixing a typo) would silently save their
   // attendance back to "alone".
   const { childIds: hostChildIds, isLoading: isLoadingAttendance } = useHostAttendance(activity.id);
 

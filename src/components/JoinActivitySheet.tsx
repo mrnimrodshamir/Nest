@@ -33,7 +33,7 @@ export function JoinActivitySheet({
   // never default to "coming alone" when a default child exists. Guarded
   // by a ref so it fires once per open (handles children still loading
   // when the sheet first appears) without overriding a manual change the
-  // mother makes afterward.
+  // parent makes afterward.
   const didAutoSelect = useRef(false);
   useEffect(() => {
     if (!visible) {

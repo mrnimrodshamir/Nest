@@ -4,7 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 const STORAGE_KEY = 'momzi.photoNudgeShown';
 
 /** Exactly once, ever, per device -- after that, never ask again regardless
- *  of whether she added a photo or skipped. */
+ *  of whether they added a photo or skipped. */
 export function usePhotoNudge() {
   const shouldShow = useCallback(async (hasPhoto: boolean) => {
     if (hasPhoto) return false;

@@ -33,7 +33,7 @@ export function MessagesScreen({ onOpenConversation }: MessagesScreenProps) {
   // same root, not a fresh screen instance each visit) — without this,
   // useConversations only ever fetched once, on the very first time this
   // tab was shown, so a chat created for a brand-new activity while the
-  // mother was elsewhere in the app never appeared until something else
+  // parent was elsewhere in the app never appeared until something else
   // forced a remount.
   useFocusEffect(
     useCallback(() => {
