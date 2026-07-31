@@ -156,7 +156,10 @@ export const CATEGORY_LABELS: Record<ActivityCategory, string> = {
   museum: 'Museum',
   zoo: 'Zoo',
   shopping_together: 'Shopping together',
-  moms_night_out: "Moms' night out",
+  // Display label only — the DB enum value and art/filename stay
+  // `moms_night_out` (a technical identifier, not shown to users) to
+  // avoid an unnecessary destructive migration and asset rename.
+  moms_night_out: 'Parents night out',
   support_circle: 'Support circle',
   other: 'Other',
 };

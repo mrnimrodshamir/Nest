@@ -73,8 +73,8 @@ export function ProfileScreen({ onEditProfile, onOpenMyActivities, onOpenBlocked
     children.length === 0
       ? undefined
       : children.length === 1
-        ? `Mom of ${children[0].name}`
-        : `Mom of ${children.length} children`;
+        ? `Parent of ${children[0].name}`
+        : `Parent of ${children.length} children`;
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>

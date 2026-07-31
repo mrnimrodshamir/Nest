@@ -29,9 +29,9 @@ export function WelcomeScreen({
         <View style={styles.hero}>
           <MomziLogo size={128} />
           <Text style={styles.wordmark}>Momzi</Text>
-          <Text style={styles.tagline}>Motherhood is better together.</Text>
+          <Text style={styles.tagline}>Parenting is better together.</Text>
           <Text style={styles.subtagline}>
-            Meet nearby moms, join activities, and build real friendships.
+            Meet nearby parents, join activities, and build real friendships.
           </Text>
         </View>
 

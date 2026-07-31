@@ -40,7 +40,7 @@ export function PhotoNudgeSheet({ visible, onAddPhoto, onDismiss }: PhotoNudgeSh
             <Camera size={26} color={theme.brand.primary} weight="fill" />
           </View>
           <Text style={styles.title}>Put a face to your name</Text>
-          <Text style={styles.body}>Add a photo so the other mothers can recognize you at the meetup.</Text>
+          <Text style={styles.body}>Add a photo so other parents can recognize you at the meetup.</Text>
 
           <Pressable style={styles.addButton} onPress={handleAddPhoto} disabled={isPicking}>
             <Text style={styles.addLabel}>{isPicking ? 'Choosing…' : 'Add a photo'}</Text>

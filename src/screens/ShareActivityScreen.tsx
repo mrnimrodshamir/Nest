@@ -38,7 +38,7 @@ export function ShareActivityScreen({ activity, onViewActivity }: ShareActivityS
         </View>
         <Text style={styles.title}>You're all set!</Text>
         <Text style={styles.subtitle}>
-          "{activity.title}" is live. Invite moms nearby to join you.
+          "{activity.title}" is live. Invite parents nearby to join you.
         </Text>
 
         <Pressable style={styles.whatsappButton} onPress={handleWhatsAppShare}>

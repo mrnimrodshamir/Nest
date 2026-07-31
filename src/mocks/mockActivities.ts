@@ -116,7 +116,7 @@ export const MOCK_ACTIVITIES: Activity[] = [
   {
     id: 'mock-6',
     hostId: 'mock-noa',
-    title: 'Gentle mom & baby yoga',
+    title: 'Gentle parent & baby yoga',
     category: 'yoga',
     coverImageUrl: null,
     status: 'cancelled',

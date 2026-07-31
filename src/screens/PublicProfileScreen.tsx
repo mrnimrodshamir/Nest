@@ -47,7 +47,7 @@ export function PublicProfileScreen({ userId, onBack, onMessage }: PublicProfile
             avatarUrl={profile.avatarUrl}
             subtitle={
               profile.childName
-                ? `Mom of ${profile.childName}${
+                ? `Parent of ${profile.childName}${
                     profile.childAgeMonths !== null ? ` · ${formatBabyAge(profile.childAgeMonths)}` : ''
                   }`
                 : undefined

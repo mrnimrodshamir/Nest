@@ -7,7 +7,7 @@ export type PersonCardSize = 'compact' | 'row' | 'hero';
 interface PersonCardProps {
   name: string;
   avatarUrl: string | null;
-  /** e.g. "Mom of Yuval · 8 months", "Hosting", a chat's last-message preview. */
+  /** e.g. "Parent of Yuval · 8 months", "Hosting", a chat's last-message preview. */
   subtitle?: string;
   size?: PersonCardSize;
   onPress?: () => void;

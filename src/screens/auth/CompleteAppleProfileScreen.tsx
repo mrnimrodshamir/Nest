@@ -94,7 +94,7 @@ export function CompleteAppleProfileScreen({ input }: CompleteAppleProfileScreen
           <Text style={styles.title}>
             {input.fallbackFullName ? `Welcome, ${input.fallbackFullName}` : 'Almost there'}
           </Text>
-          <Text style={styles.subtitle}>One last thing — who are you meeting other moms for?</Text>
+          <Text style={styles.subtitle}>One last thing — tell us about your child.</Text>
 
           <View style={styles.form}>
             <OnboardingChildrenEditor children={children} onChange={setChildren} errors={childErrors} />
