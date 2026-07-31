@@ -25,31 +25,29 @@ export interface ActivityArtManifestEntry {
   hasArt: boolean;
 }
 
-/** The complete 21-category manifest. `other` doubles as the fallback for
- *  any category (present or future) that doesn't have its own asset yet —
- *  every category currently falls back to the hand-authored SVG scene in
- *  CuratedCover.tsx (see CategoryArtwork.tsx), NOT to the `other` image,
- *  until real files land. */
+/** The complete 21-category manifest. All 21 final assets are installed —
+ *  every category now renders its real image via CategoryArtwork.tsx; none
+ *  fall back to the hand-authored SVG scene in CuratedCover.tsx anymore. */
 export const ACTIVITY_ART_MANIFEST: ActivityArtManifestEntry[] = [
-  { category: 'stroller_walk', filename: 'stroller_walk.jpg', hasArt: false },
-  { category: 'coffee_meetup', filename: 'coffee_meetup.jpg', hasArt: false },
-  { category: 'baby_playtime', filename: 'baby_playtime.jpg', hasArt: false },
-  { category: 'playground_meetup', filename: 'playground_meetup.jpg', hasArt: false },
-  { category: 'picnic', filename: 'picnic.jpg', hasArt: false },
-  { category: 'breakfast_meetup', filename: 'breakfast_meetup.jpg', hasArt: false },
-  { category: 'lunch_meetup', filename: 'lunch_meetup.jpg', hasArt: false },
-  { category: 'beach', filename: 'beach.jpg', hasArt: false },
-  { category: 'indoor_playground', filename: 'indoor_playground.jpg', hasArt: false },
-  { category: 'story_time', filename: 'story_time.jpg', hasArt: false },
-  { category: 'music_activity', filename: 'music_activity.jpg', hasArt: false },
-  { category: 'swimming', filename: 'swimming.jpg', hasArt: false },
-  { category: 'fitness', filename: 'fitness.jpg', hasArt: false },
-  { category: 'yoga', filename: 'yoga.jpg', hasArt: false },
-  { category: 'workshop', filename: 'workshop.jpg', hasArt: false },
-  { category: 'museum', filename: 'museum.jpg', hasArt: false },
-  { category: 'zoo', filename: 'zoo.jpg', hasArt: false },
-  { category: 'shopping_together', filename: 'shopping_together.jpg', hasArt: false },
-  { category: 'moms_night_out', filename: 'moms_night_out.jpg', hasArt: false },
-  { category: 'support_circle', filename: 'support_circle.jpg', hasArt: false },
-  { category: 'other', filename: 'other.jpg', hasArt: false },
+  { category: 'stroller_walk', filename: 'stroller_walk.jpg', hasArt: true },
+  { category: 'coffee_meetup', filename: 'coffee_meetup.jpg', hasArt: true },
+  { category: 'baby_playtime', filename: 'baby_playtime.jpg', hasArt: true },
+  { category: 'playground_meetup', filename: 'playground_meetup.jpg', hasArt: true },
+  { category: 'picnic', filename: 'picnic.jpg', hasArt: true },
+  { category: 'breakfast_meetup', filename: 'breakfast_meetup.jpg', hasArt: true },
+  { category: 'lunch_meetup', filename: 'lunch_meetup.jpg', hasArt: true },
+  { category: 'beach', filename: 'beach.jpg', hasArt: true },
+  { category: 'indoor_playground', filename: 'indoor_playground.jpg', hasArt: true },
+  { category: 'story_time', filename: 'story_time.jpg', hasArt: true },
+  { category: 'music_activity', filename: 'music_activity.jpg', hasArt: true },
+  { category: 'swimming', filename: 'swimming.jpg', hasArt: true },
+  { category: 'fitness', filename: 'fitness.jpg', hasArt: true },
+  { category: 'yoga', filename: 'yoga.jpg', hasArt: true },
+  { category: 'workshop', filename: 'workshop.jpg', hasArt: true },
+  { category: 'museum', filename: 'museum.jpg', hasArt: true },
+  { category: 'zoo', filename: 'zoo.jpg', hasArt: true },
+  { category: 'shopping_together', filename: 'shopping_together.jpg', hasArt: true },
+  { category: 'moms_night_out', filename: 'moms_night_out.jpg', hasArt: true },
+  { category: 'support_circle', filename: 'support_circle.jpg', hasArt: true },
+  { category: 'other', filename: 'other.jpg', hasArt: true },
 ];
