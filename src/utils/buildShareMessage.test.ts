@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { buildShareMessage, activityDeepLink } from './buildShareMessage.ts';
+import { APP_NAME } from '../constants/brand.ts';
 
 function shareable(overrides) {
   return {
@@ -20,7 +21,7 @@ test('buildShareMessage: warm natural sentence, no emoji', () => {
   const message = buildShareMessage(shareable({}));
   assert.match(message, /^Join us for a stroller walk/);
   assert.match(message, /HaYarkon Park/);
-  assert.match(message, /See the activity on Momzi\./);
+  assert.match(message, new RegExp(`See the activity on ${APP_NAME}\\.`));
   assert.doesNotMatch(message, /[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/u); // no emoji range chars
 });
 
@@ -44,4 +45,9 @@ test('buildShareMessage: missing location name does not break the sentence', () 
 test('buildShareMessage: unrecognized category falls back to "other" rather than crashing', () => {
   const message = buildShareMessage(shareable({ category: 'some_future_category' }));
   assert.match(message, /^Join us for a other/);
+});
+
+test('buildShareMessage: cancellation message references the app by the shared brand constant', () => {
+  const message = buildShareMessage(shareable({ status: 'cancelled' }));
+  assert.match(message, new RegExp(`This ${APP_NAME} activity has been cancelled`));
 });
