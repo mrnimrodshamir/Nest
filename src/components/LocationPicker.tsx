@@ -29,11 +29,10 @@ const DELTA = 0.02;
  *  always preserved even if reverse geocoding comes back empty — a name is
  *  a convenience, the pin position is the real data.
  *
- *  Search is a secondary shortcut on top of that, backed by the
- *  search-places Edge Function (Google Places Text Search, proxied so the
- *  API key never reaches the client) — see usePlaceSearch. If search is
- *  unavailable or fails for any reason, dragging the map keeps working
- *  exactly as before; nothing about it depends on search succeeding. */
+ *  Search is a secondary shortcut on top of that, backed by
+ *  expo-location's free on-device geocoder — see usePlaceSearch. If
+ *  search fails for any reason, dragging the map keeps working exactly
+ *  as before; nothing about it depends on search succeeding. */
 export function LocationPicker({
   latitude,
   longitude,

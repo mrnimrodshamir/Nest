@@ -34,7 +34,7 @@ interface ActivityMapPinProps {
   onPress: (activity: Activity) => void;
 }
 
-const CATEGORY_ICON: Record<ActivityCategory, React.ComponentType<{ size: number; color: string; weight?: 'fill' | 'bold' }>> = {
+export const CATEGORY_ICON: Record<ActivityCategory, React.ComponentType<{ size: number; color: string; weight?: 'fill' | 'bold' }>> = {
   stroller_walk: PersonSimpleWalk,
   coffee_meetup: Coffee,
   baby_playtime: Baby,
@@ -64,8 +64,11 @@ const CATEGORY_ICON: Record<ActivityCategory, React.ComponentType<{ size: number
  *  native map region/layout change and that's exactly the interaction
  *  class that caused this session's other Reanimated-related crashes. */
 export function ActivityMapPin({ activity, selected, onPress }: ActivityMapPinProps) {
-  const color = CATEGORY_PIN_COLOR[activity.category];
-  const Icon = CATEGORY_ICON[activity.category];
+  // Falls back to 'other' for any category value not in these maps (a
+  // future category added to the DB enum before this file catches up) —
+  // never renders an undefined icon component, which would crash.
+  const color = CATEGORY_PIN_COLOR[activity.category] ?? CATEGORY_PIN_COLOR.other;
+  const Icon = CATEGORY_ICON[activity.category] ?? CATEGORY_ICON.other;
 
   return (
     <Marker

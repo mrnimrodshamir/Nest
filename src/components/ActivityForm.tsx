@@ -4,6 +4,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { CaretDown, CaretUp, Camera } from 'phosphor-react-native';
 import { theme, typography, spacing, radius } from '@/theme';
 import { CategoryChip } from '@/components/CategoryChip';
+import { CategoryPicker } from '@/components/CategoryPicker';
 import { DateTimeField } from '@/components/DateTimeField';
 import { LocationPicker } from '@/components/LocationPicker';
 import { NumberStepper } from '@/components/NumberStepper';
@@ -19,8 +20,6 @@ import type { ActivityCategory } from '@/types/activity';
 import { formatDuration } from '@/utils/formatDuration';
 import { generateActivityTitle } from '@/utils/generateActivityTitle';
 import type { CreateActivityInput, CreateActivityStage } from '@/hooks/useCreateActivity';
-
-const ACTIVITY_TYPES = Object.keys(CATEGORY_LABELS) as ActivityCategory[];
 
 const STAGE_LABELS: Record<CreateActivityStage, string> = {
   saving: 'Saving…',
@@ -68,6 +67,13 @@ export function ActivityForm({
   onSubmit,
   footer,
 }: ActivityFormProps) {
+  // Only a brand-new activity gets the Type -> Date -> Location -> Review
+  // flow — editing an existing one keeps the original single-screen save,
+  // since a review step there would just be friction on a flow that
+  // already works.
+  const isCreateFlow = !initialValues;
+  const [reviewMode, setReviewMode] = useState(false);
+
   const { session } = useAuth();
   const { children } = useChildren(session?.user.id ?? null);
   const [hostChildIds, setHostChildIds] = useState<string[]>(initialValues?.hostChildIds ?? []);
@@ -92,8 +98,9 @@ export function ActivityForm({
 
   // The title is generated from type + date/time + location and kept in
   // sync automatically — a host only ever types one by hand if she taps
-  // "Customize title". Editing an existing activity starts customized
-  // (it already has a real title) so it's never silently rewritten.
+  // "Customize title" (and can tap back to "Use automatic title" any
+  // time). Editing an existing activity starts customized (it already
+  // has a real title) so it's never silently rewritten.
   const [titleCustomized, setTitleCustomized] = useState(!!initialValues);
   const [title, setTitle] = useState(initialValues?.title ?? '');
 
@@ -154,11 +161,16 @@ export function ActivityForm({
     setTitle(generateActivityTitle(activityType, startsAt, locationName));
   }, [activityType, startsAt, locationName, titleCustomized]);
 
+  const validateEssentials = () => {
+    if (!title.trim()) return setValidationError('Give your activity a title'), false;
+    if (!locationName.trim()) return setValidationError('Name the public place you picked'), false;
+    setValidationError(null);
+    return true;
+  };
+
   const handleSubmit = () => {
     if (inFlightRef.current) return;
-    if (!title.trim()) return setValidationError('Give your activity a title');
-    if (!locationName.trim()) return setValidationError('Name the public place you picked');
-    setValidationError(null);
+    if (!validateEssentials()) return;
 
     inFlightRef.current = true;
     onSubmit({
@@ -181,6 +193,15 @@ export function ActivityForm({
     });
   };
 
+  const handlePrimaryPress = () => {
+    if (isCreateFlow && !reviewMode) {
+      if (!validateEssentials()) return;
+      setReviewMode(true);
+      return;
+    }
+    handleSubmit();
+  };
+
   const handlePickCoverPhoto = async () => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) return;
@@ -195,177 +216,216 @@ export function ActivityForm({
     }
   };
 
+  const reviewDateTimeSummary = `${startsAt.toLocaleDateString(undefined, {
+    weekday: 'long',
+    month: 'short',
+    day: 'numeric',
+  })} at ${startsAt.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}`;
+
+  const reviewChildSummary =
+    hostChildIds.length === 0
+      ? 'Coming alone'
+      : children
+          .filter((c) => hostChildIds.includes(c.id))
+          .map((c) => c.name)
+          .join(', ') || 'Coming alone';
+
+  const primaryLabel = isSubmitting && stage ? STAGE_LABELS[stage] : isCreateFlow && !reviewMode ? 'Review' : submitLabel;
+
   return (
     <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-      <Text style={styles.sectionLabel}>Activity type</Text>
-      <View style={styles.chipWrap}>
-        {ACTIVITY_TYPES.map((type) => (
-          <CategoryChip
-            key={type}
-            label={CATEGORY_LABELS[type]}
-            selected={activityType === type}
-            onPress={() => setActivityType(type)}
-          />
-        ))}
-      </View>
+      {isCreateFlow && reviewMode ? (
+        <View style={styles.reviewBlock}>
+          <View style={styles.coverPreview}>
+            {/* Review only ever renders in the create flow, which has no
+                initialValues.coverImageUrl to fall back to. */}
+            <CoverImage url={coverUri} fallbackCategory={activityType} style={styles.coverPreviewFill} />
+          </View>
+          <Text style={styles.generatedTitle}>{title}</Text>
 
-      <View style={styles.coverPreview}>
-        <CoverImage
-          url={coverUri ?? initialValues?.coverImageUrl ?? null}
-          fallbackCategory={activityType}
-          style={styles.coverPreviewFill}
-        />
-      </View>
+          <ReviewRow label="Category" value={CATEGORY_LABELS[activityType] ?? CATEGORY_LABELS.other} />
+          <ReviewRow label="When" value={reviewDateTimeSummary} />
+          <ReviewRow label="Duration" value={formatDuration(durationMinutes)} />
+          <ReviewRow label="Location" value={locationName} />
+          <ReviewRow label="Capacity" value={noLimit ? 'No limit' : `${maxParticipants} people`} />
+          <ReviewRow label="Coming with" value={reviewChildSummary} />
+          {description.trim() ? <ReviewRow label="Details" value={description.trim()} /> : null}
 
-      {titleCustomized ? (
-        <Field label="Title">
-          <TextInput
-            style={styles.input}
-            placeholder="Stroller walk along the park"
-            placeholderTextColor={theme.text.muted}
-            value={title}
-            onChangeText={setTitle}
-          />
-        </Field>
-      ) : (
-        <View style={styles.generatedTitleRow}>
-          <Text style={styles.generatedTitle} numberOfLines={2}>
-            {title}
-          </Text>
-          <Pressable onPress={() => setTitleCustomized(true)} hitSlop={8}>
-            <Text style={styles.customizeLink}>Customize title</Text>
+          <Pressable onPress={() => setReviewMode(false)} style={styles.editDetailsLink} hitSlop={8}>
+            <Text style={styles.customizeLink}>Edit details</Text>
           </Pressable>
         </View>
-      )}
+      ) : (
+        <>
+          <Text style={styles.sectionLabel}>Activity type</Text>
+          <CategoryPicker selected={activityType} onSelect={setActivityType} />
 
-      <DateTimeField
-        label="Date and start time"
-        value={startsAt}
-        onChange={setStartsAt}
-        minimumDate={new Date()}
-      />
-
-      <Text style={styles.sectionLabel}>Duration</Text>
-      <View style={styles.chipWrap}>
-        {DURATION_OPTIONS_MINUTES.map((minutes) => (
-          <CategoryChip
-            key={minutes}
-            label={formatDuration(minutes)}
-            selected={!customDuration && durationMinutes === minutes}
-            onPress={() => {
-              setCustomDuration(false);
-              setDurationMinutes(minutes);
-            }}
-          />
-        ))}
-        <CategoryChip label="Custom" selected={customDuration} onPress={() => setCustomDuration(true)} />
-      </View>
-      {customDuration && (
-        <NumberStepper value={durationMinutes} min={15} max={480} onChange={setDurationMinutes} />
-      )}
-
-      <Text style={styles.sectionLabel}>Location</Text>
-      <LocationPicker
-        latitude={latitude}
-        longitude={longitude}
-        onChangeCoordinates={(lat, lng) => {
-          setLatitude(lat);
-          setLongitude(lng);
-        }}
-        onChangeLocationName={setLocationName}
-        autoCenterOnMount={!initialValues}
-      />
-      <Field label="Location name">
-        <TextInput
-          style={styles.input}
-          placeholder="e.g. HaYarkon Park, main entrance"
-          placeholderTextColor={theme.text.muted}
-          value={locationName}
-          onChangeText={setLocationName}
-        />
-      </Field>
-
-      <ComingWithSelector children={children} selectedChildIds={hostChildIds} onChange={setHostChildIds} />
-
-      <Pressable style={styles.moreToggle} onPress={() => setMoreOpen((v) => !v)}>
-        <Text style={styles.moreToggleLabel}>More options</Text>
-        {moreOpen ? (
-          <CaretUp size={16} color={theme.text.secondary} />
-        ) : (
-          <CaretDown size={16} color={theme.text.secondary} />
-        )}
-      </Pressable>
-
-      {moreOpen && (
-        <View style={styles.moreSection}>
-          <Pressable style={styles.uploadCoverButton} onPress={handlePickCoverPhoto}>
-            <Camera size={16} color={theme.text.primary} />
-            <Text style={styles.uploadCoverLabel}>
-              {coverUri ? 'Change your photo' : 'Upload your own photo'}
-            </Text>
-          </Pressable>
-
-          <Text style={styles.sectionLabel}>Max participants</Text>
-          <View style={styles.row}>
-            {!noLimit && <NumberStepper value={maxParticipants} min={2} max={100} onChange={setMaxParticipants} />}
-            <View style={styles.inlineCheckbox}>
-              <Checkbox checked={noLimit} onToggle={() => setNoLimit((v) => !v)}>
-                No limit
-              </Checkbox>
-            </View>
+          <View style={styles.coverPreview}>
+            <CoverImage
+              url={coverUri ?? initialValues?.coverImageUrl ?? null}
+              fallbackCategory={activityType}
+              style={styles.coverPreviewFill}
+            />
           </View>
 
-          <Text style={styles.sectionLabel}>Baby age range</Text>
-          <Checkbox checked={anyAge} onToggle={() => setAnyAge((v) => !v)}>
-            Any age welcome
-          </Checkbox>
-          {!anyAge && (
-            <View style={styles.ageRangeGroup}>
-              <View>
-                <Text style={styles.ageRangeLabel}>Minimum age</Text>
-                <YearsMonthsPicker
-                  years={minYears}
-                  months={minMonths}
-                  onChange={(y, m) => {
-                    setMinYears(y);
-                    setMinMonths(m);
-                  }}
-                />
-              </View>
-              <View>
-                <Text style={styles.ageRangeLabel}>Maximum age</Text>
-                <YearsMonthsPicker
-                  years={maxYears}
-                  months={maxMonths}
-                  onChange={(y, m) => {
-                    setMaxYears(y);
-                    setMaxMonths(m);
-                  }}
-                />
-              </View>
+          {titleCustomized ? (
+            <Field label="Title">
+              <TextInput
+                style={styles.input}
+                placeholder="Stroller walk along the park"
+                placeholderTextColor={theme.text.muted}
+                value={title}
+                onChangeText={setTitle}
+              />
+              {!initialValues && (
+                <Pressable
+                  onPress={() => setTitleCustomized(false)}
+                  hitSlop={8}
+                  style={styles.revertTitleLink}
+                >
+                  <Text style={styles.customizeLink}>Use automatic title</Text>
+                </Pressable>
+              )}
+            </Field>
+          ) : (
+            <View style={styles.generatedTitleRow}>
+              <Text style={styles.generatedTitle} numberOfLines={2}>
+                {title}
+              </Text>
+              <Pressable onPress={() => setTitleCustomized(true)} hitSlop={8}>
+                <Text style={styles.customizeLink}>Customize title</Text>
+              </Pressable>
             </View>
           )}
 
-          <Field label="Details (optional)">
+          <DateTimeField
+            label="Date and start time"
+            value={startsAt}
+            onChange={setStartsAt}
+            minimumDate={new Date()}
+          />
+
+          <Text style={styles.sectionLabel}>Duration</Text>
+          <View style={styles.chipWrap}>
+            {DURATION_OPTIONS_MINUTES.map((minutes) => (
+              <CategoryChip
+                key={minutes}
+                label={formatDuration(minutes)}
+                selected={!customDuration && durationMinutes === minutes}
+                onPress={() => {
+                  setCustomDuration(false);
+                  setDurationMinutes(minutes);
+                }}
+              />
+            ))}
+            <CategoryChip label="Custom" selected={customDuration} onPress={() => setCustomDuration(true)} />
+          </View>
+          {customDuration && (
+            <NumberStepper value={durationMinutes} min={15} max={480} onChange={setDurationMinutes} />
+          )}
+
+          <Text style={styles.sectionLabel}>Location</Text>
+          <LocationPicker
+            latitude={latitude}
+            longitude={longitude}
+            onChangeCoordinates={(lat, lng) => {
+              setLatitude(lat);
+              setLongitude(lng);
+            }}
+            onChangeLocationName={setLocationName}
+            autoCenterOnMount={!initialValues}
+          />
+          <Field label="Location name">
             <TextInput
-              style={[styles.input, styles.textArea]}
-              placeholder="Example: Bring water and a mat. We'll meet near the main entrance."
+              style={styles.input}
+              placeholder="e.g. HaYarkon Park, main entrance"
               placeholderTextColor={theme.text.muted}
-              value={description}
-              onChangeText={setDescription}
-              multiline
+              value={locationName}
+              onChangeText={setLocationName}
             />
           </Field>
-        </View>
+
+          <ComingWithSelector children={children} selectedChildIds={hostChildIds} onChange={setHostChildIds} />
+
+          <Pressable style={styles.moreToggle} onPress={() => setMoreOpen((v) => !v)}>
+            <Text style={styles.moreToggleLabel}>More options</Text>
+            {moreOpen ? (
+              <CaretUp size={16} color={theme.text.secondary} />
+            ) : (
+              <CaretDown size={16} color={theme.text.secondary} />
+            )}
+          </Pressable>
+
+          {moreOpen && (
+            <View style={styles.moreSection}>
+              <Pressable style={styles.uploadCoverButton} onPress={handlePickCoverPhoto}>
+                <Camera size={16} color={theme.text.primary} />
+                <Text style={styles.uploadCoverLabel}>
+                  {coverUri ? 'Change your photo' : 'Upload your own photo'}
+                </Text>
+              </Pressable>
+
+              <Text style={styles.sectionLabel}>Max participants</Text>
+              <View style={styles.row}>
+                {!noLimit && (
+                  <NumberStepper value={maxParticipants} min={2} max={100} onChange={setMaxParticipants} />
+                )}
+                <View style={styles.inlineCheckbox}>
+                  <Checkbox checked={noLimit} onToggle={() => setNoLimit((v) => !v)}>
+                    No limit
+                  </Checkbox>
+                </View>
+              </View>
+
+              <Text style={styles.sectionLabel}>Baby age range</Text>
+              <Checkbox checked={anyAge} onToggle={() => setAnyAge((v) => !v)}>
+                Any age welcome
+              </Checkbox>
+              {!anyAge && (
+                <View style={styles.ageRangeGroup}>
+                  <View>
+                    <Text style={styles.ageRangeLabel}>Minimum age</Text>
+                    <YearsMonthsPicker
+                      years={minYears}
+                      months={minMonths}
+                      onChange={(y, m) => {
+                        setMinYears(y);
+                        setMinMonths(m);
+                      }}
+                    />
+                  </View>
+                  <View>
+                    <Text style={styles.ageRangeLabel}>Maximum age</Text>
+                    <YearsMonthsPicker
+                      years={maxYears}
+                      months={maxMonths}
+                      onChange={(y, m) => {
+                        setMaxYears(y);
+                        setMaxMonths(m);
+                      }}
+                    />
+                  </View>
+                </View>
+              )}
+
+              <Field label="Details (optional)">
+                <TextInput
+                  style={[styles.input, styles.textArea]}
+                  placeholder="Example: Bring water and a mat. We'll meet near the main entrance."
+                  placeholderTextColor={theme.text.muted}
+                  value={description}
+                  onChangeText={setDescription}
+                  multiline
+                />
+              </Field>
+            </View>
+          )}
+        </>
       )}
 
       {(validationError || error) && <Text style={styles.formError}>{validationError ?? error}</Text>}
 
-      <PrimaryButton
-        label={isSubmitting && stage ? STAGE_LABELS[stage] : submitLabel}
-        onPress={handleSubmit}
-        loading={isSubmitting}
-      />
+      <PrimaryButton label={primaryLabel} onPress={handlePrimaryPress} loading={isSubmitting} />
       {footer}
     </ScrollView>
   );
@@ -380,6 +440,17 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
     <View style={styles.field}>
       <Text style={styles.fieldLabel}>{label}</Text>
       {children}
+    </View>
+  );
+}
+
+function ReviewRow({ label, value }: { label: string; value: string }) {
+  return (
+    <View style={styles.reviewRow}>
+      <Text style={styles.reviewLabel}>{label}</Text>
+      <Text style={styles.reviewValue} numberOfLines={3}>
+        {value}
+      </Text>
     </View>
   );
 }
@@ -416,6 +487,7 @@ const styles = StyleSheet.create({
   generatedTitleRow: { gap: spacing.xs },
   generatedTitle: { ...typography.headline, color: theme.text.primary },
   customizeLink: { ...typography.footnote, color: theme.brand.primary },
+  revertTitleLink: { marginTop: spacing.xs },
   uploadCoverButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -437,4 +509,16 @@ const styles = StyleSheet.create({
   },
   moreToggleLabel: { ...typography.bodyMedium, color: theme.text.secondary },
   moreSection: { gap: spacing.lg },
+  reviewBlock: { gap: spacing.md },
+  reviewRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: spacing.md,
+    paddingVertical: spacing.sm,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: theme.border.default,
+  },
+  reviewLabel: { ...typography.footnote, color: theme.text.secondary },
+  reviewValue: { ...typography.bodyMedium, color: theme.text.primary, flexShrink: 1, textAlign: 'right' },
+  editDetailsLink: { alignItems: 'center', paddingVertical: spacing.sm },
 });

@@ -1,19 +1,26 @@
-import { CATEGORY_LABELS } from '@/types/activity';
-import type { ActivityCategory } from '@/types/activity';
+import { CATEGORY_LABELS } from '../types/activity';
+import type { ActivityCategory } from '../types/activity';
 
-/** "Today" / "Tomorrow" / "Friday morning" — matches how a person would
- *  actually describe when something's happening, not a bare date. */
-function dateLabel(date: Date, now: Date = new Date()): string {
+/** "Today" / "Tomorrow" / "Friday" — the day-only building block shared by
+ *  every place the app describes when something's happening in words. */
+export function relativeDayWord(date: Date, now: Date = new Date()): string {
   const isSameDay = date.toDateString() === now.toDateString();
   if (isSameDay) return 'Today';
 
   const tomorrow = new Date(now.getTime() + 86400000);
   if (date.toDateString() === tomorrow.toDateString()) return 'Tomorrow';
 
-  const weekday = date.toLocaleDateString(undefined, { weekday: 'long' });
+  return date.toLocaleDateString(undefined, { weekday: 'long' });
+}
+
+/** "Today" / "Tomorrow" / "Friday morning" — adds a daypart once a date is
+ *  far enough out that a bare weekday alone reads as ambiguous. */
+function dateLabel(date: Date, now: Date = new Date()): string {
+  const day = relativeDayWord(date, now);
+  if (day === 'Today' || day === 'Tomorrow') return day;
   const hour = date.getHours();
   const daypart = hour < 12 ? 'morning' : hour < 17 ? 'afternoon' : 'evening';
-  return `${weekday} ${daypart}`;
+  return `${day} ${daypart}`;
 }
 
 /** The part of a location name worth putting in a title — "HaYarkon Park,

@@ -9,7 +9,7 @@
     "android": "expo start --android",
     "typecheck": "tsc --noEmit",
     "lint": "eslint . --ext .ts,.tsx",
-    "test": "node --test --experimental-strip-types src/**/*.test.ts"
+    "test": "node --test --experimental-strip-types --experimental-loader=./scripts/test-ts-resolve-loader.mjs src/**/*.test.ts"
   },
   "dependencies": {
     "@expo-google-fonts/plus-jakarta-sans": "^0.2.3",

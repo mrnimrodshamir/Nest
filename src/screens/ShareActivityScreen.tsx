@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, Pressable, StyleSheet, Share, Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { CheckCircle, WhatsappLogo, ShareNetwork } from 'phosphor-react-native';
+import { CheckCircle, WhatsappLogo, ShareNetwork, CalendarPlus } from 'phosphor-react-native';
 import { theme, typography, spacing, radius } from '@/theme';
 import { buildShareMessage, type ShareableActivity } from '@/utils/buildShareMessage';
+import { AddToCalendarSheet } from '@/components/AddToCalendarSheet';
 
 interface ShareActivityScreenProps {
   activity: ShareableActivity;
@@ -12,6 +13,7 @@ interface ShareActivityScreenProps {
 
 export function ShareActivityScreen({ activity, onViewActivity }: ShareActivityScreenProps) {
   const message = buildShareMessage(activity);
+  const [showCalendarSheet, setShowCalendarSheet] = useState(false);
 
   const handleWhatsAppShare = async () => {
     const url = `whatsapp://send?text=${encodeURIComponent(message)}`;
@@ -49,10 +51,28 @@ export function ShareActivityScreen({ activity, onViewActivity }: ShareActivityS
           <Text style={styles.shareLabel}>More sharing options</Text>
         </Pressable>
 
+        <Pressable style={styles.shareButton} onPress={() => setShowCalendarSheet(true)}>
+          <CalendarPlus size={18} color={theme.text.primary} />
+          <Text style={styles.shareLabel}>Add to calendar</Text>
+        </Pressable>
+
         <Pressable style={styles.viewButton} onPress={onViewActivity}>
           <Text style={styles.viewLabel}>View activity</Text>
         </Pressable>
       </View>
+
+      <AddToCalendarSheet
+        visible={showCalendarSheet}
+        activity={{
+          id: activity.id,
+          title: activity.title,
+          description: '',
+          startsAt: activity.startsAt,
+          durationMinutes: activity.durationMinutes,
+          locationName: activity.locationName,
+        }}
+        onDismiss={() => setShowCalendarSheet(false)}
+      />
     </SafeAreaView>
   );
 }

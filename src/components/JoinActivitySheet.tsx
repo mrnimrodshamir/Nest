@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, Pressable, Modal, StyleSheet } from 'react-native';
 import { X } from 'phosphor-react-native';
 import { theme, typography, spacing, radius } from '@/theme';
@@ -29,6 +29,23 @@ export function JoinActivitySheet({
   onDismiss,
 }: JoinActivitySheetProps) {
   const [selectedChildIds, setSelectedChildIds] = useState<string[]>([]);
+  // Auto-select the default (or only) child each time the sheet opens —
+  // never default to "coming alone" when a default child exists. Guarded
+  // by a ref so it fires once per open (handles children still loading
+  // when the sheet first appears) without overriding a manual change the
+  // mother makes afterward.
+  const didAutoSelect = useRef(false);
+  useEffect(() => {
+    if (!visible) {
+      didAutoSelect.current = false;
+      return;
+    }
+    if (didAutoSelect.current) return;
+    if (children.length === 0) return;
+    didAutoSelect.current = true;
+    const defaultChild = children.find((c) => c.isDefault) ?? children[0];
+    setSelectedChildIds([defaultChild.id]);
+  }, [visible, children]);
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onDismiss}>

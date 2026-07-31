@@ -1,11 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, ScrollView, Pressable, StyleSheet, Linking, Platform, Alert } from 'react-native';
+import { View, Text, ScrollView, Pressable, StyleSheet, Linking, Platform, Alert, Share } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MapView, { Marker, PROVIDER_DEFAULT } from 'react-native-maps';
-import Animated, { useSharedValue, useAnimatedStyle, withSpring, useReducedMotion } from 'react-native-reanimated';
 import * as Notifications from 'expo-notifications';
 import * as Haptics from 'expo-haptics';
-import { ArrowLeft, DotsThree, NavigationArrow, ChatCircleDots, PencilSimple } from 'phosphor-react-native';
+import { ArrowLeft, DotsThree, NavigationArrow, ChatCircleDots, PencilSimple, ShareNetwork } from 'phosphor-react-native';
 import { theme, typography, spacing, radius } from '@/theme';
 import { PersonCard } from '@/components/PersonCard';
 import type { ActivityDetail } from '@/types/activity';
@@ -13,6 +12,7 @@ import { CATEGORY_LABELS } from '@/types/activity';
 import { formatStartTime } from '@/utils/formatStartTime';
 import { formatDuration } from '@/utils/formatDuration';
 import { formatAgeRange } from '@/utils/babyAge';
+import { buildShareMessage } from '@/utils/buildShareMessage';
 import { useActivityRsvp } from '@/hooks/useActivityRsvp';
 import { useActivityAttendance } from '@/hooks/useActivityAttendance';
 import { useAuth } from '@/hooks/useAuth';
@@ -30,8 +30,6 @@ import {
   cancelActivityReminders,
   rescheduleActivityReminders,
 } from '@/lib/activityReminders';
-
-const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 interface ActivityDetailScreenProps {
   activity: ActivityDetail;
@@ -71,19 +69,6 @@ export function ActivityDetailScreen({
   const [showNotificationSheet, setShowNotificationSheet] = useState(false);
   const [showPhotoNudge, setShowPhotoNudge] = useState(false);
   const [calendarNotice, setCalendarNotice] = useState<'changed' | 'cancelled' | null>(null);
-  const reducedMotion = useReducedMotion();
-  const ctaScale = useSharedValue(1);
-  const ctaAnimatedStyle = useAnimatedStyle(() => ({ transform: [{ scale: ctaScale.value }] }));
-
-  useEffect(() => {
-    if (activity.viewerStatus === 'going' && !reducedMotion) {
-      // A quick confirming bounce the moment a join actually lands.
-      ctaScale.value = withSpring(1.05, { damping: 10, stiffness: 200 }, () => {
-        ctaScale.value = withSpring(1, { damping: 12, stiffness: 200 });
-      });
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activity.viewerStatus]);
 
   const isCancelled = activity.status === 'cancelled';
   const isEnded = activity.status === 'completed';
@@ -163,6 +148,25 @@ export function ActivityDetailScreen({
         },
       ],
     );
+  };
+
+  const handleShare = async () => {
+    const message = buildShareMessage({
+      id: activity.id,
+      title: activity.title,
+      category: activity.category,
+      startsAt: new Date(activity.startTime),
+      locationName: activity.location.label,
+      durationMinutes: activity.durationMinutes,
+      babyMinAgeMonths: activity.babyMinAgeMonths,
+      babyMaxAgeMonths: activity.babyMaxAgeMonths,
+      status: activity.status,
+    });
+    try {
+      await Share.share({ message });
+    } catch {
+      // User dismissed the native share sheet — nothing to recover from.
+    }
   };
 
   const handleMorePress = () => {
@@ -249,6 +253,11 @@ export function ActivityDetailScreen({
               <ArrowLeft size={20} color={theme.text.primary} />
             </Pressable>
             <View style={styles.heroActions}>
+              {!isCancelled && (
+                <Pressable style={styles.roundButton} onPress={handleShare} accessibilityLabel="Share activity">
+                  <ShareNetwork size={18} color={theme.text.primary} />
+                </Pressable>
+              )}
               {isHost && onEdit && (
                 <Pressable style={styles.roundButton} onPress={onEdit} accessibilityLabel="Edit activity">
                   <PencilSimple size={18} color={theme.text.primary} />
@@ -265,7 +274,7 @@ export function ActivityDetailScreen({
           <View style={styles.pillRow}>
             <View style={styles.categoryPill}>
               <Text style={styles.categoryPillText}>
-                {CATEGORY_LABELS[activity.category]}
+                {CATEGORY_LABELS[activity.category] ?? CATEGORY_LABELS.other}
               </Text>
             </View>
             {isCancelled && (
@@ -410,12 +419,12 @@ export function ActivityDetailScreen({
             <Text style={[styles.ctaLabel, styles.ctaLabelGoing]}>You're hosting</Text>
           </View>
         ) : (
-          <AnimatedPressable
-            style={[
+          <Pressable
+            style={({ pressed }) => [
               styles.ctaButton,
               activity.viewerStatus === 'going' && styles.ctaButtonGoing,
               !canJoin && activity.viewerStatus === 'none' && styles.ctaButtonDisabled,
-              ctaAnimatedStyle,
+              pressed && styles.ctaButtonPressed,
             ]}
             onPress={handleJoinPress}
             disabled={isSubmitting || (!canJoin && activity.viewerStatus === 'none')}
@@ -431,7 +440,7 @@ export function ActivityDetailScreen({
               {!isCancelled && !isEnded && activity.viewerStatus === 'going' && "You're going"}
               {!isCancelled && !isEnded && activity.viewerStatus === 'none' && (isFull ? 'Activity full' : 'Join this activity')}
             </Text>
-          </AnimatedPressable>
+          </Pressable>
         )}
       </View>
 
@@ -600,6 +609,7 @@ const styles = StyleSheet.create({
     backgroundColor: theme.brand.primaryTint,
   },
   ctaButtonDisabled: { opacity: 0.5 },
+  ctaButtonPressed: { opacity: 0.85 },
   ctaLabel: { ...typography.headline, color: theme.text.inverse },
   ctaLabelGoing: { color: theme.text.accent },
   ctaError: {

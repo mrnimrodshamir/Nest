@@ -1,13 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { supabase } from '@/lib/supabase';
+import * as Location from 'expo-location';
+import { normalizePlaceResult, type PlaceResult } from '@/utils/normalizePlaceResult';
+import { createRequestGuard } from '@/utils/staleRequestGuard';
 
-export interface PlaceResult {
-  id: string;
-  name: string;
-  formattedAddress: string;
-  latitude: number;
-  longitude: number;
-}
+export type { PlaceResult } from '@/utils/normalizePlaceResult';
 
 type SearchStatus = 'idle' | 'loading' | 'results' | 'empty' | 'error' | 'unavailable';
 
@@ -22,11 +18,25 @@ interface UsePlaceSearchResult {
 
 const DEBOUNCE_MS = 350;
 const MIN_QUERY_LENGTH = 2;
+const MAX_RESULTS = 5;
 
-/** Debounced POI search backed by the search-places Edge Function (Google
- *  Places Text Search, proxied so the API key never reaches the client).
- *  `regionCenter` biases results toward wherever the picker's map
- *  currently is — not a hard restriction, just relevance ranking. */
+/** Debounced POI search backed by expo-location's on-device geocoder
+ *  (Apple's CLGeocoder under the hood on iOS) — free, no API key, no new
+ *  native module, no new EAS build; the same underlying capability
+ *  already used for reverse-geocoding on map drag.
+ *
+ *  Known limitation, documented rather than hidden: unlike MKLocalSearch
+ *  or Google Places, CLGeocoder via expo-location has no region-bias
+ *  parameter, so results aren't weighted toward `regionCenter` — it's
+ *  accepted here only so the hook's contract can add real biasing later
+ *  without a call-site change. It's also address/landmark-oriented rather
+ *  than a full POI index, so small local businesses (a specific café) are
+ *  less reliably found than a well-known place name.
+ *
+ *  A Google Places-backed alternative already exists (see
+ *  supabase/functions/search-places and the dormant edge function) but is
+ *  intentionally not wired in here — the product decision is not to
+ *  require Google billing/credentials for the active app flow. */
 export function usePlaceSearch(regionCenter: { latitude: number; longitude: number }): UsePlaceSearchResult {
   const [query, setQueryState] = useState('');
   const [results, setResults] = useState<PlaceResult[]>([]);
@@ -36,45 +46,35 @@ export function usePlaceSearch(regionCenter: { latitude: number; longitude: numb
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Guards against a slow/stale response landing after a newer query has
   // already been typed — only the most recent request may write results.
-  const requestId = useRef(0);
+  // See staleRequestGuard.ts for the (unit-tested) guarding logic itself.
+  const guard = useRef(createRequestGuard());
+  // Accepted for a future region-biasing capability — see doc comment.
   const regionRef = useRef(regionCenter);
   regionRef.current = regionCenter;
 
   const runSearch = useCallback(async (text: string) => {
-    const thisRequest = ++requestId.current;
+    const token = guard.current.next();
     setStatus('loading');
     setErrorMessage(null);
     try {
-      const { data, error } = await supabase.functions.invoke<{ results?: PlaceResult[]; error?: string }>(
-        'search-places',
-        {
-          method: 'POST',
-          body: { query: text, latitude: regionRef.current.latitude, longitude: regionRef.current.longitude },
-        },
-      );
-      if (thisRequest !== requestId.current) return;
+      const geocoded = await Location.geocodeAsync(text);
+      if (!guard.current.isCurrent(token)) return;
 
-      if (error || data?.error) {
-        const code = data?.error;
-        if (code === 'search_unavailable') {
-          setStatus('unavailable');
-          setErrorMessage("Search isn't set up yet — drag the map to choose a spot.");
-        } else if (code === 'rate_limited') {
-          setStatus('error');
-          setErrorMessage('Too many searches — wait a moment and try again.');
-        } else {
-          setStatus('error');
-          setErrorMessage('Search failed — drag the map instead.');
-        }
+      if (geocoded.length === 0) {
         setResults([]);
+        setStatus('empty');
         return;
       }
 
-      const found = data?.results ?? [];
-      setResults(found);
-      setStatus(found.length === 0 ? 'empty' : 'results');
+      const normalized = await Promise.all(
+        geocoded.slice(0, MAX_RESULTS).map((point, index) => normalizePlaceResult(point, text, index)),
+      );
+      if (!guard.current.isCurrent(token)) return;
+
+      setResults(normalized);
+      setStatus('results');
     } catch {
-      if (thisRequest !== requestId.current) return;
+      if (!guard.current.isCurrent(token)) return;
       setStatus('error');
       setErrorMessage('Search failed — drag the map instead.');
       setResults([]);
@@ -88,7 +88,7 @@ export function usePlaceSearch(regionCenter: { latitude: number; longitude: numb
 
       const trimmed = text.trim();
       if (trimmed.length < MIN_QUERY_LENGTH) {
-        requestId.current += 1; // invalidate any in-flight request
+        guard.current.invalidate();
         setResults([]);
         setStatus('idle');
         setErrorMessage(null);
@@ -102,7 +102,7 @@ export function usePlaceSearch(regionCenter: { latitude: number; longitude: numb
 
   const clear = useCallback(() => {
     if (debounceTimer.current) clearTimeout(debounceTimer.current);
-    requestId.current += 1;
+    guard.current.invalidate();
     setQueryState('');
     setResults([]);
     setStatus('idle');

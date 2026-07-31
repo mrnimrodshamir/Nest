@@ -55,7 +55,7 @@ export function ActivityCard({
         {!isRail && (
           <View style={styles.pillRow}>
             <View style={styles.categoryPill}>
-              <Text style={styles.categoryPillText}>{CATEGORY_LABELS[activity.category]}</Text>
+              <Text style={styles.categoryPillText}>{CATEGORY_LABELS[activity.category] ?? CATEGORY_LABELS.other}</Text>
             </View>
             {activity.status === 'full' && (
               <View style={[styles.categoryPill, styles.fullPill]}>

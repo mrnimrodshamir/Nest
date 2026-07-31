@@ -132,17 +132,6 @@ export async function isLinkedToCalendar(activityId: string): Promise<boolean> {
   return (await getStoredLink(activityId)) !== null;
 }
 
-export function buildGoogleCalendarUrl(activity: CalendarActivityInfo): string {
-  const endDate = new Date(activity.startsAt.getTime() + activity.durationMinutes * 60000);
-  const toGoogleDate = (d: Date) => d.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
-
-  const params = new URLSearchParams({
-    action: 'TEMPLATE',
-    text: activity.title,
-    dates: `${toGoogleDate(activity.startsAt)}/${toGoogleDate(endDate)}`,
-    details: `${activity.description}\n\n${activityDeepLink(activity.id)}`,
-    location: activity.locationName,
-  });
-
-  return `https://calendar.google.com/calendar/render?${params.toString()}`;
-}
+// Re-exported from a dependency-free module (no expo-calendar/react-native
+// imports) so it's directly unit-testable — see buildGoogleCalendarUrl.ts.
+export { buildGoogleCalendarUrl } from '@/utils/buildGoogleCalendarUrl';

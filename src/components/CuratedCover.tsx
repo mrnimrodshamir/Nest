@@ -78,7 +78,10 @@ function FamilyScene({ family }: { family: CategoryArtFamily }) {
 }
 
 export function CuratedCover({ category, style }: { category: ActivityCategory; style?: StyleProp<ViewStyle> }) {
-  const family = CATEGORY_ART_FAMILY[category];
+  // Falls back to 'social' for any category value that isn't in the map
+  // (a future category added to the DB enum before this file catches up)
+  // — never crashes on an unrecognized key.
+  const family = CATEGORY_ART_FAMILY[category] ?? 'social';
   const [start, end] = FAMILY_GRADIENT[family];
   return (
     <LinearGradient colors={[start, end]} style={[styles.fill, style]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>

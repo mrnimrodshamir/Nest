@@ -10,17 +10,13 @@ import { useConversations, type Conversation } from '@/hooks/useConversations';
 import { formatRelativeTime } from '@/utils/formatRelativeTime';
 import { formatStartTime } from '@/utils/formatStartTime';
 import { CATEGORY_LABELS } from '@/types/activity';
+import { groupConversations } from '@/utils/groupConversations';
 
 interface MessagesScreenProps {
   onOpenConversation: (conversation: Conversation) => void;
 }
 
 type Section = { key: 'upcoming' | 'direct' | 'past'; title: string; data: Conversation[] };
-
-function isUpcoming(activity: NonNullable<Conversation['activity']>): boolean {
-  if (activity.status === 'cancelled' || activity.status === 'completed') return false;
-  return new Date(activity.startTime).getTime() >= Date.now();
-}
 
 /** The Chats tab — activity group chats grouped into "my upcoming plans"
  *  and a quieter, collapsed-by-default past archive, plus a standing
@@ -32,19 +28,7 @@ export function MessagesScreen({ onOpenConversation }: MessagesScreenProps) {
   const [pastOpen, setPastOpen] = useState(false);
 
   const sections = useMemo<Section[]>(() => {
-    const upcoming: Conversation[] = [];
-    const past: Conversation[] = [];
-    const direct: Conversation[] = [];
-
-    for (const c of conversations) {
-      if (!c.activity) direct.push(c);
-      else if (isUpcoming(c.activity)) upcoming.push(c);
-      else past.push(c);
-    }
-
-    upcoming.sort((a, b) => (a.activity!.startTime).localeCompare(b.activity!.startTime));
-    past.sort((a, b) => (b.lastMessageAt ?? '').localeCompare(a.lastMessageAt ?? ''));
-    direct.sort((a, b) => (b.lastMessageAt ?? '').localeCompare(a.lastMessageAt ?? ''));
+    const { upcoming, past, direct } = groupConversations(conversations);
 
     const result: Section[] = [];
     if (upcoming.length > 0) result.push({ key: 'upcoming', title: 'Upcoming activities', data: upcoming });
@@ -115,7 +99,7 @@ function ActivityConversationRow({ conversation, onPress }: { conversation: Conv
           {conversation.hasUnread && <View style={styles.unreadDot} />}
         </View>
         <Text style={styles.activityMeta} numberOfLines={1}>
-          {CATEGORY_LABELS[activity.category]} · {formatStartTime(activity.startTime)} · {activity.locationLabel}
+          {CATEGORY_LABELS[activity.category] ?? CATEGORY_LABELS.other} · {formatStartTime(activity.startTime)} · {activity.locationLabel}
         </Text>
         <View style={styles.activityFooterLine}>
           <Text
