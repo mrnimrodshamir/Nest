@@ -208,7 +208,11 @@ export function ActivityForm({
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
-      aspect: [16, 9],
+      // Matches the 4:3 aspectRatio every cover container uses (review
+      // preview, Discovery cards, Activity Detail hero) — cropping to a
+      // different ratio here just means resizeMode="cover" re-crops it a
+      // second time, mismatched, wherever it's actually displayed.
+      aspect: [4, 3],
       quality: 0.8,
     });
     if (!result.canceled && result.assets[0]) {

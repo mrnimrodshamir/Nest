@@ -18,11 +18,14 @@ interface CategoryArtworkProps {
  *  Final assets are local, bundled files (see activityArtAssets.ts) —
  *  bundled means they're resolved at build time, so there's no network
  *  fetch and no loading flicker/layout shift once a category has one.
- *  Until a category's file is supplied, this renders the hand-authored
- *  SVG scene from CuratedCover.tsx as an explicit TEMPORARY fallback —
- *  never an emoji, never a generic flat placeholder. */
+ *  An unrecognized category (e.g. a DB enum value added after this build
+ *  shipped) falls back to the real "other" photo, matching every text-label
+ *  fallback in the app (CATEGORY_LABELS[x] ?? CATEGORY_LABELS.other) —
+ *  never the hand-authored CuratedCover SVG scene, which only exists as a
+ *  historical fallback for the (now nonexistent) case of a real category
+ *  with no art asset at all. */
 export function CategoryArtwork({ category, style }: CategoryArtworkProps) {
-  const finalAsset = ACTIVITY_ART_ASSETS[category];
+  const finalAsset = ACTIVITY_ART_ASSETS[category] ?? ACTIVITY_ART_ASSETS.other;
   if (finalAsset) {
     return (
       <Image
