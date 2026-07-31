@@ -18,6 +18,7 @@ import { useChildren } from '@/hooks/useChildren';
 import { CATEGORY_LABELS, DURATION_OPTIONS_MINUTES } from '@/types/activity';
 import type { ActivityCategory } from '@/types/activity';
 import { formatDuration } from '@/utils/formatDuration';
+import { pickDefaultChild } from '@/utils/pickDefaultChild';
 import { generateActivityTitle } from '@/utils/generateActivityTitle';
 import type { CreateActivityInput, CreateActivityStage } from '@/hooks/useCreateActivity';
 
@@ -85,9 +86,9 @@ export function ActivityForm({
   useEffect(() => {
     if (initialValues) return;
     if (didAutoSelectChild.current) return;
-    if (children.length === 0) return;
+    const defaultChild = pickDefaultChild(children);
+    if (!defaultChild) return;
     didAutoSelectChild.current = true;
-    const defaultChild = children.find((c) => c.isDefault) ?? children[0];
     setHostChildIds([defaultChild.id]);
   }, [children, initialValues]);
 

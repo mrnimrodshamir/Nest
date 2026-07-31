@@ -4,6 +4,7 @@ import { X } from 'phosphor-react-native';
 import { theme, typography, spacing, radius } from '@/theme';
 import { PrimaryButton } from '@/components/PrimaryButton';
 import { ComingWithSelector } from '@/components/ComingWithSelector';
+import { pickDefaultChild } from '@/utils/pickDefaultChild';
 import type { Child } from '@/types/child';
 
 interface JoinActivitySheetProps {
@@ -41,9 +42,9 @@ export function JoinActivitySheet({
       return;
     }
     if (didAutoSelect.current) return;
-    if (children.length === 0) return;
+    const defaultChild = pickDefaultChild(children);
+    if (!defaultChild) return;
     didAutoSelect.current = true;
-    const defaultChild = children.find((c) => c.isDefault) ?? children[0];
     setSelectedChildIds([defaultChild.id]);
   }, [visible, children]);
 

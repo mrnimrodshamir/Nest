@@ -20,6 +20,18 @@ test('relativeDayWord: further out is the weekday name', () => {
   assert.equal(relativeDayWord(friday, now), 'Friday');
 });
 
+test('relativeDayWord: an activity at exactly midnight the same calendar day is Today', () => {
+  const now = new Date(2026, 6, 31, 22, 0);
+  const midnightTonight = new Date(2026, 6, 31, 0, 0);
+  assert.equal(relativeDayWord(midnightTonight, now), 'Today');
+});
+
+test('relativeDayWord: one minute past midnight the next calendar day is Tomorrow, not Today', () => {
+  const now = new Date(2026, 6, 31, 23, 59);
+  const justAfterMidnight = new Date(2026, 7, 1, 0, 1);
+  assert.equal(relativeDayWord(justAfterMidnight, now), 'Tomorrow');
+});
+
 const NOW = new Date(2026, 6, 31, 8, 0); // Friday, Jul 31 2026, 8am
 
 test('generateActivityTitle: today reads as a natural sentence with no redundant "today"', () => {
