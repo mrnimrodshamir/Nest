@@ -13,6 +13,7 @@ import { formatStartTime } from '@/utils/formatStartTime';
 import { formatDuration } from '@/utils/formatDuration';
 import { formatAgeRange } from '@/utils/babyAge';
 import { buildShareMessage } from '@/utils/buildShareMessage';
+import { APP_NAME } from '@/constants/brand';
 import { useActivityRsvp } from '@/hooks/useActivityRsvp';
 import { useActivityAttendance } from '@/hooks/useActivityAttendance';
 import { useAuth } from '@/hooks/useAuth';
@@ -118,7 +119,7 @@ export function ActivityDetailScreen({
   const promptReportReason = () => {
     Alert.prompt(
       'Report this activity',
-      "Tell us what's wrong — this goes to the Momzi team, not the host.",
+      `Tell us what's wrong — this goes to the ${APP_NAME} team, not the host.`,
       async (reason) => {
         if (!reason?.trim()) return;
         const err = await submitReport({

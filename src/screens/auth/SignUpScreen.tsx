@@ -21,6 +21,7 @@ import { LEGAL_URLS } from '@/constants/legal';
 import { isValidEmail, isValidPassword, isNonEmpty } from '@/utils/validation';
 import { useAuth, type RegistrationStage } from '@/hooks/useAuth';
 import { useFormDraft } from '@/hooks/useFormDraft';
+import { APP_NAME } from '@/constants/brand';
 
 interface SignUpScreenProps {
   onBack: () => void;
@@ -179,7 +180,7 @@ export function SignUpScreen({ onBack }: SignUpScreenProps) {
             <OnboardingChildrenEditor children={children} onChange={setChildren} errors={childErrors} />
 
             <Checkbox checked={acceptedTerms} onToggle={() => setAcceptedTerms((v) => !v)}>
-              I agree to Momzi's{' '}
+              I agree to {APP_NAME}'s{' '}
               <Text style={styles.legalLink} onPress={() => Linking.openURL(LEGAL_URLS.terms)}>
                 Terms of Service
               </Text>{' '}

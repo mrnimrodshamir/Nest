@@ -4,6 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '@/lib/supabase';
 import { PrimaryButton } from '@/components/PrimaryButton';
 import { theme, typography, spacing } from '@/theme';
+import { APP_NAME } from '@/constants/brand';
 
 interface Props {
   children: React.ReactNode;
@@ -53,8 +54,8 @@ export class AppErrorBoundary extends React.Component<Props, State> {
         <View style={styles.container}>
           <Text style={styles.title}>We hit a snag</Text>
           <Text style={styles.body}>
-            Momzi needs to reset your session to keep going. Your account is safe — you'll just
-            need to sign in again.
+            {APP_NAME} needs to reset your session to keep going. Your account is safe — you'll
+            just need to sign in again.
           </Text>
           <PrimaryButton
             label="Reset and continue"

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import type { ActivityCategory, ActivityStatus } from '@/types/activity';
+import { APP_NAME } from '@/constants/brand';
 
 export interface Conversation {
   chatId: string;
@@ -158,7 +159,7 @@ export function useConversations(): UseConversationsResult {
           return {
             chatId: chat.id,
             kind: 'direct' as const,
-            title: profile?.display_name ?? 'Momzi member',
+            title: profile?.display_name ?? `${APP_NAME} member`,
             subtitle: lastMessage?.content ?? 'Say hello 👋',
             avatarUrl: profile?.avatar_url ?? null,
             otherUserId,

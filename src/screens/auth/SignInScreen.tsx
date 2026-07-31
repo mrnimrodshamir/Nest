@@ -16,6 +16,7 @@ import { FormField } from '@/components/FormField';
 import { StaticPrimaryButton } from '@/components/StaticPrimaryButton';
 import { isValidEmail, isNonEmpty } from '@/utils/validation';
 import { useAuth } from '@/hooks/useAuth';
+import { APP_NAME } from '@/constants/brand';
 
 interface SignInScreenProps {
   onBack: () => void;
@@ -68,7 +69,7 @@ export function SignInScreen({
           </Pressable>
 
           <Text style={styles.title}>Log in</Text>
-          <Text style={styles.subtitle}>Welcome back to Momzi</Text>
+          <Text style={styles.subtitle}>Welcome back to {APP_NAME}</Text>
 
           <View style={styles.form}>
             <FormField

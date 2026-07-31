@@ -1,6 +1,7 @@
 import { relativeDayWord } from './generateActivityTitle';
 import { CATEGORY_LABELS } from '../types/activity';
 import type { ActivityCategory, ActivityStatus } from '../types/activity';
+import { APP_NAME } from '../constants/brand';
 
 export interface ShareableActivity {
   id: string;
@@ -28,9 +29,10 @@ export function activityDeepLink(activityId: string): string {
  *  message; a cancelled activity is never invited to as if still live. */
 export function buildShareMessage(activity: ShareableActivity): string {
   if (activity.status === 'cancelled') {
-    return [`This Momzi activity has been cancelled: "${activity.title}".`, activityDeepLink(activity.id)].join(
-      '\n',
-    );
+    return [
+      `This ${APP_NAME} activity has been cancelled: "${activity.title}".`,
+      activityDeepLink(activity.id),
+    ].join('\n');
   }
 
   const categoryLabel = (CATEGORY_LABELS[activity.category] ?? CATEGORY_LABELS.other).toLowerCase();
@@ -43,7 +45,7 @@ export function buildShareMessage(activity: ShareableActivity): string {
   const locationPhrase = activity.locationName.trim() ? ` in ${activity.locationName.trim()}` : '';
 
   return [
-    `Join us for a ${categoryLabel} ${dayPhrase} at ${timeLabel}${locationPhrase}. See the activity on Momzi.`,
+    `Join us for a ${categoryLabel} ${dayPhrase} at ${timeLabel}${locationPhrase}. See the activity on ${APP_NAME}.`,
     activityDeepLink(activity.id),
   ].join('\n');
 }

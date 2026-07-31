@@ -9,6 +9,7 @@ import { isNonEmpty } from '@/utils/validation';
 import { LEGAL_URLS } from '@/constants/legal';
 import { useAuth, type AppleProfileInput, type RegistrationStage } from '@/hooks/useAuth';
 import { useFormDraft } from '@/hooks/useFormDraft';
+import { APP_NAME } from '@/constants/brand';
 
 interface CompleteAppleProfileScreenProps {
   input: AppleProfileInput;
@@ -100,7 +101,7 @@ export function CompleteAppleProfileScreen({ input }: CompleteAppleProfileScreen
             <OnboardingChildrenEditor children={children} onChange={setChildren} errors={childErrors} />
 
             <Checkbox checked={acceptedTerms} onToggle={() => setAcceptedTerms((v) => !v)}>
-              I agree to Momzi's{' '}
+              I agree to {APP_NAME}'s{' '}
               <Text style={styles.legalLink} onPress={() => Linking.openURL(LEGAL_URLS.terms)}>
                 Terms of Service
               </Text>{' '}

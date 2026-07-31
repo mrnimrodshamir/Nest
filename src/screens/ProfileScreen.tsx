@@ -21,6 +21,7 @@ import { ensurePushRegistration } from '@/hooks/usePushNotifications';
 import { NotificationPermissionSheet } from '@/components/NotificationPermissionSheet';
 import { LEGAL_URLS } from '@/constants/legal';
 import type { NotificationPreferences } from '@/types/profile';
+import { APP_NAME } from '@/constants/brand';
 
 interface ProfileScreenProps {
   onEditProfile: () => void;
@@ -79,7 +80,7 @@ export function ProfileScreen({ onEditProfile, onOpenMyActivities, onOpenBlocked
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <ScrollView contentContainerStyle={styles.content}>
-        <PersonCard size="hero" name={profile?.displayName ?? 'Momzi member'} avatarUrl={profile?.avatarUrl ?? null} subtitle={childSummary} />
+        <PersonCard size="hero" name={profile?.displayName ?? `${APP_NAME} member`} avatarUrl={profile?.avatarUrl ?? null} subtitle={childSummary} />
         <Text style={styles.email}>{profile?.email}</Text>
 
         <Pressable style={styles.editLink} onPress={onEditProfile}>

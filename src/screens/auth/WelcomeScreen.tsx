@@ -5,6 +5,7 @@ import { AppleLogo } from 'phosphor-react-native';
 import { theme, typography, spacing, radius } from '@/theme';
 import { MomziLogo } from '@/components/MomziLogo';
 import { StaticPrimaryButton } from '@/components/StaticPrimaryButton';
+import { APP_NAME } from '@/constants/brand';
 
 interface WelcomeScreenProps {
   onContinueWithApple: () => void;
@@ -28,7 +29,7 @@ export function WelcomeScreen({
       <SafeAreaView style={styles.content} edges={['top', 'bottom']}>
         <View style={styles.hero}>
           <MomziLogo size={128} />
-          <Text style={styles.wordmark}>Momzi</Text>
+          <Text style={styles.wordmark}>{APP_NAME}</Text>
           <Text style={styles.tagline}>Parenting is better together.</Text>
           <Text style={styles.subtagline}>
             Meet nearby parents, join activities, and build real friendships.
@@ -51,7 +52,7 @@ export function WelcomeScreen({
 
           <Pressable style={styles.loginLink} onPress={onLogIn} hitSlop={8}>
             <Text style={styles.loginLinkLabel}>
-              Already on Momzi? <Text style={styles.loginLinkAccent}>Log in</Text>
+              Already on {APP_NAME}? <Text style={styles.loginLinkAccent}>Log in</Text>
             </Text>
           </Pressable>
         </View>
