@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { View, Text, Pressable, FlatList, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native';
 import { ArrowLeft, Compass } from 'phosphor-react-native';
 import { theme, typography, spacing, radius } from '@/theme';
 import { ActivityCard } from '@/components/ActivityCard';
@@ -20,6 +21,16 @@ export function MyActivitiesScreen({ onBack, onOpenActivity }: MyActivitiesScree
   const [tab, setTab] = useState<Tab>('upcoming');
   const { upcoming, past, isLoading, error, refresh } = useMyActivities();
   const list = tab === 'upcoming' ? upcoming : past;
+
+  // This screen stays mounted underneath Activity Detail when navigated to
+  // — without this, joining/leaving/editing/cancelling an activity there
+  // never updates this list until something else forces a remount.
+  useFocusEffect(
+    useCallback(() => {
+      refresh();
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []),
+  );
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
+import { splitMyActivities } from '@/utils/splitMyActivities';
 import type { Activity, ActivityCategory, ActivityStatus } from '@/types/activity';
 
 export interface MyActivity extends Activity {
@@ -126,9 +127,7 @@ export function useMyActivities(): UseMyActivitiesResult {
     load();
   }, [load]);
 
-  const now = new Date().toISOString();
-  const upcoming = activities.filter((a) => a.startTime >= now).sort((a, b) => a.startTime.localeCompare(b.startTime));
-  const past = activities.filter((a) => a.startTime < now).sort((a, b) => b.startTime.localeCompare(a.startTime));
+  const { upcoming, past } = splitMyActivities(activities);
 
   return { upcoming, past, isLoading, error, refresh: load };
 }

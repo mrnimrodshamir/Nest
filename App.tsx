@@ -2,7 +2,12 @@ import React, { useCallback, useEffect, useMemo } from 'react';
 import { View, ActivityIndicator, Pressable, Text, I18nManager } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { NavigationContainer, LinkingOptions, createNavigationContainerRef } from '@react-navigation/native';
+import {
+  NavigationContainer,
+  LinkingOptions,
+  createNavigationContainerRef,
+  useFocusEffect,
+} from '@react-navigation/native';
 import * as Notifications from 'expo-notifications';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -426,7 +431,18 @@ function ActivityDetailContainer({
   onBack: () => void;
   navigation: any;
 }) {
-  const { detail, isLoading, error } = useActivityDetail(activityId);
+  const { detail, isLoading, error, refresh } = useActivityDetail(activityId);
+
+  // Activity Detail stays mounted underneath Edit/Chat in this stack (React
+  // Navigation doesn't unmount screens it pushes over), so without this a
+  // saved edit or a newly-read chat never shows up here until some other
+  // navigation forces a remount.
+  useFocusEffect(
+    useCallback(() => {
+      refresh();
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []),
+  );
 
   if (!detail) {
     return (
@@ -437,23 +453,32 @@ function ActivityDetailContainer({
     );
   }
 
-  return <ActivityDetailWithRsvp detail={detail} onBack={onBack} navigation={navigation} />;
+  return <ActivityDetailWithRsvp detail={detail} onBack={onBack} navigation={navigation} refresh={refresh} />;
 }
 
 function ActivityDetailWithRsvp({
   detail,
   onBack,
   navigation,
+  refresh,
 }: {
   detail: NonNullable<ReturnType<typeof useActivityDetail>['detail']>;
   onBack: () => void;
   navigation: any;
+  refresh: () => Promise<void>;
 }) {
-  const { activity, isSubmitting, join, leave } = useActivityRsvp(detail);
+  const { activity, isSubmitting, join, leave } = useActivityRsvp(detail, refresh);
   const { session } = useAuth();
   const isHost = session?.user.id === activity.hostId;
   const { chatId } = useActivityChatId(activity.id);
-  const hasUnread = useHasUnread(chatId);
+  const { hasUnread, refresh: refreshUnread } = useHasUnread(chatId);
+
+  useFocusEffect(
+    useCallback(() => {
+      refreshUnread();
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [chatId]),
+  );
 
   useEffect(() => {
     track('activity_viewed', { activity_id: activity.id });

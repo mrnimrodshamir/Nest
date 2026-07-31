@@ -183,6 +183,10 @@ async function fetchNearby(
 
   return activityRows.map((row) => {
     const attendees = attendeesByActivity.get(row.id) ?? [];
+    // attendeeCount stays the raw row count (host included), matching
+    // Activity Detail's convention; only the rendered avatar list excludes
+    // the host, so the same activity's avatar set matches on both screens.
+    const nonHostAttendees = attendees.filter((attendee) => attendee.id !== row.host_id);
     return {
       id: row.id,
       hostId: row.host_id,
@@ -199,7 +203,7 @@ async function fetchNearby(
       capacity: row.capacity,
       babyMinAgeMonths: row.baby_min_age_months,
       babyMaxAgeMonths: row.baby_max_age_months,
-      attendees: attendees.slice(0, 5),
+      attendees: nonHostAttendees.slice(0, 5),
     };
   });
 }

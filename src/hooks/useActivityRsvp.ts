@@ -1,12 +1,21 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { track } from '@/lib/analytics';
 import type { ActivityDetail } from '@/types/activity';
 
-export function useActivityRsvp(initial: ActivityDetail) {
+export function useActivityRsvp(initial: ActivityDetail, onSettled?: () => void) {
   const [activity, setActivity] = useState(initial);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // `initial` is a new object every time the parent's useActivityDetail
+  // reloads (edit save, focus refresh, or a reconciling refresh right after
+  // this hook's own join/leave call) — resync so the authoritative
+  // server-side attendeeCount/status/viewerStatus always wins over whatever
+  // this hook optimistically guessed.
+  useEffect(() => {
+    setActivity(initial);
+  }, [initial]);
 
   const join = useCallback(async (childIds: string[] = []) => {
     const previous = activity;
@@ -40,8 +49,9 @@ export function useActivityRsvp(initial: ActivityDetail) {
       return false;
     }
     track('activity_joined', { activity_id: activity.id });
+    onSettled?.();
     return true;
-  }, [activity]);
+  }, [activity, onSettled]);
 
   const leave = useCallback(async () => {
     const previous = activity;
@@ -69,8 +79,10 @@ export function useActivityRsvp(initial: ActivityDetail) {
     if (deleteError) {
       setActivity(previous);
       setError("Couldn't leave right now — please try again.");
+    } else {
+      onSettled?.();
     }
-  }, [activity]);
+  }, [activity, onSettled]);
 
   return { activity, isSubmitting, error, join, leave };
 }
