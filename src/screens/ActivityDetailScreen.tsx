@@ -240,34 +240,40 @@ export function ActivityDetailScreen({
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['bottom']}>
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+      <View style={styles.topBar}>
+        <Pressable style={styles.roundButton} onPress={onBack} accessibilityLabel="Back">
+          <ArrowLeft size={20} color={theme.text.primary} />
+        </Pressable>
+        <View style={styles.heroActions}>
+          {!isCancelled && (
+            <Pressable style={styles.roundButton} onPress={handleShare} accessibilityLabel="Share activity">
+              <ShareNetwork size={18} color={theme.text.primary} />
+            </Pressable>
+          )}
+          {isHost && onEdit && (
+            <Pressable style={styles.roundButton} onPress={onEdit} accessibilityLabel="Edit activity">
+              <PencilSimple size={18} color={theme.text.primary} />
+            </Pressable>
+          )}
+          <Pressable style={styles.roundButton} onPress={handleMorePress} accessibilityLabel="More options">
+            <DotsThree size={18} color={theme.text.primary} weight="bold" />
+          </Pressable>
+        </View>
+      </View>
+
       <ScrollView showsVerticalScrollIndicator={false}>
-        <View style={styles.hero}>
+        {/* Contained, aspect-matched cover card — not a full-bleed
+            background. The activity art is 4:3; matching the card's own
+            aspect ratio to that means resizeMode="cover" never has to
+            crop away meaningful content the way an oversized wide hero
+            forced it to. */}
+        <View style={styles.coverCard}>
           <CoverImage
             url={activity.coverImageUrl}
             fallbackCategory={activity.category}
             style={StyleSheet.absoluteFill}
           />
-          <SafeAreaView edges={['top']} style={styles.heroOverlay}>
-            <Pressable style={styles.roundButton} onPress={onBack} accessibilityLabel="Back">
-              <ArrowLeft size={20} color={theme.text.primary} />
-            </Pressable>
-            <View style={styles.heroActions}>
-              {!isCancelled && (
-                <Pressable style={styles.roundButton} onPress={handleShare} accessibilityLabel="Share activity">
-                  <ShareNetwork size={18} color={theme.text.primary} />
-                </Pressable>
-              )}
-              {isHost && onEdit && (
-                <Pressable style={styles.roundButton} onPress={onEdit} accessibilityLabel="Edit activity">
-                  <PencilSimple size={18} color={theme.text.primary} />
-                </Pressable>
-              )}
-              <Pressable style={styles.roundButton} onPress={handleMorePress} accessibilityLabel="More options">
-                <DotsThree size={18} color={theme.text.primary} weight="bold" />
-              </Pressable>
-            </View>
-          </SafeAreaView>
         </View>
 
         <View style={styles.content}>
@@ -491,20 +497,26 @@ export function ActivityDetailScreen({
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: theme.background.surface },
-  hero: { height: 220, backgroundColor: theme.brand.primaryTint },
-  heroOverlay: {
+  container: { flex: 1, backgroundColor: theme.background.app },
+  topBar: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     paddingHorizontal: spacing.md,
-    paddingTop: spacing.sm,
+    paddingVertical: spacing.sm,
+  },
+  coverCard: {
+    marginHorizontal: spacing.xl,
+    aspectRatio: 4 / 3,
+    borderRadius: radius.xl,
+    overflow: 'hidden',
+    backgroundColor: theme.brand.primaryTint,
   },
   heroActions: { flexDirection: 'row', gap: spacing.sm },
   roundButton: {
     width: 44,
     height: 44,
     borderRadius: radius.pill,
-    backgroundColor: 'rgba(254,253,251,0.9)',
+    backgroundColor: theme.background.surface,
     alignItems: 'center',
     justifyContent: 'center',
   },

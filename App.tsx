@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo } from 'react';
-import { View, ActivityIndicator, Pressable, Text } from 'react-native';
+import { View, ActivityIndicator, Pressable, Text, I18nManager } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { NavigationContainer, LinkingOptions, createNavigationContainerRef } from '@react-navigation/native';
@@ -51,6 +51,21 @@ import type { Activity } from '@/types/activity';
 import type { Conversation } from '@/hooks/useConversations';
 import type { CreateActivityInput } from '@/hooks/useCreateActivity';
 import type { ShareableActivity } from '@/utils/buildShareMessage';
+
+// This release is English/LTR only (see theme docs) — but React Native
+// mirrors flexDirection: 'row' layouts automatically based on the
+// device's OS language, not the app's displayed text language. A tester
+// with their iPhone system language set to a RTL language (Hebrew,
+// Arabic, etc.) would see every row-based layout — chat rows, button
+// rows, meta lines — flip direction even though all the text stays
+// English. Forcing LTR here fixes that regardless of device locale.
+// Note: RN only applies a forceRTL change starting the *next* app
+// launch, not retroactively mid-session — this takes effect after the
+// app is fully closed and reopened once.
+if (I18nManager.isRTL) {
+  I18nManager.allowRTL(false);
+  I18nManager.forceRTL(false);
+}
 
 /** UI-preview escape hatch: renders the real production screens/components
  *  with mock data, skipping login and every backend call. Set only via

@@ -14,6 +14,11 @@ export interface Conversation {
   activityId: string | null;
   lastMessageAt: string | null;
   lastMessagePreview: string;
+  /** Who sent the last message — "Maya", or "You" when it was the viewer.
+   *  Null when there's no message yet. Group chats show this ahead of the
+   *  preview ("Maya: See you tomorrow"); direct chats don't need it since
+   *  the header already says who the conversation is with. */
+  lastMessageSenderName: string | null;
   hasUnread: boolean;
   /** Group chats only — drives the Upcoming/Past split and the richer row
    *  content (thumbnail, date, location, participant count). Null for
@@ -89,7 +94,16 @@ export function useConversations(): UseConversationsResult {
       const groupActivityIds = (chatRows ?? [])
         .filter((c) => c.type === 'group' && c.activity_id)
         .map((c) => c.activity_id as string);
-      const directOtherUserIds = Array.from(otherUserIdByChat.values());
+      // Every distinct sender whose name we might need to show — direct
+      // chat partners, plus whoever sent each chat's most recent message
+      // (so a group row can read "Maya: See you tomorrow" instead of just
+      // the bare message text).
+      const senderIdsNeedingProfiles = new Set<string>();
+      for (const otherUserId of otherUserIdByChat.values()) senderIdsNeedingProfiles.add(otherUserId);
+      for (const message of lastMessageByChat.values()) {
+        if (message.sender_id !== userId) senderIdsNeedingProfiles.add(message.sender_id);
+      }
+      const profileIdsToFetch = Array.from(senderIdsNeedingProfiles);
 
       const [{ data: activityRows }, { data: profileRows }, { data: attendeeRows }] = await Promise.all([
         groupActivityIds.length > 0
@@ -108,8 +122,8 @@ export function useConversations(): UseConversationsResult {
                 address_label: string;
               }[],
             }),
-        directOtherUserIds.length > 0
-          ? supabase.from('public_profiles').select('id, display_name, avatar_url').in('id', directOtherUserIds)
+        profileIdsToFetch.length > 0
+          ? supabase.from('public_profiles').select('id, display_name, avatar_url').in('id', profileIdsToFetch)
           : Promise.resolve({ data: [] as { id: string; display_name: string; avatar_url: string | null }[] }),
         groupActivityIds.length > 0
           ? supabase
@@ -132,6 +146,11 @@ export function useConversations(): UseConversationsResult {
         const hasUnread = Boolean(
           lastMessage && lastMessage.sender_id !== userId && (!readAt || lastMessage.created_at > readAt),
         );
+        const lastMessageSenderName = lastMessage
+          ? lastMessage.sender_id === userId
+            ? 'You'
+            : (profileById.get(lastMessage.sender_id)?.display_name ?? null)
+          : null;
 
         if (chat.type === 'direct') {
           const otherUserId = otherUserIdByChat.get(chat.id) ?? null;
@@ -146,6 +165,7 @@ export function useConversations(): UseConversationsResult {
             activityId: null,
             lastMessageAt: lastMessage?.created_at ?? null,
             lastMessagePreview: lastMessage?.content ?? '',
+            lastMessageSenderName,
             hasUnread,
             activity: null,
           };
@@ -162,6 +182,7 @@ export function useConversations(): UseConversationsResult {
           activityId: chat.activity_id,
           lastMessageAt: lastMessage?.created_at ?? null,
           lastMessagePreview: lastMessage?.content ?? '',
+          lastMessageSenderName,
           hasUnread,
           activity: activityRow
             ? {

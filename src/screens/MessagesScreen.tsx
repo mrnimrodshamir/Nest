@@ -1,6 +1,7 @@
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { View, Text, SectionList, Pressable, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native';
 import { ChatCircleDots, CaretDown, CaretUp, UsersThree } from 'phosphor-react-native';
 import { theme, typography, spacing, radius } from '@/theme';
 import { StateCard } from '@/components/StateCard';
@@ -9,8 +10,9 @@ import { CoverImage } from '@/components/CoverImage';
 import { useConversations, type Conversation } from '@/hooks/useConversations';
 import { formatRelativeTime } from '@/utils/formatRelativeTime';
 import { formatStartTime } from '@/utils/formatStartTime';
+import { formatPastRelativeTime } from '@/utils/formatPastRelativeTime';
 import { CATEGORY_LABELS } from '@/types/activity';
-import { groupConversations } from '@/utils/groupConversations';
+import { groupConversations, isUpcomingActivity } from '@/utils/groupConversations';
 
 interface MessagesScreenProps {
   onOpenConversation: (conversation: Conversation) => void;
@@ -26,6 +28,19 @@ type Section = { key: 'upcoming' | 'direct' | 'past'; title: string; data: Conve
 export function MessagesScreen({ onOpenConversation }: MessagesScreenProps) {
   const { conversations, isLoading, error, refresh } = useConversations();
   const [pastOpen, setPastOpen] = useState(false);
+
+  // Chats stays mounted for the whole session (a sibling tab under the
+  // same root, not a fresh screen instance each visit) — without this,
+  // useConversations only ever fetched once, on the very first time this
+  // tab was shown, so a chat created for a brand-new activity while the
+  // mother was elsewhere in the app never appeared until something else
+  // forced a remount.
+  useFocusEffect(
+    useCallback(() => {
+      refresh();
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []),
+  );
 
   const sections = useMemo<Section[]>(() => {
     const { upcoming, past, direct } = groupConversations(conversations);
@@ -62,7 +77,11 @@ export function MessagesScreen({ onOpenConversation }: MessagesScreenProps) {
         }
         renderItem={({ item }) =>
           item.activity ? (
-            <ActivityConversationRow conversation={item} onPress={() => onOpenConversation(item)} />
+            <ActivityConversationRow
+              conversation={item}
+              isPast={!isUpcomingActivity(item.activity)}
+              onPress={() => onOpenConversation(item)}
+            />
           ) : (
             <DirectConversationRow conversation={item} onPress={() => onOpenConversation(item)} />
           )
@@ -84,8 +103,23 @@ export function MessagesScreen({ onOpenConversation }: MessagesScreenProps) {
   );
 }
 
-function ActivityConversationRow({ conversation, onPress }: { conversation: Conversation; onPress: () => void }) {
+function ActivityConversationRow({
+  conversation,
+  isPast,
+  onPress,
+}: {
+  conversation: Conversation;
+  isPast: boolean;
+  onPress: () => void;
+}) {
   const activity = conversation.activity!;
+  const timingLabel = isPast ? formatPastRelativeTime(activity.startTime) : formatStartTime(activity.startTime);
+  const previewText = conversation.lastMessagePreview
+    ? conversation.lastMessageSenderName
+      ? `${conversation.lastMessageSenderName}: ${conversation.lastMessagePreview}`
+      : conversation.lastMessagePreview
+    : 'Say hello 👋';
+
   return (
     <Pressable style={styles.activityRow} onPress={onPress} accessibilityRole="button">
       <View style={styles.activityThumb}>
@@ -99,14 +133,14 @@ function ActivityConversationRow({ conversation, onPress }: { conversation: Conv
           {conversation.hasUnread && <View style={styles.unreadDot} />}
         </View>
         <Text style={styles.activityMeta} numberOfLines={1}>
-          {CATEGORY_LABELS[activity.category] ?? CATEGORY_LABELS.other} · {formatStartTime(activity.startTime)} · {activity.locationLabel}
+          {CATEGORY_LABELS[activity.category] ?? CATEGORY_LABELS.other} · {timingLabel} · {activity.locationLabel}
         </Text>
         <View style={styles.activityFooterLine}>
           <Text
             style={[styles.activityPreview, conversation.hasUnread && styles.unreadText]}
             numberOfLines={1}
           >
-            {conversation.lastMessagePreview || 'Say hello 👋'}
+            {previewText}
           </Text>
           <View style={styles.activityFooterRight}>
             <UsersThree size={12} color={theme.text.muted} weight="bold" />

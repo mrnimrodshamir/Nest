@@ -130,11 +130,14 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-start',
   },
   imageFeed: {
-    height: 96,
+    // Matches the source artwork's own 4:3 aspect ratio, so resizeMode
+    // "cover" never has to crop away meaningful content the way a short,
+    // wide fixed height forced it to.
+    aspectRatio: 4 / 3,
     padding: spacing.sm,
   },
   imageRail: {
-    height: 80,
+    aspectRatio: 4 / 3,
   },
   pillRow: { flexDirection: 'row', gap: spacing.xs, alignSelf: 'flex-start' },
   categoryPill: {

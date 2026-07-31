@@ -26,6 +26,7 @@ import { FALLBACK_LOCATION } from '@/constants/location';
 import type { Activity, ActivityCategory } from '@/types/activity';
 import { CATEGORY_LABELS } from '@/types/activity';
 import { useNearbyActivities } from '@/hooks/useNearbyActivities';
+import { useAuth } from '@/hooks/useAuth';
 
 const CATEGORIES: Array<{ key: ActivityCategory | 'all'; label: string }> = [
   { key: 'all', label: 'All' },
@@ -55,6 +56,7 @@ interface DiscoverScreenProps {
 }
 
 export function DiscoverScreen({ onOpenActivity, onHostActivity, mockActivities }: DiscoverScreenProps) {
+  const { profile } = useAuth();
   const [selectedCategory, setSelectedCategory] = useState<ActivityCategory | 'all'>('all');
   const [selectedActivityId, setSelectedActivityId] = useState<string | null>(null);
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
@@ -97,8 +99,18 @@ export function DiscoverScreen({ onOpenActivity, onHostActivity, mockActivities 
   // the sheet + toggle to the same predictable collapsed state — never
   // restore whatever expanded/list state was left behind, which is what
   // made the sheet feel like it "randomly" covered the map on return.
+  // Set the moment a focus-triggered refresh is requested; cleared once
+  // that refresh actually lands and the map has re-centered on the
+  // (possibly changed) result set. Without this, a newly created activity
+  // could exist in feedActivities but sit outside the map's current
+  // camera position — initialRegion only applies once, at first mount —
+  // so it would silently be off-screen until some other action happened
+  // to move the camera.
+  const pendingRecenter = useRef(false);
+
   useFocusEffect(
     useCallback(() => {
+      pendingRecenter.current = true;
       refresh();
       sheetRef.current?.snapToIndex(SHEET_PEEK_INDEX);
       sheetIndex.current = SHEET_PEEK_INDEX;
@@ -126,12 +138,15 @@ export function DiscoverScreen({ onOpenActivity, onHostActivity, mockActivities 
     });
   }, [feedActivities, selectedCategory, searchQuery]);
 
-  const greeting = useMemo(() => {
-    const hour = new Date().getHours();
-    if (hour < 12) return 'Good morning';
-    if (hour < 18) return 'Good afternoon';
-    return 'Good evening';
-  }, []);
+  // Deliberately not memoized: DiscoverScreen stays mounted for the whole
+  // session, so a useMemo with an empty dependency array (the previous
+  // bug) froze this at whatever hour the app happened to first open,
+  // never updating to "afternoon"/"evening" as the day went on. Plain
+  // recomputation on every render is cheap and always correct.
+  const hour = new Date().getHours();
+  const timeOfDayGreeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
+  const firstName = profile?.displayName?.trim().split(' ')[0];
+  const greeting = firstName ? `${timeOfDayGreeting}, ${firstName}` : timeOfDayGreeting;
 
   const initialRegion: Region = useMemo(() => {
     const first = feedActivities[0];
@@ -142,6 +157,12 @@ export function DiscoverScreen({ onOpenActivity, onHostActivity, mockActivities 
       longitudeDelta: 0.04,
     };
   }, [feedActivities]);
+
+  useEffect(() => {
+    if (!pendingRecenter.current || isRefreshing) return;
+    pendingRecenter.current = false;
+    mapRef.current?.animateToRegion(initialRegion, 350);
+  }, [isRefreshing, initialRegion]);
 
   const focusMapOn = useCallback((activity: Activity) => {
     mapRef.current?.animateToRegion(
@@ -296,6 +317,9 @@ export function DiscoverScreen({ onOpenActivity, onHostActivity, mockActivities 
           <Text style={styles.sheetTitle}>
             {showSkeleton ? 'Finding activities…' : `${filteredFeed.length} nearby`}
           </Text>
+          {!showSkeleton && filteredFeed.length > 0 && (
+            <Text style={styles.sheetSubtitle}>Swipe up to see them all</Text>
+          )}
         </BottomSheetView>
 
         {showSkeleton ? (
@@ -502,6 +526,7 @@ const styles = StyleSheet.create({
   sheetHandle: { backgroundColor: theme.border.strong, width: 36 },
   sheetHeader: { paddingHorizontal: spacing.lg, paddingBottom: spacing.sm },
   sheetTitle: { ...typography.headline, color: theme.text.primary },
+  sheetSubtitle: { ...typography.footnote, color: theme.text.secondary, marginTop: 2 },
   listContent: { paddingBottom: spacing['6xl'] },
   feedItem: { paddingHorizontal: spacing.lg },
 });

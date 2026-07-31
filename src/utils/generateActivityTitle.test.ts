@@ -20,25 +20,41 @@ test('relativeDayWord: further out is the weekday name', () => {
   assert.equal(relativeDayWord(friday, now), 'Friday');
 });
 
-test('generateActivityTitle: joins type, day, and short location', () => {
-  const startsAt = new Date();
-  startsAt.setHours(startsAt.getHours() + 2);
-  const title = generateActivityTitle('stroller_walk', startsAt, 'HaYarkon Park, main entrance');
-  assert.ok(title.startsWith('Stroller walk ·'));
-  assert.ok(title.endsWith('HaYarkon Park'));
+const NOW = new Date(2026, 6, 31, 8, 0); // Friday, Jul 31 2026, 8am
+
+test('generateActivityTitle: today reads as a natural sentence with no redundant "today"', () => {
+  const title = generateActivityTitle('coffee_meetup', new Date(2026, 6, 31, 10, 0), 'Dizengoff Square, near the fountain', NOW);
+  assert.equal(title, 'Coffee meetup at Dizengoff Square');
+});
+
+test('generateActivityTitle: tomorrow matches the product example exactly', () => {
+  const title = generateActivityTitle('stroller_walk', new Date(2026, 7, 1, 9, 0), 'HaYarkon Park', NOW);
+  assert.equal(title, 'Stroller walk tomorrow at HaYarkon Park');
+});
+
+test('generateActivityTitle: a further-out weekday matches the product example exactly', () => {
+  const title = generateActivityTitle('yoga', new Date(2026, 8, 4, 8, 0), 'Tel Aviv Port', NOW);
+  assert.equal(title, 'Yoga on Friday at Tel Aviv Port');
+});
+
+test('generateActivityTitle: never collapses to a bare category word', () => {
+  const title = generateActivityTitle('coffee_meetup', new Date(2026, 6, 31, 10, 0), 'Dizengoff Square', NOW);
+  assert.notEqual(title, 'Coffee meetup');
+  assert.ok(title.length > 'Coffee meetup'.length);
 });
 
 test('generateActivityTitle: strips address detail after the first comma', () => {
-  const startsAt = new Date();
-  startsAt.setHours(startsAt.getHours() + 2);
-  const title = generateActivityTitle('coffee_meetup', startsAt, 'Dizengoff Square, near the fountain');
+  const title = generateActivityTitle('coffee_meetup', new Date(2026, 6, 31, 10, 0), 'Dizengoff Square, near the fountain', NOW);
   assert.ok(title.includes('Dizengoff Square'));
   assert.ok(!title.includes('near the fountain'));
 });
 
-test('generateActivityTitle: empty location name omits the location segment', () => {
-  const startsAt = new Date();
-  startsAt.setHours(startsAt.getHours() + 2);
-  const title = generateActivityTitle('picnic', startsAt, '');
-  assert.equal(title.split(' · ').length, 2);
+test('generateActivityTitle: empty location name still reads as a complete phrase', () => {
+  const title = generateActivityTitle('picnic', new Date(2026, 6, 31, 10, 0), '', NOW);
+  assert.equal(title, 'Picnic');
+});
+
+test('generateActivityTitle: unrecognized category falls back to "Other" rather than crashing', () => {
+  const title = generateActivityTitle('some_future_category', new Date(2026, 6, 31, 10, 0), '', NOW);
+  assert.equal(title, 'Other');
 });

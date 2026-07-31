@@ -348,7 +348,7 @@ export function ActivityForm({
           <ComingWithSelector children={children} selectedChildIds={hostChildIds} onChange={setHostChildIds} />
 
           <Pressable style={styles.moreToggle} onPress={() => setMoreOpen((v) => !v)}>
-            <Text style={styles.moreToggleLabel}>More options</Text>
+            <Text style={styles.moreToggleLabel}>Capacity, age range & details</Text>
             {moreOpen ? (
               <CaretUp size={16} color={theme.text.secondary} />
             ) : (
@@ -361,7 +361,7 @@ export function ActivityForm({
               <Pressable style={styles.uploadCoverButton} onPress={handlePickCoverPhoto}>
                 <Camera size={16} color={theme.text.primary} />
                 <Text style={styles.uploadCoverLabel}>
-                  {coverUri ? 'Change your photo' : 'Upload your own photo'}
+                  {coverUri ? 'Change activity cover photo' : 'Upload an activity cover photo'}
                 </Text>
               </Pressable>
 
@@ -478,7 +478,10 @@ const styles = StyleSheet.create({
   ageRangeLabel: { ...typography.footnote, color: theme.text.secondary, marginBottom: spacing.xs },
   formError: { ...typography.footnote, color: theme.semantic.danger, textAlign: 'center' },
   coverPreview: {
-    height: 140,
+    // Matches the source artwork's 4:3 aspect ratio so the preview here
+    // matches exactly what Discovery/Detail/Chats will actually show —
+    // no crop surprise between "what I picked" and "what renders".
+    aspectRatio: 4 / 3,
     borderRadius: radius.lg,
     overflow: 'hidden',
     backgroundColor: theme.background.surface,

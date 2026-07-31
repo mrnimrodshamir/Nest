@@ -13,14 +13,15 @@ export function relativeDayWord(date: Date, now: Date = new Date()): string {
   return date.toLocaleDateString(undefined, { weekday: 'long' });
 }
 
-/** "Today" / "Tomorrow" / "Friday morning" — adds a daypart once a date is
- *  far enough out that a bare weekday alone reads as ambiguous. */
-function dateLabel(date: Date, now: Date = new Date()): string {
+/** '' / ' tomorrow' / ' on Friday' — a natural-sentence fragment, not a
+ *  bare day word, so it slots directly into "{category}{temporal} at
+ *  {location}" without an awkward join. Today is left implicit (nobody
+ *  says "coffee meetup today at Dizengoff Square" out loud). */
+function temporalPhrase(date: Date, now: Date = new Date()): string {
   const day = relativeDayWord(date, now);
-  if (day === 'Today' || day === 'Tomorrow') return day;
-  const hour = date.getHours();
-  const daypart = hour < 12 ? 'morning' : hour < 17 ? 'afternoon' : 'evening';
-  return `${day} ${daypart}`;
+  if (day === 'Today') return '';
+  if (day === 'Tomorrow') return ' tomorrow';
+  return ` on ${day}`;
 }
 
 /** The part of a location name worth putting in a title — "HaYarkon Park,
@@ -30,18 +31,26 @@ function shortLocationLabel(locationName: string): string {
   return first || locationName.trim();
 }
 
-/** Auto-generated activity title — "Stroller walk · Tomorrow · Yarkon Park" —
- *  built from data the host already entered, so creating an activity never
- *  requires typing a title by hand. Recomputed whenever type/date/location
- *  change, unless the host has intentionally customized it (see
- *  ActivityForm's `titleCustomized` state). */
+/** Auto-generated activity title — a natural sentence built from data the
+ *  host already entered, so creating an activity never requires typing a
+ *  title by hand:
+ *    "Coffee meetup at Dizengoff Square"
+ *    "Stroller walk tomorrow at HaYarkon Park"
+ *    "Yoga on Friday at Tel Aviv Port"
+ *  Recomputed whenever type/date/location change, unless the host has
+ *  intentionally customized it (see ActivityForm's `titleCustomized`
+ *  state). Never falls back to a bare category word — even with no
+ *  location picked yet, at minimum "{Category}{temporal}" still reads as
+ *  a complete phrase ("Coffee meetup", "Stroller walk tomorrow"). */
 export function generateActivityTitle(
   activityType: ActivityCategory,
   startsAt: Date,
   locationName: string,
+  now: Date = new Date(),
 ): string {
-  const parts = [CATEGORY_LABELS[activityType], dateLabel(startsAt)];
+  const category = CATEGORY_LABELS[activityType] ?? CATEGORY_LABELS.other;
+  const temporal = temporalPhrase(startsAt, now);
   const location = shortLocationLabel(locationName);
-  if (location) parts.push(location);
-  return parts.join(' · ');
+  if (!location) return `${category}${temporal}`;
+  return `${category}${temporal} at ${location}`;
 }

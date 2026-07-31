@@ -80,7 +80,7 @@ export function ActivityMapPin({ activity, selected, onPress }: ActivityMapPinPr
       anchor={{ x: 0.5, y: 0.5 }}
     >
       <View style={[styles.pin, { backgroundColor: color }, selected && styles.pinSelected]}>
-        <Icon size={selected ? 18 : 14} color={theme.text.inverse} weight="fill" />
+        <Icon size={selected ? 22 : 18} color={theme.text.inverse} weight="fill" />
       </View>
     </Marker>
   );
@@ -88,23 +88,27 @@ export function ActivityMapPin({ activity, selected, onPress }: ActivityMapPinPr
 
 const styles = StyleSheet.create({
   pin: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    borderWidth: 2,
-    borderColor: theme.background.surface,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOpacity: 0.15,
-    shadowRadius: 3,
-    shadowOffset: { width: 0, height: 1 },
-  },
-  pinSelected: {
+    // Bigger and higher-contrast than Apple Maps' own default markers —
+    // a plain 30px dot read as "just another map element" rather than a
+    // deliberate, branded product marker.
     width: 38,
     height: 38,
     borderRadius: 19,
     borderWidth: 3,
+    borderColor: theme.background.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 4,
+  },
+  pinSelected: {
+    width: 46,
+    height: 46,
+    borderRadius: 23,
+    borderWidth: 4,
   },
 });
 

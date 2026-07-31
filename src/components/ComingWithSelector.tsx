@@ -38,19 +38,9 @@ export function ComingWithSelector({ label = 'Who are you coming with?', childre
     <View style={styles.container}>
       <Text style={styles.label}>{label}</Text>
       <View style={styles.options}>
-        <Pressable
-          style={[styles.option, comingAlone && styles.optionSelected]}
-          onPress={() => onChange([])}
-          accessibilityRole="radio"
-          accessibilityState={{ checked: comingAlone }}
-          accessibilityLabel="Coming alone"
-        >
-          <View style={[styles.checkbox, comingAlone && styles.checkboxSelected]}>
-            {comingAlone && <Check size={12} color={theme.text.inverse} weight="bold" />}
-          </View>
-          <Text style={[styles.optionLabel, comingAlone && styles.optionLabelSelected]}>Coming alone</Text>
-        </Pressable>
-
+        {/* Children first — attending with a child is the app's default,
+            expected use case, not an equal-weight alternative to going
+            alone. */}
         {children.map((child) => {
           const selected = selectedChildIds.includes(child.id);
           const age = child.birthdate ? formatBabyAge(birthdateToMonths(child.birthdate)) : null;
@@ -73,6 +63,23 @@ export function ComingWithSelector({ label = 'Who are you coming with?', childre
             </Pressable>
           );
         })}
+
+        {/* Secondary, intentional alternative — visually quieter than the
+            child options above. */}
+        <Pressable
+          style={[styles.option, styles.aloneOption, comingAlone && styles.optionSelected]}
+          onPress={() => onChange([])}
+          accessibilityRole="radio"
+          accessibilityState={{ checked: comingAlone }}
+          accessibilityLabel="Coming alone"
+        >
+          <View style={[styles.checkbox, comingAlone && styles.checkboxSelected]}>
+            {comingAlone && <Check size={12} color={theme.text.inverse} weight="bold" />}
+          </View>
+          <Text style={[styles.optionLabel, styles.aloneLabel, comingAlone && styles.optionLabelSelected]}>
+            Coming alone
+          </Text>
+        </Pressable>
       </View>
     </View>
   );
@@ -95,6 +102,8 @@ const styles = StyleSheet.create({
     minHeight: 48,
   },
   optionSelected: { borderColor: theme.brand.primary, backgroundColor: theme.brand.primaryTint },
+  aloneOption: { borderStyle: 'dashed' },
+  aloneLabel: { color: theme.text.secondary },
   checkbox: {
     width: 20,
     height: 20,
