@@ -156,8 +156,21 @@ function AppInner() {
     // longer exists — try/catch around navigation, since a bad or stale
     // activityId shouldn't crash the app.
     function handleNotificationData(data: Record<string, unknown> | undefined) {
+      if (!navigationRef.isReady()) return;
       const activityId = data?.activityId as string | undefined;
-      if (!activityId || !navigationRef.isReady()) return;
+      const otherUserId = data?.otherUserId as string | undefined;
+      // A direct-message notification carries otherUserId, not activityId --
+      // checking activityId alone here silently dropped every tap on a DM
+      // push notification.
+      if (data?.kind === 'direct_message' && otherUserId) {
+        try {
+          navigationRef.navigate('Chat', { kind: 'direct', otherUserId });
+        } catch {
+          // Content no longer reachable — stay put rather than crash.
+        }
+        return;
+      }
+      if (!activityId) return;
       try {
         if (data?.kind === 'chat') {
           navigationRef.navigate('Chat', {

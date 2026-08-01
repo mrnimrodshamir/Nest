@@ -16,12 +16,18 @@ import type { ActivityArtVariant } from './activityArtVariant';
  *  surface that renders a cover) picks it up automatically via
  *  resolveActivityArt.ts.
  *
- *  Currently empty — the 63-file library (21 categories x thumb/card/hero)
- *  has not been supplied yet. Every surface falls back through
- *  resolveActivityArt's "other" variant, and then to CuratedCover's
- *  aspect-neutral placeholder scene, until real files are added here. Do
- *  NOT add a require() for a file that doesn't exist yet — Metro fails the
- *  entire bundle on a missing static asset. */
+ *  Only stroller_walk is installed so far (a style-proof batch) — every
+ *  other category still falls back through resolveActivityArt's "other"
+ *  variant, then to CuratedCover's aspect-neutral placeholder scene, until
+ *  the rest of the 63-file library is supplied. Do NOT add a require() for
+ *  a file that doesn't exist yet — Metro fails the entire bundle on a
+ *  missing static asset. */
 export const ACTIVITY_ART_ASSETS: Partial<
   Record<ActivityCategory, Partial<Record<ActivityArtVariant, ImageSourcePropType>>>
-> = {};
+> = {
+  stroller_walk: {
+    thumb: require('../../assets/activity-art/stroller_walk_thumb.jpg'),
+    card: require('../../assets/activity-art/stroller_walk_card.jpg'),
+    hero: require('../../assets/activity-art/stroller_walk_hero.jpg'),
+  },
+};
