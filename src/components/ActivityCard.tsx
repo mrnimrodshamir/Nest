@@ -130,10 +130,12 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-start',
   },
   imageFeed: {
-    // Matches the source artwork's own 4:3 aspect ratio, so resizeMode
-    // "cover" never has to crop away meaningful content the way a short,
-    // wide fixed height forced it to.
-    aspectRatio: 4 / 3,
+    // A compact 16:9 banner, not the source's full 4:3 — a Discovery card
+    // is a scannable list item, not a hero, so the image should support
+    // the title/meta text below it rather than dominate the card. Still
+    // wide enough that resizeMode "cover" only trims top/bottom, never
+    // stretches or squeezes the source art.
+    aspectRatio: 16 / 9,
     padding: spacing.sm,
   },
   imageRail: {

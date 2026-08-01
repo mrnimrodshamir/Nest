@@ -60,24 +60,7 @@ export function CreateActivityScreen({
         </View>
 
         <ActivityForm
-          initialValues={{
-            activityType: 'stroller_walk',
-            title: '',
-            description: '',
-            startsAt: (() => {
-              const d = new Date();
-              d.setHours(d.getHours() + 2, 0, 0, 0);
-              return d;
-            })(),
-            durationMinutes: 60,
-            latitude: initialLatitude,
-            longitude: initialLongitude,
-            locationName: '',
-            maxParticipants: 8,
-            babyMinAgeMonths: null,
-            babyMaxAgeMonths: null,
-            notes: '',
-          }}
+          initialLocation={{ latitude: initialLatitude, longitude: initialLongitude }}
           submitLabel="Create activity"
           // Also disabled while a host-join retry is pending — the activity
           // already exists at this point, so tapping "Create activity"

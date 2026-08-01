@@ -87,6 +87,22 @@ export function useChatMessages(chatId: string | null): UseChatMessagesResult {
       const ordered = (messageRows ?? []).slice().reverse();
       const hydrated = await Promise.all(
         ordered.map(async (row) => {
+          const isMine = row.sender_id === currentUserIdRef.current;
+          // Own messages always read "You" — resolving your own profile
+          // just to print your own display name back at you (differently
+          // than a freshly-sent message in the same session, which already
+          // uses 'You') is an inconsistency, not a feature.
+          if (isMine) {
+            return {
+              id: row.id,
+              senderId: row.sender_id,
+              senderName: 'You',
+              senderAvatarUrl: null,
+              content: row.content,
+              createdAt: row.created_at,
+              isMine: true,
+            };
+          }
           const sender = await resolveSender(row.sender_id);
           return {
             id: row.id,
@@ -95,7 +111,7 @@ export function useChatMessages(chatId: string | null): UseChatMessagesResult {
             senderAvatarUrl: sender.avatar_url,
             content: row.content,
             createdAt: row.created_at,
-            isMine: row.sender_id === currentUserIdRef.current,
+            isMine: false,
           };
         }),
       );

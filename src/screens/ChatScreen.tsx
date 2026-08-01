@@ -107,7 +107,9 @@ export function ChatScreen({ chatId, resolveError, title, onBack }: ChatScreenPr
 function MessageBubble({ message, onRetry }: { message: ChatMessage; onRetry: () => void }) {
   return (
     <View style={[styles.bubbleRow, message.isMine && styles.bubbleRowMine]}>
-      {!message.isMine && <Text style={styles.senderName}>{message.senderName}</Text>}
+      <Text style={[styles.senderName, message.isMine && styles.senderNameMine]}>
+        {message.senderName}
+      </Text>
       <View style={[styles.bubble, message.isMine ? styles.bubbleMine : styles.bubbleTheirs]}>
         <Text style={[styles.bubbleText, message.isMine && styles.bubbleTextMine]}>
           {message.content}
@@ -148,6 +150,7 @@ const styles = StyleSheet.create({
   bubbleRow: { alignItems: 'flex-start', marginBottom: spacing.xs },
   bubbleRowMine: { alignItems: 'flex-end' },
   senderName: { ...typography.caption, color: theme.text.muted, marginBottom: 2, marginLeft: spacing.sm },
+  senderNameMine: { marginLeft: 0, marginRight: spacing.sm },
   bubble: {
     maxWidth: '80%',
     borderRadius: radius.lg,

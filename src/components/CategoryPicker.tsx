@@ -58,8 +58,10 @@ const styles = StyleSheet.create({
   row: { gap: spacing.md, paddingRight: spacing.lg },
   item: { width: 76, alignItems: 'center', gap: spacing.xs },
   thumb: {
-    width: 68,
-    height: 68,
+    // 4:3, matching the source art, instead of a square crop that throws
+    // away a quarter of the image's width for no reason.
+    width: 76,
+    aspectRatio: 4 / 3,
     borderRadius: radius.lg,
     overflow: 'hidden',
     borderWidth: 2,

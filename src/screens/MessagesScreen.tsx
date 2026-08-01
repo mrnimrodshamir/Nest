@@ -121,7 +121,11 @@ function ActivityConversationRow({
     : 'Say hello 👋';
 
   return (
-    <Pressable style={styles.activityRow} onPress={onPress} accessibilityRole="button">
+    <Pressable
+      style={[styles.activityRow, conversation.hasUnread && styles.activityRowUnread]}
+      onPress={onPress}
+      accessibilityRole="button"
+    >
       <View style={styles.activityThumb}>
         <CoverImage url={activity.coverImageUrl} fallbackCategory={activity.category} style={styles.activityThumbFill} />
       </View>
@@ -132,6 +136,9 @@ function ActivityConversationRow({
           </Text>
           {conversation.hasUnread && <View style={styles.unreadDot} />}
         </View>
+        {/* The activity's own scheduled time is the main time context for
+            an activity chat — not when the last message happened to be
+            sent, which competes with it and reads as "when this is". */}
         <Text style={styles.activityMeta} numberOfLines={1}>
           {CATEGORY_LABELS[activity.category] ?? CATEGORY_LABELS.other} · {timingLabel} · {activity.locationLabel}
         </Text>
@@ -145,9 +152,6 @@ function ActivityConversationRow({
           <View style={styles.activityFooterRight}>
             <UsersThree size={12} color={theme.text.muted} weight="bold" />
             <Text style={styles.activityCount}>{activity.attendeeCount}</Text>
-            {conversation.lastMessageAt && (
-              <Text style={styles.timestamp}>{formatRelativeTime(conversation.lastMessageAt)}</Text>
-            )}
           </View>
         </View>
       </View>
@@ -217,9 +221,17 @@ const styles = StyleSheet.create({
     borderColor: theme.border.default,
     marginBottom: spacing.sm,
   },
+  // A new message in a group chat should be obviously different at a
+  // glance, not just a small dot easy to miss while scanning the list.
+  activityRowUnread: {
+    backgroundColor: theme.brand.primaryTint,
+    borderColor: theme.brand.primary,
+    borderWidth: 1.5,
+  },
   activityThumb: {
-    width: 56,
-    height: 56,
+    // 4:3, matching the source art, instead of a square crop.
+    width: 64,
+    aspectRatio: 4 / 3,
     borderRadius: radius.md,
     overflow: 'hidden',
     backgroundColor: theme.brand.accentTint,

@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, TextInput, Pressable, ScrollView, StyleSheet } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
-import { CaretDown, CaretUp, Camera } from 'phosphor-react-native';
+import { Camera } from 'phosphor-react-native';
 import { theme, typography, spacing, radius } from '@/theme';
 import { CategoryChip } from '@/components/CategoryChip';
 import { CategoryPicker } from '@/components/CategoryPicker';
@@ -49,7 +49,16 @@ export interface ActivityFormInitialValues {
 }
 
 interface ActivityFormProps {
+  /** Only ever set for Edit, where every field must start at the activity's
+   *  real current value. Create never passes this — see `initialLocation`
+   *  for the one piece of starting data Create actually needs. Passing a
+   *  populated object here for Create would silently disable the whole
+   *  create-only flow (Review step, reactive title generation, default-
+   *  child auto-select all gate on `!initialValues`). */
   initialValues?: ActivityFormInitialValues;
+  /** Create-only: where to initially center the map, from the device's
+   *  current location. Ignored once `initialValues` is set. */
+  initialLocation?: { latitude: number; longitude: number };
   submitLabel: string;
   isSubmitting: boolean;
   stage?: CreateActivityStage | 'saving' | null;
@@ -61,6 +70,7 @@ interface ActivityFormProps {
 
 export function ActivityForm({
   initialValues,
+  initialLocation,
   submitLabel,
   isSubmitting,
   stage,
@@ -124,8 +134,12 @@ export function ActivityForm({
   const [customDuration, setCustomDuration] = useState(
     !(DURATION_OPTIONS_MINUTES as readonly number[]).includes(initialDuration),
   );
-  const [latitude, setLatitude] = useState(initialValues?.latitude ?? 32.0853);
-  const [longitude, setLongitude] = useState(initialValues?.longitude ?? 34.7818);
+  const [latitude, setLatitude] = useState(
+    initialValues?.latitude ?? initialLocation?.latitude ?? 32.0853,
+  );
+  const [longitude, setLongitude] = useState(
+    initialValues?.longitude ?? initialLocation?.longitude ?? 34.7818,
+  );
   const [locationName, setLocationName] = useState(initialValues?.locationName ?? '');
   const [maxParticipants, setMaxParticipants] = useState(initialValues?.maxParticipants ?? 8);
   const [noLimit, setNoLimit] = useState(initialValues ? initialValues.maxParticipants === null : false);
@@ -143,7 +157,6 @@ export function ActivityForm({
   const [maxYears, setMaxYears] = useState(initialMax.years);
   const [maxMonths, setMaxMonths] = useState(initialMax.months);
   const [validationError, setValidationError] = useState<string | null>(null);
-  const [moreOpen, setMoreOpen] = useState(false);
   // Synchronous guard alongside isSubmitting (state) — a fast double-tap
   // can fire two onPress handlers before the disabled-button re-render
   // commits, same pattern used for auth screens' submit buttons.
@@ -272,6 +285,12 @@ export function ActivityForm({
               style={styles.coverPreviewFill}
             />
           </View>
+          <Pressable style={styles.uploadCoverButton} onPress={handlePickCoverPhoto}>
+            <Camera size={16} color={theme.text.primary} />
+            <Text style={styles.uploadCoverLabel}>
+              {coverUri ? 'Change activity cover photo' : 'Upload an activity cover photo'}
+            </Text>
+          </Pressable>
 
           {titleCustomized ? (
             <Field label="Title">
@@ -352,79 +371,62 @@ export function ActivityForm({
 
           <ComingWithSelector children={children} selectedChildIds={hostChildIds} onChange={setHostChildIds} />
 
-          <Pressable style={styles.moreToggle} onPress={() => setMoreOpen((v) => !v)}>
-            <Text style={styles.moreToggleLabel}>Capacity, age range & details</Text>
-            {moreOpen ? (
-              <CaretUp size={16} color={theme.text.secondary} />
-            ) : (
-              <CaretDown size={16} color={theme.text.secondary} />
-            )}
-          </Pressable>
+          <Text style={styles.sectionLabel}>Capacity, age range & details</Text>
+          <View style={styles.moreSection}>
+            <Text style={styles.sectionLabel}>Max participants</Text>
+            <View style={styles.row}>
+              {!noLimit && (
+                <NumberStepper value={maxParticipants} min={2} max={100} onChange={setMaxParticipants} />
+              )}
+              <View style={styles.inlineCheckbox}>
+                <Checkbox checked={noLimit} onToggle={() => setNoLimit((v) => !v)}>
+                  No limit
+                </Checkbox>
+              </View>
+            </View>
 
-          {moreOpen && (
-            <View style={styles.moreSection}>
-              <Pressable style={styles.uploadCoverButton} onPress={handlePickCoverPhoto}>
-                <Camera size={16} color={theme.text.primary} />
-                <Text style={styles.uploadCoverLabel}>
-                  {coverUri ? 'Change activity cover photo' : 'Upload an activity cover photo'}
-                </Text>
-              </Pressable>
-
-              <Text style={styles.sectionLabel}>Max participants</Text>
-              <View style={styles.row}>
-                {!noLimit && (
-                  <NumberStepper value={maxParticipants} min={2} max={100} onChange={setMaxParticipants} />
-                )}
-                <View style={styles.inlineCheckbox}>
-                  <Checkbox checked={noLimit} onToggle={() => setNoLimit((v) => !v)}>
-                    No limit
-                  </Checkbox>
+            <Text style={styles.sectionLabel}>Baby age range</Text>
+            <Checkbox checked={anyAge} onToggle={() => setAnyAge((v) => !v)}>
+              Any age welcome
+            </Checkbox>
+            {!anyAge && (
+              <View style={styles.ageRangeGroup}>
+                <View>
+                  <Text style={styles.ageRangeLabel}>Minimum age</Text>
+                  <YearsMonthsPicker
+                    years={minYears}
+                    months={minMonths}
+                    onChange={(y, m) => {
+                      setMinYears(y);
+                      setMinMonths(m);
+                    }}
+                  />
+                </View>
+                <View>
+                  <Text style={styles.ageRangeLabel}>Maximum age</Text>
+                  <YearsMonthsPicker
+                    years={maxYears}
+                    months={maxMonths}
+                    onChange={(y, m) => {
+                      setMaxYears(y);
+                      setMaxMonths(m);
+                    }}
+                  />
                 </View>
               </View>
+            )}
 
-              <Text style={styles.sectionLabel}>Baby age range</Text>
-              <Checkbox checked={anyAge} onToggle={() => setAnyAge((v) => !v)}>
-                Any age welcome
-              </Checkbox>
-              {!anyAge && (
-                <View style={styles.ageRangeGroup}>
-                  <View>
-                    <Text style={styles.ageRangeLabel}>Minimum age</Text>
-                    <YearsMonthsPicker
-                      years={minYears}
-                      months={minMonths}
-                      onChange={(y, m) => {
-                        setMinYears(y);
-                        setMinMonths(m);
-                      }}
-                    />
-                  </View>
-                  <View>
-                    <Text style={styles.ageRangeLabel}>Maximum age</Text>
-                    <YearsMonthsPicker
-                      years={maxYears}
-                      months={maxMonths}
-                      onChange={(y, m) => {
-                        setMaxYears(y);
-                        setMaxMonths(m);
-                      }}
-                    />
-                  </View>
-                </View>
-              )}
-
-              <Field label="Details (optional)">
-                <TextInput
-                  style={[styles.input, styles.textArea]}
-                  placeholder="Example: Bring water and a mat. We'll meet near the main entrance."
-                  placeholderTextColor={theme.text.muted}
-                  value={description}
-                  onChangeText={setDescription}
-                  multiline
-                />
-              </Field>
-            </View>
-          )}
+            <Field label="Details (optional)">
+              <TextInput
+                style={[styles.input, styles.textArea]}
+                placeholder="Example: Bring water and a mat. We'll meet near the main entrance."
+                placeholderTextColor={theme.text.muted}
+                value={description}
+                onChangeText={setDescription}
+                multiline
+              />
+            </Field>
+          </View>
         </>
       )}
 
@@ -508,14 +510,6 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
   },
   uploadCoverLabel: { ...typography.bodyMedium, color: theme.text.primary },
-  moreToggle: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.xs,
-    paddingVertical: spacing.sm,
-  },
-  moreToggleLabel: { ...typography.bodyMedium, color: theme.text.secondary },
   moreSection: { gap: spacing.lg },
   reviewBlock: { gap: spacing.md },
   reviewRow: {
