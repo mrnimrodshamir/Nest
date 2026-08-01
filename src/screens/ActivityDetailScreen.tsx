@@ -9,7 +9,7 @@ import { theme, typography, spacing, radius } from '@/theme';
 import { PersonCard } from '@/components/PersonCard';
 import type { ActivityDetail } from '@/types/activity';
 import { CATEGORY_LABELS } from '@/types/activity';
-import { formatStartTime } from '@/utils/formatStartTime';
+import { formatExactStartTime } from '@/utils/formatExactStartTime';
 import { formatDuration } from '@/utils/formatDuration';
 import { formatAgeRange } from '@/utils/babyAge';
 import { buildShareMessage } from '@/utils/buildShareMessage';
@@ -304,7 +304,7 @@ export function ActivityDetailScreen({
           </View>
           <Text style={styles.title}>{activity.title}</Text>
           <Text style={styles.meta}>
-            {formatStartTime(activity.startTime)} · {formatDuration(activity.durationMinutes)} ·{' '}
+            {formatExactStartTime(activity.startTime)} · {formatDuration(activity.durationMinutes)} ·{' '}
             {activity.distanceKm.toFixed(1)}km away
           </Text>
           <Text style={styles.meta}>

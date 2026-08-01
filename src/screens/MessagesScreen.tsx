@@ -2,20 +2,21 @@ import React, { useCallback, useMemo, useState } from 'react';
 import { View, Text, SectionList, Pressable, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
-import { ChatCircleDots, CaretDown, CaretUp, UsersThree } from 'phosphor-react-native';
+import { ChatCircleDots, CaretDown, CaretUp, UsersThree, Plus } from 'phosphor-react-native';
 import { theme, typography, spacing, radius } from '@/theme';
 import { StateCard } from '@/components/StateCard';
 import { PersonCard } from '@/components/PersonCard';
 import { CoverImage } from '@/components/CoverImage';
 import { useConversations, type Conversation } from '@/hooks/useConversations';
 import { formatRelativeTime } from '@/utils/formatRelativeTime';
-import { formatStartTime } from '@/utils/formatStartTime';
-import { formatPastRelativeTime } from '@/utils/formatPastRelativeTime';
+import { formatExactStartTime } from '@/utils/formatExactStartTime';
 import { CATEGORY_LABELS } from '@/types/activity';
-import { groupConversations, isUpcomingActivity } from '@/utils/groupConversations';
+import { groupConversations } from '@/utils/groupConversations';
+import { resolveChatsUpcomingState } from '@/utils/resolveChatsUpcomingState';
 
 interface MessagesScreenProps {
   onOpenConversation: (conversation: Conversation) => void;
+  onCreateActivity: () => void;
 }
 
 type Section = { key: 'upcoming' | 'direct' | 'past'; title: string; data: Conversation[] };
@@ -25,7 +26,7 @@ type Section = { key: 'upcoming' | 'direct' | 'past'; title: string; data: Conve
  *  section for person-to-person direct chats (not activity-dated, so they
  *  don't fit either bucket). This reads as "my upcoming communities and
  *  plans," not a generic flat inbox. */
-export function MessagesScreen({ onOpenConversation }: MessagesScreenProps) {
+export function MessagesScreen({ onOpenConversation, onCreateActivity }: MessagesScreenProps) {
   const { conversations, isLoading, error, refresh } = useConversations();
   const [pastOpen, setPastOpen] = useState(false);
 
@@ -42,15 +43,16 @@ export function MessagesScreen({ onOpenConversation }: MessagesScreenProps) {
     }, []),
   );
 
-  const sections = useMemo<Section[]>(() => {
-    const { upcoming, past, direct } = groupConversations(conversations);
+  const { upcoming, past, direct } = useMemo(() => groupConversations(conversations), [conversations]);
+  const upcomingState = resolveChatsUpcomingState(upcoming.length, past.length);
 
+  const sections = useMemo<Section[]>(() => {
     const result: Section[] = [];
     if (upcoming.length > 0) result.push({ key: 'upcoming', title: 'Upcoming activities', data: upcoming });
     if (direct.length > 0) result.push({ key: 'direct', title: 'Direct messages', data: direct });
     if (past.length > 0) result.push({ key: 'past', title: 'Past activities', data: pastOpen ? past : [] });
     return result;
-  }, [conversations, pastOpen]);
+  }, [upcoming, direct, past, pastOpen]);
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
@@ -61,6 +63,14 @@ export function MessagesScreen({ onOpenConversation }: MessagesScreenProps) {
         keyExtractor={(item) => item.chatId}
         contentContainerStyle={conversations.length === 0 ? styles.emptyContent : styles.listContent}
         stickySectionHeadersEnabled={false}
+        // The "no upcoming activities" nudge always sits where the
+        // Upcoming section would be — even when Past/Direct chats exist
+        // below, since those don't answer "what do I do next."
+        ListHeaderComponent={
+          upcomingState !== 'has-upcoming' ? (
+            <UpcomingEmptyState onCreateActivity={onCreateActivity} />
+          ) : null
+        }
         renderSectionHeader={({ section }) =>
           section.key === 'past' ? (
             <Pressable style={styles.pastHeader} onPress={() => setPastOpen((v) => !v)}>
@@ -77,24 +87,20 @@ export function MessagesScreen({ onOpenConversation }: MessagesScreenProps) {
         }
         renderItem={({ item }) =>
           item.activity ? (
-            <ActivityConversationRow
-              conversation={item}
-              isPast={!isUpcomingActivity(item.activity)}
-              onPress={() => onOpenConversation(item)}
-            />
+            <ActivityConversationRow conversation={item} onPress={() => onOpenConversation(item)} />
           ) : (
             <DirectConversationRow conversation={item} onPress={() => onOpenConversation(item)} />
           )
         }
         ListEmptyComponent={
-          !isLoading ? (
+          !isLoading && error ? (
             <StateCard
               icon={ChatCircleDots}
-              title={error ? "Couldn't load your messages." : 'No conversations yet'}
-              body={error ? 'Tap below to try again.' : 'Join or host an activity to start chatting.'}
-              ctaLabel={error ? 'Try again' : undefined}
-              onCtaPress={error ? refresh : undefined}
-              tone={error ? 'warning' : 'default'}
+              title="Couldn't load your messages."
+              body="Tap below to try again."
+              ctaLabel="Try again"
+              onCtaPress={refresh}
+              tone="warning"
             />
           ) : null
         }
@@ -103,17 +109,37 @@ export function MessagesScreen({ onOpenConversation }: MessagesScreenProps) {
   );
 }
 
+function UpcomingEmptyState({ onCreateActivity }: { onCreateActivity: () => void }) {
+  return (
+    <View style={styles.upcomingEmptyWrap}>
+      <Text style={styles.sectionTitle}>Upcoming activities</Text>
+      <View style={styles.upcomingEmptyCard}>
+        <View style={styles.upcomingEmptyText}>
+          <Text style={styles.upcomingEmptyTitle}>No upcoming activities yet</Text>
+          <Text style={styles.upcomingEmptyBody}>Be the first to create one.</Text>
+        </View>
+        <Pressable
+          style={styles.upcomingEmptyCta}
+          onPress={onCreateActivity}
+          accessibilityRole="button"
+          accessibilityLabel="Create an activity"
+        >
+          <Plus size={22} color={theme.text.inverse} weight="bold" />
+        </Pressable>
+      </View>
+    </View>
+  );
+}
+
 function ActivityConversationRow({
   conversation,
-  isPast,
   onPress,
 }: {
   conversation: Conversation;
-  isPast: boolean;
   onPress: () => void;
 }) {
   const activity = conversation.activity!;
-  const timingLabel = isPast ? formatPastRelativeTime(activity.startTime) : formatStartTime(activity.startTime);
+  const timingLabel = formatExactStartTime(activity.startTime);
   const previewText = conversation.lastMessagePreview
     ? conversation.lastMessageSenderName
       ? `${conversation.lastMessageSenderName}: ${conversation.lastMessagePreview}`
@@ -192,6 +218,29 @@ const styles = StyleSheet.create({
   headerTitle: { ...typography.title1, color: theme.text.primary, paddingHorizontal: spacing.lg, paddingVertical: spacing.md },
   listContent: { paddingHorizontal: spacing.lg, paddingBottom: spacing['4xl'], gap: spacing.sm },
   emptyContent: { flexGrow: 1 },
+  upcomingEmptyWrap: { gap: spacing.sm, marginBottom: spacing.md },
+  upcomingEmptyCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: theme.background.surface,
+    borderRadius: radius.lg,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: theme.border.default,
+    padding: spacing.lg,
+    gap: spacing.md,
+  },
+  upcomingEmptyText: { flex: 1, gap: 2 },
+  upcomingEmptyTitle: { ...typography.bodyMedium, color: theme.text.primary },
+  upcomingEmptyBody: { ...typography.footnote, color: theme.text.secondary },
+  upcomingEmptyCta: {
+    width: 48,
+    height: 48,
+    borderRadius: radius.pill,
+    backgroundColor: theme.brand.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   sectionTitle: {
     ...typography.footnote,
     color: theme.text.secondary,

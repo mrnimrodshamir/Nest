@@ -5,6 +5,7 @@ import { CheckCircle, WhatsappLogo, ShareNetwork, CalendarPlus } from 'phosphor-
 import { theme, typography, spacing, radius } from '@/theme';
 import { buildShareMessage, type ShareableActivity } from '@/utils/buildShareMessage';
 import { AddToCalendarSheet } from '@/components/AddToCalendarSheet';
+import { formatExactStartTime } from '@/utils/formatExactStartTime';
 
 interface ShareActivityScreenProps {
   activity: ShareableActivity;
@@ -40,6 +41,7 @@ export function ShareActivityScreen({ activity, onViewActivity }: ShareActivityS
         <Text style={styles.subtitle}>
           "{activity.title}" is live. Invite parents nearby to join you.
         </Text>
+        <Text style={styles.timeLabel}>{formatExactStartTime(activity.startsAt.toISOString())}</Text>
 
         <Pressable style={styles.whatsappButton} onPress={handleWhatsAppShare}>
           <WhatsappLogo size={20} color={theme.text.inverse} weight="fill" />
@@ -98,6 +100,11 @@ const styles = StyleSheet.create({
   title: { ...typography.title1, color: theme.text.primary, textAlign: 'center' },
   subtitle: {
     ...typography.body,
+    color: theme.text.secondary,
+    textAlign: 'center',
+  },
+  timeLabel: {
+    ...typography.footnote,
     color: theme.text.secondary,
     textAlign: 'center',
     marginBottom: spacing.xl,

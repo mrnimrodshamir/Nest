@@ -4,7 +4,7 @@ import { theme, typography, spacing, radius } from '@/theme';
 import type { Activity } from '@/types/activity';
 import { CATEGORY_LABELS } from '@/types/activity';
 import { CoverImage } from '@/components/CoverImage';
-import { formatStartTime } from '@/utils/formatStartTime';
+import { formatExactStartTime } from '@/utils/formatExactStartTime';
 
 interface ActivityCardProps {
   activity: Activity;
@@ -44,7 +44,7 @@ export function ActivityCard({
         pressed && styles.cardPressed,
       ]}
       accessibilityRole="button"
-      accessibilityLabel={`${activity.title}, ${formatStartTime(activity.startTime)}`}
+      accessibilityLabel={`${activity.title}, ${formatExactStartTime(activity.startTime)}`}
     >
       <View style={[styles.image, isRail ? styles.imageRail : styles.imageFeed]}>
         <CoverImage
@@ -57,7 +57,9 @@ export function ActivityCard({
         {!isRail && (
           <View style={styles.pillRow}>
             <View style={styles.categoryPill}>
-              <Text style={styles.categoryPillText}>{CATEGORY_LABELS[activity.category] ?? CATEGORY_LABELS.other}</Text>
+              <Text style={styles.categoryPillText} numberOfLines={1}>
+                {CATEGORY_LABELS[activity.category] ?? CATEGORY_LABELS.other}
+              </Text>
             </View>
             {activity.status === 'full' && (
               <View style={[styles.categoryPill, styles.fullPill]}>
@@ -75,7 +77,7 @@ export function ActivityCard({
 
         <View style={styles.metaRow}>
           <Text style={styles.meta} numberOfLines={1}>
-            {formatStartTime(activity.startTime)}
+            {formatExactStartTime(activity.startTime)}
             {!isRail && !hideDistance && ` · ${activity.distanceKm.toFixed(1)}km`}
           </Text>
 
@@ -143,7 +145,10 @@ const styles = StyleSheet.create({
   imageRail: {
     aspectRatio: 4 / 3,
   },
-  pillRow: { flexDirection: 'row', gap: spacing.xs, alignSelf: 'flex-start' },
+  // Capped so an unusually long category label can never grow into the
+  // opposite (top-right) corner, where MyActivitiesScreen's separate
+  // hosting/attendee badge is absolutely positioned.
+  pillRow: { flexDirection: 'row', gap: spacing.xs, alignSelf: 'flex-start', maxWidth: '55%' },
   categoryPill: {
     backgroundColor: 'rgba(254,253,251,0.92)',
     borderRadius: radius.pill,

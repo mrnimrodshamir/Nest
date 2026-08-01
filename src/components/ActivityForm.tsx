@@ -20,6 +20,7 @@ import type { ActivityCategory } from '@/types/activity';
 import { formatDuration } from '@/utils/formatDuration';
 import { pickDefaultChild } from '@/utils/pickDefaultChild';
 import { generateActivityTitle } from '@/utils/generateActivityTitle';
+import { formatExactStartTime } from '@/utils/formatExactStartTime';
 import type { CreateActivityInput, CreateActivityStage } from '@/hooks/useCreateActivity';
 
 const STAGE_LABELS: Record<CreateActivityStage, string> = {
@@ -234,11 +235,7 @@ export function ActivityForm({
     }
   };
 
-  const reviewDateTimeSummary = `${startsAt.toLocaleDateString(undefined, {
-    weekday: 'long',
-    month: 'short',
-    day: 'numeric',
-  })} at ${startsAt.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}`;
+  const reviewDateTimeSummary = formatExactStartTime(startsAt.toISOString());
 
   const reviewChildSummary =
     hostChildIds.length === 0

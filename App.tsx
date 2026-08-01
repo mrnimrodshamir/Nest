@@ -373,6 +373,7 @@ function Tabs() {
                 title: conversation.title,
               })
             }
+            onCreateActivity={() => navigation.getParent()?.navigate('CreateActivity')}
           />
         )}
       </Tab.Screen>

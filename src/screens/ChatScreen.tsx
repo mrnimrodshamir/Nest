@@ -38,7 +38,14 @@ export function ChatScreen({ chatId, resolveError, title, onBack }: ChatScreenPr
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+    // Chats are English-only content — force LTR at the component level
+    // rather than relying solely on the app-wide I18nManager.forceRTL call
+    // (which only takes effect on the next full relaunch, not a Fast
+    // Refresh, and not before the very first launch on a Hebrew-locale
+    // device). `direction: 'ltr'` makes RN treat flexDirection: 'row' and
+    // alignItems: flex-start/flex-end as literal left/right in this whole
+    // subtree, independent of the device's I18nManager.isRTL state.
+    <SafeAreaView style={[styles.container, styles.forceLtr]} edges={['top', 'bottom']}>
       <View style={styles.header}>
         <Pressable onPress={onBack} style={styles.backButton} accessibilityLabel="Back">
           <ArrowLeft size={20} color={theme.text.primary} />
@@ -127,6 +134,7 @@ function MessageBubble({ message, onRetry }: { message: ChatMessage; onRetry: ()
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: theme.background.app },
+  forceLtr: { direction: 'ltr' },
   flex: { flex: 1 },
   header: {
     flexDirection: 'row',
@@ -149,7 +157,14 @@ const styles = StyleSheet.create({
   messageList: { padding: spacing.lg, gap: spacing.sm, flexGrow: 1 },
   bubbleRow: { alignItems: 'flex-start', marginBottom: spacing.xs },
   bubbleRowMine: { alignItems: 'flex-end' },
-  senderName: { ...typography.caption, color: theme.text.muted, marginBottom: 2, marginLeft: spacing.sm },
+  senderName: {
+    ...typography.caption,
+    color: theme.text.muted,
+    marginBottom: 2,
+    marginLeft: spacing.sm,
+    textAlign: 'left',
+    writingDirection: 'ltr',
+  },
   senderNameMine: { marginLeft: 0, marginRight: spacing.sm },
   bubble: {
     maxWidth: '80%',
@@ -159,7 +174,7 @@ const styles = StyleSheet.create({
   },
   bubbleTheirs: { backgroundColor: theme.background.surface, borderBottomLeftRadius: radius.sm },
   bubbleMine: { backgroundColor: theme.brand.primary, borderBottomRightRadius: radius.sm },
-  bubbleText: { ...typography.body, color: theme.text.primary },
+  bubbleText: { ...typography.body, color: theme.text.primary, textAlign: 'left', writingDirection: 'ltr' },
   bubbleTextMine: { color: theme.text.inverse },
   retryRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 },
   retryLabel: { ...typography.caption, color: theme.semantic.danger },

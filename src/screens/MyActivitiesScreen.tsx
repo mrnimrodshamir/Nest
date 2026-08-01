@@ -134,10 +134,14 @@ const styles = StyleSheet.create({
   listContent: { paddingHorizontal: spacing.lg, paddingBottom: spacing['4xl'], gap: spacing.sm },
   emptyContent: { flexGrow: 1 },
   cardWrap: { position: 'relative' },
+  // Positioned top-RIGHT, deliberately opposite ActivityCard's own
+  // category/"Full" pill (which renders top-left, inside the image) — the
+  // two badges must never share a corner or they overlap.
   roleTag: {
     position: 'absolute',
     top: spacing.sm,
-    left: spacing.sm + spacing.lg,
+    right: spacing.sm + spacing.lg,
+    maxWidth: '45%',
     zIndex: 1,
     paddingHorizontal: spacing.md,
     paddingVertical: 4,
