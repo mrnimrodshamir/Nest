@@ -37,7 +37,7 @@ export function CategoryPicker({ selected, onSelect }: CategoryPickerProps) {
             accessibilityLabel={CATEGORY_LABELS[category]}
           >
             <View style={[styles.thumb, isSelected && styles.thumbSelected]}>
-              <CategoryArtwork category={category} variant="thumb" style={styles.thumbFill} />
+              <CategoryArtwork category={category} variant="thumb" surface="CategoryPicker" style={styles.thumbFill} />
               {isSelected && (
                 <View style={styles.checkBadge}>
                   <Check size={12} color={theme.text.inverse} weight="bold" />

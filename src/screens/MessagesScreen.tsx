@@ -131,6 +131,7 @@ function ActivityConversationRow({
           url={activity.coverImageUrl}
           fallbackCategory={activity.category}
           variant="thumb"
+          surface="ChatsThumbnail"
           style={styles.activityThumbFill}
         />
       </View>

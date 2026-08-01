@@ -12,6 +12,9 @@ interface CoverImageProps {
   /** Which of the three purpose-built sizes this container needs — see
    *  activityArtManifest.ts. Threaded straight through to CategoryArtwork. */
   variant: ActivityArtVariant;
+  /** Short label identifying the calling screen — purely for the __DEV__
+   *  log, no effect on rendering. Threaded through to CategoryArtwork. */
+  surface?: string;
   style?: StyleProp<ViewStyle>;
 }
 
@@ -24,7 +27,7 @@ interface CoverImageProps {
  *  category's automatic artwork renders via CategoryArtwork (final bundled
  *  asset if one exists for this variant, else a placeholder) — never a
  *  blank cover. */
-export function CoverImage({ url, fallbackCategory, variant, style }: CoverImageProps) {
+export function CoverImage({ url, fallbackCategory, variant, surface, style }: CoverImageProps) {
   const [uploadFailed, setUploadFailed] = useState(false);
 
   // A new url (e.g. the host picked a different photo after a previous one
@@ -41,10 +44,13 @@ export function CoverImage({ url, fallbackCategory, variant, style }: CoverImage
   });
 
   if (source === 'curated-placeholder' && curatedCategory) {
-    return <CategoryArtwork category={curatedCategory} variant={variant} style={style} />;
+    return <CategoryArtwork category={curatedCategory} variant={variant} surface={surface} style={style} />;
   }
 
   if (source === 'uploaded-photo' && url) {
+    if (__DEV__) {
+      console.log(`[ActivityArt] ${surface ? `${surface} ` : ''}variant=${variant} -> uploaded-photo`);
+    }
     return (
       <Image
         source={{ uri: url }}
@@ -55,7 +61,7 @@ export function CoverImage({ url, fallbackCategory, variant, style }: CoverImage
     );
   }
 
-  return <CategoryArtwork category={fallbackCategory} variant={variant} style={style} />;
+  return <CategoryArtwork category={fallbackCategory} variant={variant} surface={surface} style={style} />;
 }
 
 const styles = StyleSheet.create({

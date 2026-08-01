@@ -257,7 +257,7 @@ export function ActivityForm({
           <View style={styles.coverPreview}>
             {/* Review only ever renders in the create flow, which has no
                 initialValues.coverImageUrl to fall back to. */}
-            <CoverImage url={coverUri} fallbackCategory={activityType} variant="hero" style={styles.coverPreviewFill} />
+            <CoverImage url={coverUri} fallbackCategory={activityType} variant="hero" surface="ReviewStep" style={styles.coverPreviewFill} />
           </View>
           <Text style={styles.generatedTitle}>{title}</Text>
 
@@ -283,6 +283,7 @@ export function ActivityForm({
               url={coverUri ?? initialValues?.coverImageUrl ?? null}
               fallbackCategory={activityType}
               variant="hero"
+              surface="CreatePreview"
               style={styles.coverPreviewFill}
             />
           </View>

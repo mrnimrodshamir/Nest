@@ -13,6 +13,11 @@ interface CategoryArtworkProps {
    *  consciously pick the variant that matches its own container, since a
    *  wrong variant means a wrongly-shaped crop. */
   variant: ActivityArtVariant;
+  /** Short label identifying the calling screen (e.g. "CategoryPicker",
+   *  "ActivityDetail") — purely for the __DEV__ log below, no effect on
+   *  rendering. `hero` alone renders on three different screens, so the
+   *  variant name isn't enough to tell them apart during device testing. */
+  surface?: string;
   style?: StyleProp<ViewStyle>;
 }
 
@@ -28,11 +33,16 @@ interface CategoryArtworkProps {
  *  one. Resolution never substitutes a different aspect ratio: a missing
  *  thumb falls back to the "other" category's thumb, never to a card or
  *  hero image forced into a thumb-shaped box. See resolveActivityArt.ts. */
-export function CategoryArtwork({ category, variant, style }: CategoryArtworkProps) {
+export function CategoryArtwork({ category, variant, surface, style }: CategoryArtworkProps) {
   const resolved = resolveActivityArt(category, variant, ACTIVITY_ART_ASSETS);
 
-  if (__DEV__ && resolved.warning) {
-    console.warn(`[ActivityArt] ${resolved.warning}`);
+  if (__DEV__) {
+    const label = surface ? `${surface} ` : '';
+    console.log(
+      `[ActivityArt] ${label}category=${category} variant=${variant} -> ${resolved.kind}` +
+        (resolved.resolvedCategory ? `:${resolved.resolvedCategory}` : ''),
+    );
+    if (resolved.warning) console.warn(`[ActivityArt] ${resolved.warning}`);
   }
 
   if (resolved.kind === 'photo' && resolved.resolvedCategory) {

@@ -51,6 +51,7 @@ export function ActivityCard({
           url={activity.coverImageUrl}
           fallbackCategory={activity.category}
           variant="card"
+          surface="DiscoveryCard"
           style={StyleSheet.absoluteFill}
         />
         {!isRail && (
