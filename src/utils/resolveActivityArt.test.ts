@@ -59,3 +59,43 @@ test('resolveActivityArt: an unknown category with nothing installed for "other"
   assert.equal(result.kind, 'placeholder');
   assert.match(result.warning, /no "hero" artwork installed/i);
 });
+
+// The four scenarios explicitly called out in review: no category's asset
+// is ever borrowed to stand in for a DIFFERENT category — only "other" is
+// ever used as a substitute, and only for the exact variant requested.
+
+test('resolveActivityArt: a missing coffee_meetup thumb never resolves to stroller_walk_thumb, even when stroller_walk IS installed', () => {
+  const assets = {
+    stroller_walk: { thumb: 'stroller_walk_thumb.jpg' },
+    other: { thumb: 'other_thumb.jpg' },
+    // coffee_meetup has no thumb installed
+  };
+  const result = resolveActivityArt('coffee_meetup', 'thumb', assets);
+  assert.equal(result.kind, 'photo');
+  assert.equal(result.resolvedCategory, 'other');
+  assert.notEqual(result.resolvedCategory, 'stroller_walk');
+});
+
+test('resolveActivityArt: an unknown category resolves to other_thumb', () => {
+  const assets = { other: { thumb: 'other_thumb.jpg' } };
+  const result = resolveActivityArt('some_future_category', 'thumb', assets);
+  assert.equal(result.kind, 'photo');
+  assert.equal(result.resolvedCategory, 'other');
+});
+
+test('resolveActivityArt: a missing coffee_meetup_card resolves to other_card', () => {
+  const assets = { other: { card: 'other_card.jpg' } };
+  const result = resolveActivityArt('coffee_meetup', 'card', assets);
+  assert.equal(result.kind, 'photo');
+  assert.equal(result.resolvedCategory, 'other');
+});
+
+test('resolveActivityArt: no fallback ever crosses thumb/card/hero -- a category with hero+card but no thumb never returns its own hero or card for a thumb request', () => {
+  const assets = {
+    coffee_meetup: { hero: 'coffee_meetup_hero.jpg', card: 'coffee_meetup_card.jpg' },
+    // no "other" installed at all -- proves the fallback goes to placeholder,
+    // never to coffee_meetup's own hero/card asset mis-shaped into a thumb.
+  };
+  const result = resolveActivityArt('coffee_meetup', 'thumb', assets);
+  assert.equal(result.kind, 'placeholder');
+});
