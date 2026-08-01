@@ -50,6 +50,7 @@ export function ActivityCard({
         <CoverImage
           url={activity.coverImageUrl}
           fallbackCategory={activity.category}
+          variant="card"
           style={StyleSheet.absoluteFill}
         />
         {!isRail && (

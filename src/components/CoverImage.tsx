@@ -1,35 +1,61 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Image, StyleSheet, StyleProp, ViewStyle, ImageStyle } from 'react-native';
 import type { ActivityCategory } from '@/types/activity';
 import { parseCuratedCover } from '@/components/CuratedCover';
 import { CategoryArtwork } from '@/components/CategoryArtwork';
+import { decideCoverImageSource } from '@/utils/decideCoverImageSource';
+import type { ActivityArtVariant } from '@/constants/activityArtVariant';
 
 interface CoverImageProps {
   url: string | null;
   fallbackCategory: ActivityCategory;
+  /** Which of the three purpose-built sizes this container needs — see
+   *  activityArtManifest.ts. Threaded straight through to CategoryArtwork. */
+  variant: ActivityArtVariant;
   style?: StyleProp<ViewStyle>;
 }
 
 /** The one rendering entry point for an activity's cover, used identically
- *  by Discovery cards, Activity Detail, Chats rows, and the Create
- *  Activity preview — so all four surfaces are guaranteed to show the
- *  same image for the same activity. Priority: an uploaded photo always
- *  wins; otherwise the category's automatic artwork renders via
- *  CategoryArtwork (final bundled asset if one exists, else the
- *  temporary hand-authored SVG scene) — never a blank cover. */
-export function CoverImage({ url, fallbackCategory, style }: CoverImageProps) {
+ *  by Discovery cards, Activity Detail, Chats rows, and the Create Activity
+ *  preview/review — so all surfaces are guaranteed to show the same image
+ *  for the same activity (modulo each surface's own variant size). Priority:
+ *  an uploaded photo always wins; if it fails to load, falls back to the
+ *  category's automatic artwork rather than a blank space; otherwise the
+ *  category's automatic artwork renders via CategoryArtwork (final bundled
+ *  asset if one exists for this variant, else a placeholder) — never a
+ *  blank cover. */
+export function CoverImage({ url, fallbackCategory, variant, style }: CoverImageProps) {
+  const [uploadFailed, setUploadFailed] = useState(false);
+
+  // A new url (e.g. the host picked a different photo after a previous one
+  // failed to load) deserves a fresh attempt, not a stale failure flag.
+  useEffect(() => {
+    setUploadFailed(false);
+  }, [url]);
+
   const curatedCategory = parseCuratedCover(url);
-  if (curatedCategory) return <CategoryArtwork category={curatedCategory} style={style} />;
-  if (url) {
+  const source = decideCoverImageSource({
+    url,
+    isCuratedUrl: Boolean(curatedCategory),
+    uploadFailed,
+  });
+
+  if (source === 'curated-placeholder' && curatedCategory) {
+    return <CategoryArtwork category={curatedCategory} variant={variant} style={style} />;
+  }
+
+  if (source === 'uploaded-photo' && url) {
     return (
       <Image
         source={{ uri: url }}
         style={[styles.fill, style] as StyleProp<ImageStyle>}
         resizeMode="cover"
+        onError={() => setUploadFailed(true)}
       />
     );
   }
-  return <CategoryArtwork category={fallbackCategory} style={style} />;
+
+  return <CategoryArtwork category={fallbackCategory} variant={variant} style={style} />;
 }
 
 const styles = StyleSheet.create({

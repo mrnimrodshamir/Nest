@@ -273,6 +273,7 @@ export function ActivityDetailScreen({
           <CoverImage
             url={activity.coverImageUrl}
             fallbackCategory={activity.category}
+            variant="hero"
             style={StyleSheet.absoluteFill}
           />
         </View>

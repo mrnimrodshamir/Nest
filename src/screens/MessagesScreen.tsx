@@ -127,7 +127,12 @@ function ActivityConversationRow({
       accessibilityRole="button"
     >
       <View style={styles.activityThumb}>
-        <CoverImage url={activity.coverImageUrl} fallbackCategory={activity.category} style={styles.activityThumbFill} />
+        <CoverImage
+          url={activity.coverImageUrl}
+          fallbackCategory={activity.category}
+          variant="thumb"
+          style={styles.activityThumbFill}
+        />
       </View>
       <View style={styles.activityBody}>
         <View style={styles.activityTitleLine}>
