@@ -3,6 +3,7 @@ import { View, Text, Pressable, ScrollView, StyleSheet } from 'react-native';
 import { Check } from 'phosphor-react-native';
 import { theme, typography, spacing, radius } from '@/theme';
 import { CategoryArtwork } from '@/components/CategoryArtwork';
+import { CoverFrame } from '@/components/CoverFrame';
 import { CATEGORY_LABELS } from '@/types/activity';
 import type { ActivityCategory } from '@/types/activity';
 
@@ -36,14 +37,18 @@ export function CategoryPicker({ selected, onSelect }: CategoryPickerProps) {
             accessibilityState={{ selected: isSelected }}
             accessibilityLabel={CATEGORY_LABELS[category]}
           >
-            <View style={[styles.thumb, isSelected && styles.thumbSelected]}>
+            <CoverFrame
+              variant="thumb"
+              radius={radius.lg}
+              style={[styles.thumb, isSelected && styles.thumbSelected]}
+            >
               <CategoryArtwork category={category} variant="thumb" surface="CategoryPicker" style={styles.thumbFill} />
               {isSelected && (
                 <View style={styles.checkBadge}>
                   <Check size={12} color={theme.text.inverse} weight="bold" />
                 </View>
               )}
-            </View>
+            </CoverFrame>
             <Text style={[styles.label, isSelected && styles.labelSelected]} numberOfLines={2}>
               {CATEGORY_LABELS[category]}
             </Text>
@@ -57,13 +62,10 @@ export function CategoryPicker({ selected, onSelect }: CategoryPickerProps) {
 const styles = StyleSheet.create({
   row: { gap: spacing.md, paddingRight: spacing.lg },
   item: { width: 76, alignItems: 'center', gap: spacing.xs },
+  // Fixed width + selection border only; CoverFrame owns the 4:3 height
+  // and clipping.
   thumb: {
-    // 4:3, matching the source art, instead of a square crop that throws
-    // away a quarter of the image's width for no reason.
     width: 76,
-    aspectRatio: 4 / 3,
-    borderRadius: radius.lg,
-    overflow: 'hidden',
     borderWidth: 2,
     borderColor: 'transparent',
     backgroundColor: theme.background.surface,

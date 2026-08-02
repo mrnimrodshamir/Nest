@@ -12,6 +12,7 @@ import { YearsMonthsPicker } from '@/components/YearsMonthsPicker';
 import { Checkbox } from '@/components/Checkbox';
 import { PrimaryButton } from '@/components/PrimaryButton';
 import { CoverImage } from '@/components/CoverImage';
+import { CoverFrame } from '@/components/CoverFrame';
 import { ComingWithSelector } from '@/components/ComingWithSelector';
 import { useAuth } from '@/hooks/useAuth';
 import { useChildren } from '@/hooks/useChildren';
@@ -223,10 +224,12 @@ export function ActivityForm({
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
-      // Matches the 4:3 aspectRatio every cover container uses (review
-      // preview, Discovery cards, Activity Detail hero) — cropping to a
-      // different ratio here just means resizeMode="cover" re-crops it a
-      // second time, mismatched, wherever it's actually displayed.
+      // 4:3 matches the hero frame (ACTIVITY_ART_ASPECT.hero) used by this
+      // preview, the Review step and Activity Detail — the surfaces where
+      // an uploaded cover is shown largest and a mismatch would be most
+      // visible. Discovery/My Activities cards are 16:9 and will trim the
+      // top/bottom of this crop via resizeMode="cover", which is the
+      // intended, lossless-direction behaviour (never a stretch).
       aspect: [4, 3],
       quality: 0.8,
     });
@@ -251,11 +254,11 @@ export function ActivityForm({
     <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
       {isCreateFlow && reviewMode ? (
         <View style={styles.reviewBlock}>
-          <View style={styles.coverPreview}>
+          <CoverFrame variant="hero" radius={radius.lg} style={styles.coverPreview}>
             {/* Review only ever renders in the create flow, which has no
                 initialValues.coverImageUrl to fall back to. */}
             <CoverImage url={coverUri} fallbackCategory={activityType} variant="hero" surface="ReviewStep" style={styles.coverPreviewFill} />
-          </View>
+          </CoverFrame>
           <Text style={styles.generatedTitle}>{title}</Text>
 
           <ReviewRow label="Category" value={CATEGORY_LABELS[activityType] ?? CATEGORY_LABELS.other} />
@@ -275,7 +278,7 @@ export function ActivityForm({
           <Text style={styles.sectionLabel}>Activity type</Text>
           <CategoryPicker selected={activityType} onSelect={setActivityType} />
 
-          <View style={styles.coverPreview}>
+          <CoverFrame variant="hero" radius={radius.lg} style={styles.coverPreview}>
             <CoverImage
               url={coverUri ?? initialValues?.coverImageUrl ?? null}
               fallbackCategory={activityType}
@@ -283,7 +286,7 @@ export function ActivityForm({
               surface="CreatePreview"
               style={styles.coverPreviewFill}
             />
-          </View>
+          </CoverFrame>
           <Pressable style={styles.uploadCoverButton} onPress={handlePickCoverPhoto}>
             <Camera size={16} color={theme.text.primary} />
             <Text style={styles.uploadCoverLabel}>
@@ -483,15 +486,9 @@ const styles = StyleSheet.create({
   ageRangeGroup: { gap: spacing.lg },
   ageRangeLabel: { ...typography.footnote, color: theme.text.secondary, marginBottom: spacing.xs },
   formError: { ...typography.footnote, color: theme.semantic.danger, textAlign: 'center' },
-  coverPreview: {
-    // Matches the source artwork's 4:3 aspect ratio so the preview here
-    // matches exactly what Discovery/Detail/Chats will actually show —
-    // no crop surprise between "what I picked" and "what renders".
-    aspectRatio: 4 / 3,
-    borderRadius: radius.lg,
-    overflow: 'hidden',
-    backgroundColor: theme.background.surface,
-  },
+  // Background only — CoverFrame supplies the hero ratio, height cap and
+  // clipping, so the preview matches exactly what Activity Detail renders.
+  coverPreview: { backgroundColor: theme.background.surface },
   coverPreviewFill: { flex: 1 },
   generatedTitleRow: { gap: spacing.xs },
   generatedTitle: { ...typography.headline, color: theme.text.primary },

@@ -7,6 +7,7 @@ import { theme, typography, spacing, radius } from '@/theme';
 import { StateCard } from '@/components/StateCard';
 import { PersonCard } from '@/components/PersonCard';
 import { CoverImage } from '@/components/CoverImage';
+import { CoverFrame } from '@/components/CoverFrame';
 import { useConversations, type Conversation } from '@/hooks/useConversations';
 import { formatRelativeTime } from '@/utils/formatRelativeTime';
 import { formatExactStartTime } from '@/utils/formatExactStartTime';
@@ -152,7 +153,7 @@ function ActivityConversationRow({
       onPress={onPress}
       accessibilityRole="button"
     >
-      <View style={styles.activityThumb}>
+      <CoverFrame variant="thumb" radius={radius.md} style={styles.activityThumb}>
         <CoverImage
           url={activity.coverImageUrl}
           fallbackCategory={activity.category}
@@ -160,7 +161,7 @@ function ActivityConversationRow({
           surface="ChatsThumbnail"
           style={styles.activityThumbFill}
         />
-      </View>
+      </CoverFrame>
       <View style={styles.activityBody}>
         <View style={styles.activityTitleLine}>
           <Text style={[styles.activityTitle, conversation.hasUnread && styles.unreadText]} numberOfLines={1}>
@@ -283,12 +284,10 @@ const styles = StyleSheet.create({
     borderColor: theme.brand.primary,
     borderWidth: 1.5,
   },
+  // Fixed width only — CoverFrame supplies the 4:3 height and clipping, so
+  // this tile can never grow the chat row's height.
   activityThumb: {
-    // 4:3, matching the source art, instead of a square crop.
     width: 64,
-    aspectRatio: 4 / 3,
-    borderRadius: radius.md,
-    overflow: 'hidden',
     backgroundColor: theme.brand.accentTint,
   },
   activityThumbFill: { flex: 1 },

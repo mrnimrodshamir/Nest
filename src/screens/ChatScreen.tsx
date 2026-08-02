@@ -15,6 +15,7 @@ import * as Haptics from 'expo-haptics';
 import { ArrowLeft, PaperPlaneTilt, WarningCircle } from 'phosphor-react-native';
 import { theme, typography, spacing, radius } from '@/theme';
 import { useChatMessages, type ChatMessage } from '@/hooks/useChatMessages';
+import { resolveBubbleRow, resolveSenderNameAlignment } from '@/utils/chatBubbleLayout';
 
 interface ChatScreenProps {
   /** Null while still resolving (or being created) — shows a loading state. */
@@ -38,13 +39,13 @@ export function ChatScreen({ chatId, resolveError, title, onBack }: ChatScreenPr
   };
 
   return (
-    // Chats are English-only content — force LTR at the component level
-    // rather than relying solely on the app-wide I18nManager.forceRTL call
-    // (which only takes effect on the next full relaunch, not a Fast
-    // Refresh, and not before the very first launch on a Hebrew-locale
-    // device). `direction: 'ltr'` makes RN treat flexDirection: 'row' and
-    // alignItems: flex-start/flex-end as literal left/right in this whole
-    // subtree, independent of the device's I18nManager.isRTL state.
+    // Chats are English-only content and must read LTR on any device
+    // locale. This subtree-level `direction: 'ltr'` is a defence-in-depth
+    // layer only — it is NOT what positions the bubbles, because a style
+    // on this third-party native view did not reliably reach the
+    // descendant Yoga nodes on a real Hebrew-locale device. The bubble
+    // side is decided structurally by a flexible spacer in MessageBubble
+    // (see utils/chatBubbleLayout.ts), which cannot be mirrored.
     <SafeAreaView style={[styles.container, styles.forceLtr]} edges={['top', 'bottom']}>
       <View style={styles.header}>
         <Pressable onPress={onBack} style={styles.backButton} accessibilityLabel="Back">
@@ -112,22 +113,32 @@ export function ChatScreen({ chatId, resolveError, title, onBack }: ChatScreenPr
 }
 
 function MessageBubble({ message, onRetry }: { message: ChatMessage; onRetry: () => void }) {
+  const row = resolveBubbleRow(message.isMine);
+  const nameAlign = resolveSenderNameAlignment(message.isMine);
+
+  // The side is decided by which side the flexible spacer is rendered on,
+  // NOT by alignItems: flex-start/flex-end — those are direction-relative
+  // and resolve to the wrong edge under a Hebrew device locale. A spacer
+  // that grows is physically on one side of its sibling no matter how the
+  // layout direction resolves. See utils/chatBubbleLayout.ts.
   return (
-    <View style={[styles.bubbleRow, message.isMine && styles.bubbleRowMine]}>
-      <Text style={[styles.senderName, message.isMine && styles.senderNameMine]}>
-        {message.senderName}
-      </Text>
-      <View style={[styles.bubble, message.isMine ? styles.bubbleMine : styles.bubbleTheirs]}>
-        <Text style={[styles.bubbleText, message.isMine && styles.bubbleTextMine]}>
-          {message.content}
-        </Text>
+    <View style={styles.bubbleRow}>
+      {row.spacerBefore && <View style={styles.bubbleSpacer} />}
+      <View style={styles.bubbleColumn}>
+        <Text style={[styles.senderName, nameAlign]}>{message.senderName}</Text>
+        <View style={[styles.bubble, message.isMine ? styles.bubbleMine : styles.bubbleTheirs]}>
+          <Text style={[styles.bubbleText, message.isMine && styles.bubbleTextMine]}>
+            {message.content}
+          </Text>
+        </View>
+        {message.failed && (
+          <Pressable onPress={onRetry} style={styles.retryRow} hitSlop={10}>
+            <WarningCircle size={12} color={theme.semantic.danger} weight="fill" />
+            <Text style={styles.retryLabel}>Not sent — tap to retry</Text>
+          </Pressable>
+        )}
       </View>
-      {message.failed && (
-        <Pressable onPress={onRetry} style={styles.retryRow} hitSlop={10}>
-          <WarningCircle size={12} color={theme.semantic.danger} weight="fill" />
-          <Text style={styles.retryLabel}>Not sent — tap to retry</Text>
-        </Pressable>
-      )}
+      {row.spacerAfter && <View style={styles.bubbleSpacer} />}
     </View>
   );
 }
@@ -155,19 +166,28 @@ const styles = StyleSheet.create({
   centerState: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.md, paddingHorizontal: spacing['2xl'] },
   centerStateText: { ...typography.subhead, color: theme.text.secondary, textAlign: 'center' },
   messageList: { padding: spacing.lg, gap: spacing.sm, flexGrow: 1 },
-  bubbleRow: { alignItems: 'flex-start', marginBottom: spacing.xs },
-  bubbleRowMine: { alignItems: 'flex-end' },
+  // `direction: 'ltr'` is pinned on the row node itself rather than only
+  // inherited from the SafeAreaView — inheritance had to cross a
+  // third-party native view to reach here, which is why it failed on device.
+  bubbleRow: {
+    flexDirection: 'row',
+    direction: 'ltr',
+    marginBottom: spacing.xs,
+  },
+  // The growing spacer is what physically decides the side. It sits before
+  // the column for own messages and after it for incoming ones.
+  bubbleSpacer: { flex: 1 },
+  // Caps bubble width without needing maxWidth on the bubble itself, so the
+  // spacer always has room to do its job.
+  bubbleColumn: { maxWidth: '80%' },
   senderName: {
     ...typography.caption,
     color: theme.text.muted,
     marginBottom: 2,
-    marginLeft: spacing.sm,
-    textAlign: 'left',
+    marginHorizontal: spacing.sm,
     writingDirection: 'ltr',
   },
-  senderNameMine: { marginLeft: 0, marginRight: spacing.sm },
   bubble: {
-    maxWidth: '80%',
     borderRadius: radius.lg,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,

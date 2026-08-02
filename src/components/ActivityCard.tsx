@@ -4,6 +4,7 @@ import { theme, typography, spacing, radius } from '@/theme';
 import type { Activity } from '@/types/activity';
 import { CATEGORY_LABELS } from '@/types/activity';
 import { CoverImage } from '@/components/CoverImage';
+import { CoverFrame } from '@/components/CoverFrame';
 import { formatExactStartTime } from '@/utils/formatExactStartTime';
 
 interface ActivityCardProps {
@@ -46,7 +47,7 @@ export function ActivityCard({
       accessibilityRole="button"
       accessibilityLabel={`${activity.title}, ${formatExactStartTime(activity.startTime)}`}
     >
-      <View style={[styles.image, isRail ? styles.imageRail : styles.imageFeed]}>
+      <CoverFrame variant="card" style={styles.image}>
         <CoverImage
           url={activity.coverImageUrl}
           fallbackCategory={activity.category}
@@ -68,7 +69,7 @@ export function ActivityCard({
             )}
           </View>
         )}
-      </View>
+      </CoverFrame>
 
       <View style={styles.body}>
         <Text style={isRail ? styles.titleRail : styles.titleFeed} numberOfLines={isRail ? 2 : 1}>
@@ -129,21 +130,14 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
   },
   cardPressed: { opacity: 0.85 },
+  // Background + inner padding for the badge row only. The 16:9 ratio and
+  // clipping now come from CoverFrame, so feed and rail can no longer drift
+  // to different proportions (rail previously used 4:3, which is hero
+  // shape on a card surface).
   image: {
     backgroundColor: theme.brand.accentTint,
     justifyContent: 'flex-start',
-  },
-  imageFeed: {
-    // A compact 16:9 banner, not the source's full 4:3 — a Discovery card
-    // is a scannable list item, not a hero, so the image should support
-    // the title/meta text below it rather than dominate the card. Still
-    // wide enough that resizeMode "cover" only trims top/bottom, never
-    // stretches or squeezes the source art.
-    aspectRatio: 16 / 9,
     padding: spacing.sm,
-  },
-  imageRail: {
-    aspectRatio: 4 / 3,
   },
   // Capped so an unusually long category label can never grow into the
   // opposite (top-right) corner, where MyActivitiesScreen's separate

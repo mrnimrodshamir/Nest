@@ -67,8 +67,17 @@ import type { ShareableActivity } from '@/utils/buildShareMessage';
 // Note: RN only applies a forceRTL change starting the *next* app
 // launch, not retroactively mid-session — this takes effect after the
 // app is fully closed and reopened once.
+// Called UNCONDITIONALLY, not gated behind `if (I18nManager.isRTL)`. The
+// gated version only ran on a device that was already RTL, which meant the
+// flags were never asserted on a device whose locale changed later, and it
+// left `swapLeftAndRightInRTL` at its default (true) so explicit
+// marginLeft/marginRight were still being mirrored. Layout that must not
+// flip (chat bubbles) additionally pins `direction: 'ltr'` on its own node
+// rather than trusting these process-wide flags, because a forceRTL change
+// only takes effect on the NEXT launch — never in the session that sets it.
+I18nManager.allowRTL(false);
+I18nManager.swapLeftAndRightInRTL(false);
 if (I18nManager.isRTL) {
-  I18nManager.allowRTL(false);
   I18nManager.forceRTL(false);
 }
 

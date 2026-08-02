@@ -22,6 +22,7 @@ import { useReportAndBlock } from '@/hooks/useReportAndBlock';
 import { AddToCalendarSheet } from '@/components/AddToCalendarSheet';
 import { JoinActivitySheet } from '@/components/JoinActivitySheet';
 import { CoverImage } from '@/components/CoverImage';
+import { CoverFrame } from '@/components/CoverFrame';
 import { NotificationPermissionSheet } from '@/components/NotificationPermissionSheet';
 import { PhotoNudgeSheet } from '@/components/PhotoNudgeSheet';
 import { usePhotoNudge } from '@/hooks/usePhotoNudge';
@@ -269,7 +270,7 @@ export function ActivityDetailScreen({
             aspect ratio to that means resizeMode="cover" never has to
             crop away meaningful content the way an oversized wide hero
             forced it to. */}
-        <View style={styles.coverCard}>
+        <CoverFrame variant="hero" radius={radius.xl} style={styles.coverCard}>
           <CoverImage
             url={activity.coverImageUrl}
             fallbackCategory={activity.category}
@@ -277,7 +278,7 @@ export function ActivityDetailScreen({
             surface="ActivityDetail"
             style={StyleSheet.absoluteFill}
           />
-        </View>
+        </CoverFrame>
 
         <View style={styles.content}>
           <View style={styles.pillRow}>
@@ -507,11 +508,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
   },
+  // Width/margins only — CoverFrame owns the aspect ratio, the hero height
+  // cap and the clipping, so this can never drift back into a full-bleed
+  // background or an oversized fixed height.
   coverCard: {
+    width: 'auto',
     marginHorizontal: spacing.xl,
-    aspectRatio: 4 / 3,
-    borderRadius: radius.xl,
-    overflow: 'hidden',
     backgroundColor: theme.brand.primaryTint,
   },
   heroActions: { flexDirection: 'row', gap: spacing.sm },
