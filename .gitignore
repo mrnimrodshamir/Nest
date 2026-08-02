@@ -26,3 +26,6 @@ ios/build/
 # Android
 android/.gradle/
 android/app/build/
+
+# Local generation/QC tooling (not part of the app bundle)
+scripts/_tmp_*
