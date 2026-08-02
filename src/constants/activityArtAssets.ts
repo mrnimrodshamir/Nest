@@ -16,12 +16,13 @@ import type { ActivityArtVariant } from './activityArtVariant';
  *  surface that renders a cover) picks it up automatically via
  *  resolveActivityArt.ts.
  *
- *  Only stroller_walk is installed so far (a style-proof batch) — every
- *  other category still falls back through resolveActivityArt's "other"
- *  variant, then to CuratedCover's aspect-neutral placeholder scene, until
- *  the rest of the 63-file library is supplied. Do NOT add a require() for
- *  a file that doesn't exist yet — Metro fails the entire bundle on a
- *  missing static asset. */
+ *  4 of 21 categories installed so far (stroller_walk, coffee_meetup,
+ *  baby_playtime, playground_meetup). Every other category still falls
+ *  back through resolveActivityArt's "other" variant, then to
+ *  CuratedCover's aspect-neutral placeholder scene, until the rest of the
+ *  63-file library passes visual QC. Do NOT add a require() for a file
+ *  that doesn't exist yet — Metro fails the entire bundle on a missing
+ *  static asset. */
 export const ACTIVITY_ART_ASSETS: Partial<
   Record<ActivityCategory, Partial<Record<ActivityArtVariant, ImageSourcePropType>>>
 > = {
@@ -29,5 +30,20 @@ export const ACTIVITY_ART_ASSETS: Partial<
     thumb: require('../../assets/activity-art/stroller_walk_thumb.jpg'),
     card: require('../../assets/activity-art/stroller_walk_card.jpg'),
     hero: require('../../assets/activity-art/stroller_walk_hero.jpg'),
+  },
+  coffee_meetup: {
+    thumb: require('../../assets/activity-art/coffee_meetup_thumb.jpg'),
+    card: require('../../assets/activity-art/coffee_meetup_card.jpg'),
+    hero: require('../../assets/activity-art/coffee_meetup_hero.jpg'),
+  },
+  baby_playtime: {
+    thumb: require('../../assets/activity-art/baby_playtime_thumb.jpg'),
+    card: require('../../assets/activity-art/baby_playtime_card.jpg'),
+    hero: require('../../assets/activity-art/baby_playtime_hero.jpg'),
+  },
+  playground_meetup: {
+    thumb: require('../../assets/activity-art/playground_meetup_thumb.jpg'),
+    card: require('../../assets/activity-art/playground_meetup_card.jpg'),
+    hero: require('../../assets/activity-art/playground_meetup_hero.jpg'),
   },
 };

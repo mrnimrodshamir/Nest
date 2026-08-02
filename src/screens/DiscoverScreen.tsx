@@ -225,13 +225,14 @@ export function DiscoverScreen({ onOpenActivity, onHostActivity, mockActivities 
           <View style={styles.searchRow}>
             <MagnifyingGlass size={iconDefaults.size.inline} color={theme.text.muted} weight={iconDefaults.weight} />
             <TextInput
-              style={styles.searchInput}
+              style={[styles.searchInput, styles.searchInputLtr]}
               placeholder="Search activities"
               placeholderTextColor={theme.text.muted}
               value={searchQuery}
               onChangeText={setSearchQuery}
               autoFocus
               returnKeyType="search"
+              textAlign="left"
             />
             <Pressable
               onPress={() => {
@@ -487,6 +488,7 @@ const styles = StyleSheet.create({
     height: 40,
   },
   searchInput: { flex: 1, ...typography.subhead, color: theme.text.primary, height: '100%' },
+  searchInputLtr: { writingDirection: 'ltr' },
   iconButton: {
     width: 44,
     height: 44,
