@@ -116,11 +116,11 @@ function MessageBubble({ message, onRetry }: { message: ChatMessage; onRetry: ()
   const row = resolveBubbleRow(message.isMine);
   const nameAlign = resolveSenderNameAlignment(message.isMine);
 
-  // The side is decided by which side the flexible spacer is rendered on,
-  // NOT by alignItems: flex-start/flex-end — those are direction-relative
-  // and resolve to the wrong edge under a Hebrew device locale. A spacer
-  // that grows is physically on one side of its sibling no matter how the
-  // layout direction resolves. See utils/chatBubbleLayout.ts.
+  // EVERY message — incoming and own — is left-positioned; only the bubble
+  // colour distinguishes the current user. The position comes from a
+  // trailing flexible spacer, NOT from alignItems/alignSelf, because those
+  // are direction-relative and resolve to the wrong edge under a Hebrew
+  // device locale. See utils/chatBubbleLayout.ts.
   return (
     <View style={styles.bubbleRow}>
       {row.spacerBefore && <View style={styles.bubbleSpacer} />}
@@ -172,6 +172,7 @@ const styles = StyleSheet.create({
   bubbleRow: {
     flexDirection: 'row',
     direction: 'ltr',
+    width: '100%',
     marginBottom: spacing.xs,
   },
   // The growing spacer is what physically decides the side. It sits before
@@ -192,8 +193,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
   },
+  // Own messages are distinguished by COLOUR ONLY — both sit on the left,
+  // so both use the same left-anchored tail corner.
   bubbleTheirs: { backgroundColor: theme.background.surface, borderBottomLeftRadius: radius.sm },
-  bubbleMine: { backgroundColor: theme.brand.primary, borderBottomRightRadius: radius.sm },
+  bubbleMine: { backgroundColor: theme.brand.primary, borderBottomLeftRadius: radius.sm },
   bubbleText: { ...typography.body, color: theme.text.primary, textAlign: 'left', writingDirection: 'ltr' },
   bubbleTextMine: { color: theme.text.inverse },
   retryRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 },

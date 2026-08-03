@@ -1,56 +1,46 @@
 /** Chat bubble side/alignment resolution, kept as a pure module so the
  *  RTL behaviour can be asserted in tests without mounting React Native.
  *
- *  WHY THIS EXISTS — the bug it fixes:
- *  The previous implementation set `alignItems: 'flex-start' | 'flex-end'`
- *  on the bubble row and relied on a `direction: 'ltr'` style sitting on an
- *  ancestor SafeAreaView. Both halves of that were unreliable on a real
- *  Hebrew-locale device:
+ *  PRODUCT RULE: every message row — incoming AND the current user's — is
+ *  left-positioned. The current user's messages are distinguished by bubble
+ *  COLOUR ONLY, never by side. A chat that mixes sides reads as mirrored on
+ *  a Hebrew-locale device and was the source of two rounds of device bugs.
  *
- *    1. `flex-start` / `flex-end` are DIRECTION-RELATIVE in Yoga. When the
- *       native layout direction is RTL, `flex-start` resolves to the RIGHT
- *       edge — so incoming messages rendered on the right.
- *    2. `direction: 'ltr'` on an ancestor is not dependable: it has to
- *       propagate through a third-party native view (react-native-safe-area
- *       -context) to reach the descendant Yoga nodes that actually perform
- *       the alignment.
- *    3. App.tsx's `I18nManager.forceRTL(false)` only takes effect after a
- *       full relaunch, so the very first launch on a Hebrew device still
- *       lays out RTL regardless.
+ *  WHY THE SIDE IS STRUCTURAL RATHER THAN `alignItems`:
+ *  `flex-start` / `flex-end` and `alignSelf` are DIRECTION-RELATIVE in
+ *  Yoga — when the native layout direction is RTL, `flex-start` resolves to
+ *  the RIGHT edge. Neither `direction: 'ltr'` on an ancestor nor
+ *  `I18nManager.forceRTL(false)` is dependable here: the former has to
+ *  propagate through a third-party native view to reach the descendant
+ *  nodes doing the alignment, and the latter only applies from the NEXT
+ *  launch, so a first run on a Hebrew device still lays out RTL.
  *
- *  The fix is to stop depending on direction resolution for the side at
- *  all: the row is a `flexDirection: 'row'` with an explicit flexible
- *  spacer placed before or after the bubble column. A spacer that grows is
- *  physically on one side of its sibling regardless of how `flex-start`
- *  would have resolved, and `direction: 'ltr'` is additionally pinned onto
- *  the row node itself (not merely inherited) as a second line of defence.
+ *  So the position is decided by a flexible spacer rendered AFTER the
+ *  bubble group. A spacer that grows physically occupies the remaining
+ *  space to one side of its sibling regardless of how `flex-start` would
+ *  have resolved — it cannot be mirrored.
  */
 
-export type BubbleSide = 'left' | 'right';
+export type BubbleSide = 'left';
 
 export interface BubbleRowLayout {
-  /** Which physical edge this bubble sits against. */
+  /** Always 'left'. Kept explicit so a regression to sided layout fails a test. */
   side: BubbleSide;
-  /** Render the flexible spacer BEFORE the bubble column (pushes it right). */
-  spacerBefore: boolean;
-  /** Render the flexible spacer AFTER the bubble column (holds it left). */
-  spacerAfter: boolean;
+  /** Never render a leading spacer — that is what pushed own messages right. */
+  spacerBefore: false;
+  /** Always render the trailing spacer; it is what holds the group left. */
+  spacerAfter: true;
 }
 
-/** Incoming messages always sit left; the current user's sit right so the
- *  two remain visually distinguishable. Neither depends on device locale. */
-export function resolveBubbleRow(isMine: boolean): BubbleRowLayout {
-  const side: BubbleSide = isMine ? 'right' : 'left';
-  return {
-    side,
-    spacerBefore: side === 'right',
-    spacerAfter: side === 'left',
-  };
+/** Both incoming and outgoing messages resolve to the same left position.
+ *  `isMine` is accepted so call sites read naturally and so the test suite
+ *  can assert the side does NOT vary with it. */
+export function resolveBubbleRow(_isMine: boolean): BubbleRowLayout {
+  return { side: 'left', spacerBefore: false, spacerAfter: true };
 }
 
-/** Text inside a bubble is English content and is ALWAYS left-aligned and
- *  LTR, for the current user's messages just as much as for incoming ones.
- *  Returned as a plain object so a test can assert it never varies. */
+/** Text inside a bubble is English content: always left-aligned and LTR,
+ *  for the current user's messages just as much as for incoming ones. */
 export function resolveBubbleTextDirection(): {
   textAlign: 'left';
   writingDirection: 'ltr';
@@ -58,11 +48,11 @@ export function resolveBubbleTextDirection(): {
   return { textAlign: 'left', writingDirection: 'ltr' };
 }
 
-/** The sender name sits above the bubble, aligned to the same physical edge
- *  as the bubble itself, and is always left-aligned internally. */
-export function resolveSenderNameAlignment(isMine: boolean): {
-  alignSelf: 'flex-start' | 'flex-end';
+/** The sender name (including the "You" label) sits above the bubble on the
+ *  left for every message, matching the bubble group it labels. */
+export function resolveSenderNameAlignment(_isMine: boolean): {
+  alignSelf: 'flex-start';
   textAlign: 'left';
 } {
-  return { alignSelf: isMine ? 'flex-end' : 'flex-start', textAlign: 'left' };
+  return { alignSelf: 'flex-start', textAlign: 'left' };
 }

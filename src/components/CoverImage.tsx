@@ -55,7 +55,6 @@ export function CoverImage({ url, fallbackCategory, variant, surface, style }: C
       <Image
         source={{ uri: url }}
         style={[styles.fill, style] as StyleProp<ImageStyle>}
-        resizeMode="cover"
         onError={() => setUploadFailed(true)}
       />
     );
@@ -65,5 +64,9 @@ export function CoverImage({ url, fallbackCategory, variant, surface, style }: C
 }
 
 const styles = StyleSheet.create({
-  fill: { flex: 1 },
+  /** Explicit 100%/100% + resizeMode as a STYLE — see the same fix and the
+   *  full root-cause note in CategoryArtwork.tsx. `flex: 1` alone let a
+   *  bundled asset lay out at its intrinsic point size and render as a
+   *  blown-up top-left crop. */
+  fill: { width: '100%', height: '100%', resizeMode: 'cover' },
 });

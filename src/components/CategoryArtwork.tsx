@@ -48,13 +48,7 @@ export function CategoryArtwork({ category, variant, surface, style }: CategoryA
   if (resolved.kind === 'photo' && resolved.resolvedCategory) {
     const source = ACTIVITY_ART_ASSETS[resolved.resolvedCategory]?.[variant];
     if (source) {
-      return (
-        <Image
-          source={source}
-          style={[styles.fill, style] as StyleProp<ImageStyle>}
-          resizeMode="cover"
-        />
-      );
+      return <Image source={source} style={[styles.fill, style] as StyleProp<ImageStyle>} />;
     }
   }
 
@@ -62,5 +56,16 @@ export function CategoryArtwork({ category, variant, surface, style }: CategoryA
 }
 
 const styles = StyleSheet.create({
-  fill: { flex: 1 },
+  /** ROOT CAUSE OF THE "ZOOMED TOP-LEFT CROP" DEVICE BUG.
+   *  This was `{ flex: 1 }` with `resizeMode="cover"` passed as a PROP.
+   *  A bundled `require()`d asset carries its own intrinsic size (1200x900
+   *  at scale 1 = 1200x900 POINTS, ~3x the width of a phone screen), and
+   *  `flex: 1` alone did not give the image a definite size to scale into —
+   *  so it laid out at intrinsic size, anchored top-left, and the frame's
+   *  `overflow: hidden` clipped everything except the top-left corner. That
+   *  is why Activity Detail showed only a man's head and a plant.
+   *
+   *  Explicit 100%/100% gives the image a definite box, and `resizeMode` in
+   *  the STYLE (not the prop) is the form that reliably applies. */
+  fill: { width: '100%', height: '100%', resizeMode: 'cover' },
 });

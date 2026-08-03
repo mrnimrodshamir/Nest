@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 import { View, Text, Switch, StyleSheet, ScrollView, Alert, Pressable, Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Notifications from 'expo-notifications';
@@ -17,6 +18,7 @@ import { theme, typography, spacing, radius } from '@/theme';
 import { PersonCard } from '@/components/PersonCard';
 import { useAuth } from '@/hooks/useAuth';
 import { useChildren } from '@/hooks/useChildren';
+import { formatParentSubtitle } from '@/utils/formatParentSubtitle';
 import { ensurePushRegistration } from '@/hooks/usePushNotifications';
 import { NotificationPermissionSheet } from '@/components/NotificationPermissionSheet';
 import { LEGAL_URLS } from '@/constants/legal';
@@ -39,7 +41,16 @@ const NOTIFICATION_LABELS: Record<keyof NotificationPreferences, string> = {
  *  destination. A living identity page, not just a settings list. */
 export function ProfileScreen({ onEditProfile, onOpenMyActivities, onOpenBlockedUsers }: ProfileScreenProps) {
   const { profile, session, signOut, deleteAccount, updateNotificationPreferences } = useAuth();
-  const { children } = useChildren(session?.user.id ?? null);
+  const { children, refresh: refreshChildren } = useChildren(session?.user.id ?? null);
+
+  // Children are edited on a different screen; without this the subtitle
+  // kept rendering the list as it was when Profile first mounted, which is
+  // why adding a second child still showed "Parent of Go".
+  useFocusEffect(
+    useCallback(() => {
+      void refreshChildren();
+    }, [refreshChildren]),
+  );
   const [showNotificationSheet, setShowNotificationSheet] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -70,12 +81,9 @@ export function ProfileScreen({ onEditProfile, onOpenMyActivities, onOpenBlocked
     );
   };
 
-  const childSummary =
-    children.length === 0
-      ? undefined
-      : children.length === 1
-        ? `Parent of ${children[0].name}`
-        : `Parent of ${children.length} children`;
+  // Built from the FULL children list, never children[0] or the default
+  // child — see utils/formatParentSubtitle.ts for the documented rule.
+  const childSummary = formatParentSubtitle(children);
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
