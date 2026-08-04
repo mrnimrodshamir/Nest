@@ -23,7 +23,7 @@ import {
   legacyFieldsToSelectedLocation,
   selectedLocationToNormalizedPlace,
 } from '@/utils/activityPlaceMapping';
-import { adjustProviderPlace } from '@/utils/placeAdjustment';
+import { applyReverseGeocodeLabel, moveSelectedLocation } from '@/utils/placeAdjustment';
 import { formatDuration } from '@/utils/formatDuration';
 import { pickDefaultChild } from '@/utils/pickDefaultChild';
 import { generateActivityTitle } from '@/utils/generateActivityTitle';
@@ -366,26 +366,10 @@ export function ActivityForm({
             latitude={latitude}
             longitude={longitude}
             onChangeCoordinates={(lat, lng) => {
-              setSelectedLocation((current) => {
-                if (current.source === 'provider' && current.place) {
-                  const adjusted = adjustProviderPlace(current.place, { latitude: lat, longitude: lng }, 'Selected meeting point', current.addressLabel);
-                  return {
-                    place: adjusted.source === 'provider' ? adjusted : null,
-                    latitude: lat,
-                    longitude: lng,
-                    displayName: adjusted.name,
-                    addressLabel: adjusted.formattedAddress,
-                    source: adjusted.source,
-                    wasAdjusted: adjusted.wasAdjusted,
-                  };
-                }
-                return { ...current, latitude: lat, longitude: lng, source: current.source === 'legacy' ? 'manual' : current.source };
-              });
+              setSelectedLocation((current) => moveSelectedLocation(current, { latitude: lat, longitude: lng }));
             }}
             onChangeLocationName={(name) => {
-              setSelectedLocation((current) => current.source === 'provider'
-                ? current
-                : { ...current, displayName: name, addressLabel: name || null });
+              setSelectedLocation((current) => applyReverseGeocodeLabel(current, name));
             }}
             autoCenterOnMount={mode === 'create'}
           />

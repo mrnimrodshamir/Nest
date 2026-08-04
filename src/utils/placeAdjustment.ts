@@ -1,4 +1,4 @@
-import type { NormalizedPlace } from '@/types/place';
+import type { NormalizedPlace, SelectedActivityLocation } from '@/types/place';
 import { isValidCoordinate } from '@/utils/normalizedPlace';
 
 export const PLACE_ADJUSTMENT_TOLERANCE_METERS = 40;
@@ -50,3 +50,40 @@ export function adjustProviderPlace(
   };
 }
 
+export function moveSelectedLocation(
+  selection: SelectedActivityLocation,
+  coordinates: Coordinates,
+): SelectedActivityLocation {
+  if (selection.source === 'provider' && selection.place) {
+    const adjusted = adjustProviderPlace(selection.place, coordinates);
+    if (adjusted.source === 'provider') {
+      return { ...selection, place: adjusted, ...coordinates };
+    }
+    return {
+      place: null,
+      ...coordinates,
+      displayName: 'Selected meeting point',
+      addressLabel: null,
+      source: 'manual',
+      wasAdjusted: true,
+    };
+  }
+  return {
+    ...selection,
+    ...coordinates,
+    source: selection.source === 'legacy' ? 'manual' : selection.source,
+  };
+}
+
+export function applyReverseGeocodeLabel(
+  selection: SelectedActivityLocation,
+  label: string | null | undefined,
+): SelectedActivityLocation {
+  const trimmed = label?.trim();
+  if (!trimmed || selection.source === 'provider') return selection;
+  return {
+    ...selection,
+    displayName: selection.wasAdjusted ? 'Selected meeting point' : trimmed,
+    addressLabel: trimmed,
+  };
+}
