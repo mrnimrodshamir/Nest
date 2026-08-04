@@ -60,6 +60,7 @@ export function CreateActivityScreen({
         </View>
 
         <ActivityForm
+          mode="create"
           initialLocation={{ latitude: initialLatitude, longitude: initialLongitude }}
           submitLabel="Create activity"
           // Also disabled while a host-join retry is pending — the activity

@@ -8,9 +8,11 @@ interface DateTimeFieldProps {
   value: Date;
   onChange: (date: Date) => void;
   minimumDate?: Date;
+  hasValue?: boolean;
+  placeholder?: string;
 }
 
-export function DateTimeField({ label, value, onChange, minimumDate }: DateTimeFieldProps) {
+export function DateTimeField({ label, value, onChange, minimumDate, hasValue = true, placeholder = 'Choose date and time' }: DateTimeFieldProps) {
   const [showPicker, setShowPicker] = useState(false);
 
   const formatted = value.toLocaleString(undefined, {
@@ -25,7 +27,9 @@ export function DateTimeField({ label, value, onChange, minimumDate }: DateTimeF
     <View style={styles.container}>
       <Text style={styles.label}>{label}</Text>
       <Pressable style={styles.field} onPress={() => setShowPicker(true)}>
-        <Text style={styles.value}>{formatted}</Text>
+        <Text style={[styles.value, !hasValue && styles.placeholder]}>
+          {hasValue ? formatted : placeholder}
+        </Text>
       </Pressable>
 
       {showPicker && (
@@ -63,6 +67,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.md,
   },
   value: { ...typography.body, color: theme.text.primary },
+  placeholder: { color: theme.text.muted },
   doneButton: { alignSelf: 'flex-end', paddingVertical: spacing.sm, paddingHorizontal: spacing.md },
   doneLabel: { ...typography.bodyMedium, color: theme.text.accent },
 });

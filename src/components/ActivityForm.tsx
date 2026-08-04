@@ -23,6 +23,10 @@ import { pickDefaultChild } from '@/utils/pickDefaultChild';
 import { generateActivityTitle } from '@/utils/generateActivityTitle';
 import { formatExactStartTime } from '@/utils/formatExactStartTime';
 import type { CreateActivityInput, CreateActivityStage } from '@/hooks/useCreateActivity';
+import {
+  resolveActivityFormMode,
+  startTimeValidationMessage,
+} from '@/utils/activityFormMode';
 
 const STAGE_LABELS: Record<CreateActivityStage, string> = {
   saving: 'Saving…',
@@ -30,11 +34,9 @@ const STAGE_LABELS: Record<CreateActivityStage, string> = {
   uploading: 'Uploading your photo…',
 };
 
-export interface ActivityFormInitialValues {
+export interface ActivityFormSeedValues {
   activityType: ActivityCategory;
-  title: string;
   description: string;
-  startsAt: Date;
   durationMinutes: number;
   latitude: number;
   longitude: number;
@@ -44,23 +46,15 @@ export interface ActivityFormInitialValues {
   babyMaxAgeMonths: number | null;
   notes: string;
   coverImageUrl?: string | null;
-  /** Empty means "coming alone". Omit entirely to default to alone (used
-   *  by the Edit Activity form, which doesn't currently pre-load the
-   *  activity's existing selection — see useEditActivity). */
-  hostChildIds?: string[];
 }
 
-interface ActivityFormProps {
-  /** Only ever set for Edit, where every field must start at the activity's
-   *  real current value. Create never passes this — see `initialLocation`
-   *  for the one piece of starting data Create actually needs. Passing a
-   *  populated object here for Create would silently disable the whole
-   *  create-only flow (Review step, reactive title generation, default-
-   *  child auto-select all gate on `!initialValues`). */
-  initialValues?: ActivityFormInitialValues;
-  /** Create-only: where to initially center the map, from the device's
-   *  current location. Ignored once `initialValues` is set. */
-  initialLocation?: { latitude: number; longitude: number };
+export interface ActivityFormEditValues extends ActivityFormSeedValues {
+  title: string;
+  startsAt: Date;
+  hostChildIds: string[];
+}
+
+interface ActivityFormSharedProps {
   submitLabel: string;
   isSubmitting: boolean;
   stage?: CreateActivityStage | 'saving' | null;
@@ -70,7 +64,14 @@ interface ActivityFormProps {
   footer?: React.ReactNode;
 }
 
+type ActivityFormProps = ActivityFormSharedProps & (
+  | { mode: 'create'; initialLocation: { latitude: number; longitude: number }; initialValues?: never }
+  | { mode: 'edit'; initialValues: ActivityFormEditValues; initialLocation?: never }
+  | { mode: 'again'; initialValues: ActivityFormSeedValues; initialLocation?: never }
+);
+
 export function ActivityForm({
+  mode,
   initialValues,
   initialLocation,
   submitLabel,
@@ -80,29 +81,26 @@ export function ActivityForm({
   onSubmit,
   footer,
 }: ActivityFormProps) {
-  // Only a brand-new activity gets the Type -> Date -> Location -> Review
-  // flow — editing an existing one keeps the original single-screen save,
-  // since a review step there would just be friction on a flow that
-  // already works.
-  const isCreateFlow = !initialValues;
+  const behavior = resolveActivityFormMode(mode);
+  const editValues = mode === 'edit' ? initialValues : null;
   const [reviewMode, setReviewMode] = useState(false);
 
   const { session } = useAuth();
   const { children } = useChildren(session?.user.id ?? null);
-  const [hostChildIds, setHostChildIds] = useState<string[]>(initialValues?.hostChildIds ?? []);
+  const [hostChildIds, setHostChildIds] = useState<string[]>(editValues?.hostChildIds ?? []);
   // Auto-select the host's default (or only) child the first time their
   // children finish loading — never for Edit, which pre-loads the
   // activity's real existing selection via initialValues.hostChildIds.
   // Fires once; after that the host's own taps are never overridden.
   const didAutoSelectChild = useRef(false);
   useEffect(() => {
-    if (initialValues) return;
+    if (!behavior.autoSelectsCurrentDefaultChild) return;
     if (didAutoSelectChild.current) return;
     const defaultChild = pickDefaultChild(children);
     if (!defaultChild) return;
     didAutoSelectChild.current = true;
     setHostChildIds([defaultChild.id]);
-  }, [children, initialValues]);
+  }, [behavior.autoSelectsCurrentDefaultChild, children]);
 
   const [activityType, setActivityType] = useState<ActivityCategory>(
     initialValues?.activityType ?? 'stroller_walk',
@@ -114,8 +112,8 @@ export function ActivityForm({
   // "Customize title" (and can tap back to "Use automatic title" any
   // time). Editing an existing activity starts customized (it already
   // has a real title) so it's never silently rewritten.
-  const [titleCustomized, setTitleCustomized] = useState(!!initialValues);
-  const [title, setTitle] = useState(initialValues?.title ?? '');
+  const [titleCustomized, setTitleCustomized] = useState(mode === 'edit');
+  const [title, setTitle] = useState(editValues?.title ?? '');
 
   // "Details" is the one optional free-text field — for an existing
   // activity being edited, fall back to its legacy `notes` value if
@@ -126,11 +124,12 @@ export function ActivityForm({
     initialValues?.description || initialValues?.notes || '',
   );
   const [startsAt, setStartsAt] = useState(() => {
-    if (initialValues) return initialValues.startsAt;
+    if (editValues) return editValues.startsAt;
     const d = new Date();
     d.setHours(d.getHours() + 2, 0, 0, 0);
     return d;
   });
+  const [hasSelectedStartTime, setHasSelectedStartTime] = useState(mode !== 'again');
   const initialDuration = initialValues?.durationMinutes ?? 60;
   const [durationMinutes, setDurationMinutes] = useState<number>(initialDuration);
   const [customDuration, setCustomDuration] = useState(
@@ -173,11 +172,13 @@ export function ActivityForm({
   }, [isSubmitting]);
 
   useEffect(() => {
-    if (titleCustomized) return;
+    if (titleCustomized || !hasSelectedStartTime) return;
     setTitle(generateActivityTitle(activityType, startsAt, locationName));
-  }, [activityType, startsAt, locationName, titleCustomized]);
+  }, [activityType, startsAt, hasSelectedStartTime, locationName, titleCustomized]);
 
   const validateEssentials = () => {
+    const startTimeError = startTimeValidationMessage(mode, hasSelectedStartTime);
+    if (startTimeError) return setValidationError(startTimeError), false;
     if (!title.trim()) return setValidationError('Give your activity a title'), false;
     if (!locationName.trim()) return setValidationError('Name the public place you picked'), false;
     setValidationError(null);
@@ -210,7 +211,7 @@ export function ActivityForm({
   };
 
   const handlePrimaryPress = () => {
-    if (isCreateFlow && !reviewMode) {
+    if (behavior.showsReview && !reviewMode) {
       if (!validateEssentials()) return;
       setReviewMode(true);
       return;
@@ -238,7 +239,7 @@ export function ActivityForm({
     }
   };
 
-  const reviewDateTimeSummary = formatExactStartTime(startsAt.toISOString());
+  const reviewDateTimeSummary = hasSelectedStartTime ? formatExactStartTime(startsAt.toISOString()) : '';
 
   const reviewChildSummary =
     hostChildIds.length === 0
@@ -248,16 +249,14 @@ export function ActivityForm({
           .map((c) => c.name)
           .join(', ') || 'Coming alone';
 
-  const primaryLabel = isSubmitting && stage ? STAGE_LABELS[stage] : isCreateFlow && !reviewMode ? 'Review' : submitLabel;
+  const primaryLabel = isSubmitting && stage ? STAGE_LABELS[stage] : behavior.showsReview && !reviewMode ? 'Review' : submitLabel;
 
   return (
     <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-      {isCreateFlow && reviewMode ? (
+      {behavior.showsReview && reviewMode ? (
         <View style={styles.reviewBlock}>
           <CoverFrame variant="hero" radius={radius.lg} style={styles.coverPreview}>
-            {/* Review only ever renders in the create flow, which has no
-                initialValues.coverImageUrl to fall back to. */}
-            <CoverImage url={coverUri} fallbackCategory={activityType} variant="hero" surface="ReviewStep" style={styles.coverPreviewFill} />
+            <CoverImage url={coverUri ?? initialValues?.coverImageUrl ?? null} fallbackCategory={activityType} variant="hero" surface="ReviewStep" style={styles.coverPreviewFill} />
           </CoverFrame>
           <Text style={styles.generatedTitle}>{title}</Text>
 
@@ -303,7 +302,7 @@ export function ActivityForm({
                 value={title}
                 onChangeText={setTitle}
               />
-              {!initialValues && (
+              {mode !== 'edit' && (
                 <Pressable
                   onPress={() => setTitleCustomized(false)}
                   hitSlop={8}
@@ -327,8 +326,12 @@ export function ActivityForm({
           <DateTimeField
             label="Date and start time"
             value={startsAt}
-            onChange={setStartsAt}
+            onChange={(date) => {
+              setStartsAt(date);
+              setHasSelectedStartTime(true);
+            }}
             minimumDate={new Date()}
+            hasValue={hasSelectedStartTime}
           />
 
           <Text style={styles.sectionLabel}>Duration</Text>
@@ -359,7 +362,7 @@ export function ActivityForm({
               setLongitude(lng);
             }}
             onChangeLocationName={setLocationName}
-            autoCenterOnMount={!initialValues}
+            autoCenterOnMount={mode === 'create'}
           />
           <Field label="Location name">
             <TextInput

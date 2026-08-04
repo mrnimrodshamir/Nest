@@ -64,6 +64,7 @@ export function EditActivityScreen({ activity, onBack, onSaved, onCancelled }: E
           </View>
         ) : (
           <ActivityForm
+            mode="edit"
             initialValues={{
               activityType: activity.category,
               title: activity.title,
