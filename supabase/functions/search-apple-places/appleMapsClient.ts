@@ -54,7 +54,6 @@ export class AppleMapsClient {
     url.searchParams.set('q', request.query);
     url.searchParams.set('lang', request.language === 'he' ? 'he-IL' : 'en-US');
     url.searchParams.set('limitToCountries', request.countryCode);
-    url.searchParams.set('limit', String(request.limit));
     if (request.center) url.searchParams.set('searchLocation', `${request.center.latitude},${request.center.longitude}`);
     return url;
   }
