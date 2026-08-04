@@ -80,3 +80,20 @@ test('the insert seed contains no id, so Supabase generates a new activity id', 
   assert.equal('id' in seed, false);
   assert.equal((seed as Record<string, unknown>).id, undefined);
 });
+
+test('again mode copies provider location metadata into an independent selection state', () => {
+  const original = previousActivity();
+  original.location.selection = {
+    place: { name: 'Museum', formattedAddress: 'Tel Aviv', latitude: 32.2, longitude: 34.9, category: 'Museum', provider: 'apple_maps', providerPlaceId: 'p1', source: 'provider', wasAdjusted: false },
+    latitude: 32.2,
+    longitude: 34.9,
+    displayName: 'Museum',
+    addressLabel: 'Tel Aviv',
+    source: 'provider',
+    wasAdjusted: false,
+  };
+  const seed = buildCreateAgainSeed(original);
+  assert.deepEqual(seed.selectedLocation, original.location.selection);
+  assert.notEqual(seed.selectedLocation, original.location.selection);
+  assert.notEqual(seed.selectedLocation?.place, original.location.selection.place);
+});

@@ -9,9 +9,8 @@ test('mobile Places contract contains no provider credentials or endpoints', asy
   assert.doesNotMatch(source, /BEGIN PRIVATE KEY/);
 });
 
-test('Expo location search remains active until Stage 2', async () => {
+test('Stage 2 text search uses the provider-neutral client while Expo Location stays out of the hook', async () => {
   const source = await readFile(new URL('../hooks/usePlaceSearch.ts', import.meta.url), 'utf8');
-  assert.match(source, /Location\.geocodeAsync/);
-  assert.doesNotMatch(source, /functions\.invoke/);
+  assert.match(source, /invokePlaceSearch/);
+  assert.doesNotMatch(source, /expo-location|maps-api\.apple\.com/);
 });
-

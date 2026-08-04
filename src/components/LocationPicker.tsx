@@ -7,6 +7,7 @@ import { theme, typography, spacing, radius } from '@/theme';
 import { usePlaceSearch, type PlaceSearchItem } from '@/hooks/usePlaceSearch';
 import type { NormalizedPlace, SelectedActivityLocation } from '@/types/place';
 import { presentSelectedLocation } from '@/utils/locationPresentation';
+import { LOCATION_PICKER_DELTA, selectProviderPlace } from '@/utils/placeSelection';
 
 interface LocationPickerProps {
   latitude: number;
@@ -24,7 +25,7 @@ interface LocationPickerProps {
   autoCenterOnMount?: boolean;
 }
 
-const DELTA = 0.02;
+const DELTA = LOCATION_PICKER_DELTA;
 
 /** Wolt/Uber-style picker — the map itself is the primary input and works
  *  fully on its own. A pin stays fixed in the visual center; the parent
@@ -108,14 +109,12 @@ export function LocationPicker({
     setIsResolvingSelection(true);
     try {
       const place = await search.resolveResult(item);
+      const selected = selectProviderPlace(place);
       Keyboard.dismiss();
-      onSelectPlace?.(place);
-      onChangeCoordinates(place.latitude, place.longitude);
-      onChangeLocationName?.(place.name);
-      mapRef.current?.animateToRegion(
-        { latitude: place.latitude, longitude: place.longitude, latitudeDelta: DELTA, longitudeDelta: DELTA },
-        400,
-      );
+      onSelectPlace?.(selected.selection.place!);
+      onChangeCoordinates(selected.selection.latitude, selected.selection.longitude);
+      onChangeLocationName?.(selected.selection.displayName);
+      mapRef.current?.animateToRegion(selected.cameraRegion, 400);
       search.clearResults();
     } catch {
       // The hook exposes a safe retry state; manual map selection remains usable.

@@ -53,8 +53,13 @@ export class PlaceSearchCoordinator {
   private version = 0;
   private lastRequestKey: string | null = null;
   private lastCenter = { latitude: 0, longitude: 0 };
+  private readonly invoke: PlaceSearchInvoker;
+  private readonly scheduler: PlaceSearchScheduler;
 
-  constructor(private readonly invoke: PlaceSearchInvoker, private readonly scheduler = DEFAULT_SCHEDULER) {}
+  constructor(invoke: PlaceSearchInvoker, scheduler = DEFAULT_SCHEDULER) {
+    this.invoke = invoke;
+    this.scheduler = scheduler;
+  }
 
   subscribe(listener: (state: PlaceSearchState) => void): () => void {
     this.listeners.add(listener);

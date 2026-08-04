@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { adjustProviderPlace, distanceMeters, PLACE_ADJUSTMENT_TOLERANCE_METERS } from './placeAdjustment.ts';
+import { adjustProviderPlace, applyReverseGeocodeLabel, distanceMeters, moveSelectedLocation, PLACE_ADJUSTMENT_TOLERANCE_METERS } from './placeAdjustment.ts';
+import { normalizedPlaceToSelectedLocation } from './activityPlaceMapping.ts';
 import { createAppleMapsPlace } from './normalizedPlace.ts';
 
 const origin = { latitude: 32.0853, longitude: 34.7818 };
@@ -35,3 +36,29 @@ test('rejects invalid adjustment coordinates', () => {
   assert.throws(() => distanceMeters(origin, { latitude: 32, longitude: 181 }), RangeError);
 });
 
+test('selection transition retains provider at exactly 40 metres', () => {
+  const selected = normalizedPlaceToSelectedLocation(createAppleMapsPlace({ name: 'Café', latitude: origin.latitude, longitude: origin.longitude, category: 'Cafe', providerPlaceId: 'p1' }));
+  const moved = moveSelectedLocation(selected, northBy(40));
+  assert.equal(moved.source, 'provider');
+  assert.equal(moved.place?.providerPlaceId, 'p1');
+  assert.equal(moved.wasAdjusted, false);
+});
+
+test('selection transition clears venue identity above 40 metres then accepts reverse-geocode label', () => {
+  const selected = normalizedPlaceToSelectedLocation(createAppleMapsPlace({ name: 'Café', formattedAddress: 'Old address', latitude: origin.latitude, longitude: origin.longitude, category: 'Cafe', providerPlaceId: 'p1' }));
+  const moved = moveSelectedLocation(selected, northBy(41));
+  assert.equal(moved.place, null);
+  assert.equal(moved.displayName, 'Selected meeting point');
+  assert.equal(moved.addressLabel, null);
+  assert.equal(moved.source, 'manual');
+  assert.equal(moved.wasAdjusted, true);
+  const geocoded = applyReverseGeocodeLabel(moved, 'Hayarkon Park, Tel Aviv');
+  assert.equal(geocoded.displayName, 'Selected meeting point');
+  assert.equal(geocoded.addressLabel, 'Hayarkon Park, Tel Aviv');
+});
+
+test('reverse-geocode failure preserves valid manual coordinates and fallback copy', () => {
+  const selected = normalizedPlaceToSelectedLocation(createAppleMapsPlace({ name: 'Café', latitude: origin.latitude, longitude: origin.longitude }));
+  const moved = moveSelectedLocation(selected, northBy(41));
+  assert.deepEqual(applyReverseGeocodeLabel(moved, null), moved);
+});
