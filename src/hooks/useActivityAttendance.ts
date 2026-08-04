@@ -1,73 +1,61 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
-import { birthdateToMonths, formatBabyAge } from '@/utils/babyAge';
+import {
+  groupAttendance,
+  type AttendanceRow,
+  type PersonAttendance,
+} from '@/utils/attendanceSummary';
 
-interface AttendanceRow {
-  source: 'host' | 'attendee';
-  user_id: string;
-  display_name: string;
-  avatar_url: string | null;
-  coming_alone: boolean;
-  child_id: string | null;
-  child_name: string | null;
-  child_birthdate: string | null;
+export type { PersonAttendance } from '@/utils/attendanceSummary';
+
+export interface AttendanceState {
+  people: PersonAttendance[];
+  /** Keyed by user id — preserves the previous map-shaped API used by the
+   *  "who's coming with whom" line on Activity Detail. */
+  byUser: Record<string, PersonAttendance>;
+  isLoading: boolean;
+  error: string | null;
+  refresh: () => void;
 }
 
-export interface PersonAttendance {
-  userId: string;
-  comingAlone: boolean;
-  /** Privacy-approved copy: "coming alone" / "Maya, 4 months" / "two children". */
-  summary: string;
-}
+/** Attendance for an activity, grouped one entry per person with the host
+ *  first. Built from get_activity_attendance(), which returns one row per
+ *  (person x child) and a PRE-COARSENED child age — never a birthdate.
+ *
+ *  `refreshKey` lets Activity Detail force a refetch after a join or leave
+ *  so the participants list and counts reflect the change immediately. */
+export function useActivityAttendance(activityId: string, refreshKey = 0): AttendanceState {
+  const [people, setPeople] = useState<PersonAttendance[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [manualKey, setManualKey] = useState(0);
 
-/** "Who's coming with whom" for an activity — one summary string per
- *  person (host included), built from get_activity_attendance(). Shows
- *  first name + age for a single child, and a headcount-only phrase for
- *  multiple (matches the agreed privacy model: never expose every
- *  attending family's full child roster in one glance). */
-export function useActivityAttendance(activityId: string): Record<string, PersonAttendance> {
-  const [byUser, setByUser] = useState<Record<string, PersonAttendance>>({});
+  const refresh = useCallback(() => setManualKey((k) => k + 1), []);
 
   useEffect(() => {
     let cancelled = false;
+    setIsLoading(true);
+    setError(null);
+
     supabase
       .rpc('get_activity_attendance', { p_activity_id: activityId })
-      .then(({ data, error }) => {
-        if (cancelled || error || !data) return;
-        const rows = data as AttendanceRow[];
-        const byUserRows = new Map<string, AttendanceRow[]>();
-        for (const row of rows) {
-          const list = byUserRows.get(row.user_id) ?? [];
-          list.push(row);
-          byUserRows.set(row.user_id, list);
+      .then(({ data, error: rpcError }) => {
+        if (cancelled) return;
+        setIsLoading(false);
+        if (rpcError) {
+          setError("Couldn't load participants.");
+          return;
         }
-
-        const result: Record<string, PersonAttendance> = {};
-        for (const [userId, personRows] of byUserRows) {
-          const comingAlone = personRows[0]?.coming_alone ?? true;
-          const childRows = personRows.filter((r) => r.child_id);
-          result[userId] = {
-            userId,
-            comingAlone,
-            summary: summarize(comingAlone, childRows),
-          };
-        }
-        setByUser(result);
+        setPeople(groupAttendance((data ?? []) as AttendanceRow[]));
       });
+
     return () => {
       cancelled = true;
     };
-  }, [activityId]);
+  }, [activityId, refreshKey, manualKey]);
 
-  return byUser;
-}
+  const byUser: Record<string, PersonAttendance> = {};
+  for (const person of people) byUser[person.userId] = person;
 
-function summarize(comingAlone: boolean, childRows: AttendanceRow[]): string {
-  if (comingAlone || childRows.length === 0) return 'coming alone';
-  if (childRows.length === 1) {
-    const row = childRows[0];
-    const age = row.child_birthdate ? formatBabyAge(birthdateToMonths(row.child_birthdate)) : null;
-    return age ? `coming with ${row.child_name}, ${age}` : `coming with ${row.child_name}`;
-  }
-  return `coming with ${childRows.length} children`;
+  return { people, byUser, isLoading, error, refresh };
 }

@@ -76,6 +76,15 @@ test('host coming alone', () => {
   assert.equal(people[0].withLabel, 'Coming alone');
 });
 
+test('host with multiple children stays one host row and shows every selected child', () => {
+  const people = groupAttendance([
+    row({ source: 'host', user_id: 'h1', child_id: 'c1', child_name: 'Go' }),
+    row({ source: 'host', user_id: 'h1', child_id: 'c2', child_name: 'Yo' }),
+  ]);
+  assert.equal(people.length, 1);
+  assert.equal(people[0].withLabel, 'With Go and Yo');
+});
+
 // ---------------------------------------------------------------------
 // Participants
 // ---------------------------------------------------------------------
@@ -112,6 +121,17 @@ test('participant coming alone', () => {
   ]);
   assert.equal(people[0].withLabel, 'Coming alone');
   assert.deepEqual(people[0].childNames, []);
+});
+
+test('missing child data degrades to Coming alone without dropping the caregiver', () => {
+  const people = groupAttendance([row({ child_id: null, child_name: null, child_age_months: null })]);
+  assert.equal(people.length, 1);
+  assert.equal(people[0].withLabel, 'Coming alone');
+});
+
+test('missing avatar is retained as null for the PersonCard initial fallback', () => {
+  const people = groupAttendance([row({ avatar_url: null })]);
+  assert.equal(people[0].avatarUrl, null);
 });
 
 test('duplicate attendance rows for the same child do not duplicate the name', () => {

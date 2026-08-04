@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, ScrollView, Pressable, StyleSheet, Linking, Platform, Alert, Share } from 'react-native';
+import { View, Text, ScrollView, Pressable, StyleSheet, Linking, Platform, Alert, Share, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MapView, { Marker, PROVIDER_DEFAULT } from 'react-native-maps';
 import * as Notifications from 'expo-notifications';
@@ -11,6 +11,7 @@ import type { ActivityDetail } from '@/types/activity';
 import { CATEGORY_LABELS } from '@/types/activity';
 import { formatExactStartTime } from '@/utils/formatExactStartTime';
 import { formatDuration } from '@/utils/formatDuration';
+import { resolveParticipantCounts } from '@/utils/attendanceSummary';
 import { formatAgeRange } from '@/utils/babyAge';
 import { buildShareMessage } from '@/utils/buildShareMessage';
 import { APP_NAME } from '@/constants/brand';
@@ -60,8 +61,8 @@ export function ActivityDetailScreen({
   isHost = false,
   onEdit,
 }: ActivityDetailScreenProps) {
-  const { activity, isSubmitting, error, join, leave } = useActivityRsvp(initial);
-  const attendance = useActivityAttendance(activity.id);
+  const attendance = useActivityAttendance(initial.id);
+  const { activity, isSubmitting, error, join, leave } = useActivityRsvp(initial, attendance.refresh);
   const { profile, session, updateProfileDetails } = useAuth();
   const { children, setDefaultChild } = useChildren(session?.user.id ?? null);
   const { submitReport, blockUser } = useReportAndBlock();
@@ -78,6 +79,17 @@ export function ActivityDetailScreen({
   const canJoin = !isCancelled && !isEnded && (activity.viewerStatus === 'going' || !isFull);
   const spotsLeft =
     activity.capacity !== null ? Math.max(0, activity.capacity - activity.attendeeCount) : null;
+  const participantCounts = resolveParticipantCounts(attendance.people, activity.capacity);
+  const displayedParticipantCount = attendance.isLoading || attendance.error
+    ? activity.attendeeCount
+    : participantCounts.count;
+  const displayedSpotsLeft = attendance.isLoading || attendance.error
+    ? spotsLeft
+    : participantCounts.spotsLeft;
+  const hostAttendance = attendance.people.find((person) => person.isHost || person.userId === activity.host.id);
+  const joiningParticipants = attendance.people.filter(
+    (person) => !person.isHost && person.userId !== activity.host.id,
+  );
 
   const calendarInfo = {
     id: activity.id,
@@ -312,17 +324,27 @@ export function ActivityDetailScreen({
             Baby age: {formatAgeRange(activity.babyMinAgeMonths, activity.babyMaxAgeMonths)}
           </Text>
 
-          {/* People, promoted above the fold -- this is who you'd actually be
-              meeting, and it comes before the description/location details. */}
+          {/* Kept in the existing people card position and visual language;
+              the richer rows replace the old overlapping avatar stack. */}
           <View style={styles.peopleCard}>
-            <Text style={styles.peopleCardLabel}>WHO'S MEETING UP</Text>
+            <View style={styles.participantsHeader}>
+              <Text style={styles.peopleCardLabel}>
+                Participants · {displayedParticipantCount}
+                {activity.capacity !== null ? `/${activity.capacity}` : ''}
+              </Text>
+              {displayedSpotsLeft !== null && displayedSpotsLeft > 0 ? (
+                <Text style={styles.spotsLabel}>
+                  {displayedSpotsLeft === 1 ? '1 spot left' : `${displayedSpotsLeft} spots left`}
+                </Text>
+              ) : null}
+            </View>
+
+            <Text style={styles.participantGroupLabel}>Host</Text>
             <PersonCard
               size="row"
-              name={activity.host.displayName}
-              avatarUrl={activity.host.avatarUrl}
-              subtitle={[activity.host.bio ?? 'Hosting', attendance[activity.host.id]?.summary]
-                .filter(Boolean)
-                .join(' · ')}
+              name={firstName(hostAttendance?.displayName ?? activity.host.displayName)}
+              avatarUrl={hostAttendance?.avatarUrl ?? activity.host.avatarUrl}
+              subtitle={hostAttendance?.withLabel ?? (attendance.isLoading ? 'Loading attendance…' : 'Coming alone')}
               onPress={() => onOpenPerson(activity.host.id)}
               accessoryRight={
                 <Pressable onPress={() => onMessageHost(activity.host.id)} hitSlop={12}>
@@ -330,25 +352,33 @@ export function ActivityDetailScreen({
                 </Pressable>
               }
             />
-            {activity.attendees.length > 0 && (
-              <View style={styles.attendeeRow}>
-                {activity.attendees.slice(0, 6).map((attendee, index) => (
-                  <View key={attendee.id} style={index === 0 ? undefined : styles.attendeeOverlap}>
-                    <PersonCard
-                      size="compact"
-                      name={attendee.displayName}
-                      avatarUrl={attendee.avatarUrl}
-                      onPress={() => onOpenPerson(attendee.id)}
-                    />
-                  </View>
-                ))}
-                <Text style={styles.attendeeCount}>
-                  {activity.attendeeCount} going
-                  {spotsLeft !== null && spotsLeft > 0 && ` · ${spotsLeft} spots left`}
-                </Text>
+
+            <Text style={styles.participantGroupLabel}>Joining</Text>
+            {attendance.isLoading ? (
+              <View style={styles.participantsState}>
+                <ActivityIndicator size="small" color={theme.brand.primary} />
+                <Text style={styles.participantsStateText}>Loading participants…</Text>
               </View>
+            ) : attendance.error ? (
+              <Pressable style={styles.participantsState} onPress={attendance.refresh}>
+                <Text style={styles.participantsError}>{attendance.error}</Text>
+                <Text style={styles.retryLabel}>Try again</Text>
+              </Pressable>
+            ) : joiningParticipants.length === 0 ? (
+              <Text style={styles.participantsStateText}>No one else has joined yet.</Text>
+            ) : (
+              joiningParticipants.map((person) => (
+                <PersonCard
+                  key={person.userId}
+                  size="row"
+                  name={firstName(person.displayName)}
+                  avatarUrl={person.avatarUrl}
+                  subtitle={person.withLabel}
+                  onPress={() => onOpenPerson(person.userId)}
+                />
+              ))
             )}
-            <Text style={styles.tapHint}>Tap anyone to see their profile →</Text>
+            <Text style={styles.tapHint}>Tap a participant to see their profile →</Text>
           </View>
 
           {canOpenChat && onOpenChat && (
@@ -500,6 +530,10 @@ export function ActivityDetailScreen({
   );
 }
 
+function firstName(displayName: string): string {
+  return displayName.trim().split(/\s+/)[0] || 'Parent';
+}
+
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: theme.background.app },
   topBar: {
@@ -551,8 +585,14 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   peopleCardLabel: { ...typography.caption, fontWeight: '700' as const, color: theme.brand.primaryPressed, letterSpacing: 0.4 },
+  participantsHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm },
+  spotsLabel: { ...typography.caption, color: theme.brand.primaryPressed },
+  participantGroupLabel: { ...typography.caption, fontWeight: '600' as const, color: theme.text.secondary, marginTop: spacing.xs },
+  participantsState: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, minHeight: 44 },
+  participantsStateText: { ...typography.footnote, color: theme.text.secondary },
+  participantsError: { ...typography.footnote, color: theme.semantic.danger, flex: 1 },
+  retryLabel: { ...typography.footnote, color: theme.text.accent, fontWeight: '600' as const },
   messageLink: { ...typography.footnote, fontWeight: '600' as const, color: theme.text.accent },
-  attendeeOverlap: { marginLeft: -10 },
   tapHint: { ...typography.caption, color: theme.brand.primaryPressed },
   chatRow: {
     flexDirection: 'row',
@@ -608,8 +648,6 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xs,
   },
   calendarNoticeButtonLabel: { ...typography.caption, color: theme.text.inverse, fontWeight: '600' as const },
-  attendeeRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap' },
-  attendeeCount: { ...typography.footnote, color: theme.text.secondary, marginLeft: spacing.md },
   ctaBar: {
     padding: spacing.lg,
     borderTopWidth: StyleSheet.hairlineWidth,

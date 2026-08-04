@@ -91,7 +91,7 @@ begin
   left join public.activity_attendee_children ac on ac.attendee_id = aa.id
   left join public.children c on c.id = ac.child_id
   where aa.activity_id = p_activity_id
-    and aa.status in ('going', 'attended');  -- active attendance only
+    and aa.status = 'going';  -- current active participants only
 end;
 $$;
 
