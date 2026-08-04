@@ -1,5 +1,5 @@
-import type { NormalizedPlace } from '@/types/place';
-import { createLegacyPlace } from '@/utils/normalizedPlace';
+import type { NormalizedPlace, SelectedActivityLocation } from '@/types/place';
+import { createLegacyPlace, createManualPlace } from '@/utils/normalizedPlace';
 
 export interface ActivityPlaceColumns {
   place_name?: string | null;
@@ -47,3 +47,57 @@ export function activityColumnsToNormalizedPlace(row: LegacyActivityLocationColu
   };
 }
 
+export function normalizedPlaceToSelectedLocation(place: NormalizedPlace): SelectedActivityLocation {
+  return {
+    place: place.source === 'provider' ? place : null,
+    latitude: place.latitude,
+    longitude: place.longitude,
+    displayName: place.name,
+    addressLabel: place.formattedAddress,
+    source: place.source,
+    wasAdjusted: place.wasAdjusted,
+  };
+}
+
+export function legacyFieldsToSelectedLocation(input: {
+  addressLabel: string;
+  latitude: number;
+  longitude: number;
+}): SelectedActivityLocation {
+  const legacy = createLegacyPlace(input);
+  return normalizedPlaceToSelectedLocation(legacy);
+}
+
+export function activityColumnsToSelectedLocation(row: LegacyActivityLocationColumns): SelectedActivityLocation {
+  return normalizedPlaceToSelectedLocation(activityColumnsToNormalizedPlace(row));
+}
+
+export function selectedLocationToNormalizedPlace(selection: SelectedActivityLocation): NormalizedPlace {
+  if (selection.source === 'provider' && selection.place) {
+    return {
+      ...selection.place,
+      name: selection.displayName.trim() || selection.place.name,
+      formattedAddress: selection.addressLabel?.trim() || null,
+      latitude: selection.latitude,
+      longitude: selection.longitude,
+      source: 'provider',
+      wasAdjusted: false,
+    };
+  }
+  if (selection.source === 'legacy') {
+    return createLegacyPlace({
+      addressLabel: selection.displayName || selection.addressLabel || 'Selected meeting point',
+      latitude: selection.latitude,
+      longitude: selection.longitude,
+    });
+  }
+  return {
+    ...createManualPlace({
+      name: selection.displayName,
+      formattedAddress: selection.addressLabel,
+      latitude: selection.latitude,
+      longitude: selection.longitude,
+    }),
+    wasAdjusted: selection.wasAdjusted,
+  };
+}

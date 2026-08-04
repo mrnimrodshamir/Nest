@@ -18,8 +18,11 @@ import { useAuth } from '@/hooks/useAuth';
 import { useChildren } from '@/hooks/useChildren';
 import { CATEGORY_LABELS, DURATION_OPTIONS_MINUTES } from '@/types/activity';
 import type { ActivityCategory } from '@/types/activity';
-import type { NormalizedPlace } from '@/types/place';
-import { createManualPlace } from '@/utils/normalizedPlace';
+import type { SelectedActivityLocation } from '@/types/place';
+import {
+  legacyFieldsToSelectedLocation,
+  selectedLocationToNormalizedPlace,
+} from '@/utils/activityPlaceMapping';
 import { adjustProviderPlace } from '@/utils/placeAdjustment';
 import { formatDuration } from '@/utils/formatDuration';
 import { pickDefaultChild } from '@/utils/pickDefaultChild';
@@ -44,7 +47,7 @@ export interface ActivityFormSeedValues {
   latitude: number;
   longitude: number;
   locationName: string;
-  place?: NormalizedPlace;
+  selectedLocation?: SelectedActivityLocation;
   maxParticipants: number | null;
   babyMinAgeMonths: number | null;
   babyMaxAgeMonths: number | null;
@@ -139,14 +142,14 @@ export function ActivityForm({
   const [customDuration, setCustomDuration] = useState(
     !(DURATION_OPTIONS_MINUTES as readonly number[]).includes(initialDuration),
   );
-  const [latitude, setLatitude] = useState(
-    initialValues?.latitude ?? initialLocation?.latitude ?? 32.0853,
+  const [selectedLocation, setSelectedLocation] = useState<SelectedActivityLocation>(() =>
+    initialValues?.selectedLocation ?? legacyFieldsToSelectedLocation({
+      addressLabel: initialValues?.locationName ?? '',
+      latitude: initialValues?.latitude ?? initialLocation?.latitude ?? 32.0853,
+      longitude: initialValues?.longitude ?? initialLocation?.longitude ?? 34.7818,
+    }),
   );
-  const [longitude, setLongitude] = useState(
-    initialValues?.longitude ?? initialLocation?.longitude ?? 34.7818,
-  );
-  const [locationName, setLocationName] = useState(initialValues?.locationName ?? '');
-  const [place, setPlace] = useState<NormalizedPlace | null>(initialValues?.place ?? null);
+  const { latitude, longitude, displayName: locationName } = selectedLocation;
   const [maxParticipants, setMaxParticipants] = useState(initialValues?.maxParticipants ?? 8);
   const [noLimit, setNoLimit] = useState(initialValues ? initialValues.maxParticipants === null : false);
   const [anyAge, setAnyAge] = useState(
@@ -195,12 +198,6 @@ export function ActivityForm({
     if (!validateEssentials()) return;
 
     inFlightRef.current = true;
-    const submittedPlace = place ?? createManualPlace({
-      name: locationName,
-      formattedAddress: locationName,
-      latitude,
-      longitude,
-    });
     onSubmit({
       activityType,
       title: title.trim(),
@@ -210,7 +207,7 @@ export function ActivityForm({
       latitude,
       longitude,
       locationName: locationName.trim(),
-      place: { ...submittedPlace, name: locationName.trim(), latitude, longitude },
+      place: selectedLocationToNormalizedPlace({ ...selectedLocation, displayName: locationName.trim() }),
       maxParticipants: noLimit ? null : maxParticipants,
       babyMinAgeMonths: anyAge ? null : minYears * 12 + minMonths,
       babyMaxAgeMonths: anyAge ? null : maxYears * 12 + maxMonths,
@@ -369,17 +366,26 @@ export function ActivityForm({
             latitude={latitude}
             longitude={longitude}
             onChangeCoordinates={(lat, lng) => {
-              setLatitude(lat);
-              setLongitude(lng);
-              setPlace((current) => current?.source === 'provider'
-                ? adjustProviderPlace(current, { latitude: lat, longitude: lng }, locationName, locationName)
-                : createManualPlace({ name: locationName, formattedAddress: locationName, latitude: lat, longitude: lng }));
+              setSelectedLocation((current) => {
+                if (current.source === 'provider' && current.place) {
+                  const adjusted = adjustProviderPlace(current.place, { latitude: lat, longitude: lng }, 'Selected meeting point', current.addressLabel);
+                  return {
+                    place: adjusted.source === 'provider' ? adjusted : null,
+                    latitude: lat,
+                    longitude: lng,
+                    displayName: adjusted.name,
+                    addressLabel: adjusted.formattedAddress,
+                    source: adjusted.source,
+                    wasAdjusted: adjusted.wasAdjusted,
+                  };
+                }
+                return { ...current, latitude: lat, longitude: lng, source: current.source === 'legacy' ? 'manual' : current.source };
+              });
             }}
             onChangeLocationName={(name) => {
-              setLocationName(name);
-              setPlace((current) => current
-                ? current.source === 'provider' ? current : { ...current, name, formattedAddress: name }
-                : createManualPlace({ name, formattedAddress: name, latitude, longitude }));
+              setSelectedLocation((current) => current.source === 'provider'
+                ? current
+                : { ...current, displayName: name, addressLabel: name || null });
             }}
             autoCenterOnMount={mode === 'create'}
           />
@@ -390,8 +396,7 @@ export function ActivityForm({
               placeholderTextColor={theme.text.muted}
               value={locationName}
               onChangeText={(name) => {
-                setLocationName(name);
-                setPlace((current) => current ? { ...current, name } : null);
+                setSelectedLocation((current) => ({ ...current, displayName: name }));
               }}
             />
           </Field>

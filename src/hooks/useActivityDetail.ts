@@ -4,7 +4,7 @@ import { supabase } from '@/lib/supabase';
 import { createRequestGuard } from '@/utils/staleRequestGuard';
 import type { ActivityCategory, ActivityDetail, ActivityStatus, Attendee } from '@/types/activity';
 import type { ActivityPlaceColumns } from '@/utils/activityPlaceMapping';
-import { activityColumnsToNormalizedPlace } from '@/utils/activityPlaceMapping';
+import { activityColumnsToSelectedLocation } from '@/utils/activityPlaceMapping';
 
 interface UseActivityDetailResult {
   detail: ActivityDetail | null;
@@ -137,7 +137,7 @@ export function useActivityDetail(activityId: string): UseActivityDetailResult {
         label: activityRow.address_label,
         latitude: activityRow.latitude,
         longitude: activityRow.longitude,
-        place: activityColumnsToNormalizedPlace(activityRow),
+        selection: activityColumnsToSelectedLocation(activityRow),
       },
       host: {
         id: activityRow.host_id,
