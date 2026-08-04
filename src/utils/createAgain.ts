@@ -17,6 +17,7 @@ export function buildCreateAgainSeed(activity: ActivityDetail): ActivityFormSeed
     latitude: activity.location.latitude,
     longitude: activity.location.longitude,
     locationName: activity.location.label,
+    ...(activity.location.place ? { place: activity.location.place } : {}),
     maxParticipants: activity.capacity,
     babyMinAgeMonths: activity.babyMinAgeMonths,
     babyMaxAgeMonths: activity.babyMaxAgeMonths,

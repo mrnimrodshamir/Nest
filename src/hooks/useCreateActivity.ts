@@ -3,6 +3,8 @@ import { supabase } from '@/lib/supabase';
 import { uploadActivityCover, type CoverUploadStage } from '@/lib/uploadActivityCover';
 import { track } from '@/lib/analytics';
 import type { ActivityCategory } from '@/types/activity';
+import type { NormalizedPlace } from '@/types/place';
+import { normalizedPlaceToColumns } from '@/utils/activityPlaceMapping';
 
 export interface CreateActivityInput {
   activityType: ActivityCategory;
@@ -13,6 +15,7 @@ export interface CreateActivityInput {
   latitude: number;
   longitude: number;
   locationName: string;
+  place: NormalizedPlace;
   maxParticipants: number | null;
   babyMinAgeMonths: number | null;
   babyMaxAgeMonths: number | null;
@@ -107,6 +110,7 @@ export function useCreateActivity(): UseCreateActivityResult {
           notes: input.notes || null,
           cover_image_url: input.coverImageUrl,
           host_coming_alone: input.hostChildIds.length === 0,
+          ...normalizedPlaceToColumns(input.place),
         })
         .select('id')
         .single();

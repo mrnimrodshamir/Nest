@@ -18,6 +18,9 @@ import { useAuth } from '@/hooks/useAuth';
 import { useChildren } from '@/hooks/useChildren';
 import { CATEGORY_LABELS, DURATION_OPTIONS_MINUTES } from '@/types/activity';
 import type { ActivityCategory } from '@/types/activity';
+import type { NormalizedPlace } from '@/types/place';
+import { createManualPlace } from '@/utils/normalizedPlace';
+import { adjustProviderPlace } from '@/utils/placeAdjustment';
 import { formatDuration } from '@/utils/formatDuration';
 import { pickDefaultChild } from '@/utils/pickDefaultChild';
 import { generateActivityTitle } from '@/utils/generateActivityTitle';
@@ -41,6 +44,7 @@ export interface ActivityFormSeedValues {
   latitude: number;
   longitude: number;
   locationName: string;
+  place?: NormalizedPlace;
   maxParticipants: number | null;
   babyMinAgeMonths: number | null;
   babyMaxAgeMonths: number | null;
@@ -142,6 +146,7 @@ export function ActivityForm({
     initialValues?.longitude ?? initialLocation?.longitude ?? 34.7818,
   );
   const [locationName, setLocationName] = useState(initialValues?.locationName ?? '');
+  const [place, setPlace] = useState<NormalizedPlace | null>(initialValues?.place ?? null);
   const [maxParticipants, setMaxParticipants] = useState(initialValues?.maxParticipants ?? 8);
   const [noLimit, setNoLimit] = useState(initialValues ? initialValues.maxParticipants === null : false);
   const [anyAge, setAnyAge] = useState(
@@ -190,6 +195,12 @@ export function ActivityForm({
     if (!validateEssentials()) return;
 
     inFlightRef.current = true;
+    const submittedPlace = place ?? createManualPlace({
+      name: locationName,
+      formattedAddress: locationName,
+      latitude,
+      longitude,
+    });
     onSubmit({
       activityType,
       title: title.trim(),
@@ -199,6 +210,7 @@ export function ActivityForm({
       latitude,
       longitude,
       locationName: locationName.trim(),
+      place: { ...submittedPlace, name: locationName.trim(), latitude, longitude },
       maxParticipants: noLimit ? null : maxParticipants,
       babyMinAgeMonths: anyAge ? null : minYears * 12 + minMonths,
       babyMaxAgeMonths: anyAge ? null : maxYears * 12 + maxMonths,
@@ -359,8 +371,16 @@ export function ActivityForm({
             onChangeCoordinates={(lat, lng) => {
               setLatitude(lat);
               setLongitude(lng);
+              setPlace((current) => current?.source === 'provider'
+                ? adjustProviderPlace(current, { latitude: lat, longitude: lng }, locationName, locationName)
+                : createManualPlace({ name: locationName, formattedAddress: locationName, latitude: lat, longitude: lng }));
             }}
-            onChangeLocationName={setLocationName}
+            onChangeLocationName={(name) => {
+              setLocationName(name);
+              setPlace((current) => current
+                ? current.source === 'provider' ? current : { ...current, name, formattedAddress: name }
+                : createManualPlace({ name, formattedAddress: name, latitude, longitude }));
+            }}
             autoCenterOnMount={mode === 'create'}
           />
           <Field label="Location name">
@@ -369,7 +389,10 @@ export function ActivityForm({
               placeholder="e.g. HaYarkon Park, main entrance"
               placeholderTextColor={theme.text.muted}
               value={locationName}
-              onChangeText={setLocationName}
+              onChangeText={(name) => {
+                setLocationName(name);
+                setPlace((current) => current ? { ...current, name } : null);
+              }}
             />
           </Field>
 

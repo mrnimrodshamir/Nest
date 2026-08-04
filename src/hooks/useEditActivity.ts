@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { uploadActivityCover, type CoverUploadStage } from '@/lib/uploadActivityCover';
 import type { CreateActivityInput } from '@/hooks/useCreateActivity';
+import { normalizedPlaceToColumns } from '@/utils/activityPlaceMapping';
 
 export function useEditActivity(activityId: string) {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -43,6 +44,7 @@ export function useEditActivity(activityId: string) {
         baby_max_age_months: input.babyMaxAgeMonths,
         notes: input.notes || null,
         host_coming_alone: input.hostChildIds.length === 0,
+        ...normalizedPlaceToColumns(input.place),
         ...coverUpdate,
       })
       .eq('id', activityId);

@@ -125,6 +125,7 @@ export interface ActivityLocation {
   label: string; // e.g. "HaYarkon Park, main entrance" — always a public place
   latitude: number;
   longitude: number;
+  place?: import('@/types/place').NormalizedPlace;
 }
 
 /** Full detail-screen shape. Extends the lightweight card Activity so the
