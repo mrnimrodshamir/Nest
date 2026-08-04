@@ -33,10 +33,9 @@ const MAX_RESULTS = 5;
  *  than a full POI index, so small local businesses (a specific café) are
  *  less reliably found than a well-known place name.
  *
- *  A Google Places-backed alternative already exists (see
- *  supabase/functions/search-places and the dormant edge function) but is
- *  intentionally not wired in here — the product decision is not to
- *  require Google billing/credentials for the active app flow. */
+ *  A provider-neutral Apple Maps Server API Edge Function contract is
+ *  prepared locally, but intentionally remains disconnected until the
+ *  Stage 2 search UI integration. */
 export function usePlaceSearch(regionCenter: { latitude: number; longitude: number }): UsePlaceSearchResult {
   const [query, setQueryState] = useState('');
   const [results, setResults] = useState<PlaceResult[]>([]);
