@@ -29,3 +29,6 @@ android/app/build/
 
 # Local generation/QC tooling (not part of the app bundle)
 scripts/_tmp_*
+
+# Supabase CLI local link/cache metadata
+supabase/.temp/
