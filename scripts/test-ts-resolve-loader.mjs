@@ -6,6 +6,12 @@
 // `npm test` script, never by the app itself — retries a failed
 // extensionless relative resolution by appending `.ts` before giving up.
 export async function resolve(specifier, context, nextResolve) {
+  if (specifier.startsWith('@/')) {
+    const sourceUrl = new URL(`../src/${specifier.slice(2)}`, import.meta.url);
+    const hasExtension = /\.[a-zA-Z0-9]+$/.test(sourceUrl.pathname);
+    return nextResolve(hasExtension ? sourceUrl.href : `${sourceUrl.href}.ts`, context);
+  }
+
   try {
     return await nextResolve(specifier, context);
   } catch (err) {
