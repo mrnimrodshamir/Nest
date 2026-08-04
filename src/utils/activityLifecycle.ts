@@ -113,9 +113,9 @@ export function relationshipLabel(relationship: ActivityRelationship): string | 
   return null;
 }
 
-/** Whether the lifecycle badge is worth showing at all. "Upcoming" is the
- *  default state of almost every activity in the feed — rendering it on
- *  every card is noise that buries the states that actually matter. */
+/** Kept for callers that intentionally want a compact exceptional-state
+ * view. Phase 1a's primary activity surfaces use resolveBadges(), which
+ * exposes the complete lifecycle including Upcoming. */
 export function shouldShowLifecycleBadge(lifecycle: ActivityLifecycle): boolean {
   return lifecycle !== 'upcoming';
 }
@@ -132,9 +132,7 @@ export function resolveBadges(
   const lifecycle = resolveLifecycle(input, now);
   const isOver = lifecycle === 'cancelled' || lifecycle === 'completed';
   return {
-    lifecycle: shouldShowLifecycleBadge(lifecycle)
-      ? lifecycleLabel(lifecycle, resolveSpotsLeft(input))
-      : null,
+    lifecycle: lifecycleLabel(lifecycle, resolveSpotsLeft(input)),
     relationship: isOver ? null : relationshipLabel(relationship),
   };
 }

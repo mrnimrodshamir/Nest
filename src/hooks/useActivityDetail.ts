@@ -62,7 +62,7 @@ export function useActivityDetail(activityId: string): UseActivityDetailResult {
         .from('activity_attendees')
         .select('user_id, status, user:public_profiles(id, display_name, avatar_url)')
         .eq('activity_id', activityId)
-        .in('status', ['going', 'attended']),
+        .eq('status', 'going'),
     ]);
     if (!guard.isCurrent(token)) return;
 

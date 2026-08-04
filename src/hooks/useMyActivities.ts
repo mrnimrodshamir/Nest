@@ -82,7 +82,7 @@ export function useMyActivities(): UseMyActivitiesResult {
           .from('activity_attendees')
           .select('activity_id')
           .in('activity_id', relevantIds)
-          .in('status', ['going', 'attended']);
+          .eq('status', 'going');
         for (const row of attendeeRows ?? []) {
           attendeeCounts.set(row.activity_id, (attendeeCounts.get(row.activity_id) ?? 0) + 1);
         }

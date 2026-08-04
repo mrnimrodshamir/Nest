@@ -12,6 +12,7 @@ import { CATEGORY_LABELS } from '@/types/activity';
 import { formatExactStartTime } from '@/utils/formatExactStartTime';
 import { formatDuration } from '@/utils/formatDuration';
 import { resolveParticipantCounts } from '@/utils/attendanceSummary';
+import { resolveBadges, resolveLifecycle } from '@/utils/activityLifecycle';
 import { formatAgeRange } from '@/utils/babyAge';
 import { buildShareMessage } from '@/utils/buildShareMessage';
 import { APP_NAME } from '@/constants/brand';
@@ -73,9 +74,12 @@ export function ActivityDetailScreen({
   const [showPhotoNudge, setShowPhotoNudge] = useState(false);
   const [calendarNotice, setCalendarNotice] = useState<'changed' | 'cancelled' | null>(null);
 
-  const isCancelled = activity.status === 'cancelled';
-  const isEnded = activity.status === 'completed';
-  const isFull = activity.status === 'full';
+  const relationship = isHost ? 'hosting' : activity.viewerStatus === 'going' ? 'joined' : 'none';
+  const lifecycle = resolveLifecycle(activity);
+  const badges = resolveBadges(activity, relationship);
+  const isCancelled = lifecycle === 'cancelled';
+  const isEnded = lifecycle === 'completed';
+  const isFull = lifecycle === 'full';
   const canJoin = !isCancelled && !isEnded && (activity.viewerStatus === 'going' || !isFull);
   const spotsLeft =
     activity.capacity !== null ? Math.max(0, activity.capacity - activity.attendeeCount) : null;
@@ -299,19 +303,16 @@ export function ActivityDetailScreen({
                 {CATEGORY_LABELS[activity.category] ?? CATEGORY_LABELS.other}
               </Text>
             </View>
-            {isCancelled && (
-              <View style={[styles.categoryPill, styles.statusPillCancelled]}>
-                <Text style={[styles.categoryPillText, styles.statusPillTextCancelled]}>Cancelled</Text>
+            {badges.lifecycle && (
+              <View style={[styles.categoryPill, isCancelled ? styles.statusPillCancelled : styles.statusPillLifecycle]}>
+                <Text style={[styles.categoryPillText, isCancelled ? styles.statusPillTextCancelled : styles.statusPillTextLifecycle]}>
+                  {badges.lifecycle}
+                </Text>
               </View>
             )}
-            {isEnded && !isCancelled && (
-              <View style={[styles.categoryPill, styles.statusPillEnded]}>
-                <Text style={[styles.categoryPillText, styles.statusPillTextEnded]}>Ended</Text>
-              </View>
-            )}
-            {isFull && !isCancelled && !isEnded && (
-              <View style={[styles.categoryPill, styles.statusPillFull]}>
-                <Text style={[styles.categoryPillText, styles.statusPillTextFull]}>Full</Text>
+            {badges.relationship && (
+              <View style={[styles.categoryPill, styles.relationshipPill]}>
+                <Text style={[styles.categoryPillText, styles.relationshipPillText]}>{badges.relationship}</Text>
               </View>
             )}
           </View>
@@ -476,7 +477,7 @@ export function ActivityDetailScreen({
               ]}
             >
               {isCancelled && 'This activity was cancelled'}
-              {!isCancelled && isEnded && 'This activity has ended'}
+              {!isCancelled && isEnded && 'This activity is completed'}
               {!isCancelled && !isEnded && activity.viewerStatus === 'going' && "You're going"}
               {!isCancelled && !isEnded && activity.viewerStatus === 'none' && (isFull ? 'Activity full' : 'Join this activity')}
             </Text>
@@ -571,10 +572,10 @@ const styles = StyleSheet.create({
   categoryPillText: { ...typography.caption, color: theme.text.accent },
   statusPillCancelled: { backgroundColor: theme.semantic.dangerTint },
   statusPillTextCancelled: { color: theme.semantic.danger },
-  statusPillEnded: { backgroundColor: theme.background.app },
-  statusPillTextEnded: { color: theme.text.muted },
-  statusPillFull: { backgroundColor: theme.brand.secondaryTint },
-  statusPillTextFull: { color: theme.brand.secondary },
+  statusPillLifecycle: { backgroundColor: theme.brand.secondaryTint },
+  statusPillTextLifecycle: { color: theme.brand.secondary },
+  relationshipPill: { backgroundColor: theme.brand.primaryTint },
+  relationshipPillText: { color: theme.brand.primaryPressed },
   title: { ...typography.title2, color: theme.text.primary, marginBottom: 4 },
   meta: { ...typography.subhead, color: theme.text.secondary, marginBottom: spacing.lg },
   peopleCard: {

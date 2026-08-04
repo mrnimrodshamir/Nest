@@ -6,6 +6,7 @@ import { CATEGORY_LABELS } from '@/types/activity';
 import { CoverImage } from '@/components/CoverImage';
 import { CoverFrame } from '@/components/CoverFrame';
 import { formatExactStartTime } from '@/utils/formatExactStartTime';
+import { resolveBadges, type ActivityRelationship } from '@/utils/activityLifecycle';
 
 interface ActivityCardProps {
   activity: Activity;
@@ -17,6 +18,9 @@ interface ActivityCardProps {
   /** Distance from "you" isn't meaningful on lists of your own activities
    *  (My Activities) — hide it there instead of showing a misleading 0km. */
   hideDistance?: boolean;
+  /** Viewer relationship is separate from lifecycle. Discovery omits it;
+   * My Activities supplies Hosting or Joined. */
+  relationship?: ActivityRelationship;
 }
 
 /** No Reanimated here — this renders inside a BottomSheetFlatList, and a
@@ -30,10 +34,12 @@ export function ActivityCard({
   variant = 'feed',
   highlighted = false,
   hideDistance = false,
+  relationship = 'none',
 }: ActivityCardProps) {
   const isRail = variant === 'rail';
   const visibleAttendees = activity.attendees.slice(0, 3);
   const overflowCount = Math.max(0, activity.attendeeCount - visibleAttendees.length);
+  const badges = resolveBadges(activity, relationship);
 
   return (
     <Pressable
@@ -56,18 +62,25 @@ export function ActivityCard({
           style={StyleSheet.absoluteFill}
         />
         {!isRail && (
-          <View style={styles.pillRow}>
-            <View style={styles.categoryPill}>
-              <Text style={styles.categoryPillText} numberOfLines={1}>
-                {CATEGORY_LABELS[activity.category] ?? CATEGORY_LABELS.other}
-              </Text>
+          <>
+            <View style={styles.pillRow}>
+              <View style={styles.categoryPill}>
+                <Text style={styles.categoryPillText} numberOfLines={1}>
+                  {CATEGORY_LABELS[activity.category] ?? CATEGORY_LABELS.other}
+                </Text>
+              </View>
+              {badges.lifecycle && (
+                <View style={[styles.categoryPill, styles.lifecyclePill]}>
+                  <Text style={[styles.categoryPillText, styles.lifecyclePillText]}>{badges.lifecycle}</Text>
+                </View>
+              )}
             </View>
-            {activity.status === 'full' && (
-              <View style={[styles.categoryPill, styles.fullPill]}>
-                <Text style={[styles.categoryPillText, styles.fullPillText]}>Full</Text>
+            {badges.relationship && (
+              <View style={styles.relationshipPill}>
+                <Text style={styles.relationshipPillText}>{badges.relationship}</Text>
               </View>
             )}
-          </View>
+          </>
         )}
       </CoverFrame>
 
@@ -153,8 +166,18 @@ const styles = StyleSheet.create({
     ...typography.caption,
     color: theme.text.accent,
   },
-  fullPill: { backgroundColor: theme.brand.secondaryTint },
-  fullPillText: { color: theme.brand.secondary },
+  lifecyclePill: { backgroundColor: theme.brand.secondaryTint },
+  lifecyclePillText: { color: theme.brand.secondary },
+  relationshipPill: {
+    position: 'absolute',
+    top: spacing.sm,
+    right: spacing.sm,
+    backgroundColor: theme.brand.primaryTint,
+    borderRadius: radius.pill,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 3,
+  },
+  relationshipPillText: { ...typography.caption, color: theme.brand.primaryPressed },
   body: {
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,

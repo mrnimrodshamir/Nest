@@ -160,7 +160,7 @@ async function fetchNearby(
     .from('activity_attendees')
     .select('activity_id, status, user:public_profiles(id, display_name, avatar_url)')
     .in('activity_id', activityIds)
-    .in('status', ['going', 'attended']);
+    .eq('status', 'going');
   if (attendeeError) throw attendeeError;
 
   const attendeesByActivity = new Map<string, Attendee[]>();

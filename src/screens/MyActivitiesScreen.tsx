@@ -90,13 +90,14 @@ export function MyActivitiesScreen({ onBack, onOpenActivity }: MyActivitiesScree
 
 function MyActivityRow({ activity, onPress }: { activity: MyActivity; onPress: () => void }) {
   return (
-    <View style={styles.cardWrap}>
-      <View style={[styles.roleTag, activity.role === 'hosting' ? styles.roleTagHosting : styles.roleTagGoing]}>
-        <Text style={[styles.roleTagLabel, activity.role === 'hosting' && styles.roleTagLabelHosting]}>
-          {activity.role === 'hosting' ? 'Hosting' : 'Going'}
-        </Text>
-      </View>
-      <ActivityCard activity={activity} onPress={onPress} variant="feed" hideDistance />
+    <View>
+      <ActivityCard
+        activity={activity}
+        onPress={onPress}
+        variant="feed"
+        hideDistance
+        relationship={activity.role === 'hosting' ? 'hosting' : 'joined'}
+      />
     </View>
   );
 }
@@ -133,22 +134,4 @@ const styles = StyleSheet.create({
   tabLabelSelected: { color: theme.text.inverse },
   listContent: { paddingHorizontal: spacing.lg, paddingBottom: spacing['4xl'], gap: spacing.sm },
   emptyContent: { flexGrow: 1 },
-  cardWrap: { position: 'relative' },
-  // Positioned top-RIGHT, deliberately opposite ActivityCard's own
-  // category/"Full" pill (which renders top-left, inside the image) — the
-  // two badges must never share a corner or they overlap.
-  roleTag: {
-    position: 'absolute',
-    top: spacing.sm,
-    right: spacing.sm + spacing.lg,
-    maxWidth: '45%',
-    zIndex: 1,
-    paddingHorizontal: spacing.md,
-    paddingVertical: 4,
-    borderRadius: radius.pill,
-  },
-  roleTagHosting: { backgroundColor: theme.brand.secondaryTint },
-  roleTagGoing: { backgroundColor: theme.brand.primaryTint },
-  roleTagLabel: { ...typography.caption, color: theme.brand.primaryPressed },
-  roleTagLabelHosting: { color: theme.brand.secondary },
 });

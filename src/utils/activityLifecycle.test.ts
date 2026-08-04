@@ -119,9 +119,9 @@ test('a concurrent join that fills the activity flips spots_left to full', () =>
   assert.equal(resolveLifecycle(after, NOW), 'full');
 });
 
-test('badges: Upcoming is suppressed, relationship still shows', () => {
+test('UI badges: Upcoming is visible and relationship remains separate', () => {
   const badges = resolveBadges(activity(), 'hosting', NOW);
-  assert.equal(badges.lifecycle, null);
+  assert.equal(badges.lifecycle, 'Upcoming');
   assert.equal(badges.relationship, 'Hosting');
 });
 
