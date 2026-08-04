@@ -6,6 +6,7 @@ import { MagnifyingGlass, MapPin, X } from 'phosphor-react-native';
 import { theme, typography, spacing, radius } from '@/theme';
 import { usePlaceSearch, type PlaceSearchItem } from '@/hooks/usePlaceSearch';
 import type { NormalizedPlace, SelectedActivityLocation } from '@/types/place';
+import { presentSelectedLocation } from '@/utils/locationPresentation';
 
 interface LocationPickerProps {
   latitude: number;
@@ -52,6 +53,7 @@ export function LocationPicker({
   // drag — only the most recent request is allowed to write back a result.
   const requestId = useRef(0);
   const search = usePlaceSearch({ latitude, longitude });
+  const selectedPresentation = selectedLocation ? presentSelectedLocation(selectedLocation) : null;
 
   useEffect(() => {
     if (!autoCenterOnMount) return;
@@ -182,13 +184,13 @@ export function LocationPicker({
         </View>
       )}
 
-      {selectedLocation ? (
+      {selectedLocation && selectedPresentation ? (
         <View style={styles.selectedPreview}>
-          <Text style={styles.selectedName}>{selectedLocation.displayName || 'Selected meeting point'}</Text>
-          {selectedLocation.addressLabel && selectedLocation.addressLabel !== selectedLocation.displayName ? (
-            <Text style={styles.selectedAddress}>{selectedLocation.addressLabel}</Text>
+          <Text style={styles.selectedName}>{selectedPresentation.title}</Text>
+          {selectedPresentation.address ? (
+            <Text style={styles.selectedAddress}>{selectedPresentation.address}</Text>
           ) : null}
-          {selectedLocation.source === 'manual' && selectedLocation.wasAdjusted ? <Text style={styles.adjustedLabel}>Manually adjusted</Text> : null}
+          {selectedPresentation.isManuallyAdjusted ? <Text style={styles.adjustedLabel}>Manually adjusted</Text> : null}
         </View>
       ) : null}
 

@@ -1,7 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, TextInput, Pressable, ScrollView, StyleSheet } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
-import { Camera } from 'phosphor-react-native';
+import MapView from 'react-native-maps';
+import { Camera, MapPin } from 'phosphor-react-native';
 import { theme, typography, spacing, radius } from '@/theme';
 import { CategoryChip } from '@/components/CategoryChip';
 import { CategoryPicker } from '@/components/CategoryPicker';
@@ -21,8 +22,11 @@ import type { ActivityCategory } from '@/types/activity';
 import type { SelectedActivityLocation } from '@/types/place';
 import {
   legacyFieldsToSelectedLocation,
+  normalizedPlaceToSelectedLocation,
   selectedLocationToNormalizedPlace,
 } from '@/utils/activityPlaceMapping';
+import { createManualPlace } from '@/utils/normalizedPlace';
+import { presentSelectedLocation } from '@/utils/locationPresentation';
 import { applyReverseGeocodeLabel, moveSelectedLocation } from '@/utils/placeAdjustment';
 import { formatDuration } from '@/utils/formatDuration';
 import { pickDefaultChild } from '@/utils/pickDefaultChild';
@@ -143,13 +147,19 @@ export function ActivityForm({
     !(DURATION_OPTIONS_MINUTES as readonly number[]).includes(initialDuration),
   );
   const [selectedLocation, setSelectedLocation] = useState<SelectedActivityLocation>(() =>
-    initialValues?.selectedLocation ?? legacyFieldsToSelectedLocation({
-      addressLabel: initialValues?.locationName ?? '',
-      latitude: initialValues?.latitude ?? initialLocation?.latitude ?? 32.0853,
-      longitude: initialValues?.longitude ?? initialLocation?.longitude ?? 34.7818,
-    }),
+    initialValues?.selectedLocation ?? (mode === 'create'
+      ? normalizedPlaceToSelectedLocation(createManualPlace({
+          latitude: initialLocation?.latitude ?? 32.0853,
+          longitude: initialLocation?.longitude ?? 34.7818,
+        }))
+      : legacyFieldsToSelectedLocation({
+          addressLabel: initialValues?.locationName ?? '',
+          latitude: initialValues?.latitude ?? 32.0853,
+          longitude: initialValues?.longitude ?? 34.7818,
+        })),
   );
   const { latitude, longitude, displayName: locationName } = selectedLocation;
+  const locationPresentation = presentSelectedLocation(selectedLocation);
   const [maxParticipants, setMaxParticipants] = useState(initialValues?.maxParticipants ?? 8);
   const [noLimit, setNoLimit] = useState(initialValues ? initialValues.maxParticipants === null : false);
   const [anyAge, setAnyAge] = useState(
@@ -271,7 +281,24 @@ export function ActivityForm({
           <ReviewRow label="Category" value={CATEGORY_LABELS[activityType] ?? CATEGORY_LABELS.other} />
           <ReviewRow label="When" value={reviewDateTimeSummary} />
           <ReviewRow label="Duration" value={formatDuration(durationMinutes)} />
-          <ReviewRow label="Location" value={locationName} />
+          <ReviewRow label="Location" value={locationPresentation.title} />
+          {locationPresentation.address ? (
+            <ReviewRow label="Address" value={locationPresentation.address} />
+          ) : null}
+          <View style={styles.reviewMapWrapper}>
+            <MapView
+              style={styles.reviewMap}
+              region={{ latitude, longitude, latitudeDelta: 0.02, longitudeDelta: 0.02 }}
+              scrollEnabled={false}
+              zoomEnabled={false}
+              rotateEnabled={false}
+              pitchEnabled={false}
+              pointerEvents="none"
+            />
+            <View style={styles.reviewMapPin} pointerEvents="none">
+              <MapPin size={28} color={theme.brand.primary} weight="fill" />
+            </View>
+          </View>
           <ReviewRow label="Capacity" value={noLimit ? 'No limit' : `${maxParticipants} people`} />
           <ReviewRow label="Coming with" value={reviewChildSummary} />
           {description.trim() ? <ReviewRow label="Details" value={description.trim()} /> : null}
@@ -371,6 +398,8 @@ export function ActivityForm({
             onChangeLocationName={(name) => {
               setSelectedLocation((current) => applyReverseGeocodeLabel(current, name));
             }}
+            onSelectPlace={(place) => setSelectedLocation(normalizedPlaceToSelectedLocation(place))}
+            selectedLocation={selectedLocation}
             autoCenterOnMount={mode === 'create'}
           />
           <Field label="Location name">
@@ -522,6 +551,9 @@ const styles = StyleSheet.create({
   uploadCoverLabel: { ...typography.bodyMedium, color: theme.text.primary },
   moreSection: { gap: spacing.lg },
   reviewBlock: { gap: spacing.md },
+  reviewMapWrapper: { height: 150, borderRadius: radius.lg, overflow: 'hidden' },
+  reviewMap: { flex: 1 },
+  reviewMapPin: { position: 'absolute', top: '50%', left: '50%', marginLeft: -14, marginTop: -28 },
   reviewRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',

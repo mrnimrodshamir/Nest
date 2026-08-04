@@ -74,6 +74,7 @@ export function EditActivityScreen({ activity, onBack, onSaved, onCancelled }: E
               latitude: activity.latitude,
               longitude: activity.longitude,
               locationName: activity.location.label,
+              selectedLocation: activity.location.selection,
               maxParticipants: activity.capacity,
               babyMinAgeMonths: activity.babyMinAgeMonths,
               babyMaxAgeMonths: activity.babyMaxAgeMonths,
