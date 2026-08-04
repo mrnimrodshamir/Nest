@@ -48,6 +48,7 @@ export class AppleMapsTokenService {
     }
 
     if (response.status === 429) throw new PlaceFunctionError('RATE_LIMITED', 'Place search is temporarily rate limited.', 429);
+    if (response.status === 401) throw new PlaceFunctionError('CONFIGURATION_MISSING', 'Place search provider credentials are not accepted.', 503);
     if (!response.ok) throw new PlaceFunctionError('PROVIDER_UNAVAILABLE', 'Place search is temporarily unavailable.', 503);
 
     const payload = await safeJson(response);

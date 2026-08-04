@@ -83,7 +83,7 @@ test('Apple client maps 429, 5xx, timeout, and malformed JSON safely', async () 
   const request = validateRequest({ action: 'search', query: 'park' });
   const make = (implementation: typeof fetch) => new AppleMapsClient({ getAccessToken: async () => 'access-token' }, implementation);
   await assert.rejects(() => make(async () => new Response('{}', { status: 429 })).execute(request), (error: any) => error.code === 'RATE_LIMITED');
-  await assert.rejects(() => make(async () => new Response('token rejected', { status: 401 })).execute(request), (error: any) => error.code === 'PROVIDER_UNAVAILABLE' && !error.message.includes('rejected'));
+  await assert.rejects(() => make(async () => new Response('token rejected', { status: 401 })).execute(request), (error: any) => error.code === 'CONFIGURATION_MISSING' && !error.message.includes('rejected'));
   await assert.rejects(() => make(async () => new Response('upstream secret error', { status: 500 })).execute(request), (error: any) => error.code === 'PROVIDER_UNAVAILABLE' && !error.message.includes('secret'));
   await assert.rejects(() => make(async () => new Response('not-json', { status: 200 })).execute(request), (error: any) => error.code === 'MALFORMED_PROVIDER_RESPONSE');
   await assert.rejects(() => make(async () => { throw new DOMException('timed out', 'TimeoutError'); }).execute(request), (error: any) => error.code === 'TIMEOUT');
