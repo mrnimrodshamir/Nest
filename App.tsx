@@ -56,6 +56,8 @@ import type { Activity } from '@/types/activity';
 import type { Conversation } from '@/hooks/useConversations';
 import type { CreateActivityInput } from '@/hooks/useCreateActivity';
 import type { ShareableActivity } from '@/utils/buildShareMessage';
+import { buildCreateAgainSeed } from '@/utils/createAgain';
+import type { ActivityFormSeedValues } from '@/components/ActivityForm';
 
 // This release is English/LTR only (see theme docs) — but React Native
 // mirrors flexDirection: 'row' layouts automatically based on the
@@ -98,7 +100,7 @@ export type RootStackParamList = {
   Tabs: undefined;
   ActivityDetail: { activityId: string };
   EditActivity: { activityId: string };
-  CreateActivity: undefined;
+  CreateActivity: { mode: 'again'; initialValues: ActivityFormSeedValues } | undefined;
   ShareActivity: { activity: ShareableActivity };
   Chat: { kind: 'group' | 'direct'; activityId?: string; otherUserId?: string; title?: string };
   PublicProfile: { userId: string };
@@ -294,7 +296,9 @@ function MainNavigator() {
         )}
       </Stack.Screen>
       <Stack.Screen name="CreateActivity">
-        {({ navigation }) => <CreateActivityContainer navigation={navigation} />}
+        {({ route, navigation }) => (
+          <CreateActivityContainer navigation={navigation} routeParams={route.params} />
+        )}
       </Stack.Screen>
       <Stack.Screen name="ShareActivity">
         {({ route, navigation }) => (
@@ -530,6 +534,12 @@ function ActivityDetailWithRsvp({
       hasUnreadChat={hasUnread}
       isHost={isHost}
       onEdit={() => navigation.navigate('EditActivity', { activityId: activity.id })}
+      onCreateAgain={() =>
+        navigation.navigate('CreateActivity', {
+          mode: 'again',
+          initialValues: buildCreateAgainSeed(activity),
+        })
+      }
     />
   );
 }
@@ -623,14 +633,25 @@ function EditActivityContainer({
   );
 }
 
-function CreateActivityContainer({ navigation }: { navigation: any }) {
+function CreateActivityContainer({
+  navigation,
+  routeParams,
+}: {
+  navigation: any;
+  routeParams?: RootStackParamList['CreateActivity'];
+}) {
   const initialCoords = useInitialLocation();
 
   return (
     <CreateActivityScreen
+      {...(routeParams?.mode === 'again'
+        ? { mode: 'again' as const, initialValues: routeParams.initialValues }
+        : {
+            mode: 'create' as const,
+            initialLatitude: initialCoords.latitude,
+            initialLongitude: initialCoords.longitude,
+          })}
       onBack={() => navigation.goBack()}
-      initialLatitude={initialCoords.latitude}
-      initialLongitude={initialCoords.longitude}
       onCreated={(activityId: string, input: CreateActivityInput) => {
         navigation.replace('ShareActivity', {
           activity: {

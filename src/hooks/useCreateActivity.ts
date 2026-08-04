@@ -21,6 +21,9 @@ export interface CreateActivityInput {
    *  cover_image_url auto-renders the category's illustration everywhere
    *  via CoverImage's fallbackCategory (see CuratedCover.tsx). */
   coverUri: string | null;
+  /** Existing remote cover copied by Create Again. A newly picked local
+   * coverUri replaces it after insertion. */
+  coverImageUrl: string | null;
   /** Empty means the host is coming alone. */
   hostChildIds: string[];
 }
@@ -102,7 +105,7 @@ export function useCreateActivity(): UseCreateActivityResult {
           baby_min_age_months: input.babyMinAgeMonths,
           baby_max_age_months: input.babyMaxAgeMonths,
           notes: input.notes || null,
-          cover_image_url: null,
+          cover_image_url: input.coverImageUrl,
           host_coming_alone: input.hostChildIds.length === 0,
         })
         .select('id')

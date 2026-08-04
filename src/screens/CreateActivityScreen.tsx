@@ -3,22 +3,25 @@ import { View, Text, Pressable, StyleSheet, KeyboardAvoidingView, Platform } fro
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ArrowLeft } from 'phosphor-react-native';
 import { theme, typography, spacing } from '@/theme';
-import { ActivityForm } from '@/components/ActivityForm';
+import { ActivityForm, type ActivityFormSeedValues } from '@/components/ActivityForm';
 import { PrimaryButton } from '@/components/PrimaryButton';
 import { useCreateActivity, type CreateActivityInput } from '@/hooks/useCreateActivity';
 
-interface CreateActivityScreenProps {
+type CreateActivityScreenProps = {
   onBack: () => void;
   onCreated: (activityId: string, input: CreateActivityInput) => void;
-  initialLatitude: number;
-  initialLongitude: number;
-}
+} & (
+  | { mode: 'create'; initialLatitude: number; initialLongitude: number; initialValues?: never }
+  | { mode: 'again'; initialValues: ActivityFormSeedValues; initialLatitude?: never; initialLongitude?: never }
+);
 
 export function CreateActivityScreen({
   onBack,
   onCreated,
+  mode,
   initialLatitude,
   initialLongitude,
+  initialValues,
 }: CreateActivityScreenProps) {
   const { isSubmitting, stage, error, submit, retryHostJoin } = useCreateActivity();
   // Set only when the activity itself was created but the host's own
@@ -60,8 +63,12 @@ export function CreateActivityScreen({
         </View>
 
         <ActivityForm
-          mode="create"
-          initialLocation={{ latitude: initialLatitude, longitude: initialLongitude }}
+          {...(mode === 'again'
+            ? { mode: 'again' as const, initialValues: initialValues! }
+            : {
+                mode: 'create' as const,
+                initialLocation: { latitude: initialLatitude!, longitude: initialLongitude! },
+              })}
           submitLabel="Create activity"
           // Also disabled while a host-join retry is pending — the activity
           // already exists at this point, so tapping "Create activity"

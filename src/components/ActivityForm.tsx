@@ -202,10 +202,9 @@ export function ActivityForm({
       maxParticipants: noLimit ? null : maxParticipants,
       babyMinAgeMonths: anyAge ? null : minYears * 12 + minMonths,
       babyMaxAgeMonths: anyAge ? null : maxYears * 12 + maxMonths,
-      // New activities only ever write to `description` — `notes` is kept
-      // in the DB for legacy rows but is never populated for new ones.
-      notes: '',
+      notes: initialValues?.notes ?? '',
       coverUri,
+      coverImageUrl: initialValues?.coverImageUrl ?? null,
       hostChildIds,
     });
   };

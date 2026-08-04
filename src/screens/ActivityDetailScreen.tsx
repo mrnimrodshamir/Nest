@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import MapView, { Marker, PROVIDER_DEFAULT } from 'react-native-maps';
 import * as Notifications from 'expo-notifications';
 import * as Haptics from 'expo-haptics';
-import { ArrowLeft, DotsThree, NavigationArrow, ChatCircleDots, PencilSimple, ShareNetwork } from 'phosphor-react-native';
+import { ArrowLeft, ArrowClockwise, DotsThree, NavigationArrow, ChatCircleDots, PencilSimple, ShareNetwork } from 'phosphor-react-native';
 import { theme, typography, spacing, radius } from '@/theme';
 import { PersonCard } from '@/components/PersonCard';
 import type { ActivityDetail } from '@/types/activity';
@@ -13,6 +13,7 @@ import { formatExactStartTime } from '@/utils/formatExactStartTime';
 import { formatDuration } from '@/utils/formatDuration';
 import { resolveParticipantCounts } from '@/utils/attendanceSummary';
 import { resolveBadges, resolveLifecycle } from '@/utils/activityLifecycle';
+import { canCreateAgain } from '@/utils/createAgain';
 import { formatAgeRange } from '@/utils/babyAge';
 import { buildShareMessage } from '@/utils/buildShareMessage';
 import { APP_NAME } from '@/constants/brand';
@@ -48,6 +49,7 @@ interface ActivityDetailScreenProps {
   hasUnreadChat?: boolean;
   isHost?: boolean;
   onEdit?: () => void;
+  onCreateAgain?: () => void;
 }
 
 export function ActivityDetailScreen({
@@ -61,6 +63,7 @@ export function ActivityDetailScreen({
   hasUnreadChat = false,
   isHost = false,
   onEdit,
+  onCreateAgain,
 }: ActivityDetailScreenProps) {
   const attendance = useActivityAttendance(initial.id);
   const { activity, isSubmitting, error, join, leave } = useActivityRsvp(initial, attendance.refresh);
@@ -80,6 +83,7 @@ export function ActivityDetailScreen({
   const isCancelled = lifecycle === 'cancelled';
   const isEnded = lifecycle === 'completed';
   const isFull = lifecycle === 'full';
+  const showCreateAgain = canCreateAgain(isHost, lifecycle) && Boolean(onCreateAgain);
   const canJoin = !isCancelled && !isEnded && (activity.viewerStatus === 'going' || !isFull);
   const spotsLeft =
     activity.capacity !== null ? Math.max(0, activity.capacity - activity.attendeeCount) : null;
@@ -390,6 +394,13 @@ export function ActivityDetailScreen({
             </Pressable>
           )}
 
+          {showCreateAgain && (
+            <Pressable style={styles.createAgainRow} onPress={onCreateAgain}>
+              <ArrowClockwise size={18} color={theme.brand.secondary} weight="bold" />
+              <Text style={styles.createAgainLabel}>Create again</Text>
+            </Pressable>
+          )}
+
           {activity.description ? (
             <>
               <Text style={styles.sectionLabel}>Details</Text>
@@ -606,6 +617,18 @@ const styles = StyleSheet.create({
     marginBottom: spacing.lg,
   },
   chatRowLabel: { ...typography.bodyMedium, color: theme.brand.primaryPressed },
+  createAgainRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    borderWidth: 1,
+    borderColor: theme.brand.secondary,
+    borderRadius: radius.md,
+    paddingVertical: spacing.sm,
+    marginBottom: spacing.lg,
+  },
+  createAgainLabel: { ...typography.bodyMedium, color: theme.brand.secondary },
   unreadDot: {
     width: 8,
     height: 8,
