@@ -1,10 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, TextInput, Pressable, StyleSheet, ActivityIndicator, Platform } from 'react-native';
+import { View, Text, TextInput, Pressable, StyleSheet, ActivityIndicator, Platform, Keyboard, ScrollView } from 'react-native';
 import MapView, { PROVIDER_DEFAULT, type Region } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { MagnifyingGlass, MapPin, X } from 'phosphor-react-native';
 import { theme, typography, spacing, radius } from '@/theme';
-import { usePlaceSearch, type PlaceResult } from '@/hooks/usePlaceSearch';
+import { usePlaceSearch, type PlaceSearchItem } from '@/hooks/usePlaceSearch';
+import type { NormalizedPlace, SelectedActivityLocation } from '@/types/place';
 
 interface LocationPickerProps {
   latitude: number;
@@ -14,6 +15,8 @@ interface LocationPickerProps {
    *  result is picked — the host screen owns the actual "Location name"
    *  text field and can still let the parent edit it by hand afterward. */
   onChangeLocationName?: (name: string) => void;
+  onSelectPlace?: (place: NormalizedPlace) => void;
+  selectedLocation?: SelectedActivityLocation;
   /** Centers on the parent's current location on first mount, when
    *  permission is already granted — only appropriate for a brand-new
    *  activity, never when editing one that already has a real location. */
@@ -38,9 +41,12 @@ export function LocationPicker({
   longitude,
   onChangeCoordinates,
   onChangeLocationName,
+  onSelectPlace,
+  selectedLocation,
   autoCenterOnMount = false,
 }: LocationPickerProps) {
   const [isResolving, setIsResolving] = useState(false);
+  const [isResolvingSelection, setIsResolvingSelection] = useState(false);
   const mapRef = useRef<MapView>(null);
   // Guards against a slow reverse-geocode response landing after a newer
   // drag — only the most recent request is allowed to write back a result.
@@ -96,15 +102,29 @@ export function LocationPicker({
     void resolveName(region.latitude, region.longitude);
   };
 
-  const handleSelectResult = (result: PlaceResult) => {
-    onChangeCoordinates(result.latitude, result.longitude);
-    onChangeLocationName?.(result.name);
-    mapRef.current?.animateToRegion(
-      { latitude: result.latitude, longitude: result.longitude, latitudeDelta: DELTA, longitudeDelta: DELTA },
-      400,
-    );
-    search.clear();
+  const handleSelectResult = async (item: PlaceSearchItem) => {
+    setIsResolvingSelection(true);
+    try {
+      const place = await search.resolveResult(item);
+      Keyboard.dismiss();
+      onSelectPlace?.(place);
+      onChangeCoordinates(place.latitude, place.longitude);
+      onChangeLocationName?.(place.name);
+      mapRef.current?.animateToRegion(
+        { latitude: place.latitude, longitude: place.longitude, latitudeDelta: DELTA, longitudeDelta: DELTA },
+        400,
+      );
+      search.clearResults();
+    } catch {
+      // The hook exposes a safe retry state; manual map selection remains usable.
+    } finally {
+      setIsResolvingSelection(false);
+    }
   };
+
+  const resultContent = (item: PlaceSearchItem) => item.kind === 'place'
+    ? { name: item.place.name, address: item.place.formattedAddress, category: item.place.category }
+    : { name: item.suggestion.name, address: item.suggestion.formattedAddress, category: item.suggestion.category };
 
   return (
     <View style={styles.container}>
@@ -112,11 +132,14 @@ export function LocationPicker({
         <MagnifyingGlass size={16} color={theme.text.muted} style={styles.searchIcon} />
         <TextInput
           style={styles.searchInput}
-          placeholder="Search for a place or address"
+          placeholder="Search cafés, parks or places"
           placeholderTextColor={theme.text.muted}
           value={search.query}
           onChangeText={search.setQuery}
           returnKeyType="search"
+          accessibilityLabel="Search cafés, parks or places"
+          autoCapitalize="none"
+          autoCorrect={false}
         />
         {search.status === 'loading' ? (
           <ActivityIndicator color={theme.text.muted} size="small" style={styles.searchTrailing} />
@@ -128,30 +151,46 @@ export function LocationPicker({
       </View>
 
       {search.status === 'results' && (
-        <View style={styles.resultsList}>
-          {search.results.map((result) => (
-            <Pressable key={result.id} style={styles.resultRow} onPress={() => handleSelectResult(result)}>
+        <ScrollView style={styles.resultsList} keyboardShouldPersistTaps="handled" nestedScrollEnabled>
+          {search.results.map((item) => {
+            const result = resultContent(item);
+            return (
+            <Pressable key={item.key} style={styles.resultRow} onPress={() => void handleSelectResult(item)} accessibilityRole="button" disabled={isResolvingSelection}>
               <MapPin size={16} color={theme.brand.primary} />
               <View style={styles.resultBody}>
                 <Text style={styles.resultName} numberOfLines={1}>
                   {result.name}
                 </Text>
-                {result.formattedAddress ? (
+                {result.address ? (
                   <Text style={styles.resultAddress} numberOfLines={1}>
-                    {result.formattedAddress}
+                    {result.address}
                   </Text>
                 ) : null}
+                {result.category ? <Text style={styles.resultCategory} numberOfLines={1}>{result.category}</Text> : null}
               </View>
             </Pressable>
-          ))}
-        </View>
+          )})}
+        </ScrollView>
       )}
       {search.status === 'empty' && (
         <Text style={styles.searchStatusText}>No matching places found — try a more specific search</Text>
       )}
-      {(search.status === 'error' || search.status === 'unavailable') && search.errorMessage && (
-        <Text style={styles.searchStatusText}>{search.errorMessage}</Text>
+      {(['timeout', 'rate_limited', 'configuration_missing', 'unauthorized', 'unavailable'] as const).includes(search.status as any) && search.errorMessage && (
+        <View style={styles.searchErrorRow}>
+          <Text style={[styles.searchStatusText, styles.searchErrorText]}>{search.errorMessage}</Text>
+          {search.status !== 'configuration_missing' && <Pressable onPress={search.retry} hitSlop={8}><Text style={styles.retryText}>Retry</Text></Pressable>}
+        </View>
       )}
+
+      {selectedLocation ? (
+        <View style={styles.selectedPreview}>
+          <Text style={styles.selectedName}>{selectedLocation.displayName || 'Selected meeting point'}</Text>
+          {selectedLocation.addressLabel && selectedLocation.addressLabel !== selectedLocation.displayName ? (
+            <Text style={styles.selectedAddress}>{selectedLocation.addressLabel}</Text>
+          ) : null}
+          {selectedLocation.source === 'manual' && selectedLocation.wasAdjusted ? <Text style={styles.adjustedLabel}>Manually adjusted</Text> : null}
+        </View>
+      ) : null}
 
       <View style={styles.mapWrapper}>
         <MapView
@@ -198,6 +237,8 @@ const styles = StyleSheet.create({
     ...typography.body,
     paddingVertical: spacing.md,
     color: theme.text.primary,
+    textAlign: 'left',
+    writingDirection: 'ltr',
   },
   searchTrailing: { marginLeft: spacing.xs },
   searchStatusText: { ...typography.caption, color: theme.text.muted },
@@ -207,6 +248,7 @@ const styles = StyleSheet.create({
     borderColor: theme.border.default,
     borderRadius: radius.md,
     overflow: 'hidden',
+    maxHeight: 240,
   },
   resultRow: {
     flexDirection: 'row',
@@ -220,6 +262,14 @@ const styles = StyleSheet.create({
   resultBody: { flex: 1 },
   resultName: { ...typography.bodyMedium, color: theme.text.primary },
   resultAddress: { ...typography.caption, color: theme.text.muted },
+  resultCategory: { ...typography.caption, color: theme.brand.primary },
+  searchErrorRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  searchErrorText: { flex: 1 },
+  retryText: { ...typography.footnote, color: theme.brand.primary },
+  selectedPreview: { backgroundColor: theme.background.surface, borderRadius: radius.md, borderWidth: 1, borderColor: theme.border.default, padding: spacing.md, gap: spacing.xs },
+  selectedName: { ...typography.bodyMedium, color: theme.text.primary },
+  selectedAddress: { ...typography.footnote, color: theme.text.secondary },
+  adjustedLabel: { ...typography.caption, color: theme.text.muted },
   mapWrapper: {
     height: 220,
     borderRadius: radius.lg,
