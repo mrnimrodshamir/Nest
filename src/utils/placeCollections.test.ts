@@ -1,0 +1,10 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import type { FamilyFriendlyPlaceRow } from '@/types/familyFriendlyPlace';
+import type { PlaceCollectionRow } from '@/types/placeCollection';
+import { isPlaceCollectionVisible, mapPlaceCollection } from '@/utils/placeCollections';
+
+const place = (id: string, name: string): FamilyFriendlyPlaceRow => ({ id, name, slug: name.toLowerCase(), category: 'park', short_description: null, full_description: null, latitude: 32.08, longitude: 34.78, formatted_address: null, neighborhood: null, city: 'Tel Aviv-Yafo', country_code: 'IL', provider: null, provider_place_id: null, website_url: null, phone: null, cover_image_url: null, gallery_image_urls: null, is_indoor: null, is_outdoor: true, is_free: true, price_note: null, min_age_months: null, max_age_months: null, stroller_friendly: null, changing_table: null, high_chairs: null, toilets: null, shade: null, water_fountain: null, accessible: null, parking_note: null, opening_hours: null, source_name: null, source_url: null, verification_status: 'verified', last_verified_at: null, is_active: true });
+const collection: PlaceCollectionRow = { id: 'c1', title: 'Rainy Day', slug: 'rainy-day', description: null, cover_image_url: null, collection_type: 'standard', published_at: '2026-01-01T00:00:00Z', starts_at: null, ends_at: null };
+test('collection mapping preserves explicit order with deterministic tie-breaks', () => { const mapped = mapPlaceCollection(collection, [{ display_order: 2, places: place('2','Beta') }, { display_order: 1, places: place('1','Alpha') }]); assert.deepEqual(mapped.places.map((item) => item.place.id), ['1','2']); });
+test('scheduled collections are visible only inside their publication window', () => { assert.equal(isPlaceCollectionVisible({ publishedAt: '2026-01-01T00:00:00Z', startsAt: '2026-08-01T00:00:00Z', endsAt: '2026-08-10T00:00:00Z' }, new Date('2026-08-05T00:00:00Z')), true); assert.equal(isPlaceCollectionVisible({ publishedAt: '2026-01-01T00:00:00Z', startsAt: null, endsAt: '2026-08-01T00:00:00Z' }, new Date('2026-08-05T00:00:00Z')), false); });

@@ -2,6 +2,7 @@ import { supabase } from '@/lib/supabase';
 import type { FamilyFriendlyPlace, FamilyFriendlyPlaceRow, PlaceQueryInput } from '@/types/familyFriendlyPlace';
 import { mapFamilyFriendlyPlaceRow } from '@/utils/familyFriendlyPlace';
 import { distanceMeters, validatePlaceQueryInput } from '@/utils/placeViewport';
+import { normalizePlaceSearchQuery } from '@/utils/placeSearch';
 
 export const PLACE_COLUMNS = 'id,name,slug,category,short_description,full_description,latitude,longitude,formatted_address,neighborhood,city,country_code,provider,provider_place_id,website_url,phone,cover_image_url,gallery_image_urls,is_indoor,is_outdoor,is_free,price_note,min_age_months,max_age_months,stroller_friendly,changing_table,high_chairs,toilets,shade,water_fountain,accessible,parking_note,opening_hours,source_name,source_url,verification_status,last_verified_at,is_active';
 
@@ -67,8 +68,8 @@ export async function getFamilyFriendlyPlace(id: string): Promise<FamilyFriendly
 }
 
 export async function searchFamilyFriendlyPlaces(searchQuery: string, limit = 40): Promise<FamilyFriendlyPlace[]> {
-  const query = searchQuery.trim();
-  if (query.length < 2) return [];
+  const query = normalizePlaceSearchQuery(searchQuery);
+  if (!query) return [];
   const { data, error } = await supabase.rpc('search_curated_places', {
     search_query: query,
     result_limit: Math.max(1, Math.min(limit, 100)),
