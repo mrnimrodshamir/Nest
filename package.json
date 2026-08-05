@@ -10,7 +10,8 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint . --ext .ts,.tsx",
     "test": "node --test --experimental-strip-types --experimental-loader=./scripts/test-ts-resolve-loader.mjs src/**/*.test.ts",
-    "places:import": "node --experimental-strip-types --experimental-loader=./scripts/test-ts-resolve-loader.mjs scripts/import-places.mjs"
+    "places:import": "node --experimental-strip-types --experimental-loader=./scripts/test-ts-resolve-loader.mjs scripts/import-places.mjs",
+    "digitel:dry-run": "node --experimental-strip-types --experimental-loader=./scripts/test-ts-resolve-loader.mjs scripts/import-digitel.mjs"
   },
   "dependencies": {
     "@expo-google-fonts/plus-jakarta-sans": "^0.2.3",
