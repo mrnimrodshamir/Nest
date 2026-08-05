@@ -117,6 +117,27 @@ export interface FamilyFriendlyPlaceRow {
   distance_meters?: number | null;
 }
 
+export interface PlaceViewport {
+  north: number;
+  south: number;
+  east: number;
+  west: number;
+}
+
+export interface PlaceFilters {
+  category?: PlaceCategory | null;
+  environment?: 'indoor' | 'outdoor' | null;
+  cost?: 'free' | 'paid' | null;
+  ageMonths?: number | null;
+}
+
+export interface PlaceQueryInput {
+  viewport: PlaceViewport;
+  filters?: PlaceFilters;
+  userCoordinate?: { latitude: number; longitude: number } | null;
+  limit?: number;
+}
+
 export function isPlaceCategory(value: string): value is PlaceCategory {
   return (PLACE_CATEGORIES as readonly string[]).includes(value);
 }
