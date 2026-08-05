@@ -24,7 +24,7 @@ test('retains provider selection at or below 40 metres', () => {
 
 test('clears misleading provider metadata above 40 metres', () => {
   const selected = createAppleMapsPlace({ name: 'Café', latitude: origin.latitude, longitude: origin.longitude, category: 'Cafe', providerPlaceId: 'p1' });
-  const adjusted = adjustProviderPlace(selected, northBy(41), 'Selected meeting point', 'Hayarkon Park');
+  const adjusted = adjustProviderPlace(selected, northBy(41), 'Meeting point', 'Hayarkon Park');
   assert.equal(adjusted.provider, null);
   assert.equal(adjusted.providerPlaceId, null);
   assert.equal(adjusted.category, null);
@@ -48,12 +48,12 @@ test('selection transition clears venue identity above 40 metres then accepts re
   const selected = normalizedPlaceToSelectedLocation(createAppleMapsPlace({ name: 'Café', formattedAddress: 'Old address', latitude: origin.latitude, longitude: origin.longitude, category: 'Cafe', providerPlaceId: 'p1' }));
   const moved = moveSelectedLocation(selected, northBy(41));
   assert.equal(moved.place, null);
-  assert.equal(moved.displayName, 'Selected meeting point');
+  assert.equal(moved.displayName, 'Meeting point');
   assert.equal(moved.addressLabel, null);
   assert.equal(moved.source, 'manual');
   assert.equal(moved.wasAdjusted, true);
   const geocoded = applyReverseGeocodeLabel(moved, 'Hayarkon Park, Tel Aviv');
-  assert.equal(geocoded.displayName, 'Selected meeting point');
+  assert.equal(geocoded.displayName, 'Meeting point');
   assert.equal(geocoded.addressLabel, 'Hayarkon Park, Tel Aviv');
 });
 

@@ -9,7 +9,7 @@ test('normalizes an Apple provider result without raw provider data', () => {
 });
 
 test('normalizes manual and legacy points without provider metadata', () => {
-  assert.equal(createManualPlace({ latitude: 32.08, longitude: 34.78 }).name, 'Selected meeting point');
+  assert.equal(createManualPlace({ latitude: 32.08, longitude: 34.78 }).name, 'Meeting point');
   const legacy = createLegacyPlace({ addressLabel: 'Old park entrance', latitude: 32.09, longitude: 34.79 });
   assert.equal(legacy.source, 'legacy');
   assert.equal(legacy.provider, null);
@@ -32,4 +32,3 @@ test('preserves Hebrew and English names', () => {
   assert.equal(createAppleMapsPlace({ name: 'פארק הירקון', latitude: 32.1, longitude: 34.8 }).name, 'פארק הירקון');
   assert.equal(createAppleMapsPlace({ name: 'Hayarkon Park', latitude: 32.1, longitude: 34.8 }).name, 'Hayarkon Park');
 });
-

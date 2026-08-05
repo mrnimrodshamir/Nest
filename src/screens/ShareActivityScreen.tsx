@@ -31,11 +31,11 @@ export function ShareActivityScreen({ activity, onViewActivity }: ShareActivityS
         <View style={styles.iconCircle}>
           <CheckCircle size={40} color={theme.brand.primary} weight="fill" />
         </View>
-        <Text style={styles.title}>You're all set!</Text>
-        <Text style={styles.subtitle}>
-          "{activity.title}" is live. Invite parents nearby to join you.
-        </Text>
+        <Text style={styles.title}>Your activity is live.</Text>
+        <Text style={styles.eyebrow}>Meeting at</Text>
+        <Text style={styles.venue}>{['selected meeting point', 'meeting point'].includes(activity.locationName.trim().toLocaleLowerCase()) ? 'Your chosen meeting point' : activity.locationName.trim()}</Text>
         <Text style={styles.timeLabel}>{formatExactStartTime(activity.startsAt.toISOString())}</Text>
+        <Text style={styles.subtitle}>Invite nearby parents and caregivers.</Text>
 
         <Pressable style={styles.whatsappButton} onPress={handleWhatsAppShare}>
           <WhatsappLogo size={20} color={theme.text.inverse} weight="fill" />
@@ -92,6 +92,8 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
   },
   title: { ...typography.title1, color: theme.text.primary, textAlign: 'center' },
+  eyebrow: { ...typography.footnote, color: theme.text.muted, textAlign: 'center', textTransform: 'uppercase' },
+  venue: { ...typography.title3, color: theme.text.primary, textAlign: 'center' },
   subtitle: {
     ...typography.body,
     color: theme.text.secondary,
@@ -101,7 +103,7 @@ const styles = StyleSheet.create({
     ...typography.footnote,
     color: theme.text.secondary,
     textAlign: 'center',
-    marginBottom: spacing.xl,
+    marginBottom: spacing.sm,
   },
   whatsappButton: {
     flexDirection: 'row',

@@ -35,7 +35,7 @@ export function activityColumnsToNormalizedPlace(row: LegacyActivityLocationColu
   }
 
   return {
-    name: row.place_name?.trim() || row.address_label.trim() || 'Selected meeting point',
+    name: row.place_name?.trim() || row.address_label.trim() || 'Meeting point',
     formattedAddress: row.formatted_address?.trim() || null,
     latitude: row.latitude,
     longitude: row.longitude,
@@ -86,7 +86,7 @@ export function selectedLocationToNormalizedPlace(selection: SelectedActivityLoc
   }
   if (selection.source === 'legacy') {
     return createLegacyPlace({
-      addressLabel: selection.displayName || selection.addressLabel || 'Selected meeting point',
+      addressLabel: selection.displayName || selection.addressLabel || 'Meeting point',
       latitude: selection.latitude,
       longitude: selection.longitude,
     });

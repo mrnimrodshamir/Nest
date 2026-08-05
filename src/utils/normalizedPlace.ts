@@ -66,7 +66,7 @@ export function createAppleMapsPlace(input: ProviderPlaceInput): NormalizedPlace
 export function createManualPlace(input: ManualPlaceInput): NormalizedPlace {
   assertCoordinates(input.latitude, input.longitude);
   return {
-    name: requiredName(input.name ?? '', 'Selected meeting point'),
+    name: requiredName(input.name ?? '', 'Meeting point'),
     formattedAddress: optionalText(input.formattedAddress),
     latitude: input.latitude,
     longitude: input.longitude,
@@ -81,7 +81,7 @@ export function createManualPlace(input: ManualPlaceInput): NormalizedPlace {
 export function createLegacyPlace(input: LegacyPlaceInput): NormalizedPlace {
   assertCoordinates(input.latitude, input.longitude);
   return {
-    name: requiredName(input.addressLabel, 'Selected meeting point'),
+    name: requiredName(input.addressLabel, 'Meeting point'),
     formattedAddress: optionalText(input.addressLabel),
     latitude: input.latitude,
     longitude: input.longitude,
@@ -92,4 +92,3 @@ export function createLegacyPlace(input: LegacyPlaceInput): NormalizedPlace {
     wasAdjusted: false,
   };
 }
-

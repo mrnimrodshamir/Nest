@@ -19,9 +19,9 @@ function shareable(overrides) {
 
 test('buildShareMessage: warm natural sentence, no emoji', () => {
   const message = buildShareMessage(shareable({}));
-  assert.match(message, /^Join us for a stroller walk/);
+  assert.match(message, /^Join us at HaYarkon Park/);
   assert.match(message, /HaYarkon Park/);
-  assert.match(message, new RegExp(`See the activity on ${APP_NAME}\\.`));
+  assert.match(message, new RegExp(`Open in ${APP_NAME}:`));
   assert.doesNotMatch(message, /[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/u); // no emoji range chars
 });
 
@@ -44,15 +44,22 @@ test('buildShareMessage: cancelled activities are never invited to as live', () 
 test('buildShareMessage: missing location name does not break the sentence', () => {
   const message = buildShareMessage(shareable({ locationName: '' }));
   assert.doesNotMatch(message, / in \./);
-  assert.match(message, /^Join us for a stroller walk/);
+  assert.match(message, /^Join us for Morning stroller walk/);
 });
 
-test('buildShareMessage: unrecognized category falls back to "other" rather than crashing', () => {
+test('buildShareMessage: an unknown category cannot leak placeholder copy', () => {
   const message = buildShareMessage(shareable({ category: 'some_future_category' }));
-  assert.match(message, /^Join us for a other/);
+  assert.match(message, /^Join us at HaYarkon Park/);
+  assert.doesNotMatch(message, /some_future_category|a other/);
 });
 
 test('buildShareMessage: cancellation message references the app by the shared brand constant', () => {
   const message = buildShareMessage(shareable({ status: 'cancelled' }));
-  assert.match(message, new RegExp(`This ${APP_NAME} activity has been cancelled`));
+  assert.match(message, new RegExp(`Open in ${APP_NAME}:`));
+});
+
+test('generic meeting-point data is never exposed in share copy', () => {
+  const message = buildShareMessage(shareable({ locationName: 'Selected meeting point' }));
+  assert.doesNotMatch(message, /selected meeting point/i);
+  assert.match(message, /^Join us for Morning stroller walk/);
 });

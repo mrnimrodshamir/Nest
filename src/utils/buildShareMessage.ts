@@ -1,5 +1,4 @@
 import { relativeDayWord } from './generateActivityTitle';
-import { CATEGORY_LABELS } from '../types/activity';
 import type { ActivityCategory, ActivityStatus } from '../types/activity';
 import { APP_NAME } from '../constants/brand';
 
@@ -30,22 +29,27 @@ export function activityDeepLink(activityId: string): string {
 export function buildShareMessage(activity: ShareableActivity): string {
   if (activity.status === 'cancelled') {
     return [
-      `This ${APP_NAME} activity has been cancelled: "${activity.title}".`,
+      `${activity.title} has been cancelled.`,
+      '',
+      `Open in ${APP_NAME}:`,
       activityDeepLink(activity.id),
     ].join('\n');
   }
 
-  const categoryLabel = (CATEGORY_LABELS[activity.category] ?? CATEGORY_LABELS.other).toLowerCase();
   const day = relativeDayWord(activity.startsAt);
-  const dayPhrase = day === 'Today' || day === 'Tomorrow' ? day.toLowerCase() : day;
   const timeLabel = activity.startsAt
     .toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })
-    .toLowerCase()
     .replace(' ', '');
-  const locationPhrase = activity.locationName.trim() ? ` in ${activity.locationName.trim()}` : '';
+  const location = activity.locationName.trim();
+  const invitation = location && !['selected meeting point', 'meeting point'].includes(location.toLocaleLowerCase())
+    ? `Join us at ${location}`
+    : `Join us for ${activity.title.trim()}`;
 
   return [
-    `Join us for a ${categoryLabel} ${dayPhrase} at ${timeLabel}${locationPhrase}. See the activity on ${APP_NAME}.`,
+    invitation,
+    `${day} at ${timeLabel}`,
+    '',
+    `Open in ${APP_NAME}:`,
     activityDeepLink(activity.id),
   ].join('\n');
 }

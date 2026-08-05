@@ -11,7 +11,7 @@ import {
 
 test('Place share copy is concise, branded, and has one stable deep link', () => {
   const message = buildPlaceShareMessage({ id: 'place-1', name: 'Beit Ariela Library', location: 'Tel Aviv' });
-  assert.equal(message, 'Discover Beit Ariela Library in Tel Aviv on NestUp.\nnestup://place/place-1');
+  assert.equal(message, 'Discover Beit Ariela Library\nTel Aviv\n\nOpen in NestUp:\nnestup://place/place-1');
   assert.equal(message.match(/Beit Ariela Library/g)?.length, 1);
 });
 
@@ -24,8 +24,8 @@ test('Event share preserves Hebrew and special characters through WhatsApp encod
 });
 
 test('cancelled and postponed events are never shared as normal live invitations', () => {
-  assert.match(buildEventShareMessage({ occurrenceId: '1', title: 'Story time', startsAt: '2026-08-06T14:00:00Z', location: null, status: 'cancelled' }), /^Cancelled event:/);
-  assert.match(buildEventShareMessage({ occurrenceId: '1', title: 'Story time', startsAt: '2026-08-06T14:00:00Z', location: null, status: 'postponed' }), /^Postponed event:/);
+  assert.match(buildEventShareMessage({ occurrenceId: '1', title: 'Story time', startsAt: '2026-08-06T14:00:00Z', location: null, status: 'cancelled' }), /^Cancelled:/);
+  assert.match(buildEventShareMessage({ occurrenceId: '1', title: 'Story time', startsAt: '2026-08-06T14:00:00Z', location: null, status: 'postponed' }), /^Postponed:/);
 });
 
 test('WhatsApp falls back to native sharing and dismissal is safe', async () => {

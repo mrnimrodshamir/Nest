@@ -36,7 +36,7 @@ export function adjustProviderPlace(
     return { ...selectedPlace, ...coordinates };
   }
 
-  const safeName = displayName?.trim() || 'Selected meeting point';
+  const safeName = displayName?.trim() || 'Meeting point';
   const safeAddress = formattedAddress?.trim() || null;
   return {
     name: safeName,
@@ -62,7 +62,7 @@ export function moveSelectedLocation(
     return {
       place: null,
       ...coordinates,
-      displayName: 'Selected meeting point',
+      displayName: 'Meeting point',
       addressLabel: null,
       source: 'manual',
       wasAdjusted: true,
@@ -83,7 +83,7 @@ export function applyReverseGeocodeLabel(
   if (!trimmed || selection.source === 'provider') return selection;
   return {
     ...selection,
-    displayName: selection.wasAdjusted ? 'Selected meeting point' : trimmed,
+    displayName: selection.wasAdjusted ? 'Meeting point' : trimmed,
     addressLabel: trimmed,
   };
 }

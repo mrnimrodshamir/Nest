@@ -32,6 +32,5 @@ test('Review presentation avoids duplicate address and never shows adjusted prov
   const provider = selectProviderPlace(createAppleMapsPlace({ name: 'Museum', formattedAddress: 'Museum', latitude: 32.2, longitude: 34.9 })).selection;
   assert.equal(presentSelectedLocation(provider).address, null);
   const adjusted = { ...provider, place: null, source: 'manual' as const, wasAdjusted: true, displayName: 'Old venue', addressLabel: 'Hayarkon Park, Tel Aviv' };
-  assert.deepEqual(presentSelectedLocation(adjusted), { title: 'Selected meeting point', address: 'Hayarkon Park, Tel Aviv', isManuallyAdjusted: true });
+  assert.deepEqual(presentSelectedLocation(adjusted), { title: 'Meeting point', address: 'Hayarkon Park, Tel Aviv', isManuallyAdjusted: true });
 });
-

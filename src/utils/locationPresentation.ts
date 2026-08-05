@@ -8,8 +8,8 @@ export interface LocationPresentation {
 
 export function presentSelectedLocation(selection: SelectedActivityLocation): LocationPresentation {
   const title = selection.source === 'manual' && selection.wasAdjusted
-    ? 'Selected meeting point'
-    : selection.displayName.trim() || 'Selected meeting point';
+    ? 'Meeting point'
+    : selection.displayName.trim() || 'Meeting point';
   const address = selection.addressLabel?.trim() || null;
   return {
     title,
@@ -17,4 +17,3 @@ export function presentSelectedLocation(selection: SelectedActivityLocation): Lo
     isManuallyAdjusted: selection.source === 'manual' && selection.wasAdjusted,
   };
 }
-

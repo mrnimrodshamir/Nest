@@ -11,8 +11,10 @@ export function buildPlaceShareMessage(input: {
   name: string;
   location: string | null;
 }): string {
-  const where = input.location?.trim() ? ` in ${input.location.trim()}` : '';
-  return `Discover ${input.name.trim()}${where} on ${APP_NAME}.\n${contentDeepLink('place', input.id)}`;
+  const lines = [`Discover ${input.name.trim()}`];
+  if (input.location?.trim()) lines.push(input.location.trim());
+  lines.push('', `Open in ${APP_NAME}:`, contentDeepLink('place', input.id));
+  return lines.join('\n');
 }
 
 export function buildEventShareMessage(input: {
@@ -23,23 +25,14 @@ export function buildEventShareMessage(input: {
   status: 'scheduled' | 'cancelled' | 'postponed';
 }): string {
   const date = new Date(input.startsAt);
-  const when = Number.isNaN(date.getTime())
-    ? ''
-    : ` ${date.toLocaleString(undefined, {
-        weekday: 'short',
-        month: 'short',
-        day: 'numeric',
-        hour: 'numeric',
-        minute: '2-digit',
-        timeZone: 'Asia/Jerusalem',
-      })}`;
-  const where = input.location?.trim() ? ` at ${input.location.trim()}` : '';
-  const state = input.status === 'cancelled'
-    ? 'Cancelled event:'
-    : input.status === 'postponed'
-      ? 'Postponed event:'
-      : 'Event:';
-  return `${state} ${input.title.trim()}${when}${where}. View it on ${APP_NAME}.\n${contentDeepLink('event', input.occurrenceId)}`;
+  const state = input.status === 'cancelled' ? 'Cancelled: ' : input.status === 'postponed' ? 'Postponed: ' : '';
+  const lines = [`${state}${input.title.trim()}`];
+  if (!Number.isNaN(date.getTime())) lines.push(date.toLocaleString(undefined, {
+    weekday: 'long', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZone: 'Asia/Jerusalem',
+  }));
+  if (input.location?.trim()) lines.push(input.location.trim());
+  lines.push('', `Open in ${APP_NAME}:`, contentDeepLink('event', input.occurrenceId));
+  return lines.join('\n');
 }
 
 export function buildWhatsAppUrl(message: string): string {

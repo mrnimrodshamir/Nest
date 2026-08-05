@@ -40,7 +40,7 @@ test('manual and legacy selection state does not duplicate provider metadata', (
   const legacy = legacyFieldsToSelectedLocation({ addressLabel: 'Old park entrance', latitude: 32.1, longitude: 34.8 });
   assert.equal(legacy.place, null);
   assert.equal(legacy.source, 'legacy');
-  const manual = { ...legacy, source: 'manual' as const, displayName: 'Selected meeting point', wasAdjusted: true };
+  const manual = { ...legacy, source: 'manual' as const, displayName: 'Meeting point', wasAdjusted: true };
   const normalized = selectedLocationToNormalizedPlace(manual);
   assert.equal(normalized.provider, null);
   assert.equal(normalized.providerPlaceId, null);

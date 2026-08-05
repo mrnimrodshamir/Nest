@@ -21,11 +21,19 @@ interface AddToCalendarSheetProps {
 
 export function AddToCalendarSheet({ visible, activity, onDismiss }: AddToCalendarSheetProps) {
   const [status, setStatus] = useState<string | null>(null);
+  const [isAdding, setIsAdding] = useState(false);
 
   const handleApple = async () => {
-    const result = await addActivityToAppleCalendar(activity);
-    setStatus(result.success ? 'Added to your calendar ✓' : result.error ?? 'Could not add to calendar');
-    if (result.success) setTimeout(onDismiss, 900);
+    if (isAdding) return;
+    setIsAdding(true);
+    setStatus(null);
+    try {
+      const result = await addActivityToAppleCalendar(activity);
+      setStatus(result.success ? 'Added to your calendar' : result.error ?? 'Could not add to calendar');
+      if (result.success) setTimeout(onDismiss, 900);
+    } finally {
+      setIsAdding(false);
+    }
   };
 
   const handleGoogle = async () => {
@@ -46,9 +54,9 @@ export function AddToCalendarSheet({ visible, activity, onDismiss }: AddToCalend
 
           {status && <Text style={styles.status}>{status}</Text>}
 
-          <Pressable style={styles.option} onPress={handleApple}>
+          <Pressable style={[styles.option, isAdding && styles.optionDisabled]} onPress={handleApple} disabled={isAdding} accessibilityState={{ disabled: isAdding }}>
             <CalendarPlus size={20} color={theme.brand.primary} weight="fill" />
-            <Text style={styles.optionLabel}>Add to Apple Calendar</Text>
+            <Text style={styles.optionLabel}>{isAdding ? 'Adding…' : 'Add to Apple Calendar'}</Text>
           </Pressable>
 
           <Pressable style={styles.option} onPress={handleGoogle}>
@@ -96,6 +104,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
   },
   optionLabel: { ...typography.bodyMedium, color: theme.text.primary },
+  optionDisabled: { opacity: 0.6 },
   notNow: { alignItems: 'center', paddingVertical: spacing.md, marginTop: spacing.xs },
   notNowLabel: { ...typography.bodyMedium, color: theme.text.secondary },
 });

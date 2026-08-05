@@ -1,4 +1,7 @@
-import * as Calendar from 'expo-calendar';
+// Expo SDK 57's package root is the new Calendar API. These async methods
+// live in the explicit legacy entry point; root-level compatibility stubs
+// throw at runtime.
+import * as Calendar from 'expo-calendar/legacy';
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { activityDeepLink } from '@/utils/buildShareMessage';
@@ -41,8 +44,12 @@ async function setStoredLink(activityId: string, link: StoredCalendarLink | null
 
 async function getDefaultCalendarId(): Promise<string | null> {
   if (Platform.OS === 'ios') {
-    const defaultCalendar = await Calendar.getDefaultCalendarAsync();
-    return defaultCalendar.id;
+    try {
+      const defaultCalendar = await Calendar.getDefaultCalendarAsync();
+      if (defaultCalendar.allowsModifications) return defaultCalendar.id;
+    } catch {
+      // Managed devices may not expose a writable system default.
+    }
   }
   const calendars = await Calendar.getCalendarsAsync(Calendar.EntityTypes.EVENT);
   const writable = calendars.find((c) => c.allowsModifications);
@@ -52,22 +59,35 @@ async function getDefaultCalendarId(): Promise<string | null> {
 async function addActivityToAppleCalendarInternal(
   activity: CalendarActivityInfo,
 ): Promise<{ success: boolean; error?: string }> {
-  const { status } = await Calendar.requestCalendarPermissionsAsync();
-  if (status !== 'granted') return { success: false, error: 'Calendar permission denied' };
-
-  const calendarId = await getDefaultCalendarId();
-  if (!calendarId) return { success: false, error: 'No writable calendar found' };
-
-  const endDate = new Date(activity.startsAt.getTime() + activity.durationMinutes * 60000);
-
   try {
-    const eventId = await Calendar.createEventAsync(calendarId, {
+    const { status } = await Calendar.requestCalendarPermissionsAsync();
+    if (status !== 'granted') return { success: false, error: 'Calendar access is needed to add this activity.' };
+
+    const endDate = new Date(activity.startsAt.getTime() + activity.durationMinutes * 60000);
+    const eventDetails = {
       title: activity.title,
       startDate: activity.startsAt,
       endDate,
       location: activity.locationName,
       notes: `${activity.description}\n\n${activityDeepLink(activity.id)}`,
       timeZone: 'Asia/Jerusalem',
+    };
+    const stored = await getStoredLink(activity.id);
+    if (stored) {
+      try {
+        await Calendar.updateEventAsync(stored.eventId, eventDetails);
+        await setStoredLink(activity.id, { eventId: stored.eventId, startTime: activity.startsAt.toISOString(), locationName: activity.locationName });
+        return { success: true };
+      } catch {
+        // The user may have deleted the prior event. Re-create it once.
+        await setStoredLink(activity.id, null);
+      }
+    }
+
+    const calendarId = await getDefaultCalendarId();
+    if (!calendarId) return { success: false, error: 'No writable calendar is available on this device.' };
+    const eventId = await Calendar.createEventAsync(calendarId, {
+      ...eventDetails,
     });
     await setStoredLink(activity.id, {
       eventId,
