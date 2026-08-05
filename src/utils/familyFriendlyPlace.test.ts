@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { PLACE_CATEGORIES, isPlaceCategory, type FamilyFriendlyPlaceRow } from '@/types/familyFriendlyPlace';
-import { formatOpeningHours, formatPlaceAgeRange, formatPlaceDistance, mapFamilyFriendlyPlaceRow, placeMatchesFilters, placeSummaryFeatures, placeWhatIsHere } from '@/utils/familyFriendlyPlace';
+import { buildAppleMapsPlaceUrl, formatOpeningHours, formatPlaceAgeRange, formatPlaceDistance, mapFamilyFriendlyPlaceRow, placeMatchesFilters, placeSummaryFeatures, placeWhatIsHere } from '@/utils/familyFriendlyPlace';
 import { regionToPlaceViewport, validatePlaceQueryInput } from '@/utils/placeViewport';
 import { MOCK_FAMILY_FRIENDLY_PLACES } from '@/mocks/mockFamilyFriendlyPlaces';
 
@@ -25,6 +25,17 @@ test('family amenity and distance filters compose', () => { const place = { ...m
 test('distance and card features stay compact', () => { const place = mapFamilyFriendlyPlaceRow({ ...row, distance_meters: 1230 }); assert.equal(formatPlaceDistance(place.distanceMeters), '1.2 km away'); assert.deepEqual(placeSummaryFeatures(place), ['Shade','Toilets','Stroller friendly']); });
 test('details age helper handles bounded and open ranges', () => { assert.equal(formatPlaceAgeRange(6, 36), '6 months – 3 years'); assert.equal(formatPlaceAgeRange(null, 24), 'Up to 2 years'); });
 test('details opening-hours helper renders supported schedules and ignores malformed data', () => { assert.equal(formatOpeningHours({ Monday: '09:00–17:00', Tuesday: ['09:00–12:00','14:00–17:00'] }), 'Monday: 09:00–17:00\nTuesday: 09:00–12:00, 14:00–17:00'); assert.equal(formatOpeningHours({ raw: { unsafe: true } }), null); });
+test('Apple Maps link targets the exact place point without exposing provider metadata', () => {
+  assert.equal(buildAppleMapsPlaceUrl({ name: 'MUZA & Park', latitude: 32.10288, longitude: 34.79635 }), 'https://maps.apple.com/?ll=32.10288,34.79635&q=MUZA%20%26%20Park');
+  assert.throws(() => buildAppleMapsPlaceUrl({ name: 'Invalid', latitude: 91, longitude: 34.8 }), /latitude/);
+});
+test('Place Details shows full copy and cost only when values exist', () => {
+  const source = readFileSync(new URL('../screens/PlaceDetailsScreen.tsx', import.meta.url), 'utf8');
+  assert.match(source, /const description = place\.fullDescription \?\? place\.shortDescription/);
+  assert.match(source, /description \? <Text/);
+  assert.match(source, /place\.priceNote \? <Section title="Cost"/);
+  assert.match(source, /buildAppleMapsPlaceUrl\(place\)/);
+});
 test('development fixtures are fictional, varied, and never verified', () => { assert.equal(MOCK_FAMILY_FRIENDLY_PLACES.length, 11); assert.equal(new Set(MOCK_FAMILY_FRIENDLY_PLACES.map((place) => place.category)).size, 11); assert.ok(MOCK_FAMILY_FRIENDLY_PLACES.every((place) => place.sourceName === 'Development fixture' && place.verificationStatus === 'draft')); });
 test('query layer explicitly enforces viewport, active/verified and every approved filter', () => { const source = readFileSync(new URL('../lib/familyFriendlyPlaces.ts', import.meta.url), 'utf8'); for (const token of ["eq('is_active', true)", "eq('verification_status', 'verified')", "gte('latitude'", "lte('longitude'", "eq('is_indoor', true)", "eq('is_outdoor', true)", "eq('is_free', true)", 'min_age_months', 'max_age_months']) assert.match(source, new RegExp(token.replace(/[()'.]/g, '\\$&'))); });
 test('place markers have category mapping and stay distinct from activity markers', () => { const placePin = readFileSync(new URL('../components/PlaceMapPin.tsx', import.meta.url), 'utf8'); const activityPin = readFileSync(new URL('../components/ActivityMapPin.tsx', import.meta.url), 'utf8'); assert.match(placePin, /borderRadius: 8/); assert.match(activityPin, /borderRadius: 19/); });
