@@ -24,3 +24,14 @@ export function discoveryEmptyCopy(filter: DiscoveryContentFilter): string {
 export function contentFilterIncludes(filter: DiscoveryContentFilter, type: 'activity' | 'place'): boolean {
   return filter === 'all' || (filter === 'activities' ? type === 'activity' : type === 'place');
 }
+
+export function visibleDiscoveryFailures(
+  filter: DiscoveryContentFilter,
+  activityError: string | null,
+  placeError: string | null,
+): Array<'activity' | 'place'> {
+  const failures: Array<'activity' | 'place'> = [];
+  if (activityError && contentFilterIncludes(filter, 'activity')) failures.push('activity');
+  if (placeError && contentFilterIncludes(filter, 'place')) failures.push('place');
+  return failures;
+}

@@ -117,3 +117,21 @@ test('marker and card selection use the same typed identity', () => {
   assert.equal(discoverySelectionEquals({ type: 'activity', id: 'same' }, activityItem), true);
   assert.equal(discoverySelectionEquals({ type: 'activity', id: 'same' }, placeItem), false);
 });
+
+test('an Activity-only filter never removes Places from the merged All feed', () => {
+  const activities = [activity('walk', 32.08), { ...activity('yoga', 32.081), category: 'yoga' as const }];
+  const places = [place('park', 32.082)];
+  const activityFiltered = activities.filter((item) => item.category === 'yoga');
+  const merged = mergeDiscoveryItems(activityFiltered, places, { latitude: 32.08, longitude: 34.78 });
+  assert.equal(merged.filter((item) => item.type === 'activity').length, 1);
+  assert.equal(merged.filter((item) => item.type === 'place').length, 1);
+});
+
+test('a Place-only filter never removes Activities from the merged All feed', () => {
+  const activities = [activity('walk', 32.08)];
+  const places = [place('park', 32.081), { ...place('museum', 32.082), category: 'museum' as const }];
+  const placeFiltered = places.filter((item) => item.category === 'museum');
+  const merged = mergeDiscoveryItems(activities, placeFiltered, { latitude: 32.08, longitude: 34.78 });
+  assert.equal(merged.filter((item) => item.type === 'activity').length, 1);
+  assert.equal(merged.filter((item) => item.type === 'place').length, 1);
+});

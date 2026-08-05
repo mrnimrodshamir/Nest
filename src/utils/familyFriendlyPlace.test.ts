@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { PLACE_CATEGORIES, isPlaceCategory, type FamilyFriendlyPlaceRow } from '@/types/familyFriendlyPlace';
-import { formatOpeningHours, formatPlaceAgeRange, formatPlaceDistance, mapFamilyFriendlyPlaceRow, placeMatchesFilters, placeSummaryFeatures } from '@/utils/familyFriendlyPlace';
+import { formatOpeningHours, formatPlaceAgeRange, formatPlaceDistance, mapFamilyFriendlyPlaceRow, placeMatchesFilters, placeSummaryFeatures, placeWhatIsHere } from '@/utils/familyFriendlyPlace';
 import { regionToPlaceViewport, validatePlaceQueryInput } from '@/utils/placeViewport';
 import { MOCK_FAMILY_FRIENDLY_PLACES } from '@/mocks/mockFamilyFriendlyPlaces';
 
@@ -28,3 +28,9 @@ test('details opening-hours helper renders supported schedules and ignores malfo
 test('development fixtures are fictional, varied, and never verified', () => { assert.equal(MOCK_FAMILY_FRIENDLY_PLACES.length, 11); assert.equal(new Set(MOCK_FAMILY_FRIENDLY_PLACES.map((place) => place.category)).size, 11); assert.ok(MOCK_FAMILY_FRIENDLY_PLACES.every((place) => place.sourceName === 'Development fixture' && place.verificationStatus === 'draft')); });
 test('query layer explicitly enforces viewport, active/verified and every approved filter', () => { const source = readFileSync(new URL('../lib/familyFriendlyPlaces.ts', import.meta.url), 'utf8'); for (const token of ["eq('is_active', true)", "eq('verification_status', 'verified')", "gte('latitude'", "lte('longitude'", "eq('is_indoor', true)", "eq('is_outdoor', true)", "eq('is_free', true)", 'min_age_months', 'max_age_months']) assert.match(source, new RegExp(token.replace(/[()'.]/g, '\\$&'))); });
 test('place markers have category mapping and stay distinct from activity markers', () => { const placePin = readFileSync(new URL('../components/PlaceMapPin.tsx', import.meta.url), 'utf8'); const activityPin = readFileSync(new URL('../components/ActivityMapPin.tsx', import.meta.url), 'utf8'); assert.match(placePin, /borderRadius: 8/); assert.match(activityPin, /borderRadius: 19/); });
+test("What's here includes explicit facts and age while hiding every unknown", () => {
+  const place = mapFamilyFriendlyPlaceRow(row);
+  assert.deepEqual(placeWhatIsHere(place), ['Park', 'Outdoor', 'Free', 'Toilets', 'Shade', 'Water fountain', 'Stroller friendly', 'Accessible', 'Best for 6 months – 5 years']);
+  const unknown = { ...place, category: 'other' as const, isIndoor: null, isOutdoor: null, isFree: null, toilets: null, shade: null, waterFountain: null, changingTable: null, strollerFriendly: null, accessible: null, minAgeMonths: null, maxAgeMonths: null };
+  assert.deepEqual(placeWhatIsHere(unknown), []);
+});

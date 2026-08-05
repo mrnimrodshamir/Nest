@@ -32,7 +32,7 @@ import type { FamilyFriendlyPlace, PlaceCategory, PlaceFilters } from '@/types/f
 import { PLACE_CATEGORY_LABELS } from '@/types/familyFriendlyPlace';
 import { clusterPlacesForRegion } from '@/utils/placeClustering';
 import { regionToPlaceViewport } from '@/utils/placeViewport';
-import { discoveryEmptyCopy, transitionDiscoveryContentFilter } from '@/utils/discoveryPresentation';
+import { discoveryEmptyCopy, transitionDiscoveryContentFilter, visibleDiscoveryFailures } from '@/utils/discoveryPresentation';
 import {
   discoveryItemKey,
   discoverySelectionEquals,
@@ -226,8 +226,9 @@ export function DiscoverScreen({ onOpenActivity, onOpenPlace, onHostActivity, mo
   const greeting = firstName ? `${greetingPrefix}, ${firstName}` : greetingPrefix;
   const hasCachedContent = visibleItems.length > 0;
   const showSkeleton = !hasCachedContent && (activitiesQuery.isRefreshing || placesQuery.isLoading || position.isResolving);
-  const showActivityError = contentFilter !== 'places' && Boolean(activitiesQuery.error);
-  const showPlaceError = contentFilter !== 'activities' && Boolean(placesQuery.error);
+  const visibleFailures = visibleDiscoveryFailures(contentFilter, activitiesQuery.error, placesQuery.error);
+  const showActivityError = visibleFailures.includes('activity');
+  const showPlaceError = visibleFailures.includes('place');
 
   return (
     <View style={styles.container}>
