@@ -53,6 +53,7 @@ import { setActiveChat } from '@/lib/activeChatTracker';
 import { track } from '@/lib/analytics';
 import { FALLBACK_LOCATION } from '@/constants/location';
 import { MOCK_ACTIVITIES, MOCK_ACTIVITIES_EMPTY } from '@/mocks/mockActivities';
+import { MOCK_FAMILY_FRIENDLY_PLACES } from '@/mocks/mockFamilyFriendlyPlaces';
 import type { Activity } from '@/types/activity';
 import type { Conversation } from '@/hooks/useConversations';
 import type { CreateActivityInput } from '@/hooks/useCreateActivity';
@@ -437,6 +438,7 @@ function DiscoverScreenContainer({ navigation }: { navigation: any }) {
         onOpenPlace={handleOpenPlace}
         onHostActivity={() => navigation.getParent()?.navigate('CreateActivity')}
         mockActivities={PREVIEW_MODE ? (previewShowEmpty ? MOCK_ACTIVITIES_EMPTY : MOCK_ACTIVITIES) : undefined}
+        mockPlaces={PREVIEW_MODE ? MOCK_FAMILY_FRIENDLY_PLACES : undefined}
       />
       {PREVIEW_MODE && (
         <Pressable
