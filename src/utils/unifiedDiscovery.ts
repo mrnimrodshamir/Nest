@@ -7,6 +7,7 @@ import type {
   DiscoveryCoordinate,
   DiscoveryItem,
   DiscoverySelection,
+  DiscoverySort,
 } from '@/types/discovery';
 import { distanceMeters } from '@/utils/placeViewport';
 
@@ -105,6 +106,45 @@ export function mergeDiscoveryItems(
 
 export function discoveryItemCoordinate(item: DiscoveryItem): DiscoveryCoordinate {
   return item.type === 'event' ? item.data.location : item.data;
+}
+
+/** Sorts list presentation only. Map callers keep using the unsorted item set. */
+export function sortDiscoveryItems(
+  items: readonly DiscoveryItem[],
+  sort: DiscoverySort,
+  origin?: DiscoveryCoordinate | null,
+): DiscoveryItem[] {
+  if (sort === 'default') {
+    const activities = items.filter((item): item is Extract<DiscoveryItem, { type: 'activity' }> => item.type === 'activity')
+      .sort((a, b) => Date.parse(a.data.startTime) - Date.parse(b.data.startTime));
+    const places = items.filter((item): item is Extract<DiscoveryItem, { type: 'place' }> => item.type === 'place')
+      .sort((a, b) => distanceFor(a, origin) - distanceFor(b, origin) || a.data.name.localeCompare(b.data.name));
+    const events = items.filter((item): item is Extract<DiscoveryItem, { type: 'event' }> => item.type === 'event')
+      .sort((a, b) => Date.parse(a.data.occurrence.startsAt) - Date.parse(b.data.occurrence.startsAt));
+    return interleave([activities, places, events]);
+  }
+  return [...items].sort((a, b) => {
+    if (sort === 'distance') return distanceFor(a, origin) - distanceFor(b, origin) || discoveryItemKey(a).localeCompare(discoveryItemKey(b));
+    if (sort === 'alphabetical') return titleFor(a).localeCompare(titleFor(b)) || discoveryItemKey(a).localeCompare(discoveryItemKey(b));
+    if (sort === 'soonest') return timeFor(a, 'soonest') - timeFor(b, 'soonest') || discoveryItemKey(a).localeCompare(discoveryItemKey(b));
+    return timeFor(b, 'newest') - timeFor(a, 'newest') || discoveryItemKey(a).localeCompare(discoveryItemKey(b));
+  });
+}
+
+function distanceFor(item: DiscoveryItem, origin?: DiscoveryCoordinate | null): number {
+  if (!isCoordinate(origin)) return Number.MAX_SAFE_INTEGER;
+  return distanceMeters(origin, discoveryItemCoordinate(item));
+}
+
+function titleFor(item: DiscoveryItem): string {
+  return item.type === 'place' ? item.data.name : item.data.title;
+}
+
+function timeFor(item: DiscoveryItem, mode: 'soonest' | 'newest'): number {
+  if (item.type === 'activity') return Date.parse(item.data.startTime);
+  if (item.type === 'event') return Date.parse(mode === 'newest' ? item.data.createdAt : item.data.occurrence.startsAt);
+  if (mode === 'newest' && item.data.lastVerifiedAt) return Date.parse(item.data.lastVerifiedAt);
+  return Number.MAX_SAFE_INTEGER;
 }
 
 function interleave(groups: DiscoveryItem[][]): DiscoveryItem[] {

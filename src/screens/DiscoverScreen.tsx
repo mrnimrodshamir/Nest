@@ -1,13 +1,13 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { FlatList, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MapView, { PROVIDER_DEFAULT, type Region } from 'react-native-maps';
 import BottomSheet, { BottomSheetFlatList, BottomSheetView } from '@gorhom/bottom-sheet';
 import {
   MagnifyingGlass,
-  MapTrifold,
-  ListBullets,
+  Funnel,
+  ArrowsDownUp,
   Plus,
   WarningCircle,
   X,
@@ -22,7 +22,6 @@ import { PlaceClusterMarker } from '@/components/PlaceClusterMarker';
 import { PlaceMapPin } from '@/components/PlaceMapPin';
 import { SkeletonCard } from '@/components/SkeletonCard';
 import { FALLBACK_LOCATION } from '@/constants/location';
-import { useAuth } from '@/hooks/useAuth';
 import { useDiscoveryPosition } from '@/hooks/useDiscoveryPosition';
 import { useDiscoveryEvents } from '@/hooks/useDiscoveryEvents';
 import { useFamilyFriendlyPlaces } from '@/hooks/useFamilyFriendlyPlaces';
@@ -30,7 +29,7 @@ import { useNearbyActivities } from '@/hooks/useNearbyActivities';
 import { radius, spacing, theme, typography, iconDefaults } from '@/theme';
 import type { Activity, ActivityCategory } from '@/types/activity';
 import { CATEGORY_LABELS } from '@/types/activity';
-import type { DiscoveryContentFilter, DiscoveryItem, DiscoverySelection } from '@/types/discovery';
+import type { DiscoveryContentFilter, DiscoveryItem, DiscoverySelection, DiscoverySort } from '@/types/discovery';
 import type { EventCategory, EventDetails } from '@/types/event';
 import { EVENT_CATEGORY_LABELS } from '@/types/event';
 import type { FamilyFriendlyPlace, PlaceCategory, PlaceFilters } from '@/types/familyFriendlyPlace';
@@ -46,6 +45,7 @@ import {
   discoverySelectionEquals,
   filterDiscoveryItems,
   mergeDiscoveryItems,
+  sortDiscoveryItems,
 } from '@/utils/unifiedDiscovery';
 
 const ACTIVITY_CATEGORIES: Array<{ key: ActivityCategory | 'all'; label: string }> = [
@@ -74,6 +74,14 @@ const CONTENT_FILTERS: Array<{ key: DiscoveryContentFilter; label: string }> = [
   { key: 'activities', label: 'Activities' },
   { key: 'places', label: 'Places' },
   { key: 'events', label: 'Events' },
+];
+
+const SORT_OPTIONS: Array<{ key: DiscoverySort; label: string }> = [
+  { key: 'default', label: 'Recommended' },
+  { key: 'distance', label: 'Distance' },
+  { key: 'soonest', label: 'Soonest' },
+  { key: 'newest', label: 'Newest' },
+  { key: 'alphabetical', label: 'Alphabetical' },
 ];
 
 const EVENT_CATEGORIES: Array<{ key: EventCategory | 'all'; label: string }> = [
@@ -117,7 +125,6 @@ interface DiscoverScreenProps {
 }
 
 export function DiscoverScreen({ onOpenActivity, onOpenPlace, onOpenEvent, onHostActivity, mockActivities, mockPlaces, mockEvents }: DiscoverScreenProps) {
-  const { profile } = useAuth();
   const previewMode = mockActivities !== undefined || mockPlaces !== undefined || mockEvents !== undefined;
   const initialCoordinate = mockActivities?.[0] ?? mockPlaces?.[0] ?? mockEvents?.[0]?.location ?? FALLBACK_LOCATION;
   const [region, setRegion] = useState<Region>({
@@ -134,7 +141,9 @@ export function DiscoverScreen({ onOpenActivity, onOpenPlace, onOpenEvent, onHos
   const [placeQuickFilters, setPlaceQuickFilters] = useState<Set<PlaceQuickFilter>>(() => new Set());
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [viewMode, setViewMode] = useState<'map' | 'list'>('map');
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [sortOpen, setSortOpen] = useState(false);
+  const [sort, setSort] = useState<DiscoverySort>('default');
 
   const mapRef = useRef<MapView>(null);
   const sheetRef = useRef<BottomSheet>(null);
@@ -196,7 +205,6 @@ export function DiscoverScreen({ onOpenActivity, onOpenPlace, onOpenEvent, onHos
     }
     sheetRef.current?.snapToIndex(SHEET_PEEK_INDEX);
     sheetIndex.current = SHEET_PEEK_INDEX;
-    setViewMode('map');
     // Query refresh callbacks intentionally follow the current shared region.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []));
@@ -231,6 +239,7 @@ export function DiscoverScreen({ onOpenActivity, onOpenPlace, onOpenEvent, onHos
     longitude: region.longitude,
   }), [filteredActivities, filteredEvents, filteredPlaces, region.latitude, region.longitude]);
   const visibleItems = useMemo(() => filterDiscoveryItems(mergedItems, contentFilter), [contentFilter, mergedItems]);
+  const listItems = useMemo(() => sortDiscoveryItems(visibleItems, sort, position.userCoordinate ?? region), [position.userCoordinate, region, sort, visibleItems]);
   const visibleActivities = useMemo(() => visibleItems.flatMap((item) => item.type === 'activity' ? [item.data] : []), [visibleItems]);
   const visiblePlaces = useMemo(() => visibleItems.flatMap((item) => item.type === 'place' ? [item.data] : []), [visibleItems]);
   const visibleEvents = useMemo(() => visibleItems.flatMap((item) => item.type === 'event' ? [item.data] : []), [visibleItems]);
@@ -244,9 +253,9 @@ export function DiscoverScreen({ onOpenActivity, onOpenPlace, onOpenEvent, onHos
       longitudeDelta: 0.018,
     }, 350);
     if (sheetIndex.current === SHEET_PEEK_INDEX) sheetRef.current?.snapToIndex(SHEET_HALF_INDEX);
-    const index = visibleItems.findIndex((candidate) => discoveryItemKey(candidate) === discoveryItemKey(item));
+    const index = listItems.findIndex((candidate) => discoveryItemKey(candidate) === discoveryItemKey(item));
     if (index >= 0) listRef.current?.scrollToIndex({ index, animated: true, viewPosition: 0.2 });
-  }, [visibleItems]);
+  }, [listItems]);
 
   const openItem = useCallback((item: DiscoveryItem) => {
     focusItem(item);
@@ -261,10 +270,6 @@ export function DiscoverScreen({ onOpenActivity, onOpenPlace, onOpenEvent, onHos
     setSelectedItem(transition.selectedItem);
   }, [region]);
 
-  const hour = new Date().getHours();
-  const greetingPrefix = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
-  const firstName = profile?.displayName?.trim().split(' ')[0];
-  const greeting = firstName ? `${greetingPrefix}, ${firstName}` : greetingPrefix;
   const hasCachedContent = visibleItems.length > 0;
   const showSkeleton = !hasCachedContent && (activitiesQuery.isRefreshing || placesQuery.isLoading || eventsQuery.isLoading || position.isResolving);
   const visibleFailures = visibleDiscoveryFailures(contentFilter, activitiesQuery.error, placesQuery.error, eventsQuery.error);
@@ -313,21 +318,6 @@ export function DiscoverScreen({ onOpenActivity, onOpenPlace, onOpenEvent, onHos
       </MapView>
 
       <SafeAreaView edges={['top']} style={styles.headerOverlay} pointerEvents="box-none">
-        <View style={styles.contentFilter} accessibilityRole="tablist">
-          {CONTENT_FILTERS.map((item) => (
-            <Pressable
-              key={item.key}
-              style={[styles.contentFilterOption, contentFilter === item.key && styles.contentFilterSelected]}
-              onPress={() => changeContentFilter(item.key)}
-              accessibilityRole="tab"
-              accessibilityLabel={`Show ${item.label.toLocaleLowerCase()}`}
-              accessibilityState={{ selected: contentFilter === item.key }}
-            >
-              <Text style={[styles.contentFilterText, contentFilter === item.key && styles.contentFilterTextSelected]}>{item.label}</Text>
-            </Pressable>
-          ))}
-        </View>
-
         {searchOpen ? (
           <View style={styles.searchRow}>
             <MagnifyingGlass size={iconDefaults.size.inline} color={theme.text.muted} weight={iconDefaults.weight} />
@@ -346,37 +336,35 @@ export function DiscoverScreen({ onOpenActivity, onOpenPlace, onOpenEvent, onHos
             </Pressable>
           </View>
         ) : (
-          <View style={styles.headerRow}>
-            <Text style={styles.greeting}>{greeting}</Text>
-            <View style={styles.headerActions}>
-              <View style={styles.viewToggle}>
-                <Pressable style={[styles.viewToggleOption, viewMode === 'map' && styles.viewToggleSelected]} onPress={() => { setViewMode('map'); sheetRef.current?.snapToIndex(SHEET_PEEK_INDEX); }} accessibilityLabel="Map view" accessibilityState={{ selected: viewMode === 'map' }}>
-                  <MapTrifold size={16} color={viewMode === 'map' ? theme.text.inverse : theme.text.secondary} />
-                </Pressable>
-                <Pressable style={[styles.viewToggleOption, viewMode === 'list' && styles.viewToggleSelected]} onPress={() => { setViewMode('list'); sheetRef.current?.snapToIndex(SHEET_FULL_INDEX); }} accessibilityLabel="List view" accessibilityState={{ selected: viewMode === 'list' }}>
-                  <ListBullets size={16} color={viewMode === 'list' ? theme.text.inverse : theme.text.secondary} />
-                </Pressable>
-              </View>
-              <Pressable style={styles.iconButton} onPress={() => setSearchOpen(true)} accessibilityLabel="Search activities, places, and events">
-                <MagnifyingGlass size={20} color={theme.text.primary} />
-              </Pressable>
-            </View>
+          <View style={styles.toolbar}>
+            <ToolbarButton icon={MagnifyingGlass} label="Search" onPress={() => setSearchOpen(true)} />
+            <ToolbarButton icon={Funnel} label="Filters" onPress={() => setFiltersOpen(true)} active={contentFilter !== 'all' || selectedActivityCategory !== 'all' || selectedPlaceCategory !== 'all' || selectedEventCategory !== 'all' || placeQuickFilters.size > 0} />
+            <ToolbarButton icon={ArrowsDownUp} label="Sort" onPress={() => setSortOpen(true)} active={sort !== 'default'} />
           </View>
         )}
-
-        {(contentFilter === 'all' || contentFilter === 'activities') ? <FilterRow label={contentFilter === 'all' ? 'Activity filters' : undefined} items={ACTIVITY_CATEGORIES} selected={selectedActivityCategory} onSelect={setSelectedActivityCategory} /> : null}
-        {(contentFilter === 'all' || contentFilter === 'places') ? <>
-          <FilterRow label={contentFilter === 'all' ? 'Place filters' : undefined} items={PLACE_CATEGORIES} selected={selectedPlaceCategory} onSelect={setSelectedPlaceCategory} />
-          <FlatList horizontal showsHorizontalScrollIndicator={false} data={PLACE_QUICK_FILTERS} keyExtractor={(item) => item.key} contentContainerStyle={styles.chipRowCompact} renderItem={({ item }) => <CategoryChip label={item.label} selected={placeQuickFilters.has(item.key)} onPress={() => setPlaceQuickFilters((current) => togglePlaceQuickFilter(current, item.key))} />} />
-        </> : null}
-        {(contentFilter === 'all' || contentFilter === 'events') ? <FilterRow label={contentFilter === 'all' ? 'Event filters' : undefined} items={EVENT_CATEGORIES} selected={selectedEventCategory} onSelect={setSelectedEventCategory} /> : null}
       </SafeAreaView>
+
+      <ModalSheet visible={filtersOpen} title="Filters" onDismiss={() => setFiltersOpen(false)}>
+        <Text style={styles.filterLabel}>Show</Text>
+        <FilterRow items={CONTENT_FILTERS} selected={contentFilter} onSelect={changeContentFilter} />
+        {(contentFilter === 'all' || contentFilter === 'activities') ? <FilterRow label="Activities" items={ACTIVITY_CATEGORIES} selected={selectedActivityCategory} onSelect={setSelectedActivityCategory} /> : null}
+        {(contentFilter === 'all' || contentFilter === 'places') ? <>
+          <FilterRow label="Places" items={PLACE_CATEGORIES} selected={selectedPlaceCategory} onSelect={setSelectedPlaceCategory} />
+          <View style={styles.wrapChips}>{PLACE_QUICK_FILTERS.map((item) => <CategoryChip key={item.key} label={item.label} selected={placeQuickFilters.has(item.key)} onPress={() => setPlaceQuickFilters((current) => togglePlaceQuickFilter(current, item.key))} />)}</View>
+        </> : null}
+        {(contentFilter === 'all' || contentFilter === 'events') ? <FilterRow label="Events" items={EVENT_CATEGORIES} selected={selectedEventCategory} onSelect={setSelectedEventCategory} /> : null}
+      </ModalSheet>
+
+      <ModalSheet visible={sortOpen} title="Sort list" onDismiss={() => setSortOpen(false)}>
+        <View style={styles.sortOptions}>{SORT_OPTIONS.map((item) => <Pressable key={item.key} style={[styles.sortOption, sort === item.key && styles.sortOptionSelected]} onPress={() => { setSort(item.key); setSortOpen(false); }} accessibilityRole="radio" accessibilityState={{ checked: sort === item.key }}><Text style={[styles.sortOptionText, sort === item.key && styles.sortOptionTextSelected]}>{item.label}</Text></Pressable>)}</View>
+        <Text style={styles.sortHint}>Sorting changes the list only. Map markers stay in place.</Text>
+      </ModalSheet>
 
       <Pressable style={styles.fab} onPress={onHostActivity} accessibilityLabel="Host an activity">
         <Plus size={24} color={theme.text.inverse} weight="bold" />
       </Pressable>
 
-      <BottomSheet ref={sheetRef} index={SHEET_PEEK_INDEX} snapPoints={SNAP_POINTS} enableDynamicSizing={false} onChange={(index) => { sheetIndex.current = index; setViewMode(index >= SHEET_FULL_INDEX ? 'list' : 'map'); }} backgroundStyle={styles.sheetBackground} handleIndicatorStyle={styles.sheetHandle}>
+      <BottomSheet ref={sheetRef} index={SHEET_PEEK_INDEX} snapPoints={SNAP_POINTS} enableDynamicSizing={false} onChange={(index) => { sheetIndex.current = index; }} backgroundStyle={styles.sheetBackground} handleIndicatorStyle={styles.sheetHandle}>
         <BottomSheetView style={styles.sheetHeader}>
           <Text style={styles.sheetTitle}>{showSkeleton ? 'Finding nearby options…' : discoveryCountLabel(contentFilter, visibleItems.length)}</Text>
           {!showSkeleton && visibleItems.length > 0 ? <Text style={styles.sheetSubtitle}>Swipe up to explore</Text> : null}
@@ -389,7 +377,7 @@ export function DiscoverScreen({ onOpenActivity, onOpenPlace, onOpenEvent, onHos
         ) : (
           <BottomSheetFlatList
             ref={listRef}
-            data={visibleItems}
+            data={listItems}
             keyExtractor={discoveryItemKey}
             renderItem={({ item }: { item: DiscoveryItem }) => <View style={styles.feedItem}>{item.type === 'activity'
               ? <ActivityCard activity={item.data} variant="feed" onPress={() => openItem(item)} highlighted={discoverySelectionEquals(selectedItem, item)} />
@@ -415,6 +403,14 @@ export function DiscoverScreen({ onOpenActivity, onOpenPlace, onOpenEvent, onHos
 
 function FilterRow<TKey extends string>({ label, items, selected, onSelect }: { label?: string; items: Array<{ key: TKey; label: string }>; selected: TKey; onSelect: (key: TKey) => void }) {
   return <View>{label ? <Text style={styles.filterLabel}>{label}</Text> : null}<FlatList horizontal showsHorizontalScrollIndicator={false} data={items} keyExtractor={(item) => item.key} contentContainerStyle={styles.chipRow} renderItem={({ item }) => <CategoryChip label={item.label} selected={selected === item.key} onPress={() => onSelect(item.key)} />} /></View>;
+}
+
+function ToolbarButton({ icon: Icon, label, onPress, active = false }: { icon: React.ComponentType<{ size: number; color: string }>; label: string; onPress: () => void; active?: boolean }) {
+  return <Pressable style={[styles.toolbarButton, active && styles.toolbarButtonActive]} onPress={onPress} accessibilityRole="button"><Icon size={18} color={active ? theme.text.inverse : theme.text.primary} /><Text style={[styles.toolbarButtonText, active && styles.toolbarButtonTextActive]}>{label}</Text></Pressable>;
+}
+
+function ModalSheet({ visible, title, onDismiss, children }: { visible: boolean; title: string; onDismiss: () => void; children: React.ReactNode }) {
+  return <Modal visible={visible} transparent animationType="slide" onRequestClose={onDismiss}><Pressable style={styles.modalOverlay} onPress={onDismiss}><Pressable style={styles.modalSheet} onPress={(event) => event.stopPropagation()}><View style={styles.modalHeader}><Text style={styles.modalTitle}>{title}</Text><Pressable onPress={onDismiss} accessibilityLabel={`Close ${title.toLocaleLowerCase()}`} hitSlop={10}><X size={20} color={theme.text.primary} /></Pressable></View><ScrollView contentContainerStyle={styles.modalContent} keyboardShouldPersistTaps="handled">{children}</ScrollView></Pressable></Pressable></Modal>;
 }
 
 function QueryErrorBanner({ label, onRetry }: { label: string; onRetry: () => void }) {
@@ -449,18 +445,28 @@ const styles = StyleSheet.create({
   contentFilterSelected: { backgroundColor: theme.brand.primary },
   contentFilterText: { ...typography.subhead, color: theme.text.secondary, fontWeight: '600' },
   contentFilterTextSelected: { color: theme.text.inverse },
-  headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: spacing.lg, paddingTop: spacing.sm },
-  greeting: { ...typography.bodyMedium, color: theme.text.primary },
-  headerActions: { flexDirection: 'row', gap: spacing.sm },
-  viewToggle: { flexDirection: 'row', padding: 2, borderRadius: radius.pill, backgroundColor: theme.background.surface },
-  viewToggleOption: { width: 38, height: 38, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center' },
-  viewToggleSelected: { backgroundColor: theme.brand.primary },
-  iconButton: { width: 42, height: 42, borderRadius: 21, backgroundColor: theme.background.surface, alignItems: 'center', justifyContent: 'center' },
+  toolbar: { flexDirection: 'row', gap: spacing.sm, paddingHorizontal: spacing.lg, paddingTop: spacing.sm },
+  toolbarButton: { flex: 1, minHeight: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.xs, borderRadius: radius.pill, backgroundColor: theme.background.surface, shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 5, shadowOffset: { width: 0, height: 2 } },
+  toolbarButtonActive: { backgroundColor: theme.brand.primary },
+  toolbarButtonText: { ...typography.subhead, color: theme.text.primary, fontWeight: '700' },
+  toolbarButtonTextActive: { color: theme.text.inverse },
   searchRow: { marginHorizontal: spacing.lg, marginTop: spacing.sm, minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingHorizontal: spacing.md, borderRadius: radius.pill, backgroundColor: theme.background.surface },
   searchInput: { flex: 1, ...typography.body, color: theme.text.primary, direction: 'ltr' },
   filterLabel: { ...typography.caption, color: theme.text.secondary, fontWeight: '700', paddingHorizontal: spacing.lg, marginTop: spacing.xs },
   chipRow: { paddingHorizontal: spacing.lg, paddingTop: spacing.xs },
   chipRowCompact: { paddingHorizontal: spacing.lg, paddingTop: 2 },
+  wrapChips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs, paddingHorizontal: spacing.lg, paddingTop: spacing.xs },
+  modalOverlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(43,43,40,0.4)' },
+  modalSheet: { maxHeight: '82%', borderTopLeftRadius: radius.xl, borderTopRightRadius: radius.xl, backgroundColor: theme.background.surface, paddingBottom: spacing['2xl'] },
+  modalHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: spacing.lg, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: theme.border.default },
+  modalTitle: { ...typography.title3, color: theme.text.primary },
+  modalContent: { paddingBottom: spacing.lg, gap: spacing.sm },
+  sortOptions: { paddingHorizontal: spacing.lg, paddingTop: spacing.sm, gap: spacing.xs },
+  sortOption: { minHeight: 48, justifyContent: 'center', paddingHorizontal: spacing.md, borderRadius: radius.md, backgroundColor: theme.background.app },
+  sortOptionSelected: { backgroundColor: theme.brand.primaryTint, borderWidth: 1, borderColor: theme.brand.primary },
+  sortOptionText: { ...typography.bodyMedium, color: theme.text.primary },
+  sortOptionTextSelected: { color: theme.brand.primary },
+  sortHint: { ...typography.footnote, color: theme.text.secondary, paddingHorizontal: spacing.lg, marginTop: spacing.sm },
   fab: { position: 'absolute', right: spacing.lg, bottom: '24%', width: 54, height: 54, borderRadius: 27, backgroundColor: theme.brand.primary, alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOpacity: 0.25, shadowRadius: 5, elevation: 5 },
   sheetBackground: { backgroundColor: theme.background.app },
   sheetHandle: { backgroundColor: theme.border.strong },

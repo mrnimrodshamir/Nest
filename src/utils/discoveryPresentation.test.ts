@@ -54,5 +54,15 @@ test('place images use shared fixed variants, category artwork, and cached broke
   assert.match(shared, /onError=/);
   assert.match(shared, /cachePolicy="memory-disk"/);
   assert.match(source, /aspectRatio: 4 \/ 3/);
-  assert.match(source, /CATEGORY_ICONS/);
+  assert.match(source, /CATEGORY_ART/);
+  assert.match(source, /<CategoryArtwork/);
+});
+
+test('Discovery exposes Search, Filters, and Sort in its compact toolbar', () => {
+  const source = readFileSync(new URL('../screens/DiscoverScreen.tsx', import.meta.url), 'utf8');
+  assert.match(source, /label="Search"/);
+  assert.match(source, /label="Filters"/);
+  assert.match(source, /label="Sort"/);
+  assert.match(source, /<ModalSheet visible={filtersOpen}/);
+  assert.match(source, /Sorting changes the list only/);
 });

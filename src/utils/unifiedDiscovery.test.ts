@@ -11,6 +11,7 @@ import {
   discoverySelectionEquals,
   filterDiscoveryItems,
   mergeDiscoveryItems,
+  sortDiscoveryItems,
   placeDiscoveryItem,
   eventDiscoveryItem,
 } from '@/utils/unifiedDiscovery';
@@ -170,4 +171,26 @@ test('a Place-only filter never removes Activities from the merged All feed', ()
   const merged = mergeDiscoveryItems(activities, placeFiltered, [], { latitude: 32.08, longitude: 34.78 });
   assert.equal(merged.filter((item) => item.type === 'activity').length, 1);
   assert.equal(merged.filter((item) => item.type === 'place').length, 1);
+});
+
+test('default list sorting applies soonest to activities/events and distance to places', () => {
+  const items = [
+    activityDiscoveryItem(activity('late', 32.09, '2026-08-06T12:00:00Z')),
+    activityDiscoveryItem(activity('early', 32.10, '2026-08-06T09:00:00Z')),
+    placeDiscoveryItem(place('far', 32.09)),
+    placeDiscoveryItem(place('near', 32.0801)),
+    eventDiscoveryItem(event('late-event', 32.08, '2026-08-06T13:00:00Z')),
+    eventDiscoveryItem(event('early-event', 32.08, '2026-08-06T08:00:00Z')),
+  ];
+  const sorted = sortDiscoveryItems(items, 'default', { latitude: 32.08, longitude: 34.78 });
+  assert.deepEqual(sorted.filter((item) => item.type === 'activity').map((item) => item.id), ['early', 'late']);
+  assert.deepEqual(sorted.filter((item) => item.type === 'place').map((item) => item.id), ['near', 'far']);
+  assert.deepEqual(sorted.filter((item) => item.type === 'event').map((item) => item.id), ['early-event', 'late-event']);
+});
+
+test('explicit list sorts do not mutate the marker item order', () => {
+  const items = [placeDiscoveryItem(place('z', 32.09, 'Zoo')), placeDiscoveryItem(place('a', 32.08, 'Ariela'))];
+  const original = items.map(discoveryItemKey);
+  assert.deepEqual(sortDiscoveryItems(items, 'alphabetical').map(discoveryItemKey), ['place:a', 'place:z']);
+  assert.deepEqual(items.map(discoveryItemKey), original);
 });
