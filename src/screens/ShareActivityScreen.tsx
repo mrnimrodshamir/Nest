@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { View, Text, Pressable, StyleSheet, Share, Linking } from 'react-native';
+import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { CheckCircle, WhatsappLogo, ShareNetwork, CalendarPlus } from 'phosphor-react-native';
 import { theme, typography, spacing, radius } from '@/theme';
 import { buildShareMessage, type ShareableActivity } from '@/utils/buildShareMessage';
 import { AddToCalendarSheet } from '@/components/AddToCalendarSheet';
 import { formatExactStartTime } from '@/utils/formatExactStartTime';
+import { openNativeShare, openWhatsAppShare } from '@/lib/contentShare';
 
 interface ShareActivityScreenProps {
   activity: ShareableActivity;
@@ -17,18 +18,11 @@ export function ShareActivityScreen({ activity, onViewActivity }: ShareActivityS
   const [showCalendarSheet, setShowCalendarSheet] = useState(false);
 
   const handleWhatsAppShare = async () => {
-    const url = `whatsapp://send?text=${encodeURIComponent(message)}`;
-    const canOpen = await Linking.canOpenURL(url);
-    if (canOpen) {
-      await Linking.openURL(url);
-    } else {
-      // WhatsApp isn't installed — the native share sheet is always the fallback.
-      await Share.share({ message });
-    }
+    await openWhatsAppShare(message);
   };
 
   const handleNativeShare = async () => {
-    await Share.share({ message });
+    await openNativeShare(message);
   };
 
   return (

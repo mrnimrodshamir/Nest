@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MapView, { Marker } from 'react-native-maps';
-import { ArrowLeft, ArrowSquareOut, WarningCircle } from 'phosphor-react-native';
+import { ArrowLeft, ArrowSquareOut, ShareNetwork, WarningCircle, WhatsappLogo } from 'phosphor-react-native';
 import { PlaceImage } from '@/components/PlaceImage';
 import { EventCard } from '@/components/EventCard';
 import { ContentImageGallery } from '@/components/ContentImageGallery';
@@ -16,6 +16,8 @@ import type { EventDetails } from '@/types/event';
 import { PLACE_CATEGORY_LABELS } from '@/types/familyFriendlyPlace';
 import { buildAppleMapsPlaceUrl, formatOpeningHours, placeWhatIsHere } from '@/utils/familyFriendlyPlace';
 import { groupPlaceEvents } from '@/utils/placeEvents';
+import { buildPlaceShareMessage } from '@/utils/contentSharing';
+import { openNativeShare, openWhatsAppShare } from '@/lib/contentShare';
 
 export function PlaceDetailsScreen({ placeId, onBack, onCreateActivity, onOpenEvent }: { placeId: string; onBack: () => void; onCreateActivity: (place: FamilyFriendlyPlace) => void; onOpenEvent: (event: EventDetails) => void }) {
   const [place, setPlace] = useState<FamilyFriendlyPlace | null>(null);
@@ -37,6 +39,7 @@ export function PlaceDetailsScreen({ placeId, onBack, onCreateActivity, onOpenEv
   const mapsUrl = buildAppleMapsPlaceUrl(place);
   const openingHours = formatOpeningHours(place.openingHours);
   const description = place.fullDescription ?? place.shortDescription;
+  const shareMessage = buildPlaceShareMessage({ id: place.id, name: place.name, location: address });
   return <SafeAreaView style={styles.container} edges={['top', 'bottom']}><Header onBack={onBack} /><ScrollView contentContainerStyle={styles.content}>
     <PlaceImage uri={place.coverImageUrl} asset={place.images?.cover} category={place.category} variant="cover" style={styles.hero} name={place.name} />
     {place.images?.gallery.length ? <ContentImageGallery images={place.images.gallery} /> : null}
@@ -45,6 +48,10 @@ export function PlaceDetailsScreen({ placeId, onBack, onCreateActivity, onOpenEv
     <Text style={styles.address}>{address}</Text>
     <MapView style={styles.map} region={{ latitude: place.latitude, longitude: place.longitude, latitudeDelta: 0.015, longitudeDelta: 0.015 }} scrollEnabled={false} zoomEnabled={false} pointerEvents="none"><Marker coordinate={place} /></MapView>
     <Pressable style={styles.linkRow} onPress={() => Linking.openURL(mapsUrl)}><ArrowSquareOut size={18} color={theme.brand.primary} /><Text style={styles.link}>Open in Apple Maps</Text></Pressable>
+    <View style={styles.shareRow}>
+      <Pressable accessibilityRole="button" accessibilityLabel={`Share ${place.name}`} style={styles.shareButton} onPress={() => void openNativeShare(shareMessage)}><ShareNetwork size={18} color={theme.text.primary} /><Text style={styles.shareText}>Share</Text></Pressable>
+      <Pressable accessibilityRole="button" accessibilityLabel={`Share ${place.name} on WhatsApp`} style={styles.shareButton} onPress={() => void openWhatsAppShare(shareMessage)}><WhatsappLogo size={18} color={theme.text.primary} weight="fill" /><Text style={styles.shareText}>WhatsApp</Text></Pressable>
+    </View>
     {description ? <Text style={styles.description}>{description}</Text> : null}
     {facts.length ? <View style={styles.section}><Text style={styles.sectionTitle}>What's here</Text><View style={styles.factWrap}>{facts.map((fact) => <View key={fact} style={styles.fact}><Text style={styles.factText}>{fact}</Text></View>)}</View></View> : null}
     {place.priceNote ? <Section title="Cost" body={place.priceNote} /> : null}
@@ -85,6 +92,9 @@ const styles = StyleSheet.create({
   map: { height: 180, borderRadius: radius.lg, marginTop: spacing.sm },
   linkRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, minHeight: 44 },
   link: { ...typography.subhead, color: theme.brand.primary, fontWeight: '600' },
+  shareRow: { flexDirection: 'row', gap: spacing.sm },
+  shareButton: { flex: 1, minHeight: 46, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.xs, borderRadius: radius.md, backgroundColor: theme.background.surface, borderWidth: 1, borderColor: theme.border.default },
+  shareText: { ...typography.subhead, color: theme.text.primary, fontWeight: '600' },
   description: { ...typography.body, color: theme.text.secondary, lineHeight: 23 },
   section: { paddingVertical: spacing.sm },
   sectionTitle: { ...typography.headline, color: theme.text.primary, marginBottom: spacing.xs },

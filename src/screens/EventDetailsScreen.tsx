@@ -1,13 +1,16 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ArrowLeft, ArrowSquareOut, CalendarDots, MapPin, Repeat, WarningCircle } from 'phosphor-react-native';
+import { ArrowLeft, ArrowSquareOut, CalendarDots, CalendarPlus, MapPin, Repeat, ShareNetwork, WarningCircle, WhatsappLogo } from 'phosphor-react-native';
 import { ContentImage } from '@/components/ContentImage';
 import { ContentImageGallery } from '@/components/ContentImageGallery';
 import { radius, spacing, theme, typography } from '@/theme';
 import type { EventDetails } from '@/types/event';
 import { buildEventDetailsPresentation } from '@/utils/eventPresentation';
+import { buildEventShareMessage } from '@/utils/contentSharing';
+import { openNativeShare, openWhatsAppShare } from '@/lib/contentShare';
+import { AddEventToCalendarSheet } from '@/components/AddEventToCalendarSheet';
 
 interface EventDetailsScreenProps {
   event: EventDetails;
@@ -18,7 +21,10 @@ interface EventDetailsScreenProps {
  * Discovery or navigation until Events publication is separately approved. */
 export function EventDetailsScreen({ event, onBack }: EventDetailsScreenProps) {
   const content = useMemo(() => buildEventDetailsPresentation(event), [event]);
+  const [showCalendar, setShowCalendar] = useState(false);
   const isInterrupted = event.lifecycle === 'cancelled' || event.lifecycle === 'postponed';
+  const shareMessage = buildEventShareMessage({ occurrenceId: event.occurrence.id, title: event.title, startsAt: event.occurrence.startsAt, location: event.location.name ?? event.location.formattedAddress, status: event.occurrence.status });
+  const calendarEvent = { occurrenceId: event.occurrence.id, title: event.title, description: event.description, startsAt: event.occurrence.startsAt, endsAt: event.occurrence.endsAt, locationName: event.location.name ?? event.location.formattedAddress, sourceUrl: event.source.sourceUrl, status: event.occurrence.status };
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <View style={styles.header}>
@@ -44,6 +50,11 @@ export function EventDetailsScreen({ event, onBack }: EventDetailsScreenProps) {
         <InfoRow icon={CalendarDots} title={content.dateLabel} body={content.timeLabel} />
         {content.recurrenceLabel ? <InfoRow icon={Repeat} title={content.recurrenceLabel} /> : null}
         <InfoRow icon={MapPin} title={content.locationName} body={content.addressLabel} />
+        <View style={styles.actionRow}>
+          <Pressable accessibilityRole="button" accessibilityLabel={`Share ${event.title}`} style={styles.action} onPress={() => void openNativeShare(shareMessage)}><ShareNetwork size={18} color={theme.text.primary} /><Text style={styles.actionText}>Share</Text></Pressable>
+          <Pressable accessibilityRole="button" accessibilityLabel={`Share ${event.title} on WhatsApp`} style={styles.action} onPress={() => void openWhatsAppShare(shareMessage)}><WhatsappLogo size={18} color={theme.text.primary} weight="fill" /><Text style={styles.actionText}>WhatsApp</Text></Pressable>
+        </View>
+        <Pressable accessibilityRole="button" accessibilityLabel={`Add ${event.title} to calendar`} style={styles.calendarAction} onPress={() => setShowCalendar(true)}><CalendarPlus size={18} color={theme.brand.primary} /><Text style={styles.link}>Add to calendar</Text></Pressable>
         <MapView
           style={styles.map}
           region={{ latitude: event.location.latitude, longitude: event.location.longitude, latitudeDelta: 0.015, longitudeDelta: 0.015 }}
@@ -58,6 +69,7 @@ export function EventDetailsScreen({ event, onBack }: EventDetailsScreenProps) {
         {content.registrationLabel && content.registrationUrl ? <ExternalLink label={content.registrationLabel} url={content.registrationUrl} /> : null}
         {content.sourceLabel ? <View style={styles.source}><Text style={styles.sourceText}>{content.sourceLabel}</Text>{content.sourceUrl ? <ExternalLink label="View official source" url={content.sourceUrl} /> : null}</View> : null}
       </ScrollView>
+      <AddEventToCalendarSheet visible={showCalendar} event={calendarEvent} onDismiss={() => setShowCalendar(false)} />
     </SafeAreaView>
   );
 }
@@ -100,6 +112,10 @@ const styles = StyleSheet.create({
   sectionTitle: { ...typography.headline, color: theme.text.primary, marginBottom: spacing.xs },
   linkRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, minHeight: 44 },
   link: { ...typography.subhead, color: theme.brand.primary, fontWeight: '600' },
+  actionRow: { flexDirection: 'row', gap: spacing.sm },
+  action: { flex: 1, minHeight: 46, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.xs, borderRadius: radius.md, backgroundColor: theme.background.surface, borderWidth: 1, borderColor: theme.border.default },
+  actionText: { ...typography.subhead, color: theme.text.primary, fontWeight: '600' },
+  calendarAction: { minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
   source: { paddingTop: spacing.md, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: theme.border.default },
   sourceText: { ...typography.caption, color: theme.text.muted },
 });
