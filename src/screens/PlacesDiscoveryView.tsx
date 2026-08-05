@@ -23,8 +23,9 @@ const FILTERS: Array<{ key: PlaceCategory | 'all'; label: string }> = [
   { key: 'museum', label: 'Museums' }, { key: 'beach', label: 'Beaches' }, { key: 'pool', label: 'Pools' },
 ];
 const SNAP_POINTS = ['22%', '50%', '92%'];
-type QuickFilter = 'indoor' | 'outdoor' | 'free' | 'paid' | 'changingTable' | 'toilets' | 'highChairs' | 'shade' | 'waterFountain' | 'accessible';
+type QuickFilter = 'babies' | 'toddlers' | 'kids' | 'indoor' | 'outdoor' | 'free' | 'paid' | 'changingTable' | 'toilets' | 'highChairs' | 'shade' | 'waterFountain' | 'accessible';
 const QUICK_FILTERS: Array<{ key: QuickFilter; label: string }> = [
+  { key: 'babies', label: 'Babies' }, { key: 'toddlers', label: 'Toddlers' }, { key: 'kids', label: 'Kids' },
   { key: 'indoor', label: 'Indoor' }, { key: 'outdoor', label: 'Outdoor' }, { key: 'free', label: 'Free' }, { key: 'paid', label: 'Paid' },
   { key: 'changingTable', label: 'Changing table' }, { key: 'toilets', label: 'Toilets' }, { key: 'highChairs', label: 'High chairs' },
   { key: 'shade', label: 'Shade' }, { key: 'waterFountain', label: 'Water' }, { key: 'accessible', label: 'Accessible' },
@@ -40,6 +41,7 @@ export function PlacesDiscoveryView({ onShowActivities, onOpenPlace, mockPlaces 
   const viewport = useMemo(() => regionToPlaceViewport(region), [region]);
   const filters = useMemo<PlaceFilters>(() => ({
     category: category === 'all' ? null : category,
+    ageMonths: quickFilters.has('babies') ? 12 : quickFilters.has('toddlers') ? 36 : quickFilters.has('kids') ? 72 : null,
     environment: quickFilters.has('indoor') ? 'indoor' : quickFilters.has('outdoor') ? 'outdoor' : null,
     cost: quickFilters.has('free') ? 'free' : quickFilters.has('paid') ? 'paid' : null,
     changingTable: quickFilters.has('changingTable'), toilets: quickFilters.has('toilets'), highChairs: quickFilters.has('highChairs'),
@@ -67,7 +69,7 @@ export function PlacesDiscoveryView({ onShowActivities, onOpenPlace, mockPlaces 
         <View style={[styles.modeOption, styles.modeSelected]}><Text style={[styles.modeText, styles.modeTextSelected]}>Places</Text></View>
       </View>
       <FlatList horizontal showsHorizontalScrollIndicator={false} data={FILTERS} keyExtractor={(item) => item.key} contentContainerStyle={styles.filters} renderItem={({ item }) => <CategoryChip label={item.label} selected={category === item.key} onPress={() => setCategory(item.key)} />} />
-      <FlatList horizontal showsHorizontalScrollIndicator={false} data={QUICK_FILTERS} keyExtractor={(item) => item.key} contentContainerStyle={styles.quickFilters} renderItem={({ item }) => <CategoryChip label={item.label} selected={quickFilters.has(item.key)} onPress={() => setQuickFilters((current) => { const next = new Set(current); const exclusive = item.key === 'indoor' ? 'outdoor' : item.key === 'outdoor' ? 'indoor' : item.key === 'free' ? 'paid' : item.key === 'paid' ? 'free' : null; if (exclusive) next.delete(exclusive); next.has(item.key) ? next.delete(item.key) : next.add(item.key); return next; })} />} />
+      <FlatList horizontal showsHorizontalScrollIndicator={false} data={QUICK_FILTERS} keyExtractor={(item) => item.key} contentContainerStyle={styles.quickFilters} renderItem={({ item }) => <CategoryChip label={item.label} selected={quickFilters.has(item.key)} onPress={() => setQuickFilters((current) => { const next = new Set(current); const exclusive = item.key === 'indoor' ? ['outdoor'] : item.key === 'outdoor' ? ['indoor'] : item.key === 'free' ? ['paid'] : item.key === 'paid' ? ['free'] : ['babies','toddlers','kids'].includes(item.key) ? ['babies','toddlers','kids'].filter((key) => key !== item.key) : []; exclusive.forEach((key) => next.delete(key as QuickFilter)); next.has(item.key) ? next.delete(item.key) : next.add(item.key); return next; })} />} />
     </SafeAreaView>
     <BottomSheet ref={sheetRef} index={0} snapPoints={SNAP_POINTS} enableDynamicSizing={false} backgroundStyle={styles.sheet} handleIndicatorStyle={styles.handle}>
       <BottomSheetView style={styles.sheetHeader}><Text style={styles.sheetTitle}>{isLoading ? 'Finding places…' : `${places.length} places in this area`}</Text><Text style={styles.sheetSubtitle}>Curated for families</Text></BottomSheetView>
