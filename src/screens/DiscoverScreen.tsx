@@ -32,6 +32,7 @@ import type { FamilyFriendlyPlace, PlaceCategory, PlaceFilters } from '@/types/f
 import { PLACE_CATEGORY_LABELS } from '@/types/familyFriendlyPlace';
 import { clusterPlacesForRegion } from '@/utils/placeClustering';
 import { regionToPlaceViewport } from '@/utils/placeViewport';
+import { discoveryEmptyCopy, transitionDiscoveryContentFilter } from '@/utils/discoveryPresentation';
 import {
   discoveryItemKey,
   discoverySelectionEquals,
@@ -118,6 +119,7 @@ export function DiscoverScreen({ onOpenActivity, onOpenPlace, onHostActivity, mo
   const sheetIndex = useRef(SHEET_PEEK_INDEX);
   const userMovedMap = useRef(false);
   const centeredOnUser = useRef(false);
+  const hasFocusedOnce = useRef(false);
 
   const position = useDiscoveryPosition(!previewMode);
   const viewport = useMemo(() => regionToPlaceViewport(region), [region]);
@@ -159,8 +161,12 @@ export function DiscoverScreen({ onOpenActivity, onOpenPlace, onHostActivity, mo
   }, [position.userCoordinate, region]);
 
   useFocusEffect(useCallback(() => {
-    activityRefreshRef.current();
-    placeRefreshRef.current();
+    if (hasFocusedOnce.current) {
+      activityRefreshRef.current();
+      placeRefreshRef.current();
+    } else {
+      hasFocusedOnce.current = true;
+    }
     sheetRef.current?.snapToIndex(SHEET_PEEK_INDEX);
     sheetIndex.current = SHEET_PEEK_INDEX;
     setViewMode('map');
@@ -209,9 +215,10 @@ export function DiscoverScreen({ onOpenActivity, onOpenPlace, onHostActivity, mo
   }, [focusItem, onOpenActivity, onOpenPlace]);
 
   const changeContentFilter = useCallback((next: DiscoveryContentFilter) => {
-    setContentFilter(next);
-    setSelectedItem(null);
-  }, []);
+    const transition = transitionDiscoveryContentFilter(region, next);
+    setContentFilter(transition.contentFilter);
+    setSelectedItem(transition.selectedItem);
+  }, [region]);
 
   const hour = new Date().getHours();
   const greetingPrefix = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
@@ -364,11 +371,7 @@ function QueryErrorBanner({ label, onRetry }: { label: string; onRetry: () => vo
 }
 
 function DiscoveryEmptyState({ filter, locationDenied, onHostActivity }: { filter: DiscoveryContentFilter; locationDenied: boolean; onHostActivity: () => void }) {
-  const copy = filter === 'activities'
-    ? 'No activities match these filters.'
-    : filter === 'places'
-      ? 'No places match these filters.'
-      : 'No activities or places found in this area.';
+  const copy = discoveryEmptyCopy(filter);
   return <View style={styles.emptyState}><Text style={styles.emptyTitle}>{copy}</Text><Text style={styles.emptyBody}>{locationDenied ? 'Location access is off, so this area may not be near you.' : 'Try moving the map, changing a filter, or searching nearby.'}</Text>{filter !== 'places' ? <Pressable style={styles.emptyAction} onPress={onHostActivity}><Text style={styles.emptyActionText}>Host an activity</Text></Pressable> : null}</View>;
 }
 
