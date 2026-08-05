@@ -62,10 +62,10 @@ test('Discovery exposes Search, Filters, and Sort in its compact toolbar', () =>
   assert.match(source, /label="Search"/);
   assert.match(source, /label={activeFilterCount \? `Filters · \$\{activeFilterCount\}` : 'Filters'}/);
   assert.match(source, /label="Sort"/);
-  assert.match(source, /<ModalSheet visible={filtersOpen}/);
+  assert.match(source, /{filtersOpen \? <ModalSheet visible/);
   assert.match(source, /Sorting changes the list only/);
   assert.doesNotMatch(source, /DiscoveryContentFilter|CONTENT_FILTERS/);
-  const filterSheetStart = source.indexOf('<ModalSheet visible={filtersOpen}');
+  const filterSheetStart = source.indexOf('{filtersOpen ? <ModalSheet visible');
   const filterSheetEnd = source.indexOf('</ModalSheet>', filterSheetStart);
   const firstFilterRow = source.indexOf('<FilterRow');
   assert.ok(filterSheetStart > 0 && filterSheetEnd > filterSheetStart);

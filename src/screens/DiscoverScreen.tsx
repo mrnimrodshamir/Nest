@@ -353,7 +353,7 @@ export function DiscoverScreen({ onOpenActivity, onOpenPlace, onOpenEvent, onHos
         )}
       </SafeAreaView>
 
-      <ModalSheet visible={filtersOpen} title="Filters" onDismiss={() => setFiltersOpen(false)}>
+      {filtersOpen ? <ModalSheet visible title="Filters" onDismiss={() => setFiltersOpen(false)}>
         <View style={styles.contentTypeHeader}><Text style={styles.filterLabel}>Content types</Text><Pressable onPress={() => { setContentSelection({ ...ALL_DISCOVERY_CONTENT }); setFilterNotice(null); }} accessibilityRole="button"><Text style={styles.selectAll}>Select all</Text></Pressable></View>
         <View style={styles.contentTypeOptions}>{CONTENT_TYPES.map((item) => <ContentTypeOption key={item.key} label={item.label} selected={contentSelection[item.key]} onPress={() => changeContentSelection(item.key)} />)}</View>
         {filterNotice ? <Text style={styles.filterNotice} accessibilityLiveRegion="polite">{filterNotice}</Text> : null}
@@ -363,12 +363,12 @@ export function DiscoverScreen({ onOpenActivity, onOpenPlace, onOpenEvent, onHos
           <View style={styles.wrapChips}>{PLACE_QUICK_FILTERS.map((item) => <CategoryChip key={item.key} label={item.label} selected={placeQuickFilters.has(item.key)} onPress={() => setPlaceQuickFilters((current) => togglePlaceQuickFilter(current, item.key))} />)}</View>
         </>
         <FilterRow label="Events" items={EVENT_CATEGORIES} selected={selectedEventCategory} onSelect={setSelectedEventCategory} />
-      </ModalSheet>
+      </ModalSheet> : null}
 
-      <ModalSheet visible={sortOpen} title="Sort list" onDismiss={() => setSortOpen(false)}>
+      {sortOpen ? <ModalSheet visible title="Sort list" onDismiss={() => setSortOpen(false)}>
         <View style={styles.sortOptions}>{SORT_OPTIONS.map((item) => <Pressable key={item.key} style={[styles.sortOption, sort === item.key && styles.sortOptionSelected]} onPress={() => { setSort(item.key); setSortOpen(false); }} accessibilityRole="radio" accessibilityState={{ checked: sort === item.key }}><Text style={[styles.sortOptionText, sort === item.key && styles.sortOptionTextSelected]}>{item.label}</Text></Pressable>)}</View>
         <Text style={styles.sortHint}>Sorting changes the list only. Map markers stay in place.</Text>
-      </ModalSheet>
+      </ModalSheet> : null}
 
       <Pressable style={styles.fab} onPress={onHostActivity} accessibilityLabel="Host an activity">
         <Plus size={24} color={theme.text.inverse} weight="bold" />
