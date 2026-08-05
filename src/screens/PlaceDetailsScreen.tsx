@@ -10,7 +10,7 @@ import { getFamilyFriendlyPlace } from '@/lib/familyFriendlyPlaces';
 import { radius, spacing, theme, typography } from '@/theme';
 import type { FamilyFriendlyPlace } from '@/types/familyFriendlyPlace';
 import { PLACE_CATEGORY_LABELS } from '@/types/familyFriendlyPlace';
-import { formatOpeningHours, placeWhatIsHere } from '@/utils/familyFriendlyPlace';
+import { buildAppleMapsPlaceUrl, formatOpeningHours, placeWhatIsHere } from '@/utils/familyFriendlyPlace';
 
 export function PlaceDetailsScreen({ placeId, onBack, onCreateActivity }: { placeId: string; onBack: () => void; onCreateActivity: (place: FamilyFriendlyPlace) => void }) {
   const [place, setPlace] = useState<FamilyFriendlyPlace | null>(null);
@@ -27,8 +27,9 @@ export function PlaceDetailsScreen({ placeId, onBack, onCreateActivity }: { plac
   if (!place) return <SafeAreaView style={styles.container}><Header onBack={onBack} />{error ? <StateCard icon={WarningCircle} title="Couldn't load place" body={error} ctaLabel="Try again" onCtaPress={() => setReload((value) => value + 1)} tone="warning" /> : <Text style={styles.loading}>Loading place…</Text>}</SafeAreaView>;
 
   const address = place.formattedAddress ?? place.neighborhood ?? place.city;
-  const mapsUrl = `https://maps.apple.com/?ll=${place.latitude},${place.longitude}&q=${encodeURIComponent(place.name)}`;
+  const mapsUrl = buildAppleMapsPlaceUrl(place);
   const openingHours = formatOpeningHours(place.openingHours);
+  const description = place.fullDescription ?? place.shortDescription;
   return <SafeAreaView style={styles.container} edges={['top', 'bottom']}><Header onBack={onBack} /><ScrollView contentContainerStyle={styles.content}>
     <PlaceImage uri={place.coverImageUrl} category={place.category} variant="cover" style={styles.hero} />
     <Text style={styles.category}>{PLACE_CATEGORY_LABELS[place.category]}</Text>
@@ -36,8 +37,9 @@ export function PlaceDetailsScreen({ placeId, onBack, onCreateActivity }: { plac
     <Text style={styles.address}>{address}</Text>
     <MapView style={styles.map} region={{ latitude: place.latitude, longitude: place.longitude, latitudeDelta: 0.015, longitudeDelta: 0.015 }} scrollEnabled={false} zoomEnabled={false} pointerEvents="none"><Marker coordinate={place} /></MapView>
     <Pressable style={styles.linkRow} onPress={() => Linking.openURL(mapsUrl)}><ArrowSquareOut size={18} color={theme.brand.primary} /><Text style={styles.link}>Open in Apple Maps</Text></Pressable>
-    {place.shortDescription ? <Text style={styles.description}>{place.fullDescription ?? place.shortDescription}</Text> : null}
+    {description ? <Text style={styles.description}>{description}</Text> : null}
     {facts.length ? <View style={styles.section}><Text style={styles.sectionTitle}>What's here</Text><View style={styles.factWrap}>{facts.map((fact) => <View key={fact} style={styles.fact}><Text style={styles.factText}>{fact}</Text></View>)}</View></View> : null}
+    {place.priceNote ? <Section title="Cost" body={place.priceNote} /> : null}
     {openingHours ? <Section title="Opening hours" body={openingHours} /> : null}
     {place.websiteUrl ? <Pressable style={styles.linkRow} onPress={() => Linking.openURL(place.websiteUrl!)}><ArrowSquareOut size={18} color={theme.brand.primary} /><Text style={styles.link}>Visit website</Text></Pressable> : null}
     {place.lastVerifiedAt ? <Text style={styles.verified}>Last verified {new Date(place.lastVerifiedAt).toLocaleDateString()}</Text> : null}

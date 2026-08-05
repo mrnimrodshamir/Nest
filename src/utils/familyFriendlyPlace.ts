@@ -113,3 +113,9 @@ export function formatOpeningHours(value: Record<string, unknown> | null): strin
   });
   return entries.length ? entries.join('\n') : null;
 }
+
+export function buildAppleMapsPlaceUrl(place: Pick<FamilyFriendlyPlace, 'name' | 'latitude' | 'longitude'>): string {
+  if (!Number.isFinite(place.latitude) || place.latitude < -90 || place.latitude > 90) throw new Error('Invalid place latitude');
+  if (!Number.isFinite(place.longitude) || place.longitude < -180 || place.longitude > 180) throw new Error('Invalid place longitude');
+  return `https://maps.apple.com/?ll=${place.latitude},${place.longitude}&q=${encodeURIComponent(place.name)}`;
+}
