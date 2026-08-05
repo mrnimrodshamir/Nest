@@ -3,11 +3,11 @@ import { View, StyleSheet } from 'react-native';
 import Svg, { Circle, Path } from 'react-native-svg';
 
 /**
- * Real Momzi brand paths (from assets/brand/momzi-logo-master.svg, viewBox
+ * NestUp brand paths (from assets/brand/nestup-logo-master.svg, viewBox
  * 0 0 1024 1024). Split left/right — this is the only place that needs to
  * change if the artwork itself changes.
  *
- * The entrance-animation variant (AnimatedMomziLogo, built on
+ * The former entrance-animation variant, built on
  * react-native-reanimated) has been removed from the app's auth/onboarding/
  * launch path entirely — it was the source of a native SIGABRT crash
  * (RNWorklets::AnimationFrameBatchinator::flush() -> Hermes
@@ -65,7 +65,7 @@ function RightHalf({ size }: { size: number }) {
   );
 }
 
-export function MomziLogo({ size = 96 }: { size?: number }) {
+export function NestUpLogo({ size = 96 }: { size?: number }) {
   return (
     <View style={{ width: size, height: size }}>
       <View style={StyleSheet.absoluteFill}>

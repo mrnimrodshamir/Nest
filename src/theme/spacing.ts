@@ -1,5 +1,5 @@
 /**
- * Momzi spacing & radius tokens
+ * NestUp spacing & radius tokens
  *
  * Spacing follows a 4pt base grid (standard for iOS). Radius scale is
  * intentionally generous — soft, rounded corners are core to the "premium,

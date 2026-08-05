@@ -1,18 +1,18 @@
 import React from 'react';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import { theme } from '@/theme';
-import { MomziLogo } from '@/components/MomziLogo';
+import { NestUpLogo } from '@/components/NestUpLogo';
 
 /**
  * Shown while fonts/session are resolving. App.tsx swaps this screen out
  * the instant auth/fonts are ready. Fully static — no Reanimated, no
  * shared values, no entrance animation, nothing to be mid-flight when
- * this screen is unmounted (see MomziLogo.tsx for why that mattered).
+ * this screen is unmounted (see NestUpLogo.tsx for why that mattered).
  */
 export function LaunchScreen() {
   return (
     <View style={styles.container}>
-      <MomziLogo size={140} />
+      <NestUpLogo size={140} />
       <View style={styles.indicator}>
         <ActivityIndicator color={theme.text.muted} />
       </View>

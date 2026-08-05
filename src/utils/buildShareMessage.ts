@@ -18,14 +18,14 @@ export interface ShareableActivity {
   status?: ActivityStatus;
 }
 
-/** momzi:// deep link into a specific activity — see App.tsx's linking config. */
+/** nestup:// deep link into a specific activity — see App.tsx's linking config. */
 export function activityDeepLink(activityId: string): string {
-  return `momzi://activity/${activityId}`;
+  return `nestup://activity/${activityId}`;
 }
 
 /** A warm, natural sentence — never emoji-heavy or robotic — e.g. "Join us
  *  for a stroller walk tomorrow at 10:00 in HaYarkon Park. See the
- *  activity on Momzi." A missing location or category never breaks the
+ *  activity on NestUp." A missing location or category never breaks the
  *  message; a cancelled activity is never invited to as if still live. */
 export function buildShareMessage(activity: ShareableActivity): string {
   if (activity.status === 'cancelled') {

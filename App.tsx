@@ -124,7 +124,7 @@ const Tab = createBottomTabNavigator<TabParamList>();
 const navigationRef = createNavigationContainerRef<RootStackParamList>();
 
 const linking: LinkingOptions<RootStackParamList> = {
-  prefixes: ['momzi://'],
+  prefixes: ['nestup://'],
   config: {
     screens: {
       Tabs: {

@@ -3,7 +3,7 @@ import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppleLogo } from 'phosphor-react-native';
 import { theme, typography, spacing, radius } from '@/theme';
-import { MomziLogo } from '@/components/MomziLogo';
+import { NestUpLogo } from '@/components/NestUpLogo';
 import { StaticPrimaryButton } from '@/components/StaticPrimaryButton';
 import { APP_NAME } from '@/constants/brand';
 
@@ -28,7 +28,7 @@ export function WelcomeScreen({
 
       <SafeAreaView style={styles.content} edges={['top', 'bottom']}>
         <View style={styles.hero}>
-          <MomziLogo size={128} />
+          <NestUpLogo size={128} />
           <Text style={styles.wordmark}>{APP_NAME}</Text>
           <Text style={styles.tagline}>Parenting is better together.</Text>
           <Text style={styles.subtagline}>

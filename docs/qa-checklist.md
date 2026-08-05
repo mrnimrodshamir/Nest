@@ -1,4 +1,4 @@
-# Momzi — first iOS build QA checklist
+# NestUp — iOS build QA checklist
 
 Grows as features land. Run this against the first real device / TestFlight build.
 
@@ -8,18 +8,12 @@ Grows as features land. Run this against the first real device / TestFlight buil
   registered iPhone, Apple Push Key (assigned to `com.nest.mobile`). Set up
   interactively once — future builds reuse these automatically, no further
   Apple login needed unless credentials are revoked/expire.
-- First `preview` (internal distribution) build triggered and uploaded to EAS:
-  https://expo.dev/accounts/nimrodsh/projects/nest/builds/40b8c44c-80c4-4d89-ad46-b34449f10758
-  (build #2, commit 2443eb7). Installs directly on the registered iPhone
-  (UDID 00008150-0010193E1E88C01C) once finished — no TestFlight needed for
-  this one.
-- EAS project: `@nimrodsh/nest` (slug intentionally kept as the pre-rename
-  name — see commit history; display name and everything user-facing is
-  "Momzi").
+- EAS project linkage and native application identifiers are retained for
+  signing, update, and installed-app continuity. The display name is NestUp.
 
 ## Sign in with Apple
 
-- [ ] First-time sign-in (new Apple ID never used with Momzi) creates a profile via the completion form
+- [ ] First-time sign-in (new Apple ID never used with NestUp) creates a profile via the completion form
 - [ ] Returning sign-in (same Apple ID, existing profile) skips straight to the main app
 - [ ] Hidden/relay Apple email (user chose "Hide My Email") — account still creates correctly, relay address stored
 - [ ] Apple-provided full name is captured and saved on first auth (not requested again on return)

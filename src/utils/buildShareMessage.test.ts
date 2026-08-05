@@ -30,6 +30,11 @@ test('buildShareMessage: includes the deep link on its own line', () => {
   assert.ok(message.includes(activityDeepLink('activity-1')));
 });
 
+test('brand and deep links use the NestUp identity', () => {
+  assert.equal(APP_NAME, 'NestUp');
+  assert.equal(activityDeepLink('activity-1'), 'nestup://activity/activity-1');
+});
+
 test('buildShareMessage: cancelled activities are never invited to as live', () => {
   const message = buildShareMessage(shareable({ status: 'cancelled' }));
   assert.match(message, /cancelled/i);

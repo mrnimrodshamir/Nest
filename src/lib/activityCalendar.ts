@@ -18,7 +18,7 @@ interface StoredCalendarLink {
   locationName: string;
 }
 
-const STORAGE_PREFIX = 'momzi.calendarEvent.';
+const STORAGE_PREFIX = 'nestup.calendarEvent.';
 
 async function getStoredLink(activityId: string): Promise<StoredCalendarLink | null> {
   const raw = await AsyncStorage.getItem(STORAGE_PREFIX + activityId);

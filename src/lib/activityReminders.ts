@@ -8,7 +8,7 @@ interface ReminderActivity {
   startsAt: Date;
 }
 
-const STORAGE_PREFIX = 'momzi.reminders.';
+const STORAGE_PREFIX = 'nestup.reminders.';
 const REMINDER_OFFSETS_HOURS = [24, 2];
 
 async function getStoredIds(activityId: string): Promise<string[]> {

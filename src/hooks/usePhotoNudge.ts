@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const STORAGE_KEY = 'momzi.photoNudgeShown';
+const STORAGE_KEY = 'nestup.photoNudgeShown';
 
 /** Exactly once, ever, per device -- after that, never ask again regardless
  *  of whether they added a photo or skipped. */

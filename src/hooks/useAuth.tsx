@@ -475,7 +475,7 @@ function useAuthState(): UseAuthResult {
 
   const resetPassword = useCallback(async (email: string) => {
     const { error } = await supabase.auth.resetPasswordForEmail(normalizeEmail(email), {
-      redirectTo: 'momzi://reset-password',
+      redirectTo: 'nestup://reset-password',
     });
     if (error) {
       console.log('[Auth] Password reset request failed', error.message);

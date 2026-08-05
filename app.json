@@ -1,21 +1,21 @@
 {
   "expo": {
-    "name": "Momzi",
+    "name": "NestUp",
     "slug": "nest",
     "version": "0.1.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
-    "scheme": "momzi",
+    "scheme": "nestup",
     "icon": "./assets/icon.png",
     "ios": {
       "bundleIdentifier": "com.nest.mobile",
       "supportsTablet": false,
       "usesAppleSignIn": true,
       "infoPlist": {
-        "NSLocationWhenInUseUsageDescription": "Momzi uses your location to show meetups happening near you.",
-        "NSCameraUsageDescription": "Momzi uses your camera so you can add a profile photo or activity cover photo.",
-        "NSPhotoLibraryUsageDescription": "Momzi uses your photo library so you can choose a profile photo or activity cover photo.",
-        "NSCalendarsUsageDescription": "Momzi can add activities you join to your calendar.",
+        "NSLocationWhenInUseUsageDescription": "NestUp uses your location to show meetups happening near you.",
+        "NSCameraUsageDescription": "NestUp uses your camera so you can add a profile photo or activity cover photo.",
+        "NSPhotoLibraryUsageDescription": "NestUp uses your photo library so you can choose a profile photo or activity cover photo.",
+        "NSCalendarsUsageDescription": "NestUp can add activities you join to your calendar.",
         "ITSAppUsesNonExemptEncryption": false
       }
     },
@@ -34,14 +34,14 @@
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "Momzi uses your location to show meetups happening near you."
+          "locationWhenInUsePermission": "NestUp uses your location to show meetups happening near you."
         }
       ],
       "expo-apple-authentication",
       [
         "expo-calendar",
         {
-          "calendarPermission": "Momzi can add activities you join to your calendar."
+          "calendarPermission": "NestUp can add activities you join to your calendar."
         }
       ],
       [

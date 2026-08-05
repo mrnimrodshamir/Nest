@@ -1,5 +1,5 @@
 /**
- * Momzi color tokens
+ * NestUp color tokens
  *
  * Palette direction: "fresh & airy" — sage, sand, and soft sky blue on a warm
  * off-white base. Deliberately avoids pure white (#FFFFFF) and pure black —
@@ -11,7 +11,7 @@
  */
 
 export const colors = {
-  // Brand — sage (primary actions, active states, the "Momzi green")
+  // Brand — sage (primary actions, active states, the "NestUp green")
   sage: {
     50: '#F1F5F1',
     100: '#E4ECE5',
@@ -111,7 +111,7 @@ export const theme = {
   },
   brand: {
     // Primary CTA moved from sage to deep rose — warmer, more emotional,
-    // more distinctly "Momzi" than the previous cream-and-sage identity.
+    // more distinctly "NestUp" than the previous cream-and-sage identity.
     // Sage remains as a supporting color (semantic.success is already
     // sage-based and untouched by this change).
     primary: colors.rose[700],

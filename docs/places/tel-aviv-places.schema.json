@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://nest.app/schemas/tel-aviv-places.schema.json",
-  "title": "NEST Tel Aviv curated Places import",
+  "$id": "https://nestup.app/schemas/tel-aviv-places.schema.json",
+  "title": "NestUp Tel Aviv curated Places import",
   "type": "array",
   "items": {
     "type": "object",

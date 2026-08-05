@@ -1,4 +1,4 @@
-# NEST Mobile App — Codex Instructions
+# NestUp Mobile App — Codex Instructions
 
 ## Product
 

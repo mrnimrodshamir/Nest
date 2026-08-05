@@ -7,7 +7,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '@/lib/supabase';
 import { isNotificationForActiveChat } from '@/lib/activeChatTracker';
 
-const LAST_TOKEN_KEY = 'momzi.pushToken';
+const LAST_TOKEN_KEY = 'nestup.pushToken';
 
 Notifications.setNotificationHandler({
   handleNotification: async (notification) => {

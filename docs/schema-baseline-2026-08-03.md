@@ -1,7 +1,7 @@
 # Schema baseline — captured 2026-08-03, before Phase 1 migrations
 
 Captured so every Phase 1 migration has an exact rollback target.
-Source: live `Nest` project (`ghzpzimcxvccbmjsttlf`).
+Source: live production project (`ghzpzimcxvccbmjsttlf`).
 
 ## messages (pre-migration)
 - `sender_id uuid NOT NULL` → profiles.id

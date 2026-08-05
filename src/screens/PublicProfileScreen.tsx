@@ -17,7 +17,7 @@ interface PublicProfileScreenProps {
 
 /** See who you'd be meeting, before you join. No phone-verified badge, no
  *  trust score, no ranking -- just a name, a photo (or a branded initial),
- *  when they joined Momzi, and factual hosted/joined context shown small. */
+ *  when they joined NestUp, and factual hosted/joined context shown small. */
 export function PublicProfileScreen({ userId, onBack, onMessage }: PublicProfileScreenProps) {
   const { profile, isLoading, error } = usePublicProfile(userId);
 

@@ -1,4 +1,4 @@
-# Momzi
+# NestUp
 
 A social network for mothers on maternity leave — nearby meetups, activities,
 chats, and local communities. iOS-first, React Native + Expo + TypeScript +
@@ -16,7 +16,7 @@ notification preference toggles.
   Sessions persist automatically; existing session skips straight to the app.
 - Discover, Activity Detail, Create Activity (map + address search +
   draggable pin, duration/baby-age-range pickers), join/leave, and a
-  WhatsApp/native share flow with `momzi://activity/:id` deep links are all
+  WhatsApp/native share flow with `nestup://activity/:id` deep links are all
   live.
 
 Not yet built: Chat, Communities, full Settings, edit-profile, report flow,

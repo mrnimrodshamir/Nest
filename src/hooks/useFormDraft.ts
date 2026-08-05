@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const DRAFT_PREFIX = 'momzi.draft.';
+const DRAFT_PREFIX = 'nestup.draft.';
 const DEBOUNCE_MS = 400;
 
 /**

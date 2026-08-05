@@ -32,7 +32,7 @@ test('buildGoogleCalendarUrl: title, location, and deep link all present', () =>
   const params = new URL(url).searchParams;
   assert.equal(params.get('text'), 'Morning stroller walk');
   assert.equal(params.get('location'), 'HaYarkon Park');
-  assert.ok(params.get('details').includes('momzi://activity/activity-1'));
+  assert.ok(params.get('details').includes('nestup://activity/activity-1'));
   assert.equal(params.get('action'), 'TEMPLATE');
 });
 

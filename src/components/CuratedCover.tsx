@@ -13,7 +13,7 @@ import { CATEGORY_ART_FAMILY } from '@/types/activity';
  *  Hand-authored vector art (four coherent illustration "families" —
  *  see CATEGORY_ART_FAMILY — each showing several parents together,
  *  never one isolated figure) built from the same visual vocabulary as
- *  the Momzi brand mark (src/components/MomziLogo.tsx: a circle head + a
+ *  the NestUp brand mark (src/components/NestUpLogo.tsx: a circle head + a
  *  soft curved body). It exists because no image-generation tool is
  *  available in this environment to produce the premium
  *  editorial/photographic artwork the product actually calls for — it is

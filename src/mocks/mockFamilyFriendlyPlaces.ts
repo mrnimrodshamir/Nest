@@ -1,7 +1,7 @@
 import type { FamilyFriendlyPlace, PlaceCategory } from '@/types/familyFriendlyPlace';
 
 const categories: PlaceCategory[] = ['playground','park','indoor_playground','museum','library','beach','pool','zoo_or_animals','picnic_area','community_center','attraction'];
-const names = ['Little Lantern Playground','Green Kite Park','Cloud Room Indoor Play','Curious Cub Museum','Story Nest Library','Sunny Shell Beach','Blue Sprout Pool','Kind Creatures Corner','Picnic Patch','Family Hub Center','Wonder Walk'];
+const names = ['Little Lantern Playground','Green Kite Park','Cloud Room Indoor Play','Curious Cub Museum','Story Grove Library','Sunny Shell Beach','Blue Sprout Pool','Kind Creatures Corner','Picnic Patch','Family Hub Center','Wonder Walk'];
 
 export const MOCK_FAMILY_FRIENDLY_PLACES: FamilyFriendlyPlace[] = categories.map((category, index) => ({
   id: `dev-place-${index + 1}`, name: names[index], slug: `dev-${category}-${index + 1}`, category,
