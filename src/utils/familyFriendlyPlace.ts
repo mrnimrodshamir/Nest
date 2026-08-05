@@ -50,6 +50,31 @@ export function placeSummaryFeatures(place: FamilyFriendlyPlace, limit = 3): str
   return features.slice(0, limit);
 }
 
+/** Caregiver-facing, known-values-only facts for Place Details. */
+export function placeWhatIsHere(place: FamilyFriendlyPlace): string[] {
+  const facts: string[] = [];
+  const categoryLabels: Partial<Record<FamilyFriendlyPlace['category'], string>> = {
+    playground: 'Playground', park: 'Park', indoor_playground: 'Indoor play area',
+    zoo_or_animals: 'Animals', museum: 'Museum', library: "Children's library",
+    beach: 'Beach access', pool: 'Pool', community_center: 'Community center',
+    attraction: 'Attraction', picnic_area: 'Picnic area',
+  };
+  const category = categoryLabels[place.category];
+  if (category) facts.push(category);
+  if (place.isIndoor === true) facts.push('Indoor');
+  if (place.isOutdoor === true) facts.push('Outdoor');
+  if (place.isFree === true) facts.push('Free');
+  if (place.isFree === false) facts.push('Paid');
+  if (place.toilets === true) facts.push('Toilets');
+  if (place.shade === true) facts.push('Shade');
+  if (place.waterFountain === true) facts.push('Water fountain');
+  if (place.changingTable === true) facts.push('Changing table');
+  if (place.strollerFriendly === true) facts.push('Stroller friendly');
+  if (place.accessible === true) facts.push('Accessible');
+  if (place.minAgeMonths != null || place.maxAgeMonths != null) facts.push(`Best for ${formatPlaceAgeRange(place.minAgeMonths, place.maxAgeMonths)}`);
+  return facts;
+}
+
 export function placeMatchesFilters(place: FamilyFriendlyPlace, filters: PlaceFilters): boolean {
   if (!place.isActive || place.verificationStatus !== 'verified') return false;
   if (filters.category && place.category !== filters.category) return false;
