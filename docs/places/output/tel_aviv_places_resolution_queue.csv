@@ -1,0 +1,37 @@
+row,name,classification,enrichment_status,reason,next_action
+1,North Zuk Beach,FAIL,unresolved,no Apple results,retry with alternate official name and exact address; remove from scope if still not found
+2,South Zuk Beach,FAIL,unresolved,no Apple results,retry with alternate official name and exact address; remove from scope if still not found
+5,Nordau Separate Beach,FAIL,unresolved,no Apple results,retry with alternate official name and exact address; remove from scope if still not found
+9,Bograshov Beach,REVIEW,ambiguous,no confident unique Apple match,resolve branch manually using exact address and official source
+14,Beit Ariela Public Library,REVIEW,ambiguous,no confident unique Apple match,resolve branch manually using exact address and official source
+15,Nistor Library,FAIL,unresolved,no Apple results,retry with alternate official name and exact address; remove from scope if still not found
+16,Chess Center ג€“ Sissy and Marc Sol Library,FAIL,unresolved,no Apple results,retry with alternate official name and exact address; remove from scope if still not found
+17,Sherman Library,FAIL,unresolved,no Apple results,retry with alternate official name and exact address; remove from scope if still not found
+18,Felicia Blumenthal Music Center and Library,REVIEW,ambiguous,no confident unique Apple match,resolve branch manually using exact address and official source
+20,Beit Danni Library,FAIL,unresolved,no Apple results,retry with alternate official name and exact address; remove from scope if still not found
+21,Bat Zion Library,FAIL,unresolved,no Apple results,retry with alternate official name and exact address; remove from scope if still not found
+22,Hadar Yosef Library,REVIEW,ambiguous,no confident unique Apple match,resolve branch manually using exact address and official source
+23,Anna Laura Petlik Fischer Library,FAIL,unresolved,no Apple results,retry with alternate official name and exact address; remove from scope if still not found
+24,Yad Lebanim Library,FAIL,unresolved,no Apple results,retry with alternate official name and exact address; remove from scope if still not found
+25,Jaffa Gimel Library,FAIL,unresolved,no Apple results,retry with alternate official name and exact address; remove from scope if still not found
+26,Mandel Library and Culture Center,FAIL,unresolved,no Apple results,retry with alternate official name and exact address; remove from scope if still not found
+27,Neve Eliezer Library,REVIEW,ambiguous,no confident unique Apple match,resolve branch manually using exact address and official source
+28,Ramat Aviv Gimel Library,REVIEW,ambiguous,no confident unique Apple match,resolve branch manually using exact address and official source
+31,ANU ג€“ Museum of the Jewish People,FAIL,unresolved,no Apple results,retry with alternate official name and exact address; remove from scope if still not found
+32,Steinhardt Museum of Natural History,REVIEW,manual_review,Source verification status requires manual review,verify active status and family relevance from an official source
+33,Nahum Gutman Museum of Art,REVIEW,manual_review,Source verification status requires manual review,verify active status and family relevance from an official source
+34,Ilana Goor Museum,REVIEW,manual_review,Source verification status requires manual review,verify active status and family relevance from an official source
+35,Tel Aviv Port Promenade,REVIEW,ambiguous,no confident unique Apple match,resolve branch manually using exact address and official source
+36,Yarkon Park,REVIEW,manual_review,Source verification status requires manual review,verify active status and family relevance from an official source
+37,Menachem Begin Park (South Park),REVIEW,manual_review,Source verification status requires manual review,verify active status and family relevance from an official source
+38,Charles Clore Park,REVIEW,manual_review,Source verification status requires manual review,verify active status and family relevance from an official source
+39,Independence Park,REVIEW,manual_review,Source verification status requires manual review,verify active status and family relevance from an official source
+40,Meir Garden,REVIEW,manual_review,Source verification status requires manual review,verify active status and family relevance from an official source
+41,HaPisga Garden,FAIL,unresolved,no Apple results,retry with alternate official name and exact address; remove from scope if still not found
+43,Gordon Pool,REVIEW,manual_review,Source verification status requires manual review,verify active status and family relevance from an official source
+45,Beit Barbur Community Center,REVIEW,manual_review,Source verification status requires manual review,verify active status and family relevance from an official source
+46,Beit Danni Community Center,FAIL,unresolved,no Apple results,retry with alternate official name and exact address; remove from scope if still not found
+47,Neve Sharet Country and Community Center,REVIEW,manual_review,Source verification status requires manual review,verify active status and family relevance from an official source
+48,Neot Afeka Community Country,REVIEW,manual_review,Source verification status requires manual review,verify active status and family relevance from an official source
+49,Zahala Community Country,FAIL,unresolved,no Apple results,retry with alternate official name and exact address; remove from scope if still not found
+50,Beit Frankfurt Community Center,REVIEW,manual_review,Source verification status requires manual review,verify active status and family relevance from an official source
