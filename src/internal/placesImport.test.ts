@@ -1,0 +1,9 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { dryRunPlaceImport, parsePlacesCsv, validatePlaceImportRow } from '@/internal/placesImport';
+
+const valid = { name: 'Fixture Park', category: 'park', latitude: 32.08, longitude: 34.78, is_outdoor: true, is_free: true };
+test('import validation reports errors per row', () => { assert.deepEqual(validatePlaceImportRow(valid).errors, []); assert.match(validatePlaceImportRow({ ...valid, category: 'event', latitude: 200 }).errors.join(','), /category.*latitude/); });
+test('dry run never writes and summarizes valid, invalid and duplicate rows', () => { const result = dryRunPlaceImport([valid, { ...valid, name: '' }, { ...valid }]); assert.equal(result.dryRun, true); assert.deepEqual(result.summary, { total: 3, valid: 1, invalid: 1, duplicates: 1 }); assert.equal(result.duplicates[0].reason, 'same name within 50 meters'); });
+test('provider place ID duplicate wins across different names', () => { const result = dryRunPlaceImport([{ ...valid, provider: 'apple_maps', provider_place_id: 'abc' }], [{ name: 'Existing', latitude: 1, longitude: 1, provider: 'apple_maps', providerPlaceId: 'abc' }]); assert.equal(result.summary.duplicates, 1); });
+test('CSV parser supports quoted addresses', () => { const rows = parsePlacesCsv('name,category,latitude,longitude,formatted_address\n"Fixture, Park",park,32.08,34.78,"10 Test St, Tel Aviv"'); assert.equal(rows[0].name, 'Fixture, Park'); assert.equal(rows[0].formatted_address, '10 Test St, Tel Aviv'); });

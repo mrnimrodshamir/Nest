@@ -4,6 +4,7 @@ import {
   type FamilyFriendlyPlaceRow,
   type PlaceVerificationStatus,
 } from '@/types/familyFriendlyPlace';
+import type { PlaceFilters } from '@/types/familyFriendlyPlace';
 
 export function mapFamilyFriendlyPlaceRow(row: FamilyFriendlyPlaceRow): FamilyFriendlyPlace {
   if (!isPlaceCategory(row.category)) throw new Error(`Unsupported place category: ${row.category}`);
@@ -47,4 +48,26 @@ export function placeSummaryFeatures(place: FamilyFriendlyPlace): string[] {
   if (place.accessible) features.push('Accessible');
   if (place.waterFountain) features.push('Water fountain');
   return features.slice(0, 3);
+}
+
+export function placeMatchesFilters(place: FamilyFriendlyPlace, filters: PlaceFilters): boolean {
+  if (!place.isActive || place.verificationStatus !== 'verified') return false;
+  if (filters.category && place.category !== filters.category) return false;
+  if (filters.environment === 'indoor' && place.isIndoor !== true) return false;
+  if (filters.environment === 'outdoor' && place.isOutdoor !== true) return false;
+  if (filters.cost === 'free' && place.isFree !== true) return false;
+  if (filters.cost === 'paid' && place.isFree !== false) return false;
+  if (filters.ageMonths != null) {
+    if (place.minAgeMonths != null && place.minAgeMonths > filters.ageMonths) return false;
+    if (place.maxAgeMonths != null && place.maxAgeMonths < filters.ageMonths) return false;
+  }
+  return true;
+}
+
+export function formatPlaceAgeRange(min: number | null, max: number | null): string {
+  if (min == null && max == null) return 'All ages';
+  const label = (months: number) => months < 24 ? `${months} months` : `${Math.floor(months / 12)} years`;
+  if (min == null) return `Up to ${label(max!)}`;
+  if (max == null) return `${label(min)} and up`;
+  return `${label(min)} – ${label(max)}`;
 }

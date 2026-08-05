@@ -9,7 +9,7 @@ import { getFamilyFriendlyPlace } from '@/lib/familyFriendlyPlaces';
 import { radius, spacing, theme, typography } from '@/theme';
 import type { FamilyFriendlyPlace } from '@/types/familyFriendlyPlace';
 import { PLACE_CATEGORY_LABELS } from '@/types/familyFriendlyPlace';
-import { placeSummaryFeatures } from '@/utils/familyFriendlyPlace';
+import { formatPlaceAgeRange, placeSummaryFeatures } from '@/utils/familyFriendlyPlace';
 
 export function PlaceDetailsScreen({ placeId, onBack, onCreateActivity }: { placeId: string; onBack: () => void; onCreateActivity: (place: FamilyFriendlyPlace) => void }) {
   const [place, setPlace] = useState<FamilyFriendlyPlace | null>(null);
@@ -29,7 +29,7 @@ export function PlaceDetailsScreen({ placeId, onBack, onCreateActivity }: { plac
     <MapView style={styles.map} region={{ latitude: place.latitude, longitude: place.longitude, latitudeDelta: 0.015, longitudeDelta: 0.015 }} scrollEnabled={false} zoomEnabled={false} pointerEvents="none"><Marker coordinate={place} /></MapView>
     <Pressable style={styles.linkRow} onPress={() => Linking.openURL(mapsUrl)}><ArrowSquareOut size={18} color={theme.brand.primary} /><Text style={styles.link}>Open in Apple Maps</Text></Pressable>
     {place.shortDescription ? <Text style={styles.description}>{place.fullDescription ?? place.shortDescription}</Text> : null}
-    {place.minAgeMonths != null || place.maxAgeMonths != null ? <Section title="Age suitability" body={formatAgeRange(place.minAgeMonths, place.maxAgeMonths)} /> : null}
+    {place.minAgeMonths != null || place.maxAgeMonths != null ? <Section title="Age suitability" body={formatPlaceAgeRange(place.minAgeMonths, place.maxAgeMonths)} /> : null}
     {features.length ? <View style={styles.section}><Text style={styles.sectionTitle}>Family-friendly features</Text>{features.map((feature) => <View key={feature} style={styles.feature}><CheckCircle size={18} color={theme.brand.secondary} weight="fill" /><Text style={styles.featureText}>{feature}</Text></View>)}</View> : null}
     {place.openingHours ? <Section title="Opening hours" body="See the venue’s current schedule before you go." /> : null}
     {place.websiteUrl ? <Pressable style={styles.linkRow} onPress={() => Linking.openURL(place.websiteUrl!)}><ArrowSquareOut size={18} color={theme.brand.primary} /><Text style={styles.link}>Visit website</Text></Pressable> : null}
@@ -40,8 +40,6 @@ export function PlaceDetailsScreen({ placeId, onBack, onCreateActivity }: { plac
 
 function Header({ onBack }: { onBack: () => void }) { return <View style={styles.header}><Pressable onPress={onBack} accessibilityLabel="Back" style={styles.back}><ArrowLeft size={20} color={theme.text.primary} /></Pressable><Text style={styles.headerTitle}>Place details</Text><View style={styles.back} /></View>; }
 function Section({ title, body }: { title: string; body: string }) { return <View style={styles.section}><Text style={styles.sectionTitle}>{title}</Text><Text style={styles.description}>{body}</Text></View>; }
-export function formatAgeRange(min: number | null, max: number | null): string { if (min == null && max == null) return 'All ages'; const label = (months: number) => months < 24 ? `${months} months` : `${Math.floor(months / 12)} years`; if (min == null) return `Up to ${label(max!)}`; if (max == null) return `${label(min)} and up`; return `${label(min)} – ${label(max)}`; }
-
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: theme.background.app }, header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: spacing.lg, paddingVertical: spacing.sm }, back: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.background.surface }, headerTitle: { ...typography.headline, color: theme.text.primary },
   content: { paddingHorizontal: spacing.lg, paddingBottom: 48, gap: spacing.sm }, loading: { ...typography.body, textAlign: 'center', color: theme.text.secondary, marginTop: 80 }, hero: { width: '100%', aspectRatio: 4 / 3, borderRadius: radius.lg, backgroundColor: theme.background.surfaceAlt }, heroFallback: { alignItems: 'center', justifyContent: 'center' },
