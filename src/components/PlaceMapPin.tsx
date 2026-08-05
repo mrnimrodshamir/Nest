@@ -1,17 +1,17 @@
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Marker } from 'react-native-maps';
-import { Baby, Buildings, Coffee, House, MapPin, Park, SwimmingPool, Umbrella } from 'phosphor-react-native';
+import { Baby, Buildings, House, MapPin, Park, SwimmingPool, Umbrella } from 'phosphor-react-native';
 import { theme } from '@/theme';
 import type { FamilyFriendlyPlace, PlaceCategory } from '@/types/familyFriendlyPlace';
 
 const ICONS: Partial<Record<PlaceCategory, React.ComponentType<{ size: number; color: string; weight?: 'fill' | 'bold' }>>> = {
-  playground: Baby, park: Park, picnic_area: Park, indoor_playground: House, family_cafe: Coffee,
+  playground: Baby, park: Park, picnic_area: Park, indoor_playground: House,
   museum: Buildings, library: Buildings, community_center: Buildings, zoo_or_animals: Baby,
   beach: Umbrella, pool: SwimmingPool,
 };
 const COLORS: Record<PlaceCategory, string> = {
-  playground: '#276A73', park: '#347A4A', indoor_playground: '#7253A3', family_cafe: '#A8663E',
+  playground: '#276A73', park: '#347A4A', indoor_playground: '#7253A3',
   zoo_or_animals: '#6B7A36', museum: '#4C6190', library: '#735680', beach: '#2E77A8', pool: '#2A8FA0',
   community_center: '#8A5D55', attraction: '#B26784', picnic_area: '#557A45', other: '#59656F',
 };

@@ -19,7 +19,7 @@ import { clusterPlacesForRegion } from '@/utils/placeClustering';
 
 const FILTERS: Array<{ key: PlaceCategory | 'all'; label: string }> = [
   { key: 'all', label: 'All' }, { key: 'playground', label: 'Playgrounds' }, { key: 'park', label: 'Parks' },
-  { key: 'indoor_playground', label: 'Indoor play' }, { key: 'family_cafe', label: 'Cafés' },
+  { key: 'indoor_playground', label: 'Indoor play' },
   { key: 'museum', label: 'Museums' }, { key: 'beach', label: 'Beaches' }, { key: 'pool', label: 'Pools' },
 ];
 const SNAP_POINTS = ['22%', '50%', '92%'];

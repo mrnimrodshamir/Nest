@@ -3,7 +3,7 @@ import type { ActivityCategory } from '@/types/activity';
 import type { FamilyFriendlyPlace, PlaceCategory } from '@/types/familyFriendlyPlace';
 
 const SUGGESTED_ACTIVITY_CATEGORY: Partial<Record<PlaceCategory, ActivityCategory>> = {
-  playground: 'playground_meetup', indoor_playground: 'indoor_playground', family_cafe: 'coffee_meetup',
+  playground: 'playground_meetup', indoor_playground: 'indoor_playground',
   park: 'stroller_walk', picnic_area: 'picnic', library: 'story_time', pool: 'swimming',
   museum: 'museum', beach: 'beach', zoo_or_animals: 'zoo',
 };
