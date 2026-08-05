@@ -3,12 +3,15 @@ import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 import {
   buildDigitelQueryUrl,
+  DigitelConnectorError,
   fetchAllDigitelFeatures,
+  fetchAndValidateDigitelSource,
   groupFingerprintCollisions,
   MAX_DIGITEL_PAGE_SIZE,
   normalizeArcGisDate,
   normalizeDigitelFeatures,
   normalizeDigitelText,
+  validateDigitelSourceMetadata,
   type ArcGisFeature,
   type ArcGisFeatureResponse,
 } from '@/integrations/digitelConnector';
@@ -64,6 +67,75 @@ test('ArcGIS errors and HTTP errors are surfaced without partial success', async
     fetchAllDigitelFeatures({ fetchImpl: async () => response({}, 503) }),
     /HTTP 503/,
   );
+});
+
+test('transient ArcGIS failures are retried before succeeding', async () => {
+  let calls = 0;
+  const result = await fetchAllDigitelFeatures({
+    maxAttempts: 3,
+    retryBaseDelayMs: 0,
+    sleepImpl: async () => undefined,
+    fetchImpl: async () => {
+      calls += 1;
+      return calls < 3 ? response({}, 503) : response({ features: [feature(1)], exceededTransferLimit: false });
+    },
+  });
+  assert.equal(calls, 3);
+  assert.equal(result.requestAttempts, 3);
+  assert.equal(result.retryCount, 2);
+});
+
+test('permanent HTTP failures are not retried', async () => {
+  let calls = 0;
+  await assert.rejects(fetchAllDigitelFeatures({
+    maxAttempts: 3,
+    retryBaseDelayMs: 0,
+    sleepImpl: async () => undefined,
+    fetchImpl: async () => { calls += 1; return response({}, 400); },
+  }), (error: unknown) => error instanceof DigitelConnectorError && error.code === 'HTTP_ERROR' && error.status === 400);
+  assert.equal(calls, 1);
+});
+
+test('requests time out, retry to the configured limit, and never hang', async () => {
+  let calls = 0;
+  const neverCompletes: typeof fetch = async (_url, init) => {
+    calls += 1;
+    return await new Promise<Response>((_resolve, reject) => {
+      init?.signal?.addEventListener('abort', () => reject(init.signal?.reason), { once: true });
+    });
+  };
+  await assert.rejects(fetchAllDigitelFeatures({
+    fetchImpl: neverCompletes,
+    timeoutMs: 5,
+    maxAttempts: 2,
+    retryBaseDelayMs: 0,
+    sleepImpl: async () => undefined,
+  }), (error: unknown) => error instanceof DigitelConnectorError && error.code === 'TIMEOUT');
+  assert.equal(calls, 2);
+});
+
+test('source metadata validation detects schema drift before fetching records', async () => {
+  const metadata = {
+    id: 410,
+    name: 'אירועים דיגיתל',
+    type: 'Feature Layer',
+    geometryType: 'esriGeometryPoint',
+    maxRecordCount: 2_000,
+    capabilities: 'Map,Query,Data',
+    fields: [
+      'OBJECTID', 'title', 'startdate', 'location', 'type', 'NbrId', 'description', 'summary',
+      'image_url', 'icon_url', 'sitemapurl', 'modified', 'publishdate', 'lat', 'lon',
+    ].map((name) => ({ name })),
+  };
+  const result = await fetchAndValidateDigitelSource({ fetchImpl: async () => response(metadata) });
+  assert.equal(result.validation.valid, true);
+  assert.equal(result.validation.missingFields.length, 0);
+  assert.equal(result.requestAttempts, 1);
+
+  const drifted = validateDigitelSourceMetadata({ ...metadata, geometryType: 'esriGeometryPolygon', fields: metadata.fields.slice(0, -1) });
+  assert.equal(drifted.valid, false);
+  assert.ok(drifted.errors.includes('unexpected_geometry_type'));
+  assert.deepEqual(drifted.missingFields, ['lon']);
 });
 
 test('page size is capped at the ArcGIS response limit', () => {

@@ -1,5 +1,6 @@
 export const DIGITEL_LAYER_URL = 'https://gisn.tel-aviv.gov.il/arcgis/rest/services/IView2/MapServer/410';
 export const DIGITEL_QUERY_URL = `${DIGITEL_LAYER_URL}/query`;
+export const DIGITEL_METADATA_URL = `${DIGITEL_LAYER_URL}?f=json`;
 export const DIGITEL_OUT_FIELDS = [
   'OBJECTID', 'title', 'startdate', 'location', 'type', 'NbrId', 'description', 'summary',
   'image_url', 'icon_url', 'sitemapurl', 'modified', 'publishdate', 'lat', 'lon',
@@ -9,6 +10,9 @@ export const DIGITEL_NOTICE_TYPE = 'הודעות בתוקף';
 export const DEFAULT_DIGITEL_PAGE_SIZE = 500;
 export const MAX_DIGITEL_PAGE_SIZE = 2_000;
 export const DEFAULT_HISTORY_DAYS = 30;
+export const DEFAULT_DIGITEL_TIMEOUT_MS = 10_000;
+export const DEFAULT_DIGITEL_MAX_ATTEMPTS = 3;
+export const DEFAULT_DIGITEL_RETRY_BASE_DELAY_MS = 250;
 
 export interface ArcGisFeature {
   attributes?: Record<string, unknown> | null;
@@ -19,6 +23,29 @@ export interface ArcGisFeatureResponse {
   features?: ArcGisFeature[];
   exceededTransferLimit?: boolean;
   error?: { code?: number; message?: string; details?: string[] };
+}
+
+export interface ArcGisLayerMetadata {
+  id?: unknown;
+  name?: unknown;
+  type?: unknown;
+  geometryType?: unknown;
+  maxRecordCount?: unknown;
+  capabilities?: unknown;
+  fields?: Array<{ name?: unknown; type?: unknown }>;
+  error?: { code?: number; message?: string; details?: string[] };
+}
+
+export interface DigitelSourceValidation {
+  valid: boolean;
+  layerId: number | null;
+  layerName: string | null;
+  geometryType: string | null;
+  maxRecordCount: number | null;
+  supportsQuery: boolean;
+  missingFields: string[];
+  errors: string[];
+  warnings: string[];
 }
 
 export interface DigitelSourceRecord {
@@ -94,12 +121,46 @@ export interface FetchDigitelOptions {
   fetchImpl?: typeof fetch;
   signal?: AbortSignal;
   maxPages?: number;
+  timeoutMs?: number;
+  maxAttempts?: number;
+  retryBaseDelayMs?: number;
+  sleepImpl?: (milliseconds: number) => Promise<void>;
 }
 
 export interface FetchDigitelResult {
   features: ArcGisFeature[];
   pages: number;
   requestUrls: string[];
+  requestAttempts: number;
+  retryCount: number;
+}
+
+export interface FetchDigitelMetadataResult {
+  metadata: ArcGisLayerMetadata;
+  validation: DigitelSourceValidation;
+  requestAttempts: number;
+  retryCount: number;
+}
+
+export type DigitelConnectorErrorCode =
+  | 'TIMEOUT'
+  | 'SOURCE_UNAVAILABLE'
+  | 'HTTP_ERROR'
+  | 'ARCGIS_ERROR'
+  | 'MALFORMED_RESPONSE'
+  | 'PAGINATION_STALE'
+  | 'PAGE_LIMIT';
+
+export class DigitelConnectorError extends Error {
+  readonly code: DigitelConnectorErrorCode;
+  readonly status: number | null;
+
+  constructor(code: DigitelConnectorErrorCode, message: string, status: number | null = null) {
+    super(message);
+    this.name = 'DigitelConnectorError';
+    this.code = code;
+    this.status = status;
+  }
 }
 
 export interface NormalizeDigitelOptions {
@@ -120,15 +181,17 @@ export async function fetchAllDigitelFeatures(options: FetchDigitelOptions = {})
   const requestUrls: string[] = [];
   const seenObjectIds = new Set<number>();
   let offset = 0;
+  let requestAttempts = 0;
+  let retryCount = 0;
 
   for (let page = 0; page < maxPages; page += 1) {
     const requestUrl = buildDigitelQueryUrl(offset, pageSize);
     requestUrls.push(requestUrl);
-    const response = await fetchImpl(requestUrl, { signal: options.signal, headers: { Accept: 'application/json' } });
-    if (!response.ok) throw new Error(`DigiTel ArcGIS request failed with HTTP ${response.status}`);
-    const body = (await response.json()) as ArcGisFeatureResponse;
-    if (body.error) throw new Error(`DigiTel ArcGIS error ${body.error.code ?? 'unknown'}: ${body.error.message ?? 'Unknown error'}`);
-    if (!Array.isArray(body.features)) throw new Error('DigiTel ArcGIS returned a malformed feature response');
+    const requested = await requestArcGisJson<ArcGisFeatureResponse>(requestUrl, options, fetchImpl);
+    requestAttempts += requested.attempts;
+    retryCount += requested.attempts - 1;
+    const body = requested.body;
+    if (!Array.isArray(body.features)) throw new DigitelConnectorError('MALFORMED_RESPONSE', 'DigiTel ArcGIS returned a malformed feature response');
 
     let newTransportIds = 0;
     for (const feature of body.features) {
@@ -142,18 +205,57 @@ export async function fetchAllDigitelFeatures(options: FetchDigitelOptions = {})
     }
 
     if (body.features.length > 0 && newTransportIds === 0) {
-      throw new Error('DigiTel ArcGIS pagination made no progress; the source repeated a stale page');
+      throw new DigitelConnectorError('PAGINATION_STALE', 'DigiTel ArcGIS pagination made no progress; the source repeated a stale page');
     }
     if (!body.exceededTransferLimit && body.features.length < pageSize) {
-      return { features, pages: page + 1, requestUrls };
+      return { features, pages: page + 1, requestUrls, requestAttempts, retryCount };
     }
     if (body.features.length === 0) {
-      throw new Error('DigiTel ArcGIS reported more data but returned an empty page');
+      throw new DigitelConnectorError('PAGINATION_STALE', 'DigiTel ArcGIS reported more data but returned an empty page');
     }
     offset += body.features.length;
   }
 
-  throw new Error(`DigiTel ArcGIS exceeded the ${maxPages}-page safety limit`);
+  throw new DigitelConnectorError('PAGE_LIMIT', `DigiTel ArcGIS exceeded the ${maxPages}-page safety limit`);
+}
+
+export async function fetchAndValidateDigitelSource(options: FetchDigitelOptions = {}): Promise<FetchDigitelMetadataResult> {
+  const requested = await requestArcGisJson<ArcGisLayerMetadata>(DIGITEL_METADATA_URL, options, options.fetchImpl ?? fetch);
+  return {
+    metadata: requested.body,
+    validation: validateDigitelSourceMetadata(requested.body),
+    requestAttempts: requested.attempts,
+    retryCount: requested.attempts - 1,
+  };
+}
+
+export function validateDigitelSourceMetadata(metadata: ArcGisLayerMetadata): DigitelSourceValidation {
+  const layerId = asInteger(metadata.id);
+  const layerName = asNullableString(metadata.name)?.trim() || null;
+  const geometryType = asNullableString(metadata.geometryType)?.trim() || null;
+  const maxRecordCount = asInteger(metadata.maxRecordCount);
+  const capabilities = asNullableString(metadata.capabilities) ?? '';
+  const sourceFields = new Set((metadata.fields ?? []).flatMap((field) => typeof field.name === 'string' ? [field.name] : []));
+  const missingFields = DIGITEL_OUT_FIELDS.filter((field) => !sourceFields.has(field));
+  const errors: string[] = [];
+  const warnings: string[] = [];
+  if (layerId !== 410) errors.push('unexpected_layer_id');
+  if (geometryType !== 'esriGeometryPoint') errors.push('unexpected_geometry_type');
+  if (!capabilities.split(',').map((value) => value.trim().toLocaleLowerCase('en')).includes('query')) errors.push('query_not_supported');
+  if (missingFields.length > 0) errors.push('required_fields_missing');
+  if (maxRecordCount == null || maxRecordCount < 1) errors.push('invalid_max_record_count');
+  if (layerName !== 'אירועים דיגיתל') warnings.push('unexpected_layer_name');
+  return {
+    valid: errors.length === 0,
+    layerId,
+    layerName,
+    geometryType,
+    maxRecordCount,
+    supportsQuery: !errors.includes('query_not_supported'),
+    missingFields,
+    errors,
+    warnings,
+  };
 }
 
 export function buildDigitelQueryUrl(offset: number, pageSize = DEFAULT_DIGITEL_PAGE_SIZE): string {
@@ -373,4 +475,70 @@ function isInsideBounds(
   bounds: { north: number; south: number; east: number; west: number },
 ): boolean {
   return latitude >= bounds.south && latitude <= bounds.north && longitude >= bounds.west && longitude <= bounds.east;
+}
+
+async function requestArcGisJson<T extends { error?: { code?: number; message?: string } }>(
+  url: string,
+  options: FetchDigitelOptions,
+  fetchImpl: typeof fetch,
+): Promise<{ body: T; attempts: number }> {
+  const maxAttempts = Math.max(1, Math.floor(options.maxAttempts ?? DEFAULT_DIGITEL_MAX_ATTEMPTS));
+  const timeoutMs = Math.max(1, Math.floor(options.timeoutMs ?? DEFAULT_DIGITEL_TIMEOUT_MS));
+  const retryBaseDelayMs = Math.max(0, Math.floor(options.retryBaseDelayMs ?? DEFAULT_DIGITEL_RETRY_BASE_DELAY_MS));
+  const sleepImpl = options.sleepImpl ?? ((milliseconds: number) => new Promise<void>((resolve) => setTimeout(resolve, milliseconds)));
+  let lastError: DigitelConnectorError | null = null;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    if (options.signal?.aborted) throw options.signal.reason ?? new DOMException('Aborted', 'AbortError');
+    const controller = new AbortController();
+    let timedOut = false;
+    const abortFromParent = () => controller.abort(options.signal?.reason);
+    options.signal?.addEventListener('abort', abortFromParent, { once: true });
+    const timeout = setTimeout(() => {
+      timedOut = true;
+      controller.abort(new DOMException('Timed out', 'TimeoutError'));
+    }, timeoutMs);
+
+    try {
+      const response = await fetchImpl(url, { signal: controller.signal, headers: { Accept: 'application/json' } });
+      if (!response.ok) {
+        const error = new DigitelConnectorError('HTTP_ERROR', `DigiTel ArcGIS request failed with HTTP ${response.status}`, response.status);
+        if (!isRetryableStatus(response.status) || attempt === maxAttempts) throw error;
+        lastError = error;
+      } else {
+        let body: T;
+        try { body = await response.json() as T; } catch { throw new DigitelConnectorError('MALFORMED_RESPONSE', 'DigiTel ArcGIS returned invalid JSON'); }
+        if (body.error) {
+          const status = typeof body.error.code === 'number' ? body.error.code : null;
+          const error = new DigitelConnectorError('ARCGIS_ERROR', `DigiTel ArcGIS error ${status ?? 'unknown'}: ${body.error.message ?? 'Unknown error'}`, status);
+          if (status == null || !isRetryableStatus(status) || attempt === maxAttempts) throw error;
+          lastError = error;
+        } else {
+          return { body, attempts: attempt };
+        }
+      }
+    } catch (error) {
+      if (options.signal?.aborted) throw options.signal.reason ?? error;
+      const normalized = error instanceof DigitelConnectorError
+        ? error
+        : timedOut
+          ? new DigitelConnectorError('TIMEOUT', `DigiTel ArcGIS timed out after ${timeoutMs}ms`)
+          : new DigitelConnectorError('SOURCE_UNAVAILABLE', 'DigiTel ArcGIS is temporarily unavailable');
+      if (normalized.code === 'MALFORMED_RESPONSE' || (normalized.code === 'HTTP_ERROR' && normalized.status != null && !isRetryableStatus(normalized.status)) || (normalized.code === 'ARCGIS_ERROR' && normalized.status != null && !isRetryableStatus(normalized.status)) || attempt === maxAttempts) {
+        throw normalized;
+      }
+      lastError = normalized;
+    } finally {
+      clearTimeout(timeout);
+      options.signal?.removeEventListener('abort', abortFromParent);
+    }
+
+    if (attempt < maxAttempts) await sleepImpl(retryBaseDelayMs * 2 ** (attempt - 1));
+  }
+
+  throw lastError ?? new DigitelConnectorError('SOURCE_UNAVAILABLE', 'DigiTel ArcGIS is temporarily unavailable');
+}
+
+function isRetryableStatus(status: number): boolean {
+  return status === 408 || status === 425 || status === 429 || status >= 500;
 }
