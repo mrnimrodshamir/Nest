@@ -38,9 +38,9 @@ export function filterDiscoveryItems(
 
 /**
  * Distance is the only value shared honestly by Activities and Places. Both
- * types are therefore ranked from the current map centre. A deterministic
- * adjustment of at most five metres breaks near-ties without claiming useful
- * precision or grouping every item of one type together.
+ * types are therefore ranked from the current map centre. Exact-distance ties
+ * retain the natural domain order: Activity start time or Place name, followed
+ * by the typed stable key.
  *
  * When no valid centre exists, each type keeps its natural order (Activities
  * by upcoming start; Places by name) and the two lists are interleaved.
@@ -66,16 +66,18 @@ export function mergeDiscoveryItems(
   return [...activityItems, ...placeItems].sort((a, b) => {
     const distanceA = distanceMeters(origin, a.data);
     const distanceB = distanceMeters(origin, b.data);
-    const adjustedA = distanceA + nearTieAdjustment(a);
-    const adjustedB = distanceB + nearTieAdjustment(b);
-    return adjustedA - adjustedB || discoveryItemKey(a).localeCompare(discoveryItemKey(b));
+    const distanceDifference = distanceA - distanceB;
+    if (Math.abs(distanceDifference) > 0.01) return distanceDifference;
+    if (a.type === 'activity' && b.type === 'activity') {
+      const startDifference = new Date(a.data.startTime).getTime() - new Date(b.data.startTime).getTime();
+      if (startDifference !== 0) return startDifference;
+    }
+    if (a.type === 'place' && b.type === 'place') {
+      const nameDifference = a.data.name.localeCompare(b.data.name);
+      if (nameDifference !== 0) return nameDifference;
+    }
+    return discoveryItemKey(a).localeCompare(discoveryItemKey(b));
   });
-}
-
-function nearTieAdjustment(item: DiscoveryItem): number {
-  let hash = item.type === 'activity' ? 17 : 31;
-  for (const character of item.id) hash = (hash * 33 + character.charCodeAt(0)) >>> 0;
-  return (hash % 11) - 5;
 }
 
 function interleave(activities: DiscoveryItem[], places: DiscoveryItem[]): DiscoveryItem[] {

@@ -102,6 +102,14 @@ test('items are blended by type-neutral distance from the current map centre', (
   assert.deepEqual(items.map(discoveryItemKey), ['activity:near-activity', 'place:middle-place', 'activity:far-activity']);
 });
 
+test('exact distance ties use Activity time, Place name, then typed stable id', () => {
+  const activities = [activity('late', 32.08, '2026-08-06T12:00:00Z'), activity('early', 32.08, '2026-08-06T09:00:00Z')];
+  const places = [place('z', 32.08, 'Zoo'), place('a', 32.08, 'Ariela')];
+  const items = mergeDiscoveryItems(activities, places, { latitude: 32.08, longitude: 34.78 });
+  assert.deepEqual(items.filter((item) => item.type === 'activity').map((item) => item.id), ['early', 'late']);
+  assert.deepEqual(items.filter((item) => item.type === 'place').map((item) => item.id), ['a', 'z']);
+});
+
 test('without a valid centre, natural per-type order is deterministically interleaved', () => {
   const items = mergeDiscoveryItems(
     [activity('late', 32.08, '2026-08-06T12:00:00Z'), activity('early', 32.08, '2026-08-06T09:00:00Z')],
