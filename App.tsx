@@ -1,5 +1,5 @@
-import React, { useCallback, useEffect, useMemo } from 'react';
-import { View, ActivityIndicator, Pressable, Text, I18nManager } from 'react-native';
+import React, { useCallback, useEffect, useMemo, useRef } from 'react';
+import { View, ActivityIndicator, Pressable, Text, I18nManager, Linking } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import {
@@ -66,6 +66,7 @@ import type { ActivityFormSeedValues } from '@/components/ActivityForm';
 import type { FamilyFriendlyPlace } from '@/types/familyFriendlyPlace';
 import type { EventDetails } from '@/types/event';
 import { buildActivitySeedFromPlace } from '@/utils/placeActivityPrefill';
+import { parseSharedContentUrl, type SharedContentRoute } from '@/utils/contentSharing';
 
 // This release is English/LTR only (see theme docs) — but React Native
 // mirrors flexDirection: 'row' layouts automatically based on the
@@ -124,7 +125,7 @@ const Tab = createBottomTabNavigator<TabParamList>();
 const navigationRef = createNavigationContainerRef<RootStackParamList>();
 
 const linking: LinkingOptions<RootStackParamList> = {
-  prefixes: ['nestup://'],
+  prefixes: ['nestup://', 'momzi://'],
   config: {
     screens: {
       Tabs: {
@@ -173,6 +174,30 @@ function AppInner() {
     PlusJakartaSans_700Bold,
   });
   const { session, profile, isLoading: authLoading } = useAuth();
+  const pendingSharedRoute = useRef<SharedContentRoute | null>(null);
+
+  const navigatePendingSharedRoute = useCallback(() => {
+    if (!session || !profile?.onboardingCompleted || !navigationRef.isReady() || !pendingSharedRoute.current) return;
+    const route = pendingSharedRoute.current;
+    pendingSharedRoute.current = null;
+    if (route.screen === 'ActivityDetail') navigationRef.navigate('ActivityDetail', route.params);
+    else if (route.screen === 'PlaceDetails') navigationRef.navigate('PlaceDetails', route.params);
+    else navigationRef.navigate('EventDetails', route.params);
+  }, [session, profile?.onboardingCompleted]);
+
+  useEffect(() => {
+    const rememberIfSignedOut = (url: string | null) => {
+      if (!url || session) return;
+      pendingSharedRoute.current = parseSharedContentUrl(url);
+    };
+    void Linking.getInitialURL().then(rememberIfSignedOut);
+    const subscription = Linking.addEventListener('url', ({ url }) => rememberIfSignedOut(url));
+    return () => subscription.remove();
+  }, [session]);
+
+  useEffect(() => {
+    navigatePendingSharedRoute();
+  }, [navigatePendingSharedRoute]);
 
   useEffect(() => {
     // Safe fallback if the tapped notification references content that no
@@ -237,7 +262,7 @@ function AppInner() {
     <AppErrorBoundary>
       <GestureHandlerRootView style={{ flex: 1 }}>
         <SafeAreaProvider>
-          <NavigationContainer ref={navigationRef} linking={session && profile?.onboardingCompleted && !PREVIEW_MODE ? linking : undefined}>
+          <NavigationContainer ref={navigationRef} onReady={navigatePendingSharedRoute} linking={session && profile?.onboardingCompleted && !PREVIEW_MODE ? linking : undefined}>
             {PREVIEW_MODE ? (
               <MainNavigator />
             ) : !session ? (
@@ -503,7 +528,7 @@ function ActivityDetailContainer({
     return (
       <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.background.surface }}>
         {isLoading ? <ActivityIndicator color={theme.brand.primary} /> : null}
-        {error ? null : null}
+        {error ? <><Text style={{ color: theme.text.secondary }}>{error}</Text><Pressable onPress={refresh}><Text style={{ color: theme.brand.primary, fontWeight: '700' }}>Try again</Text></Pressable></> : null}
       </View>
     );
   }

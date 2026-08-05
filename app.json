@@ -5,7 +5,7 @@
     "version": "0.1.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
-    "scheme": "nestup",
+    "scheme": ["nestup", "momzi"],
     "icon": "./assets/icon.png",
     "ios": {
       "bundleIdentifier": "com.nest.mobile",
