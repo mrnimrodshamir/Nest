@@ -25,6 +25,7 @@ import * as Location from 'expo-location';
 import { DiscoverScreen } from '@/screens/DiscoverScreen';
 import { ActivityDetailScreen } from '@/screens/ActivityDetailScreen';
 import { CreateActivityScreen } from '@/screens/CreateActivityScreen';
+import { PlaceDetailsScreen } from '@/screens/PlaceDetailsScreen';
 import { ShareActivityScreen } from '@/screens/ShareActivityScreen';
 import { ChatScreen } from '@/screens/ChatScreen';
 import { EditActivityScreen } from '@/screens/EditActivityScreen';
@@ -58,6 +59,8 @@ import type { CreateActivityInput } from '@/hooks/useCreateActivity';
 import type { ShareableActivity } from '@/utils/buildShareMessage';
 import { buildCreateAgainSeed } from '@/utils/createAgain';
 import type { ActivityFormSeedValues } from '@/components/ActivityForm';
+import type { FamilyFriendlyPlace } from '@/types/familyFriendlyPlace';
+import { buildActivitySeedFromPlace } from '@/utils/placeActivityPrefill';
 
 // This release is English/LTR only (see theme docs) — but React Native
 // mirrors flexDirection: 'row' layouts automatically based on the
@@ -100,7 +103,8 @@ export type RootStackParamList = {
   Tabs: undefined;
   ActivityDetail: { activityId: string };
   EditActivity: { activityId: string };
-  CreateActivity: { mode: 'again'; initialValues: ActivityFormSeedValues } | undefined;
+  CreateActivity: { mode: 'again' | 'place'; initialValues: ActivityFormSeedValues } | undefined;
+  PlaceDetails: { placeId: string };
   ShareActivity: { activity: ShareableActivity };
   Chat: { kind: 'group' | 'direct'; activityId?: string; otherUserId?: string; title?: string };
   PublicProfile: { userId: string };
@@ -125,6 +129,7 @@ const linking: LinkingOptions<RootStackParamList> = {
         },
       },
       ActivityDetail: 'activity/:activityId',
+      PlaceDetails: 'place/:placeId',
       EditActivity: 'activity/:activityId/edit',
       CreateActivity: 'create',
       ShareActivity: 'share',
@@ -285,6 +290,9 @@ function MainNavigator() {
           />
         )}
       </Stack.Screen>
+      <Stack.Screen name="PlaceDetails">
+        {({ route, navigation }) => <PlaceDetailsScreen placeId={route.params.placeId} onBack={() => navigation.goBack()} onCreateActivity={(place) => navigation.navigate('CreateActivity', { mode: 'place', initialValues: buildActivitySeedFromPlace(place) })} />}
+      </Stack.Screen>
       <Stack.Screen name="EditActivity">
         {({ route, navigation }) => (
           <EditActivityContainer
@@ -413,6 +421,9 @@ function DiscoverScreenContainer({ navigation }: { navigation: any }) {
     },
     [navigation],
   );
+  const handleOpenPlace = useCallback((place: FamilyFriendlyPlace) => {
+    navigation.getParent()?.navigate('PlaceDetails', { placeId: place.id });
+  }, [navigation]);
   const [previewShowEmpty, setPreviewShowEmpty] = React.useState(false);
 
   useEffect(() => {
@@ -423,7 +434,7 @@ function DiscoverScreenContainer({ navigation }: { navigation: any }) {
     <View style={{ flex: 1 }}>
       <DiscoverScreen
         onOpenActivity={handleOpenActivity}
-        onOpenPlace={() => undefined}
+        onOpenPlace={handleOpenPlace}
         onHostActivity={() => navigation.getParent()?.navigate('CreateActivity')}
         mockActivities={PREVIEW_MODE ? (previewShowEmpty ? MOCK_ACTIVITIES_EMPTY : MOCK_ACTIVITIES) : undefined}
       />
@@ -651,6 +662,7 @@ function CreateActivityContainer({
             mode: 'create' as const,
             initialLatitude: initialCoords.latitude,
             initialLongitude: initialCoords.longitude,
+            initialValues: routeParams?.mode === 'place' ? routeParams.initialValues : undefined,
           })}
       onBack={() => navigation.goBack()}
       onCreated={(activityId: string, input: CreateActivityInput) => {

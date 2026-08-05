@@ -76,7 +76,7 @@ interface ActivityFormSharedProps {
 }
 
 type ActivityFormProps = ActivityFormSharedProps & (
-  | { mode: 'create'; initialLocation: { latitude: number; longitude: number }; initialValues?: never }
+  | { mode: 'create'; initialLocation: { latitude: number; longitude: number }; initialValues?: ActivityFormSeedValues }
   | { mode: 'edit'; initialValues: ActivityFormEditValues; initialLocation?: never }
   | { mode: 'again'; initialValues: ActivityFormSeedValues; initialLocation?: never }
 );

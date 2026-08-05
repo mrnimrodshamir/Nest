@@ -11,7 +11,7 @@ type CreateActivityScreenProps = {
   onBack: () => void;
   onCreated: (activityId: string, input: CreateActivityInput) => void;
 } & (
-  | { mode: 'create'; initialLatitude: number; initialLongitude: number; initialValues?: never }
+  | { mode: 'create'; initialLatitude: number; initialLongitude: number; initialValues?: ActivityFormSeedValues }
   | { mode: 'again'; initialValues: ActivityFormSeedValues; initialLatitude?: never; initialLongitude?: never }
 );
 
@@ -68,6 +68,7 @@ export function CreateActivityScreen({
             : {
                 mode: 'create' as const,
                 initialLocation: { latitude: initialLatitude!, longitude: initialLongitude! },
+                initialValues,
               })}
           submitLabel="Create activity"
           // Also disabled while a host-join retry is pending — the activity
