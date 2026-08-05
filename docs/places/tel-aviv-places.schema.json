@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nest.app/schemas/tel-aviv-places.schema.json",
+  "title": "NEST Tel Aviv curated Places import",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+      "name", "category", "latitude", "longitude", "formatted_address", "neighborhood",
+      "short_description", "is_indoor", "is_outdoor", "is_free", "price_note",
+      "min_age_months", "max_age_months", "stroller_friendly", "changing_table", "toilets",
+      "shade", "water_fountain", "accessible", "website_url", "source_name", "source_url",
+      "verification_status", "last_verified_at"
+    ],
+    "properties": {
+      "name": { "type": "string", "minLength": 1 },
+      "category": { "enum": ["playground", "park", "indoor_playground", "zoo_or_animals", "museum", "library", "beach", "pool", "community_center", "attraction", "picnic_area", "other"] },
+      "latitude": { "type": "number", "minimum": -90, "maximum": 90 },
+      "longitude": { "type": "number", "minimum": -180, "maximum": 180 },
+      "formatted_address": { "type": ["string", "null"] },
+      "neighborhood": { "type": ["string", "null"] },
+      "short_description": { "type": ["string", "null"] },
+      "full_description": { "type": ["string", "null"] },
+      "is_indoor": { "type": ["boolean", "null"] },
+      "is_outdoor": { "type": ["boolean", "null"] },
+      "is_free": { "type": ["boolean", "null"] },
+      "price_note": { "type": ["string", "null"] },
+      "min_age_months": { "type": ["integer", "null"], "minimum": 0 },
+      "max_age_months": { "type": ["integer", "null"], "minimum": 0 },
+      "stroller_friendly": { "type": ["boolean", "null"] },
+      "changing_table": { "type": ["boolean", "null"] },
+      "high_chairs": { "type": ["boolean", "null"] },
+      "toilets": { "type": ["boolean", "null"] },
+      "shade": { "type": ["boolean", "null"] },
+      "water_fountain": { "type": ["boolean", "null"] },
+      "accessible": { "type": ["boolean", "null"] },
+      "website_url": { "type": ["string", "null"], "format": "uri" },
+      "source_name": { "type": ["string", "null"] },
+      "source_url": { "type": ["string", "null"], "format": "uri" },
+      "verification_status": { "enum": ["draft", "verified", "needs_review", "archived"] },
+      "last_verified_at": { "type": ["string", "null"], "format": "date-time" },
+      "external_id": { "type": ["string", "null"] },
+      "provider": { "type": ["string", "null"] },
+      "provider_place_id": { "type": ["string", "null"] },
+      "slug": { "type": ["string", "null"], "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" },
+      "cover_image_url": { "type": ["string", "null"], "format": "uri" },
+      "gallery_image_urls": { "type": ["array", "null"], "items": { "type": "string", "format": "uri" } },
+      "place_origin": { "type": ["string", "null"], "enum": ["curated", "partner", "municipality", null] },
+      "partner_tags": { "type": ["array", "null"], "items": { "type": "string" } }
+    }
+  }
+}

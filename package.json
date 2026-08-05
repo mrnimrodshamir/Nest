@@ -9,7 +9,8 @@
     "android": "expo start --android",
     "typecheck": "tsc --noEmit",
     "lint": "eslint . --ext .ts,.tsx",
-    "test": "node --test --experimental-strip-types --experimental-loader=./scripts/test-ts-resolve-loader.mjs src/**/*.test.ts"
+    "test": "node --test --experimental-strip-types --experimental-loader=./scripts/test-ts-resolve-loader.mjs src/**/*.test.ts",
+    "places:import": "node --experimental-strip-types --experimental-loader=./scripts/test-ts-resolve-loader.mjs scripts/import-places.mjs"
   },
   "dependencies": {
     "@expo-google-fonts/plus-jakarta-sans": "^0.2.3",
