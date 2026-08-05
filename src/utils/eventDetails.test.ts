@@ -42,11 +42,13 @@ test('Event Details accepts an official source URL without a source display name
   assert.equal(buildEventDetailsPresentation(event).sourceLabel, 'Official source');
 });
 
-test('Event Details screen remains standalone and Events are not connected to Discovery', async () => {
+test('Event Details uses the shared root stack and Discovery without a competing Events screen', async () => {
   const screen = await readFile(new URL('../screens/EventDetailsScreen.tsx', import.meta.url), 'utf8');
   const app = await readFile(new URL('../../App.tsx', import.meta.url), 'utf8');
   const discovery = await readFile(new URL('../screens/DiscoverScreen.tsx', import.meta.url), 'utf8');
   assert.doesNotMatch(screen, /ActivityCard|PlaceCard|DiscoverScreen/);
-  assert.doesNotMatch(app, /EventDetailsScreen|EventDetail:/);
-  assert.doesNotMatch(discovery, /EventDetailsScreen|EventCard/);
+  assert.match(app, /EventDetailsScreen/);
+  assert.match(app, /EventDetails: \{ occurrenceId: string \}/);
+  assert.match(discovery, /EventCard/);
+  assert.doesNotMatch(discovery, /EventsDiscoveryScreen|EventsDiscoveryView/);
 });

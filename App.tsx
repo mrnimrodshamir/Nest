@@ -26,6 +26,7 @@ import { DiscoverScreen } from '@/screens/DiscoverScreen';
 import { ActivityDetailScreen } from '@/screens/ActivityDetailScreen';
 import { CreateActivityScreen } from '@/screens/CreateActivityScreen';
 import { PlaceDetailsScreen } from '@/screens/PlaceDetailsScreen';
+import { EventDetailsScreen } from '@/screens/EventDetailsScreen';
 import { ShareActivityScreen } from '@/screens/ShareActivityScreen';
 import { ChatScreen } from '@/screens/ChatScreen';
 import { EditActivityScreen } from '@/screens/EditActivityScreen';
@@ -39,7 +40,7 @@ import { LaunchScreen } from '@/screens/LaunchScreen';
 import { CompleteAppleProfileScreen } from '@/screens/auth/CompleteAppleProfileScreen';
 import { AuthNavigator } from '@/navigation/AuthNavigator';
 import { AppErrorBoundary } from '@/components/AppErrorBoundary';
-import { theme } from '@/theme';
+import { spacing, theme } from '@/theme';
 import { useAuth, AuthProvider } from '@/hooks/useAuth';
 import { computeRouteDecision } from '@/lib/routing';
 import { useActivityDetail } from '@/hooks/useActivityDetail';
@@ -48,12 +49,14 @@ import { useActivityChatId } from '@/hooks/useActivityChatId';
 import { useDirectChatId } from '@/hooks/useDirectChatId';
 import { useHasUnread } from '@/hooks/useHasUnread';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
+import { useEventDetails } from '@/hooks/useEventDetails';
 import { supabase } from '@/lib/supabase';
 import { setActiveChat } from '@/lib/activeChatTracker';
 import { track } from '@/lib/analytics';
 import { FALLBACK_LOCATION } from '@/constants/location';
 import { MOCK_ACTIVITIES, MOCK_ACTIVITIES_EMPTY } from '@/mocks/mockActivities';
 import { MOCK_FAMILY_FRIENDLY_PLACES } from '@/mocks/mockFamilyFriendlyPlaces';
+import { MOCK_EVENTS } from '@/mocks/mockEvents';
 import type { Activity } from '@/types/activity';
 import type { Conversation } from '@/hooks/useConversations';
 import type { CreateActivityInput } from '@/hooks/useCreateActivity';
@@ -61,6 +64,7 @@ import type { ShareableActivity } from '@/utils/buildShareMessage';
 import { buildCreateAgainSeed } from '@/utils/createAgain';
 import type { ActivityFormSeedValues } from '@/components/ActivityForm';
 import type { FamilyFriendlyPlace } from '@/types/familyFriendlyPlace';
+import type { EventDetails } from '@/types/event';
 import { buildActivitySeedFromPlace } from '@/utils/placeActivityPrefill';
 
 // This release is English/LTR only (see theme docs) — but React Native
@@ -106,6 +110,7 @@ export type RootStackParamList = {
   EditActivity: { activityId: string };
   CreateActivity: { mode: 'again' | 'place'; initialValues: ActivityFormSeedValues } | undefined;
   PlaceDetails: { placeId: string };
+  EventDetails: { occurrenceId: string };
   ShareActivity: { activity: ShareableActivity };
   Chat: { kind: 'group' | 'direct'; activityId?: string; otherUserId?: string; title?: string };
   PublicProfile: { userId: string };
@@ -131,6 +136,7 @@ const linking: LinkingOptions<RootStackParamList> = {
       },
       ActivityDetail: 'activity/:activityId',
       PlaceDetails: 'place/:placeId',
+      EventDetails: 'event/:occurrenceId',
       EditActivity: 'activity/:activityId/edit',
       CreateActivity: 'create',
       ShareActivity: 'share',
@@ -292,7 +298,10 @@ function MainNavigator() {
         )}
       </Stack.Screen>
       <Stack.Screen name="PlaceDetails">
-        {({ route, navigation }) => <PlaceDetailsScreen placeId={route.params.placeId} onBack={() => navigation.goBack()} onCreateActivity={(place) => navigation.navigate('CreateActivity', { mode: 'place', initialValues: buildActivitySeedFromPlace(place) })} />}
+        {({ route, navigation }) => <PlaceDetailsScreen placeId={route.params.placeId} onBack={() => navigation.goBack()} onOpenEvent={(event) => navigation.navigate('EventDetails', { occurrenceId: event.occurrence.id })} onCreateActivity={(place) => navigation.navigate('CreateActivity', { mode: 'place', initialValues: buildActivitySeedFromPlace(place) })} />}
+      </Stack.Screen>
+      <Stack.Screen name="EventDetails">
+        {({ route, navigation }) => <EventDetailsContainer occurrenceId={route.params.occurrenceId} onBack={() => navigation.goBack()} />}
       </Stack.Screen>
       <Stack.Screen name="EditActivity">
         {({ route, navigation }) => (
@@ -425,6 +434,9 @@ function DiscoverScreenContainer({ navigation }: { navigation: any }) {
   const handleOpenPlace = useCallback((place: FamilyFriendlyPlace) => {
     navigation.getParent()?.navigate('PlaceDetails', { placeId: place.id });
   }, [navigation]);
+  const handleOpenEvent = useCallback((event: EventDetails) => {
+    navigation.getParent()?.navigate('EventDetails', { occurrenceId: event.occurrence.id });
+  }, [navigation]);
   const [previewShowEmpty, setPreviewShowEmpty] = React.useState(false);
 
   useEffect(() => {
@@ -436,9 +448,11 @@ function DiscoverScreenContainer({ navigation }: { navigation: any }) {
       <DiscoverScreen
         onOpenActivity={handleOpenActivity}
         onOpenPlace={handleOpenPlace}
+        onOpenEvent={handleOpenEvent}
         onHostActivity={() => navigation.getParent()?.navigate('CreateActivity')}
         mockActivities={PREVIEW_MODE ? (previewShowEmpty ? MOCK_ACTIVITIES_EMPTY : MOCK_ACTIVITIES) : undefined}
         mockPlaces={PREVIEW_MODE ? MOCK_FAMILY_FRIENDLY_PLACES : undefined}
+        mockEvents={PREVIEW_MODE ? (previewShowEmpty ? [] : MOCK_EVENTS) : undefined}
       />
       {PREVIEW_MODE && (
         <Pressable
@@ -495,6 +509,15 @@ function ActivityDetailContainer({
   }
 
   return <ActivityDetailWithRsvp detail={detail} onBack={onBack} navigation={navigation} refresh={refresh} />;
+}
+
+function EventDetailsContainer({ occurrenceId, onBack }: { occurrenceId: string; onBack: () => void }) {
+  const { event, isLoading, error, refresh } = useEventDetails(occurrenceId);
+  if (event) return <EventDetailsScreen event={event} onBack={onBack} />;
+  return <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.md, backgroundColor: theme.background.app }}>
+    {isLoading ? <ActivityIndicator color={theme.brand.primary} /> : null}
+    {error ? <><Text style={{ color: theme.text.secondary }}>{error}</Text><Pressable onPress={refresh}><Text style={{ color: theme.brand.primary, fontWeight: '700' }}>Try again</Text></Pressable></> : null}
+  </View>;
 }
 
 function ActivityDetailWithRsvp({
