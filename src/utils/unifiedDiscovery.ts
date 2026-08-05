@@ -1,6 +1,7 @@
 import type { Activity } from '@/types/activity';
 import type { FamilyFriendlyPlace } from '@/types/familyFriendlyPlace';
 import type { PlaceViewport } from '@/types/familyFriendlyPlace';
+import type { EventDetails } from '@/types/event';
 import type {
   DiscoveryContentFilter,
   DiscoveryCoordinate,
@@ -15,6 +16,10 @@ export function activityDiscoveryItem(activity: Activity): Extract<DiscoveryItem
 
 export function placeDiscoveryItem(place: FamilyFriendlyPlace): Extract<DiscoveryItem, { type: 'place' }> {
   return { type: 'place', id: place.id, data: place };
+}
+
+export function eventDiscoveryItem(event: EventDetails): Extract<DiscoveryItem, { type: 'event' }> {
+  return { type: 'event', id: event.occurrence.id, data: event };
 }
 
 export function discoveryItemKey(item: Pick<DiscoveryItem, 'type' | 'id'>): string {
@@ -33,7 +38,7 @@ export function filterDiscoveryItems(
   filter: DiscoveryContentFilter,
 ): DiscoveryItem[] {
   if (filter === 'all') return [...items];
-  const type = filter === 'activities' ? 'activity' : 'place';
+  const type = filter === 'activities' ? 'activity' : filter === 'places' ? 'place' : 'event';
   return items.filter((item) => item.type === type);
 }
 
@@ -46,21 +51,23 @@ export function discoveryCoordinateInViewport(
 }
 
 /**
- * Distance is the only value shared honestly by Activities and Places. Both
+ * Distance is the only value shared honestly by Activities, Places, and Events. All
  * types are therefore ranked from the current map centre. Exact-distance ties
- * retain the natural domain order: Activity start time or Place name, followed
+ * retain the natural domain order: Activity/Event start time or Place name, followed
  * by the typed stable key.
  *
  * When no valid centre exists, each type keeps its natural order (Activities
- * by upcoming start; Places by name) and the two lists are interleaved.
+ * by upcoming start; Places by name) and the three lists are interleaved.
  */
 export function mergeDiscoveryItems(
   activities: readonly Activity[],
   places: readonly FamilyFriendlyPlace[],
+  events: readonly EventDetails[],
   origin?: DiscoveryCoordinate | null,
 ): DiscoveryItem[] {
   const activityItems = activities.map(activityDiscoveryItem);
   const placeItems = places.map(placeDiscoveryItem);
+  const eventItems = events.map(eventDiscoveryItem);
 
   if (!isCoordinate(origin)) {
     const orderedActivities = [...activityItems].sort(
@@ -69,12 +76,15 @@ export function mergeDiscoveryItems(
     const orderedPlaces = [...placeItems].sort(
       (a, b) => a.data.name.localeCompare(b.data.name) || a.id.localeCompare(b.id),
     );
-    return interleave(orderedActivities, orderedPlaces);
+    const orderedEvents = [...eventItems].sort(
+      (a, b) => Date.parse(a.data.occurrence.startsAt) - Date.parse(b.data.occurrence.startsAt) || a.id.localeCompare(b.id),
+    );
+    return interleave([orderedActivities, orderedPlaces, orderedEvents]);
   }
 
-  return [...activityItems, ...placeItems].sort((a, b) => {
-    const distanceA = distanceMeters(origin, a.data);
-    const distanceB = distanceMeters(origin, b.data);
+  return [...activityItems, ...placeItems, ...eventItems].sort((a, b) => {
+    const distanceA = distanceMeters(origin, discoveryItemCoordinate(a));
+    const distanceB = distanceMeters(origin, discoveryItemCoordinate(b));
     const distanceDifference = distanceA - distanceB;
     if (Math.abs(distanceDifference) > 0.01) return distanceDifference;
     if (a.type === 'activity' && b.type === 'activity') {
@@ -85,16 +95,23 @@ export function mergeDiscoveryItems(
       const nameDifference = a.data.name.localeCompare(b.data.name);
       if (nameDifference !== 0) return nameDifference;
     }
+    if (a.type === 'event' && b.type === 'event') {
+      const startDifference = Date.parse(a.data.occurrence.startsAt) - Date.parse(b.data.occurrence.startsAt);
+      if (startDifference !== 0) return startDifference;
+    }
     return discoveryItemKey(a).localeCompare(discoveryItemKey(b));
   });
 }
 
-function interleave(activities: DiscoveryItem[], places: DiscoveryItem[]): DiscoveryItem[] {
+export function discoveryItemCoordinate(item: DiscoveryItem): DiscoveryCoordinate {
+  return item.type === 'event' ? item.data.location : item.data;
+}
+
+function interleave(groups: DiscoveryItem[][]): DiscoveryItem[] {
   const merged: DiscoveryItem[] = [];
-  const length = Math.max(activities.length, places.length);
+  const length = Math.max(0, ...groups.map((group) => group.length));
   for (let index = 0; index < length; index += 1) {
-    if (activities[index]) merged.push(activities[index]);
-    if (places[index]) merged.push(places[index]);
+    for (const group of groups) if (group[index]) merged.push(group[index]);
   }
   return merged;
 }

@@ -18,20 +18,26 @@ export function transitionDiscoveryContentFilter(
 export function discoveryEmptyCopy(filter: DiscoveryContentFilter): string {
   if (filter === 'activities') return 'No activities match these filters.';
   if (filter === 'places') return 'No places match these filters.';
-  return 'No activities or places found in this area.';
+  if (filter === 'events') return 'No events match these filters.';
+  return 'No activities, places, or events found in this area.';
 }
 
-export function contentFilterIncludes(filter: DiscoveryContentFilter, type: 'activity' | 'place'): boolean {
-  return filter === 'all' || (filter === 'activities' ? type === 'activity' : type === 'place');
+export function contentFilterIncludes(filter: DiscoveryContentFilter, type: 'activity' | 'place' | 'event'): boolean {
+  return filter === 'all'
+    || (filter === 'activities' && type === 'activity')
+    || (filter === 'places' && type === 'place')
+    || (filter === 'events' && type === 'event');
 }
 
 export function visibleDiscoveryFailures(
   filter: DiscoveryContentFilter,
   activityError: string | null,
   placeError: string | null,
-): Array<'activity' | 'place'> {
-  const failures: Array<'activity' | 'place'> = [];
+  eventError: string | null = null,
+): Array<'activity' | 'place' | 'event'> {
+  const failures: Array<'activity' | 'place' | 'event'> = [];
   if (activityError && contentFilterIncludes(filter, 'activity')) failures.push('activity');
   if (placeError && contentFilterIncludes(filter, 'place')) failures.push('place');
+  if (eventError && contentFilterIncludes(filter, 'event')) failures.push('event');
   return failures;
 }

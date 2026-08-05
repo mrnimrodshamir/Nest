@@ -1,10 +1,12 @@
 import type { Activity } from '@/types/activity';
 import type { FamilyFriendlyPlace } from '@/types/familyFriendlyPlace';
+import type { EventDetails } from '@/types/event';
 
-export type DiscoveryContentFilter = 'all' | 'activities' | 'places';
+export type DiscoveryContentFilter = 'all' | 'activities' | 'places' | 'events';
 
 export type ActivityDiscoveryResult = Activity;
 export type PlaceDiscoveryResult = FamilyFriendlyPlace;
+export type EventDiscoveryResult = EventDetails;
 
 export type DiscoveryItem =
   | {
@@ -16,6 +18,11 @@ export type DiscoveryItem =
       type: 'place';
       id: string;
       data: PlaceDiscoveryResult;
+    }
+  | {
+      type: 'event';
+      id: string;
+      data: EventDiscoveryResult;
     };
 
 export type DiscoverySelection = Pick<DiscoveryItem, 'type' | 'id'> | null;

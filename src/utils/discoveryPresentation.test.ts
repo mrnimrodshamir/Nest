@@ -16,14 +16,17 @@ test('content filter transition clears selection and preserves the exact map cam
   assert.equal(transition.selectedItem, null);
 });
 
-test('content inclusion and empty copy cover All, Activities, and Places', () => {
+test('content inclusion and empty copy cover All, Activities, Places, and Events', () => {
   assert.equal(contentFilterIncludes('all', 'activity'), true);
   assert.equal(contentFilterIncludes('all', 'place'), true);
+  assert.equal(contentFilterIncludes('all', 'event'), true);
   assert.equal(contentFilterIncludes('activities', 'place'), false);
   assert.equal(contentFilterIncludes('places', 'activity'), false);
-  assert.equal(discoveryEmptyCopy('all'), 'No activities or places found in this area.');
+  assert.equal(contentFilterIncludes('events', 'event'), true);
+  assert.equal(discoveryEmptyCopy('all'), 'No activities, places, or events found in this area.');
   assert.equal(discoveryEmptyCopy('activities'), 'No activities match these filters.');
   assert.equal(discoveryEmptyCopy('places'), 'No places match these filters.');
+  assert.equal(discoveryEmptyCopy('events'), 'No events match these filters.');
 });
 
 test('partial failures remain scoped to visible content and never imply a full-screen failure', () => {
@@ -31,12 +34,13 @@ test('partial failures remain scoped to visible content and never imply a full-s
   assert.deepEqual(visibleDiscoveryFailures('all', null, 'place failed'), ['place']);
   assert.deepEqual(visibleDiscoveryFailures('places', 'activity failed', null), []);
   assert.deepEqual(visibleDiscoveryFailures('activities', null, 'place failed'), []);
+  assert.deepEqual(visibleDiscoveryFailures('events', 'activity failed', 'place failed', 'event failed'), ['event']);
 });
 
 test('Discovery renders one map and one typed feed with both domain cards and markers', () => {
   const source = readFileSync(new URL('../screens/DiscoverScreen.tsx', import.meta.url), 'utf8');
   assert.equal((source.match(/<MapView\s/g) ?? []).length, 1);
-  for (const component of ['ActivityMapPin', 'PlaceMapPin', 'ActivityCard', 'PlaceCard']) assert.match(source, new RegExp(`<${component}\\b`));
+  for (const component of ['ActivityMapPin', 'PlaceMapPin', 'EventMapPin', 'ActivityCard', 'PlaceCard', 'EventCard']) assert.match(source, new RegExp(`<${component}\\b`));
   assert.match(source, /keyExtractor={discoveryItemKey}/);
   assert.match(source, /QueryErrorBanner/);
   assert.equal(existsSync(new URL('../screens/PlacesDiscoveryView.tsx', import.meta.url)), false);

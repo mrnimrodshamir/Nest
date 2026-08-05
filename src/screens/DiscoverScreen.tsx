@@ -14,6 +14,8 @@ import {
 } from 'phosphor-react-native';
 import { ActivityCard } from '@/components/ActivityCard';
 import { ActivityMapPin } from '@/components/ActivityMapPin';
+import { EventCard } from '@/components/EventCard';
+import { EventMapPin } from '@/components/EventMapPin';
 import { CategoryChip } from '@/components/CategoryChip';
 import { PlaceCard } from '@/components/PlaceCard';
 import { PlaceClusterMarker } from '@/components/PlaceClusterMarker';
@@ -22,12 +24,15 @@ import { SkeletonCard } from '@/components/SkeletonCard';
 import { FALLBACK_LOCATION } from '@/constants/location';
 import { useAuth } from '@/hooks/useAuth';
 import { useDiscoveryPosition } from '@/hooks/useDiscoveryPosition';
+import { useDiscoveryEvents } from '@/hooks/useDiscoveryEvents';
 import { useFamilyFriendlyPlaces } from '@/hooks/useFamilyFriendlyPlaces';
 import { useNearbyActivities } from '@/hooks/useNearbyActivities';
 import { radius, spacing, theme, typography, iconDefaults } from '@/theme';
 import type { Activity, ActivityCategory } from '@/types/activity';
 import { CATEGORY_LABELS } from '@/types/activity';
 import type { DiscoveryContentFilter, DiscoveryItem, DiscoverySelection } from '@/types/discovery';
+import type { EventCategory, EventDetails } from '@/types/event';
+import { EVENT_CATEGORY_LABELS } from '@/types/event';
 import type { FamilyFriendlyPlace, PlaceCategory, PlaceFilters } from '@/types/familyFriendlyPlace';
 import { PLACE_CATEGORY_LABELS } from '@/types/familyFriendlyPlace';
 import { clusterPlacesForRegion } from '@/utils/placeClustering';
@@ -36,6 +41,7 @@ import { distanceMeters } from '@/utils/placeViewport';
 import { discoveryEmptyCopy, transitionDiscoveryContentFilter, visibleDiscoveryFailures } from '@/utils/discoveryPresentation';
 import {
   discoveryItemKey,
+  discoveryItemCoordinate,
   discoveryCoordinateInViewport,
   discoverySelectionEquals,
   filterDiscoveryItems,
@@ -67,6 +73,18 @@ const CONTENT_FILTERS: Array<{ key: DiscoveryContentFilter; label: string }> = [
   { key: 'all', label: 'All' },
   { key: 'activities', label: 'Activities' },
   { key: 'places', label: 'Places' },
+  { key: 'events', label: 'Events' },
+];
+
+const EVENT_CATEGORIES: Array<{ key: EventCategory | 'all'; label: string }> = [
+  { key: 'all', label: 'All events' },
+  { key: 'story_time', label: EVENT_CATEGORY_LABELS.story_time },
+  { key: 'workshop', label: EVENT_CATEGORY_LABELS.workshop },
+  { key: 'performance', label: EVENT_CATEGORY_LABELS.performance },
+  { key: 'festival', label: EVENT_CATEGORY_LABELS.festival },
+  { key: 'museum', label: EVENT_CATEGORY_LABELS.museum },
+  { key: 'library', label: EVENT_CATEGORY_LABELS.library },
+  { key: 'park', label: EVENT_CATEGORY_LABELS.park },
 ];
 
 type PlaceQuickFilter =
@@ -91,15 +109,17 @@ const SHEET_FULL_INDEX = 2;
 interface DiscoverScreenProps {
   onOpenActivity: (activity: Activity) => void;
   onOpenPlace: (place: FamilyFriendlyPlace) => void;
+  onOpenEvent: (event: EventDetails) => void;
   onHostActivity: () => void;
   mockActivities?: Activity[];
   mockPlaces?: FamilyFriendlyPlace[];
+  mockEvents?: EventDetails[];
 }
 
-export function DiscoverScreen({ onOpenActivity, onOpenPlace, onHostActivity, mockActivities, mockPlaces }: DiscoverScreenProps) {
+export function DiscoverScreen({ onOpenActivity, onOpenPlace, onOpenEvent, onHostActivity, mockActivities, mockPlaces, mockEvents }: DiscoverScreenProps) {
   const { profile } = useAuth();
-  const previewMode = mockActivities !== undefined || mockPlaces !== undefined;
-  const initialCoordinate = mockActivities?.[0] ?? mockPlaces?.[0] ?? FALLBACK_LOCATION;
+  const previewMode = mockActivities !== undefined || mockPlaces !== undefined || mockEvents !== undefined;
+  const initialCoordinate = mockActivities?.[0] ?? mockPlaces?.[0] ?? mockEvents?.[0]?.location ?? FALLBACK_LOCATION;
   const [region, setRegion] = useState<Region>({
     latitude: initialCoordinate.latitude,
     longitude: initialCoordinate.longitude,
@@ -110,6 +130,7 @@ export function DiscoverScreen({ onOpenActivity, onOpenPlace, onHostActivity, mo
   const [selectedItem, setSelectedItem] = useState<DiscoverySelection>(null);
   const [selectedActivityCategory, setSelectedActivityCategory] = useState<ActivityCategory | 'all'>('all');
   const [selectedPlaceCategory, setSelectedPlaceCategory] = useState<PlaceCategory | 'all'>('all');
+  const [selectedEventCategory, setSelectedEventCategory] = useState<EventCategory | 'all'>('all');
   const [placeQuickFilters, setPlaceQuickFilters] = useState<Set<PlaceQuickFilter>>(() => new Set());
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -149,10 +170,13 @@ export function DiscoverScreen({ onOpenActivity, onOpenPlace, onHostActivity, mo
     userCoordinate: position.userCoordinate,
     mockPlaces,
   });
+  const eventsQuery = useDiscoveryEvents({ viewport, mockEvents });
   const activityRefreshRef = useRef(activitiesQuery.refresh);
   const placeRefreshRef = useRef(placesQuery.refresh);
+  const eventRefreshRef = useRef(eventsQuery.refresh);
   activityRefreshRef.current = activitiesQuery.refresh;
   placeRefreshRef.current = placesQuery.refresh;
+  eventRefreshRef.current = eventsQuery.refresh;
 
   useEffect(() => {
     if (!position.userCoordinate || centeredOnUser.current || userMovedMap.current) return;
@@ -166,6 +190,7 @@ export function DiscoverScreen({ onOpenActivity, onOpenPlace, onHostActivity, mo
     if (hasFocusedOnce.current) {
       activityRefreshRef.current();
       placeRefreshRef.current();
+      eventRefreshRef.current();
     } else {
       hasFocusedOnce.current = true;
     }
@@ -192,21 +217,29 @@ export function DiscoverScreen({ onOpenActivity, onOpenPlace, onHostActivity, mo
       .filter((value): value is string => Boolean(value))
       .some((value) => value.toLocaleLowerCase().includes(query));
   }), [placesQuery.places, query]);
+  const filteredEvents = useMemo(() => eventsQuery.events.filter((event) => {
+    if (!discoveryCoordinateInViewport(event.location, viewport)) return false;
+    if (selectedEventCategory !== 'all' && event.category !== selectedEventCategory) return false;
+    if (!query) return true;
+    return [event.title, event.description, event.location.name, event.location.formattedAddress]
+      .filter((value): value is string => Boolean(value))
+      .some((value) => value.toLocaleLowerCase().includes(query));
+  }), [eventsQuery.events, query, selectedEventCategory, viewport]);
 
-  const mergedItems = useMemo(() => mergeDiscoveryItems(filteredActivities, filteredPlaces, {
+  const mergedItems = useMemo(() => mergeDiscoveryItems(filteredActivities, filteredPlaces, filteredEvents, {
     latitude: region.latitude,
     longitude: region.longitude,
-  }), [filteredActivities, filteredPlaces, region.latitude, region.longitude]);
+  }), [filteredActivities, filteredEvents, filteredPlaces, region.latitude, region.longitude]);
   const visibleItems = useMemo(() => filterDiscoveryItems(mergedItems, contentFilter), [contentFilter, mergedItems]);
   const visibleActivities = useMemo(() => visibleItems.flatMap((item) => item.type === 'activity' ? [item.data] : []), [visibleItems]);
   const visiblePlaces = useMemo(() => visibleItems.flatMap((item) => item.type === 'place' ? [item.data] : []), [visibleItems]);
+  const visibleEvents = useMemo(() => visibleItems.flatMap((item) => item.type === 'event' ? [item.data] : []), [visibleItems]);
   const placeMapItems = useMemo(() => clusterPlacesForRegion(visiblePlaces, region), [region, visiblePlaces]);
 
   const focusItem = useCallback((item: DiscoveryItem) => {
     setSelectedItem({ type: item.type, id: item.id });
     mapRef.current?.animateToRegion({
-      latitude: item.data.latitude,
-      longitude: item.data.longitude,
+      ...discoveryItemCoordinate(item),
       latitudeDelta: 0.018,
       longitudeDelta: 0.018,
     }, 350);
@@ -218,8 +251,9 @@ export function DiscoverScreen({ onOpenActivity, onOpenPlace, onHostActivity, mo
   const openItem = useCallback((item: DiscoveryItem) => {
     focusItem(item);
     if (item.type === 'activity') onOpenActivity(item.data);
-    else onOpenPlace(item.data);
-  }, [focusItem, onOpenActivity, onOpenPlace]);
+    else if (item.type === 'place') onOpenPlace(item.data);
+    else onOpenEvent(item.data);
+  }, [focusItem, onOpenActivity, onOpenEvent, onOpenPlace]);
 
   const changeContentFilter = useCallback((next: DiscoveryContentFilter) => {
     const transition = transitionDiscoveryContentFilter(region, next);
@@ -232,10 +266,11 @@ export function DiscoverScreen({ onOpenActivity, onOpenPlace, onHostActivity, mo
   const firstName = profile?.displayName?.trim().split(' ')[0];
   const greeting = firstName ? `${greetingPrefix}, ${firstName}` : greetingPrefix;
   const hasCachedContent = visibleItems.length > 0;
-  const showSkeleton = !hasCachedContent && (activitiesQuery.isRefreshing || placesQuery.isLoading || position.isResolving);
-  const visibleFailures = visibleDiscoveryFailures(contentFilter, activitiesQuery.error, placesQuery.error);
+  const showSkeleton = !hasCachedContent && (activitiesQuery.isRefreshing || placesQuery.isLoading || eventsQuery.isLoading || position.isResolving);
+  const visibleFailures = visibleDiscoveryFailures(contentFilter, activitiesQuery.error, placesQuery.error, eventsQuery.error);
   const showActivityError = visibleFailures.includes('activity');
   const showPlaceError = visibleFailures.includes('place');
+  const showEventError = visibleFailures.includes('event');
 
   return (
     <View style={styles.container}>
@@ -271,6 +306,10 @@ export function DiscoverScreen({ onOpenActivity, onOpenPlace, onHostActivity, mo
             }, 300)}
           />
         ))}
+        {visibleEvents.map((event) => {
+          const item: DiscoveryItem = { type: 'event', id: event.occurrence.id, data: event };
+          return <EventMapPin key={discoveryItemKey(item)} event={event} selected={discoverySelectionEquals(selectedItem, item)} onPress={() => focusItem(item)} />;
+        })}
       </MapView>
 
       <SafeAreaView edges={['top']} style={styles.headerOverlay} pointerEvents="box-none">
@@ -294,7 +333,7 @@ export function DiscoverScreen({ onOpenActivity, onOpenPlace, onHostActivity, mo
             <MagnifyingGlass size={iconDefaults.size.inline} color={theme.text.muted} weight={iconDefaults.weight} />
             <TextInput
               style={styles.searchInput}
-              placeholder="Search activities and places"
+              placeholder="Search activities, places, and events"
               placeholderTextColor={theme.text.muted}
               value={searchQuery}
               onChangeText={setSearchQuery}
@@ -318,18 +357,19 @@ export function DiscoverScreen({ onOpenActivity, onOpenPlace, onHostActivity, mo
                   <ListBullets size={16} color={viewMode === 'list' ? theme.text.inverse : theme.text.secondary} />
                 </Pressable>
               </View>
-              <Pressable style={styles.iconButton} onPress={() => setSearchOpen(true)} accessibilityLabel="Search activities and places">
+              <Pressable style={styles.iconButton} onPress={() => setSearchOpen(true)} accessibilityLabel="Search activities, places, and events">
                 <MagnifyingGlass size={20} color={theme.text.primary} />
               </Pressable>
             </View>
           </View>
         )}
 
-        {contentFilter !== 'places' ? <FilterRow label={contentFilter === 'all' ? 'Activity filters' : undefined} items={ACTIVITY_CATEGORIES} selected={selectedActivityCategory} onSelect={setSelectedActivityCategory} /> : null}
-        {contentFilter !== 'activities' ? <>
+        {(contentFilter === 'all' || contentFilter === 'activities') ? <FilterRow label={contentFilter === 'all' ? 'Activity filters' : undefined} items={ACTIVITY_CATEGORIES} selected={selectedActivityCategory} onSelect={setSelectedActivityCategory} /> : null}
+        {(contentFilter === 'all' || contentFilter === 'places') ? <>
           <FilterRow label={contentFilter === 'all' ? 'Place filters' : undefined} items={PLACE_CATEGORIES} selected={selectedPlaceCategory} onSelect={setSelectedPlaceCategory} />
           <FlatList horizontal showsHorizontalScrollIndicator={false} data={PLACE_QUICK_FILTERS} keyExtractor={(item) => item.key} contentContainerStyle={styles.chipRowCompact} renderItem={({ item }) => <CategoryChip label={item.label} selected={placeQuickFilters.has(item.key)} onPress={() => setPlaceQuickFilters((current) => togglePlaceQuickFilter(current, item.key))} />} />
         </> : null}
+        {(contentFilter === 'all' || contentFilter === 'events') ? <FilterRow label={contentFilter === 'all' ? 'Event filters' : undefined} items={EVENT_CATEGORIES} selected={selectedEventCategory} onSelect={setSelectedEventCategory} /> : null}
       </SafeAreaView>
 
       <Pressable style={styles.fab} onPress={onHostActivity} accessibilityLabel="Host an activity">
@@ -343,6 +383,7 @@ export function DiscoverScreen({ onOpenActivity, onOpenPlace, onHostActivity, mo
         </BottomSheetView>
         {showActivityError ? <QueryErrorBanner label="Activities couldn't refresh" onRetry={activitiesQuery.refresh} /> : null}
         {showPlaceError ? <QueryErrorBanner label="Places couldn't refresh" onRetry={placesQuery.refresh} /> : null}
+        {showEventError ? <QueryErrorBanner label="Events couldn't refresh" onRetry={eventsQuery.refresh} /> : null}
         {showSkeleton ? (
           <BottomSheetView style={styles.listContent}>{[0, 1, 2].map((index) => <View key={index} style={styles.feedItem}><SkeletonCard /></View>)}</BottomSheetView>
         ) : (
@@ -352,14 +393,16 @@ export function DiscoverScreen({ onOpenActivity, onOpenPlace, onHostActivity, mo
             keyExtractor={discoveryItemKey}
             renderItem={({ item }: { item: DiscoveryItem }) => <View style={styles.feedItem}>{item.type === 'activity'
               ? <ActivityCard activity={item.data} variant="feed" onPress={() => openItem(item)} highlighted={discoverySelectionEquals(selectedItem, item)} />
-              : <PlaceCard place={item.data} onPress={() => openItem(item)} highlighted={discoverySelectionEquals(selectedItem, item)} />}
+              : item.type === 'place'
+                ? <PlaceCard place={item.data} onPress={() => openItem(item)} highlighted={discoverySelectionEquals(selectedItem, item)} />
+                : <EventCard event={item.data} onPress={() => openItem(item)} highlighted={discoverySelectionEquals(selectedItem, item)} />}
             </View>}
             contentContainerStyle={styles.listContent}
             initialNumToRender={6}
             maxToRenderPerBatch={8}
             windowSize={7}
             removeClippedSubviews
-            onEndReached={contentFilter !== 'activities' && placesQuery.hasMore ? placesQuery.loadMore : undefined}
+            onEndReached={(contentFilter === 'all' || contentFilter === 'places') && placesQuery.hasMore ? placesQuery.loadMore : undefined}
             onEndReachedThreshold={0.5}
             ListEmptyComponent={<DiscoveryEmptyState filter={contentFilter} locationDenied={position.locationDenied} onHostActivity={onHostActivity} />}
             onScrollToIndexFailed={({ index }) => setTimeout(() => listRef.current?.scrollToIndex({ index, animated: true }), 100)}
@@ -380,12 +423,13 @@ function QueryErrorBanner({ label, onRetry }: { label: string; onRetry: () => vo
 
 function DiscoveryEmptyState({ filter, locationDenied, onHostActivity }: { filter: DiscoveryContentFilter; locationDenied: boolean; onHostActivity: () => void }) {
   const copy = discoveryEmptyCopy(filter);
-  return <View style={styles.emptyState}><Text style={styles.emptyTitle}>{copy}</Text><Text style={styles.emptyBody}>{locationDenied ? 'Location access is off, so this area may not be near you.' : 'Try moving the map, changing a filter, or searching nearby.'}</Text>{filter !== 'places' ? <Pressable style={styles.emptyAction} onPress={onHostActivity}><Text style={styles.emptyActionText}>Host an activity</Text></Pressable> : null}</View>;
+  return <View style={styles.emptyState}><Text style={styles.emptyTitle}>{copy}</Text><Text style={styles.emptyBody}>{locationDenied ? 'Location access is off, so this area may not be near you.' : 'Try moving the map, changing a filter, or searching nearby.'}</Text>{(filter === 'all' || filter === 'activities') ? <Pressable style={styles.emptyAction} onPress={onHostActivity}><Text style={styles.emptyActionText}>Host an activity</Text></Pressable> : null}</View>;
 }
 
 function discoveryCountLabel(filter: DiscoveryContentFilter, count: number): string {
   if (filter === 'activities') return `${count} ${count === 1 ? 'activity' : 'activities'} nearby`;
   if (filter === 'places') return `${count} ${count === 1 ? 'place' : 'places'} in this area`;
+  if (filter === 'events') return `${count} ${count === 1 ? 'event' : 'events'} in this area`;
   return `${count} nearby`;
 }
 
@@ -401,7 +445,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: theme.background.app },
   headerOverlay: { position: 'absolute', top: 0, left: 0, right: 0 },
   contentFilter: { alignSelf: 'center', flexDirection: 'row', padding: 3, borderRadius: radius.pill, backgroundColor: theme.background.surface, shadowColor: '#000', shadowOpacity: 0.12, shadowRadius: 6, shadowOffset: { width: 0, height: 2 } },
-  contentFilterOption: { minWidth: 84, minHeight: 38, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center' },
+  contentFilterOption: { minWidth: 72, minHeight: 38, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center' },
   contentFilterSelected: { backgroundColor: theme.brand.primary },
   contentFilterText: { ...typography.subhead, color: theme.text.secondary, fontWeight: '600' },
   contentFilterTextSelected: { color: theme.text.inverse },
