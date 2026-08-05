@@ -423,6 +423,7 @@ function DiscoverScreenContainer({ navigation }: { navigation: any }) {
     <View style={{ flex: 1 }}>
       <DiscoverScreen
         onOpenActivity={handleOpenActivity}
+        onOpenPlace={() => undefined}
         onHostActivity={() => navigation.getParent()?.navigate('CreateActivity')}
         mockActivities={PREVIEW_MODE ? (previewShowEmpty ? MOCK_ACTIVITIES_EMPTY : MOCK_ACTIVITIES) : undefined}
       />

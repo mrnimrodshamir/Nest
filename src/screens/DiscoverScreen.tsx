@@ -27,6 +27,8 @@ import type { Activity, ActivityCategory } from '@/types/activity';
 import { CATEGORY_LABELS } from '@/types/activity';
 import { useNearbyActivities } from '@/hooks/useNearbyActivities';
 import { useAuth } from '@/hooks/useAuth';
+import { PlacesDiscoveryView } from '@/screens/PlacesDiscoveryView';
+import type { FamilyFriendlyPlace } from '@/types/familyFriendlyPlace';
 
 const CATEGORIES: Array<{ key: ActivityCategory | 'all'; label: string }> = [
   { key: 'all', label: 'All' },
@@ -49,13 +51,15 @@ const SHEET_FULL_INDEX = 2;
 
 interface DiscoverScreenProps {
   onOpenActivity: (activity: Activity) => void;
+  onOpenPlace: (place: FamilyFriendlyPlace) => void;
   onHostActivity: () => void;
   /** UI-preview escape hatch — when set, the screen never touches location
    *  permissions or Supabase. Never set in production. */
   mockActivities?: Activity[];
+  mockPlaces?: FamilyFriendlyPlace[];
 }
 
-export function DiscoverScreen({ onOpenActivity, onHostActivity, mockActivities }: DiscoverScreenProps) {
+export function DiscoverScreen({ onOpenActivity, onOpenPlace, onHostActivity, mockActivities, mockPlaces }: DiscoverScreenProps) {
   const { profile } = useAuth();
   const [selectedCategory, setSelectedCategory] = useState<ActivityCategory | 'all'>('all');
   const [selectedActivityId, setSelectedActivityId] = useState<string | null>(null);
@@ -69,6 +73,7 @@ export function DiscoverScreen({ onOpenActivity, onHostActivity, mockActivities 
   // Reanimated/native-layout interaction that caused this session's other
   // crashes. A static background swap can't desync from what's on screen.
   const [viewMode, setViewMode] = useState<'map' | 'list'>('map');
+  const [contentMode, setContentMode] = useState<'activities' | 'places'>('activities');
 
   const mapRef = useRef<MapView>(null);
   const sheetRef = useRef<BottomSheet>(null);
@@ -200,6 +205,10 @@ export function DiscoverScreen({ onOpenActivity, onHostActivity, mockActivities 
     [focusMapOn],
   );
 
+  if (contentMode === 'places') {
+    return <PlacesDiscoveryView onShowActivities={() => setContentMode('activities')} onOpenPlace={onOpenPlace} mockPlaces={mockPlaces} />;
+  }
+
   return (
     <View style={styles.container}>
       <MapView
@@ -221,6 +230,10 @@ export function DiscoverScreen({ onOpenActivity, onHostActivity, mockActivities 
       </MapView>
 
       <SafeAreaView edges={['top']} style={styles.headerOverlay} pointerEvents="box-none">
+        {!searchOpen && <View style={styles.contentToggle}>
+          <View style={[styles.contentToggleOption, styles.contentToggleSelected]}><Text style={[styles.contentToggleText, styles.contentToggleTextSelected]}>Activities</Text></View>
+          <Pressable style={styles.contentToggleOption} onPress={() => setContentMode('places')}><Text style={styles.contentToggleText}>Places</Text></Pressable>
+        </View>}
         {searchOpen ? (
           <View style={styles.searchRow}>
             <MagnifyingGlass size={iconDefaults.size.inline} color={theme.text.muted} weight={iconDefaults.weight} />
@@ -464,6 +477,11 @@ const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: theme.background.app },
   headerOverlay: { position: 'absolute', top: 0, left: 0, right: 0 },
+  contentToggle: { alignSelf: 'center', flexDirection: 'row', padding: 3, borderRadius: radius.pill, backgroundColor: theme.background.surface, shadowColor: '#000', shadowOpacity: 0.12, shadowRadius: 6, shadowOffset: { width: 0, height: 2 } },
+  contentToggleOption: { minWidth: 104, minHeight: 38, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center' },
+  contentToggleSelected: { backgroundColor: theme.brand.primary },
+  contentToggleText: { ...typography.subhead, color: theme.text.secondary, fontWeight: '600' },
+  contentToggleTextSelected: { color: theme.text.inverse },
   headerRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
