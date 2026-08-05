@@ -1,0 +1,105 @@
+{
+  "features": [
+    {
+      "attributes": {
+        "OBJECTID": 101,
+        "title": "  שעת   סיפור בגן  ",
+        "startdate": 1785949200000,
+        "location": " גן העיר ",
+        "type": "אירועים בתוקף",
+        "NbrId": 7,
+        "description": "<p>סיפור &amp; יצירה<br>למשפחות</p>",
+        "summary": "סיכום",
+        "image_url": "https://www.tel-aviv.gov.il/images/story.jpg",
+        "icon_url": "https://www.tel-aviv.gov.il/icons/story.png",
+        "sitemapurl": "https://www.tel-aviv.gov.il/events/101",
+        "modified": 1785900000000,
+        "publishdate": 1785800000000,
+        "lat": 32.081,
+        "lon": 34.781
+      },
+      "geometry": { "x": 34.781, "y": 32.081 }
+    },
+    {
+      "attributes": {
+        "OBJECTID": 102,
+        "title": "הודעת עירייה",
+        "startdate": -2209161600000,
+        "location": "תל אביב",
+        "type": "הודעות בתוקף",
+        "NbrId": 2,
+        "description": "",
+        "summary": "הודעה",
+        "image_url": null,
+        "icon_url": null,
+        "sitemapurl": "https://www.tel-aviv.gov.il/notices/102",
+        "modified": 1785900000000,
+        "publishdate": 1785800000000,
+        "lat": 32.08,
+        "lon": 34.78
+      },
+      "geometry": { "x": 34.78, "y": 32.08 }
+    },
+    {
+      "attributes": {
+        "OBJECTID": 103,
+        "title": "מיקום פגום",
+        "startdate": 1785949200000,
+        "location": "לא ידוע",
+        "type": "אירועים בתוקף",
+        "NbrId": 7,
+        "description": null,
+        "summary": null,
+        "image_url": "not-a-url",
+        "icon_url": null,
+        "sitemapurl": null,
+        "modified": 1785900000000,
+        "publishdate": 1785800000000,
+        "lat": 999,
+        "lon": 999
+      },
+      "geometry": { "x": 999, "y": 999 }
+    },
+    {
+      "attributes": {
+        "OBJECTID": 104,
+        "title": "   ",
+        "startdate": 1785949200000,
+        "location": "גן העיר",
+        "type": "אירועים בתוקף",
+        "NbrId": 7,
+        "description": null,
+        "summary": null,
+        "image_url": null,
+        "icon_url": null,
+        "sitemapurl": null,
+        "modified": 1785900000000,
+        "publishdate": 1785800000000,
+        "lat": 32.081,
+        "lon": 34.781
+      },
+      "geometry": { "x": 34.781, "y": 32.081 }
+    },
+    {
+      "attributes": {
+        "OBJECTID": 105,
+        "title": "שעת סיפור בגן",
+        "startdate": 1785949200000,
+        "location": "גן העיר",
+        "type": "אירועים בתוקף",
+        "NbrId": 99,
+        "description": "סיפור ויצירה למשפחות",
+        "summary": null,
+        "image_url": "https://www.tel-aviv.gov.il/images/story.jpg",
+        "icon_url": null,
+        "sitemapurl": "https://www.tel-aviv.gov.il/events/105",
+        "modified": 1785900000000,
+        "publishdate": -2209161600000,
+        "lat": 32.0810004,
+        "lon": 34.7810004
+      },
+      "geometry": { "x": 34.7810004, "y": 32.0810004 }
+    }
+  ],
+  "exceededTransferLimit": false
+}

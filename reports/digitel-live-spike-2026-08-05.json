@@ -1,0 +1,4251 @@
+{
+  "endpoint": "https://gisn.tel-aviv.gov.il/arcgis/rest/services/IView2/MapServer/410/query",
+  "pagesFetched": 4,
+  "pageSize": 500,
+  "historyDays": 30,
+  "queryParameters": {
+    "where": "1=1",
+    "f": "json",
+    "returnGeometry": "true",
+    "outSR": "4326",
+    "outFields": "OBJECTID,title,startdate,location,type,NbrId,description,summary,image_url,icon_url,sitemapurl,modified,publishdate,lat,lon",
+    "resultRecordCount": "500",
+    "resultOffset": "0",
+    "orderByFields": "modified ASC, OBJECTID ASC"
+  },
+  "generatedAt": "2026-08-05T12:16:13.914Z",
+  "totalFetched": 1609,
+  "eventRecords": 1180,
+  "excludedRecords": 429,
+  "excludedRecordDetails": [
+    {
+      "objectId": 4783,
+      "title": "סדנת אימפרוביזציה לגמלאים",
+      "reasons": [
+        "outside_history_window"
+      ]
+    },
+    {
+      "objectId": 4784,
+      "title": "סדנת אמנות עם יוליה איזנשטיין",
+      "reasons": [
+        "outside_history_window"
+      ]
+    },
+    {
+      "objectId": 4818,
+      "title": "ילדותא 2026 – על עלה ועל אלונה",
+      "reasons": [
+        "outside_tel_aviv_bounds"
+      ]
+    },
+    {
+      "objectId": 4843,
+      "title": "שלישי זהב בלובי העירייה",
+      "reasons": [
+        "outside_history_window"
+      ]
+    },
+    {
+      "objectId": 4866,
+      "title": "הרקדה שבועית בחוף גורדון",
+      "reasons": [
+        "outside_history_window"
+      ]
+    },
+    {
+      "objectId": 4867,
+      "title": "ריקודי עם לגיל השלישי עם יענקל'ה זיו",
+      "reasons": [
+        "outside_history_window"
+      ]
+    },
+    {
+      "objectId": 4868,
+      "title": "אורן והגיטרה",
+      "reasons": [
+        "outside_history_window"
+      ]
+    },
+    {
+      "objectId": 4878,
+      "title": "פלדנקרייז בסלון דובנוב",
+      "reasons": [
+        "outside_history_window"
+      ]
+    },
+    {
+      "objectId": 4911,
+      "title": "סופרסטודיו - לילדים וילדות",
+      "reasons": [
+        "outside_history_window"
+      ]
+    },
+    {
+      "objectId": 4912,
+      "title": "סדנת מגדירי צמחים וסיור טבע עירוני",
+      "reasons": [
+        "outside_history_window"
+      ]
+    },
+    {
+      "objectId": 4913,
+      "title": "סטודיו לילדים - לגילי 12-6",
+      "reasons": [
+        "outside_history_window"
+      ]
+    },
+    {
+      "objectId": 4914,
+      "title": "סיור הבית של העיר הלבנה - עברית",
+      "reasons": [
+        "outside_history_window"
+      ]
+    },
+    {
+      "objectId": 4916,
+      "title": "סדנת עיצוב בטקסטיל",
+      "reasons": [
+        "outside_history_window"
+      ]
+    },
+    {
+      "objectId": 4919,
+      "title": "סדנה לאימון המוח ולשיפור הזיכרון",
+      "reasons": [
+        "outside_history_window"
+      ]
+    },
+    {
+      "objectId": 4935,
+      "title": "ג'אז בשקיעה בפארק התחנה",
+      "reasons": [
+        "outside_history_window",
+        "outside_tel_aviv_bounds"
+      ]
+    },
+    {
+      "objectId": 4945,
+      "title": "רביעי יפואי أربعاء يافاوي",
+      "reasons": [
+        "outside_history_window"
+      ]
+    },
+    {
+      "objectId": 4957,
+      "title": "טברנה יפואית על הים - סדרת מופעי תרבות",
+      "reasons": [
+        "outside_history_window"
+      ]
+    },
+    {
+      "objectId": 4960,
+      "title": "יוגה לנשים ותיקות: תנועה, בריאות, הנאה",
+      "reasons": [
+        "outside_history_window"
+      ]
+    },
+    {
+      "objectId": 4965,
+      "title": "סדנת עיצוב תיקים ואקקססוריז בנמל יפו",
+      "reasons": [
+        "outside_history_window"
+      ]
+    },
+    {
+      "objectId": 4969,
+      "title": "יוגה ויניאסה",
+      "reasons": [
+        "outside_history_window"
+      ]
+    },
+    {
+      "objectId": 4981,
+      "title": "רוקדים ונהנים במרכז גונדה",
+      "reasons": [
+        "outside_history_window"
+      ]
+    },
+    {
+      "objectId": 6157,
+      "title": "תוכניות מדיניות לשדרת הקריה",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6045,
+      "title": "תכנית בניין עיר לפיתוח והתחדשות רחוב ארלוזורוב",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6046,
+      "title": "סיכום מפגש תושבים רחוב ארלוזורוב",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6108,
+      "title": "תכנית להתחדשות מבנים במרכז העיר (רובע 4) תל אביב-יפו אושרה היום בוועדה המחוזית",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6041,
+      "title": "עיריית תל אביב-יפו מציגה תכנית חלופית המאפשרת את המשך הפעלת שדה דב",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6215,
+      "title": "מרכז הספורט הימי בדולפינריום יוצא לדרך",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6260,
+      "title": "התחדשות עירונית בשכונת עג'מי ביפו",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6137,
+      "title": "אושרה תכנית משלימה לקווי הרכבת הקלה",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6047,
+      "title": "סיכום מפגש תושבים - תכנית אבן גבירול",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6216,
+      "title": "תוצאות שאלון גן הכובשים",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6048,
+      "title": "אושרה מדיניות כוללת להתחדשות עירונית",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6001,
+      "title": "סיכום סיור בשכונת הדר יוסף",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6224,
+      "title": "החלטת ועדת ערר מחוזית – תא/3388 ב'",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6002,
+      "title": "סיכום מפגש תושבים - התחדשות הדר יוסף",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6003,
+      "title": "סיכום דיון - בינוי ודיור - 19.7",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6004,
+      "title": "סיכום דיון - מוסדות ציבור - 22.7",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6005,
+      "title": "סיכום דיון - שטחים ירוקים - 22.7.20",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6006,
+      "title": "סיכום דיון - בינוי ודיור - 19.7",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6007,
+      "title": "סיכום דיון - תנועה וניידות - 20.7",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6008,
+      "title": "סיכום דיון - בינוי ודיור - 23.7",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6217,
+      "title": "סיכום מפגש תושבים - תכנית מתחם האטד",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6049,
+      "title": "דיון להפקדת תכנית רחוב ארלוזורוב",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6138,
+      "title": "מסמך מדיניות דרך נמיר",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6218,
+      "title": "מצגת לקראת דיון בתכנית \"שכונת מנשיה\"",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6307,
+      "title": "תשקיף לה גוארדיה 54-48 , בית אורן 7-1",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6029,
+      "title": "תשקיף נהריים 5-1/פילדלפיה 9-7/אדירים 5",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6219,
+      "title": "מתחם עירוני חדש נפתח בדולפינריום",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6009,
+      "title": "מדיניות להתחדשות שכונת הדר יוסף",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6308,
+      "title": "מדיניות להתחדשות שכונת נווה שאנן",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6241,
+      "title": "מדיניות תכנון למרחב המשולש",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6030,
+      "title": "שכונת נווה שרת מתחדשת",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6321,
+      "title": "פודקאסט שפירא בשני פרקים בצל המלחמה",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 5981,
+      "title": "תשקיף מרחב תכנון אינשטיין 41א', 55-47",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6277,
+      "title": "שכונת פלורנטין מתחדשת",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6023,
+      "title": "חדשות השכונה - שכונת רמות וגני צהלה",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6028,
+      "title": "חדשות השכונה - שכונת צהלה",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6360,
+      "title": "היתר מכוח תמ\"א 38 ברחוב טור מלכא 4",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6050,
+      "title": "היתר להתחדשות עירונית: יהושע בן נון 32",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 5990,
+      "title": "היתר להתחדשות עירונית - אלתרמן 12-10",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6273,
+      "title": "מצגת עדכון ציבור - בן צבי-תל גיבורים",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 5982,
+      "title": "היתר להתחדשות עירונית: רדינג 33-31",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6383,
+      "title": "היתר להתחדשות: רחוב התנאים 26-20",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6343,
+      "title": "היתר להתחדשות עירונית: נחלת יצחק 25",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6375,
+      "title": "היתר להתחדשות עירונית: דרך הטייסים 92",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6350,
+      "title": "שכונת תל חיים מתחדשת",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6255,
+      "title": "היתר להתחדשות עירונית במתחם הוניגמן",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6333,
+      "title": "שכונת קרית שלום מתחדשת",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6278,
+      "title": "היתר להתחדשות עירונית: קומפרט 3",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6109,
+      "title": "היתר להתחדשות עירונית: ז'בוטינסקי 94",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 5983,
+      "title": "היתר להתחדשות עירונית: הברון הירש 5-1",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6384,
+      "title": "היתר להתחדשות עירונית: ברגסון 16-8",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6079,
+      "title": "חניות נגישות בבנייני מגורים חדשים",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6099,
+      "title": "היתר להתחדשות עירונית: בני משה 6-4",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6100,
+      "title": "היתר להתחדשות עירונית: רב צעיר 12-10",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6042,
+      "title": "פתיחת טיילת הפארק החופי",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6101,
+      "title": "שכונת הצפון החדש - החלק הצפוני מתחדשת",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 5994,
+      "title": "היתר להתחדשות עירונית בקהילת פאדובה",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6265,
+      "title": "שכונות יפו ג' ונוה גולן מתחדשות",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6376,
+      "title": "שכונת אפקה מתחדשת",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6164,
+      "title": "חומרי תכנית - מרחב הדר",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6322,
+      "title": "שכונת שפירא מתחדשת",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6096,
+      "title": "שכונת בבלי מתחדשת",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6226,
+      "title": "שכונת גני שרונה מתחדשת",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6344,
+      "title": "שכונת נחלת יצחק מתחדשת",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6027,
+      "title": "ביטחון בשכונה: צהלה",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6024,
+      "title": "שכונת גני צהלה ורמות צהלה מתחדשת",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6053,
+      "title": "פרק חדש בפודקאסט העירוני - אפרת וכטל",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6054,
+      "title": "קהילות בעלי חיים ומגוון ביולוגי בעיר",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6274,
+      "title": "שכונת נוה עופר מתחדשת",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6345,
+      "title": "עבודות תשתית בגשר השלום",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6031,
+      "title": "המשך קידום תכנון במרחב רמה כורזים",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6165,
+      "title": "שוק ההון ופיננסים",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6166,
+      "title": "עסקים בלי חסמים",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 5991,
+      "title": "עבודות לילה - בני אפרים 240-236",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6279,
+      "title": "התחנה לטיפול זוגי ומשפחתי בדרום העיר",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6081,
+      "title": "הפודקאסט עושים עיר: החלופה לתמ\"א 38",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6168,
+      "title": "איך הבנייה החדשה תשמור על אופי השכונה?",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6208,
+      "title": "מה קורה עם שוק הכרמל?",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6167,
+      "title": "ישן, חדש ומה שבינהם",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6209,
+      "title": "עבודות חפירה ברחוב דניאל 2",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6323,
+      "title": "ברוך בואך לשכונת שפירא המקיימת!",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6361,
+      "title": "התחדשות עירונית ביד אליהו-דעתכם חשובה",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6058,
+      "title": "התכנית האסטרטגית העירונית לגיל הרך",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6367,
+      "title": "פיתוח אישי וייעוץ - ורדיאל 17",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6169,
+      "title": "עבודות איגודן ברחוב הרברט סמואל",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6229,
+      "title": "אני רק שאלה (של ספר מהמדף)",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6139,
+      "title": "נשים עם לב: הלב הקהילתי של הצפון החדש",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6228,
+      "title": "מרכז חדש לנוער נפתח בלב גני שרונה",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6062,
+      "title": "פרק חדש בפודקאסט העירוני - ג'ייסון",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6021,
+      "title": "הקמת תחנת שאיבת ביוב ברחוב שושנה פרסיץ",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6335,
+      "title": "סיירת התיקונים של קריית שלום ושפירא",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6334,
+      "title": "בית הבאר בחורשה: מגדלים קהילה",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6336,
+      "title": "שמעו את השאגה: הלביאות של קריית שלום",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6326,
+      "title": "משנים כיוון ברחוב דה מודינה",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date",
+        "outside_tel_aviv_bounds"
+      ]
+    },
+    {
+      "objectId": 6325,
+      "title": "חודש של הרצאות ומסיבות במרכז היימס",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6324,
+      "title": "מתיחת פנים למתקני הכושר ליד מרכז היימס",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6171,
+      "title": "עבודות שדרת הקריה ברחוב הרכבת",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6328,
+      "title": "סייר קהילתי בשכונת שפירא - כאן בשבילכם",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6339,
+      "title": "סייר קהילתי בקריית שלום - כאן בשבילכם",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6340,
+      "title": "בית ספר מנגן: כשהכיתה הופכת לתזמורת",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6327,
+      "title": "עבודות תשתית בשכונת שפירא",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6230,
+      "title": "לעצור את השרשור",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6337,
+      "title": "מבצע נימר\"ץ בקריית שלום",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6272,
+      "title": "יויו – מחסן ההשאלות הקהילתי",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 5992,
+      "title": "עבודות להריסת מבנה ברחוב למדן 15",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6022,
+      "title": "עבודות תשתית ברחוב שושנה פרסיץ",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6063,
+      "title": "פרק חדש בפודקאסט העירוני - רות אלבז",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6141,
+      "title": "תוספת מסחר ברובע 4-סיכום מפגש תושבים",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6242,
+      "title": "מדריך לבחירה והתקשרות עם עורך דין",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6033,
+      "title": "\"ניסיתי, חוויתי, למדתי ובחרתי\"",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6378,
+      "title": "מלאכים עם בייגלה על הראש",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6380,
+      "title": "שיפור תשתיות בשכונת כוכב הצפון",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6342,
+      "title": "עבודות להקמת גשר עמק ברכה (יצחק נבון)",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6162,
+      "title": "ריקודי שורות - במרכז צוקר",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6172,
+      "title": "פילאטיס בצוקר",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6271,
+      "title": "עבודות לפיתוח צומת לוי אשכול ושדרה 3",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6066,
+      "title": "פרק חדש בפודקאסט ללא הפסקה-אורן ברזילי",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6256,
+      "title": "תכנית להתחדשות מרחב הרצל 160-156",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6159,
+      "title": "לומדים אנגלית בצוקר",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6161,
+      "title": "רוקדים על כיסאות",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6178,
+      "title": "שיחות ייעוץ למסלול היזמות של אפ 60+",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6179,
+      "title": "חזרה לשוק העבודה - אפ 60+",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6175,
+      "title": "סדנת הבית של אפ 60+",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6276,
+      "title": "משחקיית הגיל הרך בפלורנטין",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6032,
+      "title": "נווה שרת - שכונה מקיימת",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6363,
+      "title": "שבת בבוקר יום יפה",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6182,
+      "title": "פרישה מהעבודה זו לא עצירה - זו הזדמנות",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6364,
+      "title": "הכירו את קבוצת הווטסאפ ודיגיתל 60+",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6362,
+      "title": "זה הזמן להתחיל להתנדב",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6057,
+      "title": "פרק חדש בפודקאסט העירוני - סימה נון",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6227,
+      "title": "פרק חדש בפודקאסט העירוני",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6280,
+      "title": "פרק חדש בפודקאסט העירוני - שירזי",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6056,
+      "title": "פרק חדש בפודקאסט העירוני - חמי רודנר",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6059,
+      "title": "פרק חדש בפודקאסט העירוני - עסקים בכיכר",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6061,
+      "title": "פרק חדש בפודקאסט העירוני - רועי עידן",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6080,
+      "title": "הפודקאסט עושים עיר: מבנים מסוכנים",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6379,
+      "title": "הגינה הקהילתית של כוכב הצפון",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6250,
+      "title": "\"משווה ומעלה\" - סיורים בתערוכה",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6338,
+      "title": "עבודות תשתית - קריית שלום",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6064,
+      "title": "פרק חדש בפודקאסט העירוני - רעות ושיר",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6270,
+      "title": "מתחילים מבראש\"ית: חיזוק קהילת יפו ד'",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6060,
+      "title": "פרק חדש בפודקאסט העירוני - אפרת אנזל",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6177,
+      "title": "מעגלי חברותא לפורשים ולפורשות",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6067,
+      "title": "פרק חדש בפודקאסט ללא הפסקה: שני ואורי",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6051,
+      "title": "צאו לסיור בין פסלי העיר עם המפה החדשה",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6357,
+      "title": "שכונת רמת הטייסים מתחדשת",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6282,
+      "title": "שעת פתיחה - סיפורים מהשכונה דרך עסקיים",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6181,
+      "title": "אינטלקט קפה - סלון ספרותי בעסקים",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6281,
+      "title": "עבודות תשתית ברחוב העליה",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6365,
+      "title": "שכונת יד אליהו מתחדשת",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6283,
+      "title": "תיאטרון פלורנטין",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6306,
+      "title": "הקירות המצוירים של נווה שאנן",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6285,
+      "title": "קורס תפירה למתחילים",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6286,
+      "title": "טורניר שש־בש לחובבים בפלורנטין",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6287,
+      "title": "טורניר שחמט בפלורנטין",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6284,
+      "title": "קורס ערבית מדוברת למתחילים",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6289,
+      "title": "סטודיו פלורנטין",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 5980,
+      "title": "גינת כלבים חדשה - מגדלי נאמן והסביבה",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6251,
+      "title": "מרחב תפירה מנדל",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6263,
+      "title": "סלון דג׳אני - יד2 ביפו",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6288,
+      "title": "המשחקייה של פלורנטין",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6069,
+      "title": "קול קורא: זרקור ליצירה צעירה 2026/7",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6329,
+      "title": "עבודות לילה בדרך קיבוץ גלויות",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6068,
+      "title": "בית הספר לקיימות - הרצאות מוקלטות",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 5979,
+      "title": "סלילת שביל אופניים בדרך נמיר",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6232,
+      "title": "עקרונות והנחיות לתכנון המרחב הציבורי",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6372,
+      "title": "עבדות מי אביבים - רחוב תקוע",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6183,
+      "title": "חוג שחמט",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6163,
+      "title": "פרשת השבוע - במרכז צוקר",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6160,
+      "title": "פילאטיס בצוקר",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6176,
+      "title": "נעים להכיר - הפעילויות במרכז אפ 60+",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6231,
+      "title": "עבודות תשתית ברחוב קרליבך",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6158,
+      "title": "אימון בשיטת ניה - במרכז צוקר",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 5995,
+      "title": "הסיפורייה",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6111,
+      "title": "פיתוח המרחב הציבורי - כיכר המדינה",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6266,
+      "title": "עבודות תשתית - רחוב בעש\"ט",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6245,
+      "title": "הנגשת המרחב הציבורי - בית שמאי 9",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6309,
+      "title": "עדכוני תשתיות: נווה שאנן",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6257,
+      "title": "עדכוני תשתיות: גבעת הרצל וקרית המלאכה",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6173,
+      "title": "עבודות שדרת הקריה - רחוב הרכבת",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6244,
+      "title": "לא חותמים לפני שמתייעצים",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6293,
+      "title": "תרבות מקומית שעולה קומה",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6332,
+      "title": "טבע עירוני - 5 דקות באופניים",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6258,
+      "title": "חינוך בת\"א תרבות קריית המלאכה",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6295,
+      "title": "מי פה גר?",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6311,
+      "title": "מי פה גר?",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6374,
+      "title": "חידוש קווי מים וביוב ברחוב פיינשטיין",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6313,
+      "title": "מהרציף של פעם לרעיונות של המחר",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6296,
+      "title": "בין הגרפיטי והרעש של פלורנטין - לצלצול",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6314,
+      "title": "מחברת את הקהילה לעירייה",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6011,
+      "title": "לצאת מהקווים",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 5998,
+      "title": "שיעורים בקהילתיות",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6316,
+      "title": "לא כל כך יפה. ובדיוק בגלל זה",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date",
+        "outside_tel_aviv_bounds"
+      ]
+    },
+    {
+      "objectId": 6000,
+      "title": "השאלת ערכה רב פעמית מהודרת לאירועים",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6292,
+      "title": "שש בש או שחמט?",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6312,
+      "title": "הבמ״ה כולה שלה",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6291,
+      "title": "עדכוני תשתיות: פלורנטין",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6275,
+      "title": "הקמת שביל - תל גיבורים-חיל השריון",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6294,
+      "title": "תפריט פלורנטין",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 5996,
+      "title": "קהילה, בקצרה",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6261,
+      "title": "עבודות תשתית - רחוב האתרוג והסביבה",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6290,
+      "title": "קפוארה למבוגרים בפלורנטין",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6188,
+      "title": "פינוי פסולת חריגה - אלנבי 21-7",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6065,
+      "title": "עבודות תשתית ברחוב דיזנגוף",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6187,
+      "title": "הודעה מרחב שיקום יהודה הלוי 121",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6189,
+      "title": "תיאטרון ועוד",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6246,
+      "title": "סל הלוואות כפול לשיפוץ חזיתות הבניין",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6385,
+      "title": "פינוי פסולת חריגה בשכונות עבר הירקון",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 5999,
+      "title": "מתקראפטלים: המקום שבו מותר להתלכלך",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6010,
+      "title": "הנחת תשתית ביוב - רחוב בכור שטרית",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6368,
+      "title": "הטמנת רשת החשמל - רחוב יאיר",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6373,
+      "title": "עבודות יציקה - רחוב אחימאיר 9-5",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6210,
+      "title": "פינוי פסולת חריגה - לב העיר",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6252,
+      "title": "הריסת מבנה - שדרות ירושלים 207-203",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6170,
+      "title": "תתחדשו! ציורי קיר על פירי בזק",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 5997,
+      "title": "הקאנטרי שהפך ללב של נאות אפקה",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6297,
+      "title": "​מזמינים אתכם לזוז",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6315,
+      "title": "שלוש שפות, כלבה אחת ומורדי מנוה שאנן",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6353,
+      "title": "עבודות של מי אביבים - רחוב רייפמן",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6070,
+      "title": "פסטיבל ילדותא 2026",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6233,
+      "title": "קורס קיץ בתיאטרון בביכורי העתים",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6234,
+      "title": "קורס קיץ רבתחומי לאמנויות ביכורי העתים",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6113,
+      "title": "עבודות לחידוש רחוב סמילנסקי",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6043,
+      "title": "שדרוג טיילת חוף תל ברוך",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6192,
+      "title": "קלישייפ - סטודיו לאימונים",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6036,
+      "title": "עבודות של מי אביבים ברחוב עולי הגרדום",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6013,
+      "title": "מהבמה החדשה ועד טקסי הסיום",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 5984,
+      "title": "חידוש קווי מים וביוב - מרדכי עמנואל",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6191,
+      "title": "הגלריה של דרהי",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6055,
+      "title": "מותק, הילדים גדלו! פרידה מחיתולים",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6012,
+      "title": "דברים טובים צומחים בהדר יוסף",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 5986,
+      "title": "מגן ירק למטבע מקומי",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6014,
+      "title": "52 שנה עם מפתח לכל מנעול",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6015,
+      "title": "שעתיים לעצמי",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6341,
+      "title": "ליווי ויעוץ תעסוקתי לתושבי דרום העיר",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 5987,
+      "title": "כתובת אמיתית לענייני ביטחון בשכונה",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6114,
+      "title": "בין ביטחון לקהילה",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6194,
+      "title": "קשר ישיר עם התושבים ובעלי העסקים",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6016,
+      "title": "הפינה של אורי: הגבעה ליד דוד ילין",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6017,
+      "title": "שיחה של בוקר עם שירי",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 5988,
+      "title": "אין ילדים - יש אנשים",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6018,
+      "title": "\"חינוך מתחיל במפגש אנושי\"",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date",
+        "outside_tel_aviv_bounds"
+      ]
+    },
+    {
+      "objectId": 6235,
+      "title": "המשך עבודות שדרת הקריה בדרך נמיר",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6369,
+      "title": "הטמנת רשת חשמל ברחובות חפר, הודיה וזרח",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6358,
+      "title": "עבודות לחידוש המדרכה ברחוב אשרמן יוסף",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6144,
+      "title": "סדנה לאימון המוח ושיפור הזיכרון",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 5989,
+      "title": "מעוז אביב, שכונה או קיבוץ?",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6347,
+      "title": "גרציאני חוזר, בגרסת עגלת קפה",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6247,
+      "title": "מלון בוטיק חדש בדרך למונטיפיורי",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6117,
+      "title": "​לא רק ועד הורים: האנשים שבונים קהילה",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6118,
+      "title": "סטארטאפ חינוכי: מנהלת בית הספר הצומח",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6299,
+      "title": "עבודות תשתית - הרבי מבכרך וקומפורט",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6298,
+      "title": "עבודות תשתית ברחוב מזרחי",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6236,
+      "title": "להעז לשאול - ראיון עם מנהלת בי\"ס גבעון",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6116,
+      "title": "הרבה יותר מבריכה: קאנטרי ארלוזורוב",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6248,
+      "title": "​להרגיש בבית באמצע העיר - מרכז מונטי",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6377,
+      "title": "עבודות תשתית ברחוב זליג",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6019,
+      "title": "איך נראית שכונה שטוב לגדול בה?",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date",
+        "outside_tel_aviv_bounds"
+      ]
+    },
+    {
+      "objectId": 6115,
+      "title": "שיטוט ירוק בשכונה",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6381,
+      "title": "מיחזור אריזות בשקיות כתומות - עדכון",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6195,
+      "title": "הכירו את ארון הנתינה בקרית ספר",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6097,
+      "title": "שדרוג מתקני המשחק בגינת ירושלמי",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6211,
+      "title": "עבודות לחידוש שוק הכרמל",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6119,
+      "title": "ה-כיכר של המדינה",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6249,
+      "title": "עבודות תשתית ברחוב ישראל ב\"ק",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6152,
+      "title": "עבודות להרחבה ולחשמול - מסוף סבידור",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6253,
+      "title": "עבודות תשתית ברחוב אליזבת ברגנר",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6193,
+      "title": "יולי-אוגוסט בכיכר ביאליק",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6083,
+      "title": "עדכוני תשתיות: הצפון הישן-החלק הדרומי",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6145,
+      "title": "עדכוני תשתיות: הצפון החדש-החלק הדרומי",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6197,
+      "title": "עדכוני תשתיות: לב תל אביב",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6196,
+      "title": "הכרזת מרחב שיקום יהודה הלוי 121",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6084,
+      "title": "המשחקיות באגף מרכז",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6259,
+      "title": "עבודות מי אביבים - נמל יפו 58",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6085,
+      "title": "המפגש עם השכונה",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6254,
+      "title": "עבודות תשתית - קיבוץ גלויות",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6052,
+      "title": "ברית עיר-עסקים לסביבה, אקלים וקיימות",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6198,
+      "title": "הכירו את יניב קסלר ושחף פרבר",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6120,
+      "title": "הסדרי חניה חדשים ברחוב חדרה",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6351,
+      "title": "קורסים וסדנאות קיץ - בית השידור הראשון",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6146,
+      "title": "הדפסת תלת מימד אישית - שירות חדש!",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6102,
+      "title": "עבודות תשתית ברחוב ברנדיס",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6238,
+      "title": "המשך עבודות ברחוב לאונרדו דה וינצ'י",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6147,
+      "title": "הכירו את שלום חייט",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6110,
+      "title": "עבודות תשתית בצומת ויצמן-פנקס",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6301,
+      "title": "עבודות מים, ביוב וניקוז ברחוב מזרחי",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6121,
+      "title": "עבודות שיקום המדרכה והכביש - דוד ילין",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6300,
+      "title": "עבודות תשתית - צומת אילת-אליפלט",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6200,
+      "title": "רחוב חדש - סיפור של פעם",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6026,
+      "title": "עבודות מי אביבים ברחוב פומרוק",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6237,
+      "title": "מסיבת ריקודים לפעוטות ולהורים",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6264,
+      "title": "בריכת נווה גולן - ​שעות פתיחה ומחירון",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6071,
+      "title": "פרק חדש פודקאסט ללא הפסקה-יובל פלוטקין",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6123,
+      "title": "עבודות תשתית ברחוב שרת משה 33",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6149,
+      "title": "עבודות להריסה מבנה - בצלאל 4",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6184,
+      "title": "עבודות לחידוש התשתיות ברחוב אחד העם",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 5993,
+      "title": "הנחת קו מים ראשי ברחוב בני אפרים",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6025,
+      "title": "שביל אופניים חדש ברחוב משה סנה",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6020,
+      "title": "חידוש רחוב קהילת אודסה",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6090,
+      "title": "בי\"ס להתנדבות: בגבריאלי מחנכים לקהילה",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6091,
+      "title": "המנהלת שמביאה צליל חדש לבית הספר",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6201,
+      "title": "סיבוב ירוק בין השכונות",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6087,
+      "title": "ההורים עולים למגרש",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6199,
+      "title": "כשהבית הופך לבמה",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6037,
+      "title": "עבודות להקמת תאורה ברחוב הגולן",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6082,
+      "title": "חידוש התאורה ברחוב דיזנגוף",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6034,
+      "title": "עבודות להקמת תאורה ברחוב אבן ספיר",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6044,
+      "title": "פרויקט שדה דב - פיתוח רחוב 2040",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6124,
+      "title": "עבודות תשתית ברחוב רמז דוד 25",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6150,
+      "title": "עבודות מנוף ברחוב בצלאל 31-29",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6239,
+      "title": "עבודות תשתית ברחוב קרליבך 41",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6143,
+      "title": "חוג ציור",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6074,
+      "title": "הריסת מבנה ברחוב וורמיזה 5",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6125,
+      "title": "המשך עבודות מי אביבים ברחוב ליסין",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6089,
+      "title": "בואו נדבר על אהבה",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6088,
+      "title": "הכירו את גל פלדמן ליבני",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6202,
+      "title": "תצוגת אופי",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6352,
+      "title": "עבודות תשתית - דרך הטייסים 12-1",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6370,
+      "title": "עבודות תשתית ברחוב נתן",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6222,
+      "title": "חידוש טיילת צ'רלס קלור",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6382,
+      "title": "הקמת גשר לוי אשכול",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6148,
+      "title": "הסלון העירוני בבית אריאלה נפתח מחדש",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6126,
+      "title": "עבודות מנוף ברחוב מטמון כהן 9",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6186,
+      "title": "חידוש ושדרוג רחוב המלך ג'ורג'",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6203,
+      "title": "מוזיאון בית ראובן מצטרף לעירייה",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6268,
+      "title": "עבודות להרכבת מנוף ברחוב נס לגויים 14",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6128,
+      "title": "פועל בשביל השכונה: מרכז ספורט \"חדש\"",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6155,
+      "title": "כשמסדרון בית הספר הופך לגשר בין דורות",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6153,
+      "title": "האיש שמחבר בין תריסר המגדלים",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6127,
+      "title": "דרך חדשה ללמוד בעיר",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6154,
+      "title": "קהילה שצומחת מהאדמה",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6075,
+      "title": "עבודות להרכבת מנוף ברחוב אמסטרדם 7",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6076,
+      "title": "עבודות תשתית ברחוב ארבע ארצות",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6151,
+      "title": "הגינה בסוטין: גינה שמצמיחה קהילה",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6302,
+      "title": "עבודות תשתית ברחוב המשביר 24-16",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 5985,
+      "title": "עבודות תשתית ברחוב דוד שמעוני",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6190,
+      "title": "עבודות של מי אביבים בסמטת בית השואבה",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6156,
+      "title": "שישה אנשים, קהילה אחת",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6330,
+      "title": "הודעה על ביצוע תסקיר חברתי",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date",
+        "outside_tel_aviv_bounds"
+      ]
+    },
+    {
+      "objectId": 6262,
+      "title": "עבודות תשתית ברחוב אמונים",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6303,
+      "title": "הודעה על ביצוע תסקיר חברתי",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date",
+        "outside_tel_aviv_bounds"
+      ]
+    },
+    {
+      "objectId": 6204,
+      "title": "הריסת מבנה ברחוב בצלאל יפה 4",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6371,
+      "title": "מכללת אפקה - אקדמיה בדרום מזרח העיר",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6220,
+      "title": "עבודות מי אביבים ברחוב השנית",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6077,
+      "title": "עבודות לפירוק מנוף ברחוב בן יהודה",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6317,
+      "title": "שיקום המדרכות והכביש ברחוב ארלינגר",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6092,
+      "title": "הסלון שמזמין רעיון",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6318,
+      "title": "הגר\"א פינת ראש פינה - עבודת לילה",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6269,
+      "title": "עבודות מנוף - רחוב עזה 61",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6130,
+      "title": "עבודות לשיקום הכביש ברחוב רמז דוד 18",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6174,
+      "title": "המשך עבודות ברחוב המלך ג'ורג'-דיזנגוף",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6212,
+      "title": "עבודות יציקה - רחוב הירקון 28",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date",
+        "outside_tel_aviv_bounds"
+      ]
+    },
+    {
+      "objectId": 6131,
+      "title": "עבודות חשמל ברחוב דוד ילין 14",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6132,
+      "title": "עבודות לשיקום הכביש ברחוב ליפסקי",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6142,
+      "title": "חדר כושר ששווה להכיר",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6078,
+      "title": "עבודות להרכבת מנוף ברחוב ויתקין 12",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6223,
+      "title": "עבודות הנפה ברחוב יהודה הלוי 24",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6225,
+      "title": "עבודות תאורה ברחוב דה סוזה מנדס",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6386,
+      "title": "עבודות מי אביבים בשכונת נווה אביבים",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6035,
+      "title": "עבודות תאורה ברחוב אבן ספיר",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6039,
+      "title": "עבודות תאורה ברחוב הגולן",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6093,
+      "title": "עבודות תאורה ברחוב דיזנגוף",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6267,
+      "title": "עבודות להצבת תאורה - ברוך קרוא",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6355,
+      "title": "עבודות להריסת מבנה - עמישב 11 וגונן 8",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6331,
+      "title": "עבודות תשתית ברחוב ישראל מסלנט",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6103,
+      "title": "עבודות לחיבור מים - שלומציון המלכה 42",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6185,
+      "title": "חידוש תשתיות ברחוב קלישר",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6072,
+      "title": "עבודות מי אביבים ברחוב הר נבו",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6086,
+      "title": "עבודות מי אביבים ברחוב דיזנגוף 192",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6319,
+      "title": "קמפוס בת שבע בנווה שאנן",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6243,
+      "title": "המשך עבודות לשדרוג גשר השלום",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6073,
+      "title": "*בוטל*עבודות מנוף ברחוב ז'בוטינסקי 107",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6205,
+      "title": "עבודות מי אביבים ברחוב אידלסון 7",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6356,
+      "title": "עבודות לחידוש המדרכה - פוזננסקי שמואל",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6305,
+      "title": "עבודות לחידוש ולשדרוג רחוב אליפלט",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6348,
+      "title": "עבודות לתיקון מדרכות - דרך השלום",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6354,
+      "title": "חידוש הכביש והמדרכות - ברנפלד שמעון",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6094,
+      "title": "עבודות תשתית ברחוב חיסין 9-5",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6122,
+      "title": "המשך עבודות תשתית בכיכר המדינה",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6133,
+      "title": "עבודות להרכבת מנוף ברחוב משה שרת 46",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6310,
+      "title": "עבודות של חברת החשמל - רחוב ראש פינה",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6206,
+      "title": "עבודות מים, ביוב וניקוז נחלת בנימין",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6240,
+      "title": "עבודות שדרת הקריה ברחוב קרליבך",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6359,
+      "title": "עבודות של חברת החשמל - הטייסים 12-10",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6104,
+      "title": "המשך עבודות תשתית ברחוב מרשל לואי 43",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6134,
+      "title": "המשך עבודות תשתית ברחוב פנקס 24",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6112,
+      "title": "המשך עבודות תשתית בכיכר המדינה",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6140,
+      "title": "הקמת שביל אופניים ברחוב ויצמן",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6098,
+      "title": "עבודות להריסת מבנה ברחוב הזוהר 29",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6106,
+      "title": "עבודות להריסת מבנה - קוסובסקי 38-36",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6105,
+      "title": "המשך עבודות תשתית ברחוב אנטיגונוס 5",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6135,
+      "title": "עבודות לשיקום המדרכה - משה שרת 9-3",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6207,
+      "title": "חיבור מים לבניין - ביאליק 11",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6320,
+      "title": "הצבת מנוף - הגר\"א 34-ראש פינה 29",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date",
+        "outside_tel_aviv_bounds"
+      ]
+    },
+    {
+      "objectId": 6180,
+      "title": "פגישת ייעוץ והכוונה לאחר פרישה-אפ 60+",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6346,
+      "title": "ותיקים על הבר",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6221,
+      "title": "חוזרות לעבודה - סדנאות להורים בחל\"ד",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6107,
+      "title": "המשך עבודות תשתית ברחוב שלומציון המלכה",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6366,
+      "title": "מכללות תעסוקתיות",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6304,
+      "title": "עבודות לסלילת הכביש ברחוב העלייה",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6129,
+      "title": "עבודות תשתית ברחוב ליסין 15",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6136,
+      "title": "המשך עבודות תשתית ברחוב מוסנזון",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6213,
+      "title": "עבודות יציקה ברחוב הירקון 277",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6038,
+      "title": "החלפת מתקני משחק בגן דוד מרכוס",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6214,
+      "title": "עבודות של חברת החשמל - כרם התימנים",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6349,
+      "title": "פתיחת שנת הפעילות תשפ\"ז - יוסי בנאי",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6095,
+      "title": "שנה חדשה, הבטחה חדשה",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    },
+    {
+      "objectId": 6040,
+      "title": "עבודות תחזוקה - גשר בן אליעזר",
+      "reasons": [
+        "notice",
+        "invalid_or_implausible_start_date"
+      ]
+    }
+  ],
+  "exclusionsByReason": {
+    "invalid_or_implausible_start_date": 408,
+    "notice": 408,
+    "outside_history_window": 20,
+    "outside_tel_aviv_bounds": 10
+  },
+  "noticeRecordsExcluded": 408,
+  "invalidDateRecords": 408,
+  "missingTitleRecords": 0,
+  "validCoordinateRecords": 1609,
+  "uniqueObjectIds": 1609,
+  "uniqueNbrIds": 67,
+  "fingerprintDuplicateGroups": 10,
+  "fingerprintDuplicateRecords": 20,
+  "futureEventCount": 1132,
+  "eventsByType": {
+    "אירועי קויינג בתוקף": 987,
+    "אירועים בתוקף": 193
+  },
+  "eventsByMonth": {
+    "2026-07": 19,
+    "2026-08": 893,
+    "2026-09": 143,
+    "2026-10": 70,
+    "2026-11": 30,
+    "2026-12": 22,
+    "2027-01": 1,
+    "2027-02": 1,
+    "2027-08": 1
+  },
+  "sourceMissingFields": {
+    "OBJECTID": 0,
+    "title": 0,
+    "startdate": 0,
+    "location": 0,
+    "type": 0,
+    "NbrId": 0,
+    "description": 1609,
+    "summary": 0,
+    "image_url": 24,
+    "icon_url": 0,
+    "sitemapurl": 19,
+    "modified": 0,
+    "publishdate": 0,
+    "coordinates": 0
+  },
+  "normalizedCompleteness": {
+    "title": {
+      "present": 1180,
+      "missing": 0
+    },
+    "description": {
+      "present": 1180,
+      "missing": 0
+    },
+    "sourceUrl": {
+      "present": 1180,
+      "missing": 0
+    },
+    "startTime": {
+      "present": 1180,
+      "missing": 0
+    },
+    "endTime": {
+      "present": 0,
+      "missing": 1180
+    },
+    "locationName": {
+      "present": 1180,
+      "missing": 0
+    },
+    "imageUrl": {
+      "present": 1180,
+      "missing": 0
+    },
+    "ageMinMonths": {
+      "present": 0,
+      "missing": 1180
+    },
+    "ageMaxMonths": {
+      "present": 0,
+      "missing": 1180
+    },
+    "category": {
+      "present": 0,
+      "missing": 1180
+    },
+    "price": {
+      "present": 0,
+      "missing": 1180
+    },
+    "registrationRequired": {
+      "present": 0,
+      "missing": 1180
+    },
+    "registrationUrl": {
+      "present": 0,
+      "missing": 1180
+    },
+    "sourcePublishedAt": {
+      "present": 0,
+      "missing": 1180
+    },
+    "sourceUpdatedAt": {
+      "present": 0,
+      "missing": 1180
+    }
+  },
+  "images": {
+    "imageUrlPresent": 1585,
+    "validHttps": 1585,
+    "invalidOrNonHttps": 0,
+    "duplicateUrlGroups": 124,
+    "duplicateUrlRecords": 526,
+    "domains": {
+      "www.tel-aviv.gov.il": 1585
+    },
+    "sourcePagePresent": 1590,
+    "sourcePageValidHttps": 1590,
+    "documentedReuseTerms": false,
+    "reachability": "not-fetched"
+  },
+  "duplicateGroups": [
+    {
+      "fingerprint": "digitel-v1-288790887d80983d",
+      "objectIds": [
+        "5408",
+        "5409"
+      ],
+      "titles": [
+        "''הסיפור שלי'' קורס כתיבה אוטוביוגרפית",
+        "''הסיפור שלי''-קורס כתיבה אוטוביוגרפית"
+      ]
+    },
+    {
+      "fingerprint": "digitel-v1-26ee9ee94fce6961",
+      "objectIds": [
+        "5411",
+        "5412"
+      ],
+      "titles": [
+        "''הסיפור שלי'' קורס כתיבה אוטוביוגרפית",
+        "''הסיפור שלי''-קורס כתיבה אוטוביוגרפית"
+      ]
+    },
+    {
+      "fingerprint": "digitel-v1-7fcd327a00a7f04c",
+      "objectIds": [
+        "5417",
+        "5418"
+      ],
+      "titles": [
+        "''הסיפור שלי'' קורס כתיבה אוטוביוגרפית",
+        "''הסיפור שלי''-קורס כתיבה אוטוביוגרפית"
+      ]
+    },
+    {
+      "fingerprint": "digitel-v1-169f43f3743579c6",
+      "objectIds": [
+        "5522",
+        "5523"
+      ],
+      "titles": [
+        "מקום לשבט"
+      ]
+    },
+    {
+      "fingerprint": "digitel-v1-653a9933aea42ef6",
+      "objectIds": [
+        "5528",
+        "5529"
+      ],
+      "titles": [
+        "מקום לשבט"
+      ]
+    },
+    {
+      "fingerprint": "digitel-v1-9e3a40139e38bb4e",
+      "objectIds": [
+        "5534",
+        "5535"
+      ],
+      "titles": [
+        "מקום לשבט"
+      ]
+    },
+    {
+      "fingerprint": "digitel-v1-e42878c3424c79d6",
+      "objectIds": [
+        "5542",
+        "5543"
+      ],
+      "titles": [
+        "מקום לשבט"
+      ]
+    },
+    {
+      "fingerprint": "digitel-v1-12ae7d1eca0ee8b9",
+      "objectIds": [
+        "5550",
+        "5551"
+      ],
+      "titles": [
+        "מקום לשבט"
+      ]
+    },
+    {
+      "fingerprint": "digitel-v1-9e423f46e72a3e10",
+      "objectIds": [
+        "5558",
+        "5559"
+      ],
+      "titles": [
+        "מקום לשבט"
+      ]
+    },
+    {
+      "fingerprint": "digitel-v1-61bbde96e37efbf0",
+      "objectIds": [
+        "5724",
+        "5725"
+      ],
+      "titles": [
+        "נעים בצל במרפסת בית רק\"ע"
+      ]
+    }
+  ],
+  "sampleCandidates": [
+    {
+      "provider": "tel_aviv_digitel",
+      "providerEventId": "digitel-v1-349bfaa0207f47f7",
+      "providerTransportId": "4778",
+      "sourceGroupId": "11",
+      "title": "מופע מחווה חלומי לבילי ג'ואל",
+      "description": "תחום הגמלאים והאזרחים הוותיקים מזמין אתכם ואתכן לחוויה מרטיטה בשבוע הגמלאי ה-25. להקת קרניבנד המופלאה והזמר עידן טנדלר במופע לייב שלא היה כמותו בישראל!",
+      "sourceType": "אירועים בתוקף",
+      "sourceUrl": "https://www.tel-aviv.gov.il/Pages/MainItemPage.aspx?WebID=3af57d92-807c-43c5-8d5f-6fd455eb2776&ListID=969f7de3-0ac9-4a30-88f0-2e1a7281f3d0&ItemID=49226",
+      "startTime": "2026-08-29T20:30:00.000Z",
+      "endTime": null,
+      "recurring": null,
+      "ageMinMonths": null,
+      "ageMaxMonths": null,
+      "category": null,
+      "locationName": "לבנון חיים 2",
+      "latitude": 32.10316580417988,
+      "longitude": 34.79615802444455,
+      "price": null,
+      "registrationRequired": null,
+      "registrationUrl": null,
+      "imageUrl": "https://www.tel-aviv.gov.il/digitelimages2020/053c1c9a2e874ecda7c54455ec8f7ec7.jpg",
+      "iconUrl": "https://www.tel-aviv.gov.il/MapIcons/icon-makore-art-gis.png",
+      "cancellationStatus": null,
+      "sourcePublishedAt": null,
+      "sourceUpdatedAt": null,
+      "occurrenceFingerprint": "digitel-v1-349bfaa0207f47f7",
+      "occurrenceIdentityKey": "מופע מחווה חלומי לבילי ג ואל|2026-08-29T20:30:00.000Z|לבנון חיים 2|32.1032|34.7962"
+    },
+    {
+      "provider": "tel_aviv_digitel",
+      "providerEventId": "digitel-v1-84ba45b713cfdbce",
+      "providerTransportId": "4779",
+      "sourceGroupId": "11",
+      "title": "טילדה רג'ואן ולאוניד פטשקה",
+      "description": "תחום הגמלאים והאזרחים הוותיקים מזמין אתכם ליהנות בשבוע הגמלאי ה-25 - ה\"זמיר מפריז\" מארחת את הווירטואוז הבין לאומי",
+      "sourceType": "אירועים בתוקף",
+      "sourceUrl": "https://www.tel-aviv.gov.il/Pages/MainItemPage.aspx?WebID=3af57d92-807c-43c5-8d5f-6fd455eb2776&ListID=969f7de3-0ac9-4a30-88f0-2e1a7281f3d0&ItemID=49230",
+      "startTime": "2026-08-30T19:00:00.000Z",
+      "endTime": null,
+      "recurring": null,
+      "ageMinMonths": null,
+      "ageMaxMonths": null,
+      "category": null,
+      "locationName": "לבנון חיים 2",
+      "latitude": 32.10316580417988,
+      "longitude": 34.79615802444455,
+      "price": null,
+      "registrationRequired": null,
+      "registrationUrl": null,
+      "imageUrl": "https://www.tel-aviv.gov.il/digitelimages2020/40b1b33724624815a04b857dac1010da.jpg",
+      "iconUrl": "https://www.tel-aviv.gov.il/MapIcons/icon-makore-art-gis.png",
+      "cancellationStatus": null,
+      "sourcePublishedAt": null,
+      "sourceUpdatedAt": null,
+      "occurrenceFingerprint": "digitel-v1-84ba45b713cfdbce",
+      "occurrenceIdentityKey": "טילדה רג ואן ולאוניד פטשקה|2026-08-30T19:00:00.000Z|לבנון חיים 2|32.1032|34.7962"
+    },
+    {
+      "provider": "tel_aviv_digitel",
+      "providerEventId": "digitel-v1-4787397f63889d5d",
+      "providerTransportId": "4780",
+      "sourceGroupId": "12",
+      "title": "מרוץ הלילה תל אביב 2026 - ההרשמה החלה",
+      "description": "נפתחה ההרשמה למרוץ הלילה הגדול של ישראל, ביוזמת עיריית תל־אביב–יפו - ריצה, מוזיקה, אורות, קצב מטורף ואירוע סיום שכולם ידברו עליו!",
+      "sourceType": "אירועים בתוקף",
+      "sourceUrl": "https://www.tel-aviv.gov.il/Pages/MainItemPage.aspx?WebID=3af57d92-807c-43c5-8d5f-6fd455eb2776&ListID=969f7de3-0ac9-4a30-88f0-2e1a7281f3d0&ItemID=49370",
+      "startTime": "2026-10-28T18:00:00.000Z",
+      "endTime": null,
+      "recurring": null,
+      "ageMinMonths": null,
+      "ageMaxMonths": null,
+      "category": null,
+      "locationName": "שדרות רוקח ישראל 101",
+      "latitude": 32.105316994667724,
+      "longitude": 34.81096996541462,
+      "price": null,
+      "registrationRequired": null,
+      "registrationUrl": null,
+      "imageUrl": "https://www.tel-aviv.gov.il/digitelimages2020/a342101080e44bb4a4037f6c44dbb1c9.jpg",
+      "iconUrl": "https://www.tel-aviv.gov.il/MapIcons/icon-makore-art-gis.png",
+      "cancellationStatus": null,
+      "sourcePublishedAt": null,
+      "sourceUpdatedAt": null,
+      "occurrenceFingerprint": "digitel-v1-4787397f63889d5d",
+      "occurrenceIdentityKey": "מרוץ הלילה תל אביב 2026 ההרשמה החלה|2026-10-28T18:00:00.000Z|שדרות רוקח ישראל 101|32.1053|34.8110"
+    },
+    {
+      "provider": "tel_aviv_digitel",
+      "providerEventId": "digitel-v1-dffb08d0e66d97f0",
+      "providerTransportId": "4781",
+      "sourceGroupId": "24",
+      "title": "מסיבת סוף הקיץ",
+      "description": "ביום האחרון של אוגוסט נפגשים במסיבת סוף הקיץ, עם מוזיקה וריקודים!",
+      "sourceType": "אירועים בתוקף",
+      "sourceUrl": "https://www.tel-aviv.gov.il/Pages/MainItemPage.aspx?WebID=3af57d92-807c-43c5-8d5f-6fd455eb2776&ListID=969f7de3-0ac9-4a30-88f0-2e1a7281f3d0&ItemID=49501",
+      "startTime": "2026-08-31T11:00:00.000Z",
+      "endTime": null,
+      "recurring": null,
+      "ageMinMonths": null,
+      "ageMaxMonths": null,
+      "category": null,
+      "locationName": "רמה 5",
+      "latitude": 32.11973182654363,
+      "longitude": 34.84149500893919,
+      "price": null,
+      "registrationRequired": null,
+      "registrationUrl": null,
+      "imageUrl": "https://www.tel-aviv.gov.il/StockImages/%D7%A2%D7%95%D7%A0%D7%95%D7%AA27.jpg",
+      "iconUrl": "https://www.tel-aviv.gov.il/MapIcons/icon-makore-art-gis.png",
+      "cancellationStatus": null,
+      "sourcePublishedAt": null,
+      "sourceUpdatedAt": null,
+      "occurrenceFingerprint": "digitel-v1-dffb08d0e66d97f0",
+      "occurrenceIdentityKey": "מסיבת סוף הקיץ|2026-08-31T11:00:00.000Z|רמה 5|32.1197|34.8415"
+    },
+    {
+      "provider": "tel_aviv_digitel",
+      "providerEventId": "digitel-v1-c45aae213988b4c4",
+      "providerTransportId": "4782",
+      "sourceGroupId": "24",
+      "title": "תכנית מופ\"ת - הזמנה לבדיקת התאמה",
+      "description": "הצטרפו לתכנית של עיריית תל אביב-יפו, בשיתוף משרד הרווחה, במועדון לאזרחים ותיקים נווה שרת",
+      "sourceType": "אירועים בתוקף",
+      "sourceUrl": "https://www.tel-aviv.gov.il/Pages/MainItemPage.aspx?WebID=3af57d92-807c-43c5-8d5f-6fd455eb2776&ListID=969f7de3-0ac9-4a30-88f0-2e1a7281f3d0&ItemID=49463",
+      "startTime": "2026-08-03T08:00:00.000Z",
+      "endTime": null,
+      "recurring": null,
+      "ageMinMonths": null,
+      "ageMaxMonths": null,
+      "category": null,
+      "locationName": "רמה 5",
+      "latitude": 32.11973182654363,
+      "longitude": 34.84149500893919,
+      "price": null,
+      "registrationRequired": null,
+      "registrationUrl": null,
+      "imageUrl": "https://www.tel-aviv.gov.il/StockImages/%D7%92%D7%9E%D7%9C%D7%90%D7%99%D7%9D19.jpg",
+      "iconUrl": "https://www.tel-aviv.gov.il/MapIcons/icon-makore-art-gis.png",
+      "cancellationStatus": null,
+      "sourcePublishedAt": null,
+      "sourceUpdatedAt": null,
+      "occurrenceFingerprint": "digitel-v1-c45aae213988b4c4",
+      "occurrenceIdentityKey": "תכנית מופ ת הזמנה לבדיקת התאמה|2026-08-03T08:00:00.000Z|רמה 5|32.1197|34.8415"
+    },
+    {
+      "provider": "tel_aviv_digitel",
+      "providerEventId": "digitel-v1-e038fbfd17edfa26",
+      "providerTransportId": "4785",
+      "sourceGroupId": "29",
+      "title": "קיץ מטורף לכל המשפחה בנמל תל אביב",
+      "description": "חודשיים של אירועים חינמיים לכל המשפחה בנמל תל אביב - מופעים, הצגות והפעלות בשדרת הילדים, הקרנת סרטים מדובבים תחת כיפת השמיים, מסיבות מים וקצף ואירועי קבלת שבת מוזיקלית מול הים",
+      "sourceType": "אירועים בתוקף",
+      "sourceUrl": "https://www.tel-aviv.gov.il/Pages/MainItemPage.aspx?WebID=3af57d92-807c-43c5-8d5f-6fd455eb2776&ListID=969f7de3-0ac9-4a30-88f0-2e1a7281f3d0&ItemID=49387",
+      "startTime": "2026-07-16T00:00:00.000Z",
+      "endTime": null,
+      "recurring": null,
+      "ageMinMonths": null,
+      "ageMaxMonths": null,
+      "category": null,
+      "locationName": "כ\"ג יורדי הסירה 1",
+      "latitude": 32.096466775185796,
+      "longitude": 34.77392201993809,
+      "price": null,
+      "registrationRequired": null,
+      "registrationUrl": null,
+      "imageUrl": "https://www.tel-aviv.gov.il/digitelimages2020/65edcb3f90b74faf8662f78f223fe659.jpg",
+      "iconUrl": "https://www.tel-aviv.gov.il/MapIcons/icon-makore-art-gis.png",
+      "cancellationStatus": null,
+      "sourcePublishedAt": null,
+      "sourceUpdatedAt": null,
+      "occurrenceFingerprint": "digitel-v1-e038fbfd17edfa26",
+      "occurrenceIdentityKey": "קיץ מטורף לכל המשפחה בנמל תל אביב|2026-07-16T00:00:00.000Z|כ ג יורדי הסירה 1|32.0965|34.7739"
+    },
+    {
+      "provider": "tel_aviv_digitel",
+      "providerEventId": "digitel-v1-6ac6f0a873f7b869",
+      "providerTransportId": "4786",
+      "sourceGroupId": "29",
+      "title": "ים של אטרקציות לילדים בנמל תל אביב",
+      "description": "מחפשים בריחה ממוזגת מהחום של יולי-אוגוסט? בין אם אתם הורים שחייבים הפסקה בצל או בני נוער שמחפשים את הדבר הבא, נמל תל אביב מציע סצנת אטרקציות פרטיות ומרחבי פנים ממוזגים שפועלים כל השבוע ונותנים פייט רציני לשגרה",
+      "sourceType": "אירועים בתוקף",
+      "sourceUrl": "https://www.tel-aviv.gov.il/Pages/MainItemPage.aspx?WebID=3af57d92-807c-43c5-8d5f-6fd455eb2776&ListID=969f7de3-0ac9-4a30-88f0-2e1a7281f3d0&ItemID=49500",
+      "startTime": "2026-08-06T08:00:00.000Z",
+      "endTime": null,
+      "recurring": null,
+      "ageMinMonths": null,
+      "ageMaxMonths": null,
+      "category": null,
+      "locationName": "כ\"ג יורדי הסירה 1",
+      "latitude": 32.096466775185796,
+      "longitude": 34.77392201993809,
+      "price": null,
+      "registrationRequired": null,
+      "registrationUrl": null,
+      "imageUrl": "https://www.tel-aviv.gov.il/digitelimages2020/e998a7088cc745bda326d10de4ca4435.jpg",
+      "iconUrl": "https://www.tel-aviv.gov.il/MapIcons/icon-makore-art-gis.png",
+      "cancellationStatus": null,
+      "sourcePublishedAt": null,
+      "sourceUpdatedAt": null,
+      "occurrenceFingerprint": "digitel-v1-6ac6f0a873f7b869",
+      "occurrenceIdentityKey": "ים של אטרקציות לילדים בנמל תל אביב|2026-08-06T08:00:00.000Z|כ ג יורדי הסירה 1|32.0965|34.7739"
+    },
+    {
+      "provider": "tel_aviv_digitel",
+      "providerEventId": "digitel-v1-96f0709f54062697",
+      "providerTransportId": "4787",
+      "sourceGroupId": "29",
+      "title": "אטרקצית הקיץ \"מוגזם בנמל\"",
+      "description": "מיצגי ענק של ממתקים וקינוחים בגובה של עד 9 מטרים, מנות ״מוגזמות״ במסעדות הנמל ומתחם הפופ אפ החדש של נדב בורנשטיין. הכניסה חופשית",
+      "sourceType": "אירועים בתוקף",
+      "sourceUrl": "https://www.tel-aviv.gov.il/Pages/MainItemPage.aspx?WebID=3af57d92-807c-43c5-8d5f-6fd455eb2776&ListID=969f7de3-0ac9-4a30-88f0-2e1a7281f3d0&ItemID=49502",
+      "startTime": "2026-08-12T18:00:00.000Z",
+      "endTime": null,
+      "recurring": null,
+      "ageMinMonths": null,
+      "ageMaxMonths": null,
+      "category": null,
+      "locationName": "כ\"ג יורדי הסירה 1",
+      "latitude": 32.096466775185796,
+      "longitude": 34.77392201993809,
+      "price": null,
+      "registrationRequired": null,
+      "registrationUrl": null,
+      "imageUrl": "https://www.tel-aviv.gov.il/digitelimages2020/bda4fbc23b0c44e7b18c292c6a89960e.jpg",
+      "iconUrl": "https://www.tel-aviv.gov.il/MapIcons/icon-makore-art-gis.png",
+      "cancellationStatus": null,
+      "sourcePublishedAt": null,
+      "sourceUpdatedAt": null,
+      "occurrenceFingerprint": "digitel-v1-96f0709f54062697",
+      "occurrenceIdentityKey": "אטרקצית הקיץ מוגזם בנמל|2026-08-12T18:00:00.000Z|כ ג יורדי הסירה 1|32.0965|34.7739"
+    },
+    {
+      "provider": "tel_aviv_digitel",
+      "providerEventId": "digitel-v1-133597af0af425d5",
+      "providerTransportId": "4788",
+      "sourceGroupId": "3",
+      "title": "מרוץ האהבה תפוזינה סינגלס RUN",
+      "description": "תפוזינה Singles Run 2026 - המרוץ שמשלב ספורט, דייטינג ופסטיבל מוזיקה - חוזר לתל אביב-יפו ב-10 לספטמבר",
+      "sourceType": "אירועים בתוקף",
+      "sourceUrl": "https://www.tel-aviv.gov.il/Pages/MainItemPage.aspx?WebID=3af57d92-807c-43c5-8d5f-6fd455eb2776&ListID=969f7de3-0ac9-4a30-88f0-2e1a7281f3d0&ItemID=49366",
+      "startTime": "2026-09-10T17:30:00.000Z",
+      "endTime": null,
+      "recurring": null,
+      "ageMinMonths": null,
+      "ageMaxMonths": null,
+      "category": null,
+      "locationName": "זאבי רחבעם (גנדי) 1",
+      "latitude": 32.10440846803045,
+      "longitude": 34.77844201117746,
+      "price": null,
+      "registrationRequired": null,
+      "registrationUrl": null,
+      "imageUrl": "https://www.tel-aviv.gov.il/digitelimages2020/991e0c1045a24a7196fab586a50a9e42.jpg",
+      "iconUrl": "https://www.tel-aviv.gov.il/MapIcons/icon-makore-art-gis.png",
+      "cancellationStatus": null,
+      "sourcePublishedAt": null,
+      "sourceUpdatedAt": null,
+      "occurrenceFingerprint": "digitel-v1-133597af0af425d5",
+      "occurrenceIdentityKey": "מרוץ האהבה תפוזינה סינגלס run|2026-09-10T17:30:00.000Z|זאבי רחבעם גנדי 1|32.1044|34.7784"
+    },
+    {
+      "provider": "tel_aviv_digitel",
+      "providerEventId": "digitel-v1-c6a5604faa1a0af8",
+      "providerTransportId": "4789",
+      "sourceGroupId": "30",
+      "title": "שבורים שבורות",
+      "description": "ההצגה המדוברת מבית היוצר של מרכז ענב מביאה לבמה את המרדף האינסופי אחר זוגיות ואהבה בתל אביב",
+      "sourceType": "אירועים בתוקף",
+      "sourceUrl": "https://www.tel-aviv.gov.il/Pages/MainItemPage.aspx?WebID=3af57d92-807c-43c5-8d5f-6fd455eb2776&ListID=969f7de3-0ac9-4a30-88f0-2e1a7281f3d0&ItemID=49145",
+      "startTime": "2026-08-05T20:30:00.000Z",
+      "endTime": null,
+      "recurring": null,
+      "ageMinMonths": null,
+      "ageMaxMonths": null,
+      "category": null,
+      "locationName": "אבן גבירול 71",
+      "latitude": 32.08230889044164,
+      "longitude": 34.78105897201889,
+      "price": null,
+      "registrationRequired": null,
+      "registrationUrl": null,
+      "imageUrl": "https://www.tel-aviv.gov.il/digitelimages2020/e64859da48fa40778f99ed22a26f3a09.jpg",
+      "iconUrl": "https://www.tel-aviv.gov.il/MapIcons/icon-makore-art-gis.png",
+      "cancellationStatus": null,
+      "sourcePublishedAt": null,
+      "sourceUpdatedAt": null,
+      "occurrenceFingerprint": "digitel-v1-c6a5604faa1a0af8",
+      "occurrenceIdentityKey": "שבורים שבורות|2026-08-05T20:30:00.000Z|אבן גבירול 71|32.0823|34.7811"
+    },
+    {
+      "provider": "tel_aviv_digitel",
+      "providerEventId": "digitel-v1-c5c99a29e2c38fec",
+      "providerTransportId": "4790",
+      "sourceGroupId": "30",
+      "title": "\"שבת נקבלה\" - מפגש שירה בליווי מצגת",
+      "description": "יותם הלל מהלר - פסנתרן וזמר - בשירים ישראליים מסורתיים, סיפורים חסידיים ופרשת השבוע, בשיתוף הקהל",
+      "sourceType": "אירועים בתוקף",
+      "sourceUrl": "https://www.tel-aviv.gov.il/Pages/MainItemPage.aspx?WebID=3af57d92-807c-43c5-8d5f-6fd455eb2776&ListID=969f7de3-0ac9-4a30-88f0-2e1a7281f3d0&ItemID=47398",
+      "startTime": "2026-08-06T11:00:00.000Z",
+      "endTime": null,
+      "recurring": null,
+      "ageMinMonths": null,
+      "ageMaxMonths": null,
+      "category": null,
+      "locationName": "מנדלשטם עמנואל ד\"ר 12",
+      "latitude": 32.09145631261618,
+      "longitude": 34.77691506355567,
+      "price": null,
+      "registrationRequired": null,
+      "registrationUrl": null,
+      "imageUrl": "https://www.tel-aviv.gov.il/digitelimages2020/a7c87912d1864fceacc67bc4064b2bd0.jpg",
+      "iconUrl": "https://www.tel-aviv.gov.il/MapIcons/icon-makore-art-gis.png",
+      "cancellationStatus": null,
+      "sourcePublishedAt": null,
+      "sourceUpdatedAt": null,
+      "occurrenceFingerprint": "digitel-v1-c5c99a29e2c38fec",
+      "occurrenceIdentityKey": "שבת נקבלה מפגש שירה בליווי מצגת|2026-08-06T11:00:00.000Z|מנדלשטם עמנואל ד ר 12|32.0915|34.7769"
+    },
+    {
+      "provider": "tel_aviv_digitel",
+      "providerEventId": "digitel-v1-4e919b48b372b319",
+      "providerTransportId": "4791",
+      "sourceGroupId": "30",
+      "title": "היסטוריה לילדים לייב - יובל מלחי",
+      "description": "יובל מלחי - היסטוריה לילדים לייב: תרזה ופלורנס חוצות את אפריקה",
+      "sourceType": "אירועים בתוקף",
+      "sourceUrl": "https://www.tel-aviv.gov.il/Pages/MainItemPage.aspx?WebID=3af57d92-807c-43c5-8d5f-6fd455eb2776&ListID=969f7de3-0ac9-4a30-88f0-2e1a7281f3d0&ItemID=49380",
+      "startTime": "2026-08-07T10:00:00.000Z",
+      "endTime": null,
+      "recurring": null,
+      "ageMinMonths": null,
+      "ageMaxMonths": null,
+      "category": null,
+      "locationName": "אבן גבירול 71",
+      "latitude": 32.08230889044164,
+      "longitude": 34.78105897201889,
+      "price": null,
+      "registrationRequired": null,
+      "registrationUrl": null,
+      "imageUrl": "https://www.tel-aviv.gov.il/digitelimages2020/7323bb1bbd424df1ac45f6eeaeea0b13.jpg",
+      "iconUrl": "https://www.tel-aviv.gov.il/MapIcons/icon-makore-art-gis.png",
+      "cancellationStatus": null,
+      "sourcePublishedAt": null,
+      "sourceUpdatedAt": null,
+      "occurrenceFingerprint": "digitel-v1-4e919b48b372b319",
+      "occurrenceIdentityKey": "היסטוריה לילדים לייב יובל מלחי|2026-08-07T10:00:00.000Z|אבן גבירול 71|32.0823|34.7811"
+    },
+    {
+      "provider": "tel_aviv_digitel",
+      "providerEventId": "digitel-v1-5ff0c555e77effd7",
+      "providerTransportId": "4792",
+      "sourceGroupId": "30",
+      "title": "היסטוריה לילדים לייב - יובל מלחי",
+      "description": "יובל מלחי - היסטוריה לילדים לייב: תרזה ופלורנס חוצות את אפריקה",
+      "sourceType": "אירועים בתוקף",
+      "sourceUrl": "https://www.tel-aviv.gov.il/Pages/MainItemPage.aspx?WebID=3af57d92-807c-43c5-8d5f-6fd455eb2776&ListID=969f7de3-0ac9-4a30-88f0-2e1a7281f3d0&ItemID=49381",
+      "startTime": "2026-08-07T12:00:00.000Z",
+      "endTime": null,
+      "recurring": null,
+      "ageMinMonths": null,
+      "ageMaxMonths": null,
+      "category": null,
+      "locationName": "אבן גבירול 71",
+      "latitude": 32.08230889044164,
+      "longitude": 34.78105897201889,
+      "price": null,
+      "registrationRequired": null,
+      "registrationUrl": null,
+      "imageUrl": "https://www.tel-aviv.gov.il/digitelimages2020/ee2ecc6f7b7d471da4f80032e1537e1f.jpg",
+      "iconUrl": "https://www.tel-aviv.gov.il/MapIcons/icon-makore-art-gis.png",
+      "cancellationStatus": null,
+      "sourcePublishedAt": null,
+      "sourceUpdatedAt": null,
+      "occurrenceFingerprint": "digitel-v1-5ff0c555e77effd7",
+      "occurrenceIdentityKey": "היסטוריה לילדים לייב יובל מלחי|2026-08-07T12:00:00.000Z|אבן גבירול 71|32.0823|34.7811"
+    },
+    {
+      "provider": "tel_aviv_digitel",
+      "providerEventId": "digitel-v1-85deea08523bb155",
+      "providerTransportId": "4793",
+      "sourceGroupId": "30",
+      "title": "בריאות לפי רפואת הרמב\"ם - סדרת הרצאות",
+      "description": "\"ללכת על בטוח\" - בריאות כפות הרגלים. גיל דוד - מומחה לבריאות טבעית ומורה לבריאות תנועתית",
+      "sourceType": "אירועים בתוקף",
+      "sourceUrl": "https://www.tel-aviv.gov.il/Pages/MainItemPage.aspx?WebID=3af57d92-807c-43c5-8d5f-6fd455eb2776&ListID=969f7de3-0ac9-4a30-88f0-2e1a7281f3d0&ItemID=48062",
+      "startTime": "2026-08-09T16:00:00.000Z",
+      "endTime": null,
+      "recurring": null,
+      "ageMinMonths": null,
+      "ageMaxMonths": null,
+      "category": null,
+      "locationName": "מנדלשטם עמנואל ד\"ר 12",
+      "latitude": 32.09145631261618,
+      "longitude": 34.77691506355567,
+      "price": null,
+      "registrationRequired": null,
+      "registrationUrl": null,
+      "imageUrl": "https://www.tel-aviv.gov.il/digitelimages2020/92005018236748e786c6142e77c1fdbe.jpg",
+      "iconUrl": "https://www.tel-aviv.gov.il/MapIcons/icon-makore-art-gis.png",
+      "cancellationStatus": null,
+      "sourcePublishedAt": null,
+      "sourceUpdatedAt": null,
+      "occurrenceFingerprint": "digitel-v1-85deea08523bb155",
+      "occurrenceIdentityKey": "בריאות לפי רפואת הרמב ם סדרת הרצאות|2026-08-09T16:00:00.000Z|מנדלשטם עמנואל ד ר 12|32.0915|34.7769"
+    },
+    {
+      "provider": "tel_aviv_digitel",
+      "providerEventId": "digitel-v1-f0af13a22a83d10d",
+      "providerTransportId": "4794",
+      "sourceGroupId": "30",
+      "title": "בואו לרקוד ניה עם דורית זילברשטיין",
+      "description": "השיעור מתאים לכל גיל וללא ניסיון בריקוד – בואו ליהנות!",
+      "sourceType": "אירועים בתוקף",
+      "sourceUrl": "https://www.tel-aviv.gov.il/Pages/MainItemPage.aspx?WebID=3af57d92-807c-43c5-8d5f-6fd455eb2776&ListID=969f7de3-0ac9-4a30-88f0-2e1a7281f3d0&ItemID=49480",
+      "startTime": "2026-08-09T16:30:00.000Z",
+      "endTime": null,
+      "recurring": null,
+      "ageMinMonths": null,
+      "ageMaxMonths": null,
+      "category": null,
+      "locationName": "מנדלשטם עמנואל ד\"ר 12",
+      "latitude": 32.09145631261618,
+      "longitude": 34.77691506355567,
+      "price": null,
+      "registrationRequired": null,
+      "registrationUrl": null,
+      "imageUrl": "https://www.tel-aviv.gov.il/digitelimages2020/e1ff7cb613cb4e16ab927998f2ea501d.jpg",
+      "iconUrl": "https://www.tel-aviv.gov.il/MapIcons/icon-makore-art-gis.png",
+      "cancellationStatus": null,
+      "sourcePublishedAt": null,
+      "sourceUpdatedAt": null,
+      "occurrenceFingerprint": "digitel-v1-f0af13a22a83d10d",
+      "occurrenceIdentityKey": "בואו לרקוד ניה עם דורית זילברשטיין|2026-08-09T16:30:00.000Z|מנדלשטם עמנואל ד ר 12|32.0915|34.7769"
+    },
+    {
+      "provider": "tel_aviv_digitel",
+      "providerEventId": "digitel-v1-e22cabc7a5d17b31",
+      "providerTransportId": "4795",
+      "sourceGroupId": "30",
+      "title": "מכללת מיטשל: פברוטי - אופרה",
+      "description": "פברוטי - האיש שהביא את האופרה לאנשים. הרצאה של מרב ברק, דוקטורנטית בפקולטה לאמנויות באוניברסיטת תל אביב",
+      "sourceType": "אירועים בתוקף",
+      "sourceUrl": "https://www.tel-aviv.gov.il/Pages/MainItemPage.aspx?WebID=3af57d92-807c-43c5-8d5f-6fd455eb2776&ListID=969f7de3-0ac9-4a30-88f0-2e1a7281f3d0&ItemID=35617",
+      "startTime": "2026-08-11T11:30:00.000Z",
+      "endTime": null,
+      "recurring": null,
+      "ageMinMonths": null,
+      "ageMaxMonths": null,
+      "category": null,
+      "locationName": "מנדלשטם עמנואל ד\"ר 12",
+      "latitude": 32.09145631261618,
+      "longitude": 34.77691506355567,
+      "price": null,
+      "registrationRequired": null,
+      "registrationUrl": null,
+      "imageUrl": "https://www.tel-aviv.gov.il/digitelimages2020/8b82df6eb84449f497732744c7064715.jpg",
+      "iconUrl": "https://www.tel-aviv.gov.il/MapIcons/icon-makore-art-gis.png",
+      "cancellationStatus": null,
+      "sourcePublishedAt": null,
+      "sourceUpdatedAt": null,
+      "occurrenceFingerprint": "digitel-v1-e22cabc7a5d17b31",
+      "occurrenceIdentityKey": "מכללת מיטשל פברוטי אופרה|2026-08-11T11:30:00.000Z|מנדלשטם עמנואל ד ר 12|32.0915|34.7769"
+    },
+    {
+      "provider": "tel_aviv_digitel",
+      "providerEventId": "digitel-v1-8ce9172b49bfbd33",
+      "providerTransportId": "4796",
+      "sourceGroupId": "30",
+      "title": "חֲמִישִׁי שָׂמֵחַ - קלאסיקות נוסטלגיות",
+      "description": "מופע מוזיקלי מרגש - קלאסיקות מכל הזמנים. מנחה ומבצע: פול מייקנס",
+      "sourceType": "אירועים בתוקף",
+      "sourceUrl": "https://www.tel-aviv.gov.il/Pages/MainItemPage.aspx?WebID=3af57d92-807c-43c5-8d5f-6fd455eb2776&ListID=969f7de3-0ac9-4a30-88f0-2e1a7281f3d0&ItemID=49403",
+      "startTime": "2026-08-13T11:00:00.000Z",
+      "endTime": null,
+      "recurring": null,
+      "ageMinMonths": null,
+      "ageMaxMonths": null,
+      "category": null,
+      "locationName": "מנדלשטם עמנואל ד\"ר 12",
+      "latitude": 32.09145631261618,
+      "longitude": 34.77691506355567,
+      "price": null,
+      "registrationRequired": null,
+      "registrationUrl": null,
+      "imageUrl": "https://www.tel-aviv.gov.il/digitelimages2020/0199339b49384c10b9961144d16475b8.jpg",
+      "iconUrl": "https://www.tel-aviv.gov.il/MapIcons/icon-makore-art-gis.png",
+      "cancellationStatus": null,
+      "sourcePublishedAt": null,
+      "sourceUpdatedAt": null,
+      "occurrenceFingerprint": "digitel-v1-8ce9172b49bfbd33",
+      "occurrenceIdentityKey": "חֲמִישִׁי שָׂמֵחַ קלאסיקות נוסטלגיות|2026-08-13T11:00:00.000Z|מנדלשטם עמנואל ד ר 12|32.0915|34.7769"
+    },
+    {
+      "provider": "tel_aviv_digitel",
+      "providerEventId": "digitel-v1-826a9da56b06ffd0",
+      "providerTransportId": "4797",
+      "sourceGroupId": "30",
+      "title": "החוג לתולדות המוזיקה: אריק איינשטיין",
+      "description": "אריק איינשטיין וחברים – סיפורו של גדול הזמרים הישראלים והחברים שהוא פגש בדרך",
+      "sourceType": "אירועים בתוקף",
+      "sourceUrl": "https://www.tel-aviv.gov.il/Pages/MainItemPage.aspx?WebID=3af57d92-807c-43c5-8d5f-6fd455eb2776&ListID=969f7de3-0ac9-4a30-88f0-2e1a7281f3d0&ItemID=49109",
+      "startTime": "2026-08-16T10:00:00.000Z",
+      "endTime": null,
+      "recurring": null,
+      "ageMinMonths": null,
+      "ageMaxMonths": null,
+      "category": null,
+      "locationName": "אבן גבירול 71",
+      "latitude": 32.08230889044164,
+      "longitude": 34.78105897201889,
+      "price": null,
+      "registrationRequired": null,
+      "registrationUrl": null,
+      "imageUrl": "https://www.tel-aviv.gov.il/digitelimages2020/c28796688bab4155b3123ff1773e99bd.jpg",
+      "iconUrl": "https://www.tel-aviv.gov.il/MapIcons/icon-makore-art-gis.png",
+      "cancellationStatus": null,
+      "sourcePublishedAt": null,
+      "sourceUpdatedAt": null,
+      "occurrenceFingerprint": "digitel-v1-826a9da56b06ffd0",
+      "occurrenceIdentityKey": "החוג לתולדות המוזיקה אריק איינשטיין|2026-08-16T10:00:00.000Z|אבן גבירול 71|32.0823|34.7811"
+    },
+    {
+      "provider": "tel_aviv_digitel",
+      "providerEventId": "digitel-v1-6a26c6d35ab3ca89",
+      "providerTransportId": "4798",
+      "sourceGroupId": "30",
+      "title": "עולים לכיתה א' - גם מבחינה בריאותית",
+      "description": "הורים יקרים, להתכונן לכיתה א זה גם גם להיערך מבחינה בריאותית - בדיקות ראייה, גדילה, ייעוץ וחיסון MMRV בנחת, קרוב לבית וביחד",
+      "sourceType": "אירועים בתוקף",
+      "sourceUrl": "https://www.tel-aviv.gov.il/Pages/MainItemPage.aspx?WebID=3af57d92-807c-43c5-8d5f-6fd455eb2776&ListID=969f7de3-0ac9-4a30-88f0-2e1a7281f3d0&ItemID=49494",
+      "startTime": "2026-08-16T08:30:00.000Z",
+      "endTime": null,
+      "recurring": null,
+      "ageMinMonths": null,
+      "ageMaxMonths": null,
+      "category": null,
+      "locationName": "אבן גבירול 69",
+      "latitude": 32.08181295111001,
+      "longitude": 34.78099103341794,
+      "price": null,
+      "registrationRequired": null,
+      "registrationUrl": null,
+      "imageUrl": "https://www.tel-aviv.gov.il/digitelimages2020/0c7f154c48364ae7b476817e8f14ec74.jpg",
+      "iconUrl": "https://www.tel-aviv.gov.il/MapIcons/icon-makore-art-gis.png",
+      "cancellationStatus": null,
+      "sourcePublishedAt": null,
+      "sourceUpdatedAt": null,
+      "occurrenceFingerprint": "digitel-v1-6a26c6d35ab3ca89",
+      "occurrenceIdentityKey": "עולים לכיתה א גם מבחינה בריאותית|2026-08-16T08:30:00.000Z|אבן גבירול 69|32.0818|34.7810"
+    },
+    {
+      "provider": "tel_aviv_digitel",
+      "providerEventId": "digitel-v1-4810c562526fa252",
+      "providerTransportId": "4799",
+      "sourceGroupId": "30",
+      "title": "החוג לתולדות המוזיקה: אריק איינשטיין",
+      "description": "אריק איינשטיין וחברים - סיפורו של גדול הזמרים הישראלים והחברים שהוא פגש בדרך",
+      "sourceType": "אירועים בתוקף",
+      "sourceUrl": "https://www.tel-aviv.gov.il/Pages/MainItemPage.aspx?WebID=3af57d92-807c-43c5-8d5f-6fd455eb2776&ListID=969f7de3-0ac9-4a30-88f0-2e1a7281f3d0&ItemID=49110",
+      "startTime": "2026-08-16T12:00:00.000Z",
+      "endTime": null,
+      "recurring": null,
+      "ageMinMonths": null,
+      "ageMaxMonths": null,
+      "category": null,
+      "locationName": "אבן גבירול 71",
+      "latitude": 32.08230889044164,
+      "longitude": 34.78105897201889,
+      "price": null,
+      "registrationRequired": null,
+      "registrationUrl": null,
+      "imageUrl": "https://www.tel-aviv.gov.il/digitelimages2020/09023fbd945f492693f0db9ab36deac0.jpg",
+      "iconUrl": "https://www.tel-aviv.gov.il/MapIcons/icon-makore-art-gis.png",
+      "cancellationStatus": null,
+      "sourcePublishedAt": null,
+      "sourceUpdatedAt": null,
+      "occurrenceFingerprint": "digitel-v1-4810c562526fa252",
+      "occurrenceIdentityKey": "החוג לתולדות המוזיקה אריק איינשטיין|2026-08-16T12:00:00.000Z|אבן גבירול 71|32.0823|34.7811"
+    }
+  ]
+}
