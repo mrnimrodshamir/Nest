@@ -57,10 +57,17 @@ export function placeMatchesFilters(place: FamilyFriendlyPlace, filters: PlaceFi
   if (filters.environment === 'outdoor' && place.isOutdoor !== true) return false;
   if (filters.cost === 'free' && place.isFree !== true) return false;
   if (filters.cost === 'paid' && place.isFree !== false) return false;
+  if (filters.changingTable && place.changingTable !== true) return false;
+  if (filters.toilets && place.toilets !== true) return false;
+  if (filters.highChairs && place.highChairs !== true) return false;
+  if (filters.shade && place.shade !== true) return false;
+  if (filters.waterFountain && place.waterFountain !== true) return false;
+  if (filters.accessible && place.accessible !== true) return false;
   if (filters.ageMonths != null) {
     if (place.minAgeMonths != null && place.minAgeMonths > filters.ageMonths) return false;
     if (place.maxAgeMonths != null && place.maxAgeMonths < filters.ageMonths) return false;
   }
+  if (filters.maxDistanceMeters != null && (place.distanceMeters == null || place.distanceMeters > filters.maxDistanceMeters)) return false;
   return true;
 }
 
