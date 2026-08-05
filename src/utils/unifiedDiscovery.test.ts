@@ -112,10 +112,25 @@ test('Activity presentation uses the exact shared viewport boundary', () => {
 
 test('All, Activities, Places, and Events filters affect only presentation type', () => {
   const items = mergeDiscoveryItems([activity('a', 32.08)], [place('p', 32.081)], [event('e', 32.082)], { latitude: 32.08, longitude: 34.78 });
-  assert.equal(filterDiscoveryItems(items, 'all').length, 3);
-  assert.deepEqual(filterDiscoveryItems(items, 'activities').map((item) => item.type), ['activity']);
-  assert.deepEqual(filterDiscoveryItems(items, 'places').map((item) => item.type), ['place']);
-  assert.deepEqual(filterDiscoveryItems(items, 'events').map((item) => item.type), ['event']);
+  assert.equal(filterDiscoveryItems(items, { activities: true, places: true, events: true }).length, 3);
+  assert.deepEqual(filterDiscoveryItems(items, { activities: true, places: false, events: true }).map((item) => item.type), ['activity', 'event']);
+  assert.deepEqual(filterDiscoveryItems(items, { activities: false, places: true, events: true }).map((item) => item.type), ['place', 'event']);
+  assert.deepEqual(filterDiscoveryItems(items, { activities: false, places: false, events: true }).map((item) => item.type), ['event']);
+});
+
+test('all seven non-empty content-type combinations update the same cached item set', () => {
+  const items = mergeDiscoveryItems([activity('a', 32.08)], [place('p', 32.081)], [event('e', 32.082)], { latitude: 32.08, longitude: 34.78 });
+  const combinations = [
+    { activities: true, places: false, events: false },
+    { activities: false, places: true, events: false },
+    { activities: false, places: false, events: true },
+    { activities: true, places: true, events: false },
+    { activities: true, places: false, events: true },
+    { activities: false, places: true, events: true },
+    { activities: true, places: true, events: true },
+  ];
+  assert.deepEqual(combinations.map((selection) => filterDiscoveryItems(items, selection).length), [1, 1, 1, 2, 2, 2, 3]);
+  assert.equal(items.length, 3);
 });
 
 test('items are blended by type-neutral distance from the current map centre', () => {

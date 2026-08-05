@@ -2,39 +2,38 @@ import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
 import test from 'node:test';
 import {
-  contentFilterIncludes,
+  ALL_DISCOVERY_CONTENT,
+  contentSelectionIncludes,
   discoveryEmptyCopy,
-  transitionDiscoveryContentFilter,
+  toggleDiscoveryContent,
   visibleDiscoveryFailures,
 } from '@/utils/discoveryPresentation';
 
-test('content filter transition clears selection and preserves the exact map camera', () => {
-  const region = { latitude: 32.08, longitude: 34.78, latitudeDelta: 0.04, longitudeDelta: 0.04 };
-  const transition = transitionDiscoveryContentFilter(region, 'places');
-  assert.strictEqual(transition.region, region);
-  assert.equal(transition.contentFilter, 'places');
-  assert.equal(transition.selectedItem, null);
+test('content types support every multi-selection while retaining at least one', () => {
+  const withoutPlaces = toggleDiscoveryContent(ALL_DISCOVERY_CONTENT, 'places');
+  assert.deepEqual(withoutPlaces.selection, { activities: true, places: false, events: true });
+  const activitiesOnly = { activities: true, places: false, events: false };
+  const prevented = toggleDiscoveryContent(activitiesOnly, 'activities');
+  assert.equal(prevented.prevented, true);
+  assert.strictEqual(prevented.selection, activitiesOnly);
 });
 
-test('content inclusion and empty copy cover All, Activities, Places, and Events', () => {
-  assert.equal(contentFilterIncludes('all', 'activity'), true);
-  assert.equal(contentFilterIncludes('all', 'place'), true);
-  assert.equal(contentFilterIncludes('all', 'event'), true);
-  assert.equal(contentFilterIncludes('activities', 'place'), false);
-  assert.equal(contentFilterIncludes('places', 'activity'), false);
-  assert.equal(contentFilterIncludes('events', 'event'), true);
-  assert.equal(discoveryEmptyCopy('all'), 'No activities, places, or events found in this area.');
-  assert.equal(discoveryEmptyCopy('activities'), 'No activities match these filters.');
-  assert.equal(discoveryEmptyCopy('places'), 'No places match these filters.');
-  assert.equal(discoveryEmptyCopy('events'), 'No events match these filters.');
+test('content inclusion and empty copy cover combined and single selections', () => {
+  assert.equal(contentSelectionIncludes(ALL_DISCOVERY_CONTENT, 'activity'), true);
+  assert.equal(contentSelectionIncludes({ activities: true, places: false, events: true }, 'place'), false);
+  assert.equal(contentSelectionIncludes({ activities: true, places: false, events: true }, 'event'), true);
+  assert.equal(discoveryEmptyCopy(ALL_DISCOVERY_CONTENT), 'No activities, places, or events found in this area.');
+  assert.equal(discoveryEmptyCopy({ activities: true, places: false, events: false }), 'No activities match these filters.');
+  assert.equal(discoveryEmptyCopy({ activities: false, places: true, events: false }), 'No places match these filters.');
+  assert.equal(discoveryEmptyCopy({ activities: false, places: false, events: true }), 'No events match these filters.');
 });
 
 test('partial failures remain scoped to visible content and never imply a full-screen failure', () => {
-  assert.deepEqual(visibleDiscoveryFailures('all', 'activity failed', null), ['activity']);
-  assert.deepEqual(visibleDiscoveryFailures('all', null, 'place failed'), ['place']);
-  assert.deepEqual(visibleDiscoveryFailures('places', 'activity failed', null), []);
-  assert.deepEqual(visibleDiscoveryFailures('activities', null, 'place failed'), []);
-  assert.deepEqual(visibleDiscoveryFailures('events', 'activity failed', 'place failed', 'event failed'), ['event']);
+  assert.deepEqual(visibleDiscoveryFailures(ALL_DISCOVERY_CONTENT, 'activity failed', null), ['activity']);
+  assert.deepEqual(visibleDiscoveryFailures(ALL_DISCOVERY_CONTENT, null, 'place failed'), ['place']);
+  assert.deepEqual(visibleDiscoveryFailures({ activities: false, places: true, events: false }, 'activity failed', null), []);
+  assert.deepEqual(visibleDiscoveryFailures({ activities: true, places: false, events: false }, null, 'place failed'), []);
+  assert.deepEqual(visibleDiscoveryFailures({ activities: false, places: false, events: true }, 'activity failed', 'place failed', 'event failed'), ['event']);
 });
 
 test('Discovery renders one map and one typed feed with both domain cards and markers', () => {
@@ -61,8 +60,14 @@ test('place images use shared fixed variants, category artwork, and cached broke
 test('Discovery exposes Search, Filters, and Sort in its compact toolbar', () => {
   const source = readFileSync(new URL('../screens/DiscoverScreen.tsx', import.meta.url), 'utf8');
   assert.match(source, /label="Search"/);
-  assert.match(source, /label="Filters"/);
+  assert.match(source, /label={activeFilterCount \? `Filters · \$\{activeFilterCount\}` : 'Filters'}/);
   assert.match(source, /label="Sort"/);
   assert.match(source, /<ModalSheet visible={filtersOpen}/);
   assert.match(source, /Sorting changes the list only/);
+  assert.doesNotMatch(source, /DiscoveryContentFilter|CONTENT_FILTERS/);
+  const filterSheetStart = source.indexOf('<ModalSheet visible={filtersOpen}');
+  const filterSheetEnd = source.indexOf('</ModalSheet>', filterSheetStart);
+  const firstFilterRow = source.indexOf('<FilterRow');
+  assert.ok(filterSheetStart > 0 && filterSheetEnd > filterSheetStart);
+  assert.ok(firstFilterRow > filterSheetStart && firstFilterRow < filterSheetEnd, 'large filter rows render only inside the explicit filter sheet');
 });

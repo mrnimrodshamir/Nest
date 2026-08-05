@@ -2,7 +2,8 @@ import type { Activity } from '@/types/activity';
 import type { FamilyFriendlyPlace } from '@/types/familyFriendlyPlace';
 import type { EventDetails } from '@/types/event';
 
-export type DiscoveryContentFilter = 'all' | 'activities' | 'places' | 'events';
+export type DiscoveryContentKey = 'activities' | 'places' | 'events';
+export type DiscoveryContentSelection = Record<DiscoveryContentKey, boolean>;
 export type DiscoverySort = 'default' | 'distance' | 'soonest' | 'newest' | 'alphabetical';
 
 export type ActivityDiscoveryResult = Activity;

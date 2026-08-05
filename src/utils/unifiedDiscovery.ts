@@ -3,7 +3,7 @@ import type { FamilyFriendlyPlace } from '@/types/familyFriendlyPlace';
 import type { PlaceViewport } from '@/types/familyFriendlyPlace';
 import type { EventDetails } from '@/types/event';
 import type {
-  DiscoveryContentFilter,
+  DiscoveryContentSelection,
   DiscoveryCoordinate,
   DiscoveryItem,
   DiscoverySelection,
@@ -36,11 +36,9 @@ export function discoverySelectionEquals(
 
 export function filterDiscoveryItems(
   items: readonly DiscoveryItem[],
-  filter: DiscoveryContentFilter,
+  selection: DiscoveryContentSelection,
 ): DiscoveryItem[] {
-  if (filter === 'all') return [...items];
-  const type = filter === 'activities' ? 'activity' : filter === 'places' ? 'place' : 'event';
-  return items.filter((item) => item.type === type);
+  return items.filter((item) => selection[item.type === 'activity' ? 'activities' : item.type === 'place' ? 'places' : 'events']);
 }
 
 export function discoveryCoordinateInViewport(

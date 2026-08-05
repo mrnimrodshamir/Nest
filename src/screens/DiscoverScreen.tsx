@@ -8,6 +8,7 @@ import {
   MagnifyingGlass,
   Funnel,
   ArrowsDownUp,
+  Check,
   Plus,
   WarningCircle,
   X,
@@ -29,7 +30,7 @@ import { useNearbyActivities } from '@/hooks/useNearbyActivities';
 import { radius, spacing, theme, typography, iconDefaults } from '@/theme';
 import type { Activity, ActivityCategory } from '@/types/activity';
 import { CATEGORY_LABELS } from '@/types/activity';
-import type { DiscoveryContentFilter, DiscoveryItem, DiscoverySelection, DiscoverySort } from '@/types/discovery';
+import type { DiscoveryContentKey, DiscoveryContentSelection, DiscoveryItem, DiscoverySelection, DiscoverySort } from '@/types/discovery';
 import type { EventCategory, EventDetails } from '@/types/event';
 import { EVENT_CATEGORY_LABELS } from '@/types/event';
 import type { FamilyFriendlyPlace, PlaceCategory, PlaceFilters } from '@/types/familyFriendlyPlace';
@@ -37,7 +38,7 @@ import { PLACE_CATEGORY_LABELS } from '@/types/familyFriendlyPlace';
 import { clusterPlacesForRegion } from '@/utils/placeClustering';
 import { regionToPlaceViewport } from '@/utils/placeViewport';
 import { distanceMeters } from '@/utils/placeViewport';
-import { discoveryEmptyCopy, transitionDiscoveryContentFilter, visibleDiscoveryFailures } from '@/utils/discoveryPresentation';
+import { ALL_DISCOVERY_CONTENT, discoveryEmptyCopy, selectedContentKeys, toggleDiscoveryContent, visibleDiscoveryFailures } from '@/utils/discoveryPresentation';
 import {
   discoveryItemKey,
   discoveryItemCoordinate,
@@ -69,8 +70,7 @@ const PLACE_CATEGORIES: Array<{ key: PlaceCategory | 'all'; label: string }> = [
   { key: 'pool', label: 'Pools' },
 ];
 
-const CONTENT_FILTERS: Array<{ key: DiscoveryContentFilter; label: string }> = [
-  { key: 'all', label: 'All' },
+const CONTENT_TYPES: Array<{ key: DiscoveryContentKey; label: string }> = [
   { key: 'activities', label: 'Activities' },
   { key: 'places', label: 'Places' },
   { key: 'events', label: 'Events' },
@@ -133,7 +133,7 @@ export function DiscoverScreen({ onOpenActivity, onOpenPlace, onOpenEvent, onHos
     latitudeDelta: 0.04,
     longitudeDelta: 0.04,
   });
-  const [contentFilter, setContentFilter] = useState<DiscoveryContentFilter>('all');
+  const [contentSelection, setContentSelection] = useState<DiscoveryContentSelection>(() => ({ ...ALL_DISCOVERY_CONTENT }));
   const [selectedItem, setSelectedItem] = useState<DiscoverySelection>(null);
   const [selectedActivityCategory, setSelectedActivityCategory] = useState<ActivityCategory | 'all'>('all');
   const [selectedPlaceCategory, setSelectedPlaceCategory] = useState<PlaceCategory | 'all'>('all');
@@ -144,6 +144,7 @@ export function DiscoverScreen({ onOpenActivity, onOpenPlace, onOpenEvent, onHos
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [sortOpen, setSortOpen] = useState(false);
   const [sort, setSort] = useState<DiscoverySort>('default');
+  const [filterNotice, setFilterNotice] = useState<string | null>(null);
 
   const mapRef = useRef<MapView>(null);
   const sheetRef = useRef<BottomSheet>(null);
@@ -238,7 +239,7 @@ export function DiscoverScreen({ onOpenActivity, onOpenPlace, onOpenEvent, onHos
     latitude: region.latitude,
     longitude: region.longitude,
   }), [filteredActivities, filteredEvents, filteredPlaces, region.latitude, region.longitude]);
-  const visibleItems = useMemo(() => filterDiscoveryItems(mergedItems, contentFilter), [contentFilter, mergedItems]);
+  const visibleItems = useMemo(() => filterDiscoveryItems(mergedItems, contentSelection), [contentSelection, mergedItems]);
   const listItems = useMemo(() => sortDiscoveryItems(visibleItems, sort, position.userCoordinate ?? region), [position.userCoordinate, region, sort, visibleItems]);
   const visibleActivities = useMemo(() => visibleItems.flatMap((item) => item.type === 'activity' ? [item.data] : []), [visibleItems]);
   const visiblePlaces = useMemo(() => visibleItems.flatMap((item) => item.type === 'place' ? [item.data] : []), [visibleItems]);
@@ -264,15 +265,23 @@ export function DiscoverScreen({ onOpenActivity, onOpenPlace, onOpenEvent, onHos
     else onOpenEvent(item.data);
   }, [focusItem, onOpenActivity, onOpenEvent, onOpenPlace]);
 
-  const changeContentFilter = useCallback((next: DiscoveryContentFilter) => {
-    const transition = transitionDiscoveryContentFilter(region, next);
-    setContentFilter(transition.contentFilter);
-    setSelectedItem(transition.selectedItem);
-  }, [region]);
+  const changeContentSelection = useCallback((key: DiscoveryContentKey) => {
+    const result = toggleDiscoveryContent(contentSelection, key);
+    setFilterNotice(result.prevented ? 'Keep at least one content type selected.' : null);
+    if (result.prevented) return;
+    setContentSelection(result.selection);
+    if (contentSelection[key]) {
+      const itemType = key === 'activities' ? 'activity' : key === 'places' ? 'place' : 'event';
+      setSelectedItem((current) => current?.type === itemType ? null : current);
+    }
+  }, [contentSelection]);
 
   const hasCachedContent = visibleItems.length > 0;
   const showSkeleton = !hasCachedContent && (activitiesQuery.isRefreshing || placesQuery.isLoading || eventsQuery.isLoading || position.isResolving);
-  const visibleFailures = visibleDiscoveryFailures(contentFilter, activitiesQuery.error, placesQuery.error, eventsQuery.error);
+  const visibleFailures = visibleDiscoveryFailures(contentSelection, activitiesQuery.error, placesQuery.error, eventsQuery.error);
+  const activeFilterCount = (selectedContentKeys(contentSelection).length === 3 ? 0 : 1)
+    + Number(selectedActivityCategory !== 'all') + Number(selectedPlaceCategory !== 'all')
+    + Number(selectedEventCategory !== 'all') + placeQuickFilters.size;
   const showActivityError = visibleFailures.includes('activity');
   const showPlaceError = visibleFailures.includes('place');
   const showEventError = visibleFailures.includes('event');
@@ -338,21 +347,22 @@ export function DiscoverScreen({ onOpenActivity, onOpenPlace, onOpenEvent, onHos
         ) : (
           <View style={styles.toolbar}>
             <ToolbarButton icon={MagnifyingGlass} label="Search" onPress={() => setSearchOpen(true)} />
-            <ToolbarButton icon={Funnel} label="Filters" onPress={() => setFiltersOpen(true)} active={contentFilter !== 'all' || selectedActivityCategory !== 'all' || selectedPlaceCategory !== 'all' || selectedEventCategory !== 'all' || placeQuickFilters.size > 0} />
+            <ToolbarButton icon={Funnel} label={activeFilterCount ? `Filters · ${activeFilterCount}` : 'Filters'} onPress={() => setFiltersOpen(true)} active={activeFilterCount > 0} />
             <ToolbarButton icon={ArrowsDownUp} label="Sort" onPress={() => setSortOpen(true)} active={sort !== 'default'} />
           </View>
         )}
       </SafeAreaView>
 
       <ModalSheet visible={filtersOpen} title="Filters" onDismiss={() => setFiltersOpen(false)}>
-        <Text style={styles.filterLabel}>Show</Text>
-        <FilterRow items={CONTENT_FILTERS} selected={contentFilter} onSelect={changeContentFilter} />
-        {(contentFilter === 'all' || contentFilter === 'activities') ? <FilterRow label="Activities" items={ACTIVITY_CATEGORIES} selected={selectedActivityCategory} onSelect={setSelectedActivityCategory} /> : null}
-        {(contentFilter === 'all' || contentFilter === 'places') ? <>
+        <View style={styles.contentTypeHeader}><Text style={styles.filterLabel}>Content types</Text><Pressable onPress={() => { setContentSelection({ ...ALL_DISCOVERY_CONTENT }); setFilterNotice(null); }} accessibilityRole="button"><Text style={styles.selectAll}>Select all</Text></Pressable></View>
+        <View style={styles.contentTypeOptions}>{CONTENT_TYPES.map((item) => <ContentTypeOption key={item.key} label={item.label} selected={contentSelection[item.key]} onPress={() => changeContentSelection(item.key)} />)}</View>
+        {filterNotice ? <Text style={styles.filterNotice} accessibilityLiveRegion="polite">{filterNotice}</Text> : null}
+        <FilterRow label="Activities" items={ACTIVITY_CATEGORIES} selected={selectedActivityCategory} onSelect={setSelectedActivityCategory} />
+        <>
           <FilterRow label="Places" items={PLACE_CATEGORIES} selected={selectedPlaceCategory} onSelect={setSelectedPlaceCategory} />
           <View style={styles.wrapChips}>{PLACE_QUICK_FILTERS.map((item) => <CategoryChip key={item.key} label={item.label} selected={placeQuickFilters.has(item.key)} onPress={() => setPlaceQuickFilters((current) => togglePlaceQuickFilter(current, item.key))} />)}</View>
-        </> : null}
-        {(contentFilter === 'all' || contentFilter === 'events') ? <FilterRow label="Events" items={EVENT_CATEGORIES} selected={selectedEventCategory} onSelect={setSelectedEventCategory} /> : null}
+        </>
+        <FilterRow label="Events" items={EVENT_CATEGORIES} selected={selectedEventCategory} onSelect={setSelectedEventCategory} />
       </ModalSheet>
 
       <ModalSheet visible={sortOpen} title="Sort list" onDismiss={() => setSortOpen(false)}>
@@ -366,7 +376,7 @@ export function DiscoverScreen({ onOpenActivity, onOpenPlace, onOpenEvent, onHos
 
       <BottomSheet ref={sheetRef} index={SHEET_PEEK_INDEX} snapPoints={SNAP_POINTS} enableDynamicSizing={false} onChange={(index) => { sheetIndex.current = index; }} backgroundStyle={styles.sheetBackground} handleIndicatorStyle={styles.sheetHandle}>
         <BottomSheetView style={styles.sheetHeader}>
-          <Text style={styles.sheetTitle}>{showSkeleton ? 'Finding nearby options…' : discoveryCountLabel(contentFilter, visibleItems.length)}</Text>
+          <Text style={styles.sheetTitle}>{showSkeleton ? 'Finding nearby options…' : discoveryCountLabel(contentSelection, visibleItems.length)}</Text>
           {!showSkeleton && visibleItems.length > 0 ? <Text style={styles.sheetSubtitle}>Swipe up to explore</Text> : null}
         </BottomSheetView>
         {showActivityError ? <QueryErrorBanner label="Activities couldn't refresh" onRetry={activitiesQuery.refresh} /> : null}
@@ -390,9 +400,9 @@ export function DiscoverScreen({ onOpenActivity, onOpenPlace, onOpenEvent, onHos
             maxToRenderPerBatch={8}
             windowSize={7}
             removeClippedSubviews
-            onEndReached={(contentFilter === 'all' || contentFilter === 'places') && placesQuery.hasMore ? placesQuery.loadMore : undefined}
+            onEndReached={contentSelection.places && placesQuery.hasMore ? placesQuery.loadMore : undefined}
             onEndReachedThreshold={0.5}
-            ListEmptyComponent={<DiscoveryEmptyState filter={contentFilter} locationDenied={position.locationDenied} onHostActivity={onHostActivity} />}
+            ListEmptyComponent={<DiscoveryEmptyState selection={contentSelection} locationDenied={position.locationDenied} onHostActivity={onHostActivity} />}
             onScrollToIndexFailed={({ index }) => setTimeout(() => listRef.current?.scrollToIndex({ index, animated: true }), 100)}
           />
         )}
@@ -409,6 +419,10 @@ function ToolbarButton({ icon: Icon, label, onPress, active = false }: { icon: R
   return <Pressable style={[styles.toolbarButton, active && styles.toolbarButtonActive]} onPress={onPress} accessibilityRole="button"><Icon size={18} color={active ? theme.text.inverse : theme.text.primary} /><Text style={[styles.toolbarButtonText, active && styles.toolbarButtonTextActive]}>{label}</Text></Pressable>;
 }
 
+function ContentTypeOption({ label, selected, onPress }: { label: string; selected: boolean; onPress: () => void }) {
+  return <Pressable style={styles.contentTypeOption} onPress={onPress} accessibilityRole="checkbox" accessibilityState={{ checked: selected }} accessibilityLabel={`Show ${label.toLocaleLowerCase()}`}><View style={[styles.checkbox, selected && styles.checkboxSelected]}>{selected ? <Check size={14} color={theme.text.inverse} weight="bold" /> : null}</View><Text style={styles.contentTypeLabel}>{label}</Text></Pressable>;
+}
+
 function ModalSheet({ visible, title, onDismiss, children }: { visible: boolean; title: string; onDismiss: () => void; children: React.ReactNode }) {
   return <Modal visible={visible} transparent animationType="slide" onRequestClose={onDismiss}><Pressable style={styles.modalOverlay} onPress={onDismiss}><Pressable style={styles.modalSheet} onPress={(event) => event.stopPropagation()}><View style={styles.modalHeader}><Text style={styles.modalTitle}>{title}</Text><Pressable onPress={onDismiss} accessibilityLabel={`Close ${title.toLocaleLowerCase()}`} hitSlop={10}><X size={20} color={theme.text.primary} /></Pressable></View><ScrollView contentContainerStyle={styles.modalContent} keyboardShouldPersistTaps="handled">{children}</ScrollView></Pressable></Pressable></Modal>;
 }
@@ -417,15 +431,16 @@ function QueryErrorBanner({ label, onRetry }: { label: string; onRetry: () => vo
   return <View style={styles.errorBanner}><WarningCircle size={17} color={theme.semantic.warning} weight="fill" /><Text style={styles.errorBannerText}>{label}</Text><Pressable onPress={onRetry} accessibilityRole="button" accessibilityLabel={`${label}. Try again`}><Text style={styles.retryText}>Try again</Text></Pressable></View>;
 }
 
-function DiscoveryEmptyState({ filter, locationDenied, onHostActivity }: { filter: DiscoveryContentFilter; locationDenied: boolean; onHostActivity: () => void }) {
-  const copy = discoveryEmptyCopy(filter);
-  return <View style={styles.emptyState}><Text style={styles.emptyTitle}>{copy}</Text><Text style={styles.emptyBody}>{locationDenied ? 'Location access is off, so this area may not be near you.' : 'Try moving the map, changing a filter, or searching nearby.'}</Text>{(filter === 'all' || filter === 'activities') ? <Pressable style={styles.emptyAction} onPress={onHostActivity}><Text style={styles.emptyActionText}>Host an activity</Text></Pressable> : null}</View>;
+function DiscoveryEmptyState({ selection, locationDenied, onHostActivity }: { selection: DiscoveryContentSelection; locationDenied: boolean; onHostActivity: () => void }) {
+  const copy = discoveryEmptyCopy(selection);
+  return <View style={styles.emptyState}><Text style={styles.emptyTitle}>{copy}</Text><Text style={styles.emptyBody}>{locationDenied ? 'Location access is off, so this area may not be near you.' : 'Try moving the map, changing a filter, or searching nearby.'}</Text>{selection.activities ? <Pressable style={styles.emptyAction} onPress={onHostActivity}><Text style={styles.emptyActionText}>Host an activity</Text></Pressable> : null}</View>;
 }
 
-function discoveryCountLabel(filter: DiscoveryContentFilter, count: number): string {
-  if (filter === 'activities') return `${count} ${count === 1 ? 'activity' : 'activities'} nearby`;
-  if (filter === 'places') return `${count} ${count === 1 ? 'place' : 'places'} in this area`;
-  if (filter === 'events') return `${count} ${count === 1 ? 'event' : 'events'} in this area`;
+function discoveryCountLabel(selection: DiscoveryContentSelection, count: number): string {
+  const keys = selectedContentKeys(selection);
+  if (keys.length === 1 && keys[0] === 'activities') return `${count} ${count === 1 ? 'activity' : 'activities'} nearby`;
+  if (keys.length === 1 && keys[0] === 'places') return `${count} ${count === 1 ? 'place' : 'places'} in this area`;
+  if (keys.length === 1 && keys[0] === 'events') return `${count} ${count === 1 ? 'event' : 'events'} in this area`;
   return `${count} nearby`;
 }
 
@@ -440,11 +455,6 @@ function togglePlaceQuickFilter(current: Set<PlaceQuickFilter>, key: PlaceQuickF
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: theme.background.app },
   headerOverlay: { position: 'absolute', top: 0, left: 0, right: 0 },
-  contentFilter: { alignSelf: 'center', flexDirection: 'row', padding: 3, borderRadius: radius.pill, backgroundColor: theme.background.surface, shadowColor: '#000', shadowOpacity: 0.12, shadowRadius: 6, shadowOffset: { width: 0, height: 2 } },
-  contentFilterOption: { minWidth: 72, minHeight: 38, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center' },
-  contentFilterSelected: { backgroundColor: theme.brand.primary },
-  contentFilterText: { ...typography.subhead, color: theme.text.secondary, fontWeight: '600' },
-  contentFilterTextSelected: { color: theme.text.inverse },
   toolbar: { flexDirection: 'row', gap: spacing.sm, paddingHorizontal: spacing.lg, paddingTop: spacing.sm },
   toolbarButton: { flex: 1, minHeight: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.xs, borderRadius: radius.pill, backgroundColor: theme.background.surface, shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 5, shadowOffset: { width: 0, height: 2 } },
   toolbarButtonActive: { backgroundColor: theme.brand.primary },
@@ -456,6 +466,14 @@ const styles = StyleSheet.create({
   chipRow: { paddingHorizontal: spacing.lg, paddingTop: spacing.xs },
   chipRowCompact: { paddingHorizontal: spacing.lg, paddingTop: 2 },
   wrapChips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs, paddingHorizontal: spacing.lg, paddingTop: spacing.xs },
+  contentTypeHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingRight: spacing.lg },
+  selectAll: { ...typography.subhead, color: theme.brand.primary, fontWeight: '700' },
+  contentTypeOptions: { paddingHorizontal: spacing.lg, gap: spacing.xs },
+  contentTypeOption: { minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: spacing.sm, borderRadius: radius.md, backgroundColor: theme.background.app, paddingHorizontal: spacing.md },
+  checkbox: { width: 22, height: 22, borderRadius: 6, borderWidth: 1.5, borderColor: theme.border.strong, alignItems: 'center', justifyContent: 'center' },
+  checkboxSelected: { backgroundColor: theme.brand.primary, borderColor: theme.brand.primary },
+  contentTypeLabel: { ...typography.bodyMedium, color: theme.text.primary },
+  filterNotice: { ...typography.footnote, color: theme.semantic.warning, paddingHorizontal: spacing.lg },
   modalOverlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(43,43,40,0.4)' },
   modalSheet: { maxHeight: '82%', borderTopLeftRadius: radius.xl, borderTopRightRadius: radius.xl, backgroundColor: theme.background.surface, paddingBottom: spacing['2xl'] },
   modalHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: spacing.lg, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: theme.border.default },

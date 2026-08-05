@@ -1,43 +1,41 @@
-import type { Region } from 'react-native-maps';
-import type { DiscoveryContentFilter, DiscoverySelection } from '@/types/discovery';
+import type { DiscoveryContentKey, DiscoveryContentSelection } from '@/types/discovery';
 
-export interface DiscoveryFilterTransition {
-  contentFilter: DiscoveryContentFilter;
-  selectedItem: DiscoverySelection;
-  region: Region;
+export const ALL_DISCOVERY_CONTENT: DiscoveryContentSelection = Object.freeze({ activities: true, places: true, events: true });
+
+export function toggleDiscoveryContent(
+  selection: DiscoveryContentSelection,
+  key: DiscoveryContentKey,
+): { selection: DiscoveryContentSelection; prevented: boolean } {
+  const selectedCount = Object.values(selection).filter(Boolean).length;
+  if (selection[key] && selectedCount === 1) return { selection, prevented: true };
+  return { selection: { ...selection, [key]: !selection[key] }, prevented: false };
 }
 
-/** Content filtering is presentation-only: selection clears, camera persists. */
-export function transitionDiscoveryContentFilter(
-  region: Region,
-  contentFilter: DiscoveryContentFilter,
-): DiscoveryFilterTransition {
-  return { region, contentFilter, selectedItem: null };
-}
-
-export function discoveryEmptyCopy(filter: DiscoveryContentFilter): string {
-  if (filter === 'activities') return 'No activities match these filters.';
-  if (filter === 'places') return 'No places match these filters.';
-  if (filter === 'events') return 'No events match these filters.';
+export function discoveryEmptyCopy(selection: DiscoveryContentSelection): string {
+  const keys = selectedContentKeys(selection);
+  if (keys.length === 1 && keys[0] === 'activities') return 'No activities match these filters.';
+  if (keys.length === 1 && keys[0] === 'places') return 'No places match these filters.';
+  if (keys.length === 1 && keys[0] === 'events') return 'No events match these filters.';
   return 'No activities, places, or events found in this area.';
 }
 
-export function contentFilterIncludes(filter: DiscoveryContentFilter, type: 'activity' | 'place' | 'event'): boolean {
-  return filter === 'all'
-    || (filter === 'activities' && type === 'activity')
-    || (filter === 'places' && type === 'place')
-    || (filter === 'events' && type === 'event');
+export function contentSelectionIncludes(selection: DiscoveryContentSelection, type: 'activity' | 'place' | 'event'): boolean {
+  return selection[type === 'activity' ? 'activities' : type === 'place' ? 'places' : 'events'];
+}
+
+export function selectedContentKeys(selection: DiscoveryContentSelection): DiscoveryContentKey[] {
+  return (Object.keys(selection) as DiscoveryContentKey[]).filter((key) => selection[key]);
 }
 
 export function visibleDiscoveryFailures(
-  filter: DiscoveryContentFilter,
+  selection: DiscoveryContentSelection,
   activityError: string | null,
   placeError: string | null,
   eventError: string | null = null,
 ): Array<'activity' | 'place' | 'event'> {
   const failures: Array<'activity' | 'place' | 'event'> = [];
-  if (activityError && contentFilterIncludes(filter, 'activity')) failures.push('activity');
-  if (placeError && contentFilterIncludes(filter, 'place')) failures.push('place');
-  if (eventError && contentFilterIncludes(filter, 'event')) failures.push('event');
+  if (activityError && contentSelectionIncludes(selection, 'activity')) failures.push('activity');
+  if (placeError && contentSelectionIncludes(selection, 'place')) failures.push('place');
+  if (eventError && contentSelectionIncludes(selection, 'event')) failures.push('event');
   return failures;
 }
