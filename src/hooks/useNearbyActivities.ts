@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import * as Location from 'expo-location';
 import { supabase } from '@/lib/supabase';
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
@@ -43,6 +43,9 @@ interface UseNearbyActivitiesOptions {
    *  the hook returns this data immediately and never touches location
    *  permissions, network status, or Supabase. Never set in production. */
   mockActivities?: Activity[];
+  /** Shared Discovery map centre. When provided, no second location
+   * permission request is made and the existing nearby RPC remains bounded. */
+  queryCenter?: { latitude: number; longitude: number } | null;
 }
 
 export function useNearbyActivities(options?: UseNearbyActivitiesOptions): UseNearbyActivitiesResult {
@@ -51,12 +54,18 @@ export function useNearbyActivities(options?: UseNearbyActivitiesOptions): UseNe
   const [radiusExpanded, setRadiusExpanded] = useState(false);
   const [locationDenied, setLocationDenied] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const requestId = useRef(0);
   const { isOffline } = useNetworkStatus();
   const mockActivities = options?.mockActivities;
+  const queryLatitude = options?.queryCenter?.latitude;
+  const queryLongitude = options?.queryCenter?.longitude;
 
   const load = useCallback(async () => {
+    const id = ++requestId.current;
     if (mockActivities) {
       setActivities(mockActivities);
+      setError(null);
+      setIsRefreshing(false);
       return;
     }
     if (isOffline) {
@@ -70,34 +79,43 @@ export function useNearbyActivities(options?: UseNearbyActivitiesOptions): UseNe
     setError(null);
 
     try {
-      const { coords, denied } = await resolveLocation();
-      setLocationDenied(denied);
+      const resolved = queryLatitude != null && queryLongitude != null
+        ? { coords: { latitude: queryLatitude, longitude: queryLongitude }, denied: false }
+        : await resolveLocation();
+      if (id !== requestId.current) return;
+      setLocationDenied(resolved.denied);
 
-      let results = await fetchNearby(coords, BASE_RADIUS_KM);
+      let results = await fetchNearby(resolved.coords, BASE_RADIUS_KM);
       let expanded = false;
 
       // Cold-start safety net: silently widen the search before ever
       // surfacing an empty state to the person.
       if (results.length === 0) {
-        results = await fetchNearby(coords, EXPANDED_RADIUS_KM);
+        results = await fetchNearby(resolved.coords, EXPANDED_RADIUS_KM);
         expanded = true;
       }
 
+      if (id !== requestId.current) return;
       setActivities(results);
       setRadiusExpanded(expanded);
     } catch (err) {
+      if (id !== requestId.current) return;
       setError(
         err instanceof Error
           ? "Couldn't load nearby activities. Please try again."
           : 'Something went wrong loading activities.',
       );
     } finally {
-      setIsRefreshing(false);
+      if (id === requestId.current) setIsRefreshing(false);
     }
-  }, [isOffline]);
+  }, [isOffline, mockActivities, queryLatitude, queryLongitude]);
 
   useEffect(() => {
-    load();
+    const timer = setTimeout(load, queryLatitude != null && queryLongitude != null ? 250 : 0);
+    return () => {
+      clearTimeout(timer);
+      requestId.current += 1;
+    };
   }, [load]);
 
   const now = new Date();
