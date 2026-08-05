@@ -25,6 +25,7 @@ export function buildGoogleCalendarUrl(activity: CalendarUrlActivityInfo): strin
     dates: `${toGoogleDate(activity.startsAt)}/${toGoogleDate(endDate)}`,
     details: `${activity.description}\n\n${activityDeepLink(activity.id)}`,
     location: activity.locationName,
+    ctz: 'Asia/Jerusalem',
   });
 
   return `https://calendar.google.com/calendar/render?${params.toString()}`;

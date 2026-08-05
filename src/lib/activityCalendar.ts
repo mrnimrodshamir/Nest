@@ -19,6 +19,7 @@ interface StoredCalendarLink {
 }
 
 const STORAGE_PREFIX = 'nestup.calendarEvent.';
+const inFlightAdds = new Map<string, Promise<{ success: boolean; error?: string }>>();
 
 async function getStoredLink(activityId: string): Promise<StoredCalendarLink | null> {
   const raw = await AsyncStorage.getItem(STORAGE_PREFIX + activityId);
@@ -48,7 +49,7 @@ async function getDefaultCalendarId(): Promise<string | null> {
   return writable?.id ?? null;
 }
 
-export async function addActivityToAppleCalendar(
+async function addActivityToAppleCalendarInternal(
   activity: CalendarActivityInfo,
 ): Promise<{ success: boolean; error?: string }> {
   const { status } = await Calendar.requestCalendarPermissionsAsync();
@@ -66,7 +67,7 @@ export async function addActivityToAppleCalendar(
       endDate,
       location: activity.locationName,
       notes: `${activity.description}\n\n${activityDeepLink(activity.id)}`,
-      timeZone: undefined,
+      timeZone: 'Asia/Jerusalem',
     });
     await setStoredLink(activity.id, {
       eventId,
@@ -77,6 +78,17 @@ export async function addActivityToAppleCalendar(
   } catch (err) {
     return { success: false, error: err instanceof Error ? err.message : 'Could not add to calendar' };
   }
+}
+
+/** Coalesces rapid duplicate taps before the persisted calendar link exists. */
+export function addActivityToAppleCalendar(
+  activity: CalendarActivityInfo,
+): Promise<{ success: boolean; error?: string }> {
+  const running = inFlightAdds.get(activity.id);
+  if (running) return running;
+  const task = addActivityToAppleCalendarInternal(activity).finally(() => inFlightAdds.delete(activity.id));
+  inFlightAdds.set(activity.id, task);
+  return task;
 }
 
 export async function hasCalendarDrift(
@@ -104,6 +116,7 @@ export async function updateCalendarEvent(
       endDate,
       location: activity.locationName,
       notes: `${activity.description}\n\n${activityDeepLink(activity.id)}`,
+      timeZone: 'Asia/Jerusalem',
     });
     await setStoredLink(activity.id, {
       eventId: stored.eventId,
