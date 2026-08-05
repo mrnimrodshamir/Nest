@@ -4,7 +4,7 @@ import { Marker } from 'react-native-maps';
 import { theme, typography } from '@/theme';
 
 export function PlaceClusterMarker({ latitude, longitude, count, selected, onPress }: { latitude: number; longitude: number; count: number; selected: boolean; onPress: () => void }) {
-  return <Marker coordinate={{ latitude, longitude }} onPress={onPress} tracksViewChanges={selected}>
+  return <Marker coordinate={{ latitude, longitude }} onPress={onPress} accessibilityLabel={`${count} places`} accessibilityRole="button" tracksViewChanges={selected}>
     <View style={[styles.cluster, selected && styles.selected]}><Text style={styles.count}>{count > 99 ? '99+' : count}</Text></View>
   </Marker>;
 }

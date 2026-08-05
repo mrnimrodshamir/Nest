@@ -1,37 +1,46 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { View, Text, Pressable, StyleSheet, Dimensions, FlatList, TextInput } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import MapView, { PROVIDER_DEFAULT, Region } from 'react-native-maps';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import MapView, { PROVIDER_DEFAULT, type Region } from 'react-native-maps';
 import BottomSheet, { BottomSheetFlatList, BottomSheetView } from '@gorhom/bottom-sheet';
 import {
   MagnifyingGlass,
-  Plus,
-  Compass,
-  FunnelSimpleX,
-  MapPinLine,
   MapTrifold,
   ListBullets,
-  WifiSlash,
+  Plus,
   WarningCircle,
   X,
 } from 'phosphor-react-native';
-import { theme, typography, spacing, radius, iconDefaults } from '@/theme';
 import { ActivityCard } from '@/components/ActivityCard';
 import { ActivityMapPin } from '@/components/ActivityMapPin';
 import { CategoryChip } from '@/components/CategoryChip';
-import { StateCard } from '@/components/StateCard';
+import { PlaceCard } from '@/components/PlaceCard';
+import { PlaceClusterMarker } from '@/components/PlaceClusterMarker';
+import { PlaceMapPin } from '@/components/PlaceMapPin';
 import { SkeletonCard } from '@/components/SkeletonCard';
 import { FALLBACK_LOCATION } from '@/constants/location';
+import { useAuth } from '@/hooks/useAuth';
+import { useDiscoveryPosition } from '@/hooks/useDiscoveryPosition';
+import { useFamilyFriendlyPlaces } from '@/hooks/useFamilyFriendlyPlaces';
+import { useNearbyActivities } from '@/hooks/useNearbyActivities';
+import { radius, spacing, theme, typography, iconDefaults } from '@/theme';
 import type { Activity, ActivityCategory } from '@/types/activity';
 import { CATEGORY_LABELS } from '@/types/activity';
-import { useNearbyActivities } from '@/hooks/useNearbyActivities';
-import { useAuth } from '@/hooks/useAuth';
-import { PlacesDiscoveryView } from '@/screens/PlacesDiscoveryView';
-import type { FamilyFriendlyPlace } from '@/types/familyFriendlyPlace';
+import type { DiscoveryContentFilter, DiscoveryItem, DiscoverySelection } from '@/types/discovery';
+import type { FamilyFriendlyPlace, PlaceCategory, PlaceFilters } from '@/types/familyFriendlyPlace';
+import { PLACE_CATEGORY_LABELS } from '@/types/familyFriendlyPlace';
+import { clusterPlacesForRegion } from '@/utils/placeClustering';
+import { regionToPlaceViewport } from '@/utils/placeViewport';
+import {
+  discoveryItemKey,
+  discoverySelectionEquals,
+  filterDiscoveryItems,
+  mergeDiscoveryItems,
+} from '@/utils/unifiedDiscovery';
 
-const CATEGORIES: Array<{ key: ActivityCategory | 'all'; label: string }> = [
-  { key: 'all', label: 'All' },
+const ACTIVITY_CATEGORIES: Array<{ key: ActivityCategory | 'all'; label: string }> = [
+  { key: 'all', label: 'All activities' },
   { key: 'stroller_walk', label: CATEGORY_LABELS.stroller_walk },
   { key: 'coffee_meetup', label: CATEGORY_LABELS.coffee_meetup },
   { key: 'baby_playtime', label: CATEGORY_LABELS.baby_playtime },
@@ -41,9 +50,36 @@ const CATEGORIES: Array<{ key: ActivityCategory | 'all'; label: string }> = [
   { key: 'workshop', label: CATEGORY_LABELS.workshop },
 ];
 
-// Peek = mostly map, a hint of the list — the default, and what Discovery
-// always returns to when this tab regains focus. Half = real cards visible
-// immediately once expanded. Full = scrollable list, map reduced to a strip.
+const PLACE_CATEGORIES: Array<{ key: PlaceCategory | 'all'; label: string }> = [
+  { key: 'all', label: 'All places' },
+  { key: 'playground', label: 'Playgrounds' },
+  { key: 'park', label: 'Parks' },
+  { key: 'indoor_playground', label: 'Indoor play' },
+  { key: 'museum', label: 'Museums' },
+  { key: 'beach', label: 'Beaches' },
+  { key: 'pool', label: 'Pools' },
+];
+
+const CONTENT_FILTERS: Array<{ key: DiscoveryContentFilter; label: string }> = [
+  { key: 'all', label: 'All' },
+  { key: 'activities', label: 'Activities' },
+  { key: 'places', label: 'Places' },
+];
+
+type PlaceQuickFilter =
+  | 'babies' | 'toddlers' | 'kids'
+  | 'indoor' | 'outdoor' | 'free' | 'paid'
+  | 'changingTable' | 'toilets' | 'highChairs' | 'shade' | 'waterFountain' | 'accessible';
+
+const PLACE_QUICK_FILTERS: Array<{ key: PlaceQuickFilter; label: string }> = [
+  { key: 'babies', label: 'Babies' }, { key: 'toddlers', label: 'Toddlers' }, { key: 'kids', label: 'Kids' },
+  { key: 'indoor', label: 'Indoor' }, { key: 'outdoor', label: 'Outdoor' },
+  { key: 'free', label: 'Free' }, { key: 'paid', label: 'Paid' },
+  { key: 'changingTable', label: 'Changing table' }, { key: 'toilets', label: 'Toilets' },
+  { key: 'highChairs', label: 'High chairs' }, { key: 'shade', label: 'Shade' },
+  { key: 'waterFountain', label: 'Water' }, { key: 'accessible', label: 'Accessible' },
+];
+
 const SNAP_POINTS = ['22%', '50%', '92%'];
 const SHEET_PEEK_INDEX = 0;
 const SHEET_HALF_INDEX = 1;
@@ -53,161 +89,138 @@ interface DiscoverScreenProps {
   onOpenActivity: (activity: Activity) => void;
   onOpenPlace: (place: FamilyFriendlyPlace) => void;
   onHostActivity: () => void;
-  /** UI-preview escape hatch — when set, the screen never touches location
-   *  permissions or Supabase. Never set in production. */
   mockActivities?: Activity[];
   mockPlaces?: FamilyFriendlyPlace[];
 }
 
 export function DiscoverScreen({ onOpenActivity, onOpenPlace, onHostActivity, mockActivities, mockPlaces }: DiscoverScreenProps) {
   const { profile } = useAuth();
-  const [selectedCategory, setSelectedCategory] = useState<ActivityCategory | 'all'>('all');
-  const [selectedActivityId, setSelectedActivityId] = useState<string | null>(null);
-  const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
+  const previewMode = mockActivities !== undefined || mockPlaces !== undefined;
+  const initialCoordinate = mockActivities?.[0] ?? mockPlaces?.[0] ?? FALLBACK_LOCATION;
+  const [region, setRegion] = useState<Region>({
+    latitude: initialCoordinate.latitude,
+    longitude: initialCoordinate.longitude,
+    latitudeDelta: 0.04,
+    longitudeDelta: 0.04,
+  });
+  const [contentFilter, setContentFilter] = useState<DiscoveryContentFilter>('all');
+  const [selectedItem, setSelectedItem] = useState<DiscoverySelection>(null);
+  const [selectedActivityCategory, setSelectedActivityCategory] = useState<ActivityCategory | 'all'>('all');
+  const [selectedPlaceCategory, setSelectedPlaceCategory] = useState<PlaceCategory | 'all'>('all');
+  const [placeQuickFilters, setPlaceQuickFilters] = useState<Set<PlaceQuickFilter>>(() => new Set());
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  // Map and List are two views of the same screen — an explicit toggle,
-  // not just an implicit sheet-drag gesture. Plain state, no Reanimated:
-  // the segmented pill used to be driven by a shared value, which — inside
-  // a screen hosting a BottomSheetFlatList — is exactly the class of
-  // Reanimated/native-layout interaction that caused this session's other
-  // crashes. A static background swap can't desync from what's on screen.
   const [viewMode, setViewMode] = useState<'map' | 'list'>('map');
-  const [contentMode, setContentMode] = useState<'activities' | 'places'>('activities');
 
   const mapRef = useRef<MapView>(null);
   const sheetRef = useRef<BottomSheet>(null);
   const listRef = useRef<React.ElementRef<typeof BottomSheetFlatList>>(null);
   const sheetIndex = useRef(SHEET_PEEK_INDEX);
+  const userMovedMap = useRef(false);
+  const centeredOnUser = useRef(false);
 
-  const {
-    feedActivities,
-    radiusExpanded,
-    refresh,
-    locationDenied,
-    isOffline,
-    isRefreshing,
-    error,
-  } = useNearbyActivities(mockActivities ? { mockActivities } : undefined);
+  const position = useDiscoveryPosition(!previewMode);
+  const viewport = useMemo(() => regionToPlaceViewport(region), [region]);
+  const placeFilters = useMemo<PlaceFilters>(() => ({
+    category: selectedPlaceCategory === 'all' ? null : selectedPlaceCategory,
+    ageMonths: placeQuickFilters.has('babies') ? 12 : placeQuickFilters.has('toddlers') ? 36 : placeQuickFilters.has('kids') ? 72 : null,
+    environment: placeQuickFilters.has('indoor') ? 'indoor' : placeQuickFilters.has('outdoor') ? 'outdoor' : null,
+    cost: placeQuickFilters.has('free') ? 'free' : placeQuickFilters.has('paid') ? 'paid' : null,
+    changingTable: placeQuickFilters.has('changingTable'),
+    toilets: placeQuickFilters.has('toilets'),
+    highChairs: placeQuickFilters.has('highChairs'),
+    shade: placeQuickFilters.has('shade'),
+    waterFountain: placeQuickFilters.has('waterFountain'),
+    accessible: placeQuickFilters.has('accessible'),
+  }), [placeQuickFilters, selectedPlaceCategory]);
 
-  useEffect(() => {
-    if (!isRefreshing && !hasLoadedOnce) {
-      console.log('[HOME 02] initial data load completed');
-      setHasLoadedOnce(true);
-    }
-  }, [isRefreshing, hasLoadedOnce]);
-
-  // DiscoverScreen stays mounted underneath CreateActivity/ActivityDetail
-  // (pushed as root-stack screens over the tabs, not separate tab
-  // instances), so every time this tab regains focus: refetch (a newly
-  // created/joined activity must appear without an app restart) and reset
-  // the sheet + toggle to the same predictable collapsed state — never
-  // restore whatever expanded/list state was left behind, which is what
-  // made the sheet feel like it "randomly" covered the map on return.
-  // Set the moment a focus-triggered refresh is requested; cleared once
-  // that refresh actually lands and the map has re-centered on the
-  // (possibly changed) result set. Without this, a newly created activity
-  // could exist in feedActivities but sit outside the map's current
-  // camera position — initialRegion only applies once, at first mount —
-  // so it would silently be off-screen until some other action happened
-  // to move the camera.
-  const pendingRecenter = useRef(false);
-
-  useFocusEffect(
-    useCallback(() => {
-      pendingRecenter.current = true;
-      refresh();
-      sheetRef.current?.snapToIndex(SHEET_PEEK_INDEX);
-      sheetIndex.current = SHEET_PEEK_INDEX;
-      setViewMode('map');
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []),
-  );
-
-  const showSkeleton = !hasLoadedOnce && isRefreshing;
-
-  const filteredFeed = useMemo(() => {
-    const byCategory =
-      selectedCategory === 'all'
-        ? feedActivities
-        : feedActivities.filter((a) => a.category === selectedCategory);
-    const query = searchQuery.trim().toLowerCase();
-    const matched = query ? byCategory.filter((a) => a.title.toLowerCase().includes(query)) : byCategory;
-
-    // Soonest first — that's the actual planning question ("what can I join
-    // today"), not just "what's nearby". Distance only breaks ties between
-    // activities starting at the same time.
-    return [...matched].sort((a, b) => {
-      const timeDiff = new Date(a.startTime).getTime() - new Date(b.startTime).getTime();
-      return timeDiff !== 0 ? timeDiff : a.distanceKm - b.distanceKm;
-    });
-  }, [feedActivities, selectedCategory, searchQuery]);
-
-  // Deliberately not memoized: DiscoverScreen stays mounted for the whole
-  // session, so a useMemo with an empty dependency array (the previous
-  // bug) froze this at whatever hour the app happened to first open,
-  // never updating to "afternoon"/"evening" as the day went on. Plain
-  // recomputation on every render is cheap and always correct.
-  const hour = new Date().getHours();
-  const timeOfDayGreeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
-  const firstName = profile?.displayName?.trim().split(' ')[0];
-  const greeting = firstName ? `${timeOfDayGreeting}, ${firstName}` : timeOfDayGreeting;
-
-  const initialRegion: Region = useMemo(() => {
-    const first = feedActivities[0];
-    return {
-      latitude: first?.latitude ?? FALLBACK_LOCATION.latitude,
-      longitude: first?.longitude ?? FALLBACK_LOCATION.longitude,
-      latitudeDelta: 0.04,
-      longitudeDelta: 0.04,
-    };
-  }, [feedActivities]);
+  const activitiesQuery = useNearbyActivities({
+    mockActivities,
+    queryCenter: { latitude: region.latitude, longitude: region.longitude },
+  });
+  const placesQuery = useFamilyFriendlyPlaces({
+    enabled: true,
+    viewport,
+    filters: placeFilters,
+    userCoordinate: position.userCoordinate,
+    mockPlaces,
+  });
+  const activityRefreshRef = useRef(activitiesQuery.refresh);
+  const placeRefreshRef = useRef(placesQuery.refresh);
+  activityRefreshRef.current = activitiesQuery.refresh;
+  placeRefreshRef.current = placesQuery.refresh;
 
   useEffect(() => {
-    if (!pendingRecenter.current || isRefreshing) return;
-    pendingRecenter.current = false;
-    mapRef.current?.animateToRegion(initialRegion, 350);
-  }, [isRefreshing, initialRegion]);
+    if (!position.userCoordinate || centeredOnUser.current || userMovedMap.current) return;
+    centeredOnUser.current = true;
+    const nextRegion = { ...region, ...position.userCoordinate };
+    setRegion(nextRegion);
+    mapRef.current?.animateToRegion(nextRegion, 350);
+  }, [position.userCoordinate, region]);
 
-  const focusMapOn = useCallback((activity: Activity) => {
-    mapRef.current?.animateToRegion(
-      {
-        latitude: activity.latitude,
-        longitude: activity.longitude,
-        latitudeDelta: 0.02,
-        longitudeDelta: 0.02,
-      },
-      350,
-    );
+  useFocusEffect(useCallback(() => {
+    activityRefreshRef.current();
+    placeRefreshRef.current();
+    sheetRef.current?.snapToIndex(SHEET_PEEK_INDEX);
+    sheetIndex.current = SHEET_PEEK_INDEX;
+    setViewMode('map');
+    // Query refresh callbacks intentionally follow the current shared region.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []));
+
+  const query = searchQuery.trim().toLocaleLowerCase();
+  const filteredActivities = useMemo(() => activitiesQuery.feedActivities.filter((activity) => {
+    if (selectedActivityCategory !== 'all' && activity.category !== selectedActivityCategory) return false;
+    return !query || activity.title.toLocaleLowerCase().includes(query);
+  }), [activitiesQuery.feedActivities, query, selectedActivityCategory]);
+  const filteredPlaces = useMemo(() => placesQuery.places.filter((place) => {
+    if (!query) return true;
+    return [place.name, place.neighborhood, place.shortDescription]
+      .filter((value): value is string => Boolean(value))
+      .some((value) => value.toLocaleLowerCase().includes(query));
+  }), [placesQuery.places, query]);
+
+  const mergedItems = useMemo(() => mergeDiscoveryItems(filteredActivities, filteredPlaces, {
+    latitude: region.latitude,
+    longitude: region.longitude,
+  }), [filteredActivities, filteredPlaces, region.latitude, region.longitude]);
+  const visibleItems = useMemo(() => filterDiscoveryItems(mergedItems, contentFilter), [contentFilter, mergedItems]);
+  const visibleActivities = useMemo(() => visibleItems.flatMap((item) => item.type === 'activity' ? [item.data] : []), [visibleItems]);
+  const visiblePlaces = useMemo(() => visibleItems.flatMap((item) => item.type === 'place' ? [item.data] : []), [visibleItems]);
+  const placeMapItems = useMemo(() => clusterPlacesForRegion(visiblePlaces, region), [region, visiblePlaces]);
+
+  const focusItem = useCallback((item: DiscoveryItem) => {
+    setSelectedItem({ type: item.type, id: item.id });
+    mapRef.current?.animateToRegion({
+      latitude: item.data.latitude,
+      longitude: item.data.longitude,
+      latitudeDelta: 0.018,
+      longitudeDelta: 0.018,
+    }, 350);
+    if (sheetIndex.current === SHEET_PEEK_INDEX) sheetRef.current?.snapToIndex(SHEET_HALF_INDEX);
+    const index = visibleItems.findIndex((candidate) => discoveryItemKey(candidate) === discoveryItemKey(item));
+    if (index >= 0) listRef.current?.scrollToIndex({ index, animated: true, viewPosition: 0.2 });
+  }, [visibleItems]);
+
+  const openItem = useCallback((item: DiscoveryItem) => {
+    focusItem(item);
+    if (item.type === 'activity') onOpenActivity(item.data);
+    else onOpenPlace(item.data);
+  }, [focusItem, onOpenActivity, onOpenPlace]);
+
+  const changeContentFilter = useCallback((next: DiscoveryContentFilter) => {
+    setContentFilter(next);
+    setSelectedItem(null);
   }, []);
 
-  const handlePinPress = useCallback(
-    (activity: Activity) => {
-      setSelectedActivityId(activity.id);
-      focusMapOn(activity);
-
-      if (sheetIndex.current === SHEET_PEEK_INDEX) {
-        sheetRef.current?.snapToIndex(SHEET_HALF_INDEX);
-      }
-      const index = filteredFeed.findIndex((a) => a.id === activity.id);
-      if (index >= 0) {
-        listRef.current?.scrollToIndex({ index, animated: true, viewPosition: 0.2 });
-      }
-    },
-    [filteredFeed, focusMapOn],
-  );
-
-  const handleCardSelect = useCallback(
-    (activity: Activity) => {
-      setSelectedActivityId(activity.id);
-      focusMapOn(activity);
-    },
-    [focusMapOn],
-  );
-
-  if (contentMode === 'places') {
-    return <PlacesDiscoveryView onShowActivities={() => setContentMode('activities')} onOpenPlace={onOpenPlace} mockPlaces={mockPlaces} />;
-  }
+  const hour = new Date().getHours();
+  const greetingPrefix = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
+  const firstName = profile?.displayName?.trim().split(' ')[0];
+  const greeting = firstName ? `${greetingPrefix}, ${firstName}` : greetingPrefix;
+  const hasCachedContent = visibleItems.length > 0;
+  const showSkeleton = !hasCachedContent && (activitiesQuery.isRefreshing || placesQuery.isLoading || position.isResolving);
+  const showActivityError = contentFilter !== 'places' && Boolean(activitiesQuery.error);
+  const showPlaceError = contentFilter !== 'activities' && Boolean(placesQuery.error);
 
   return (
     <View style={styles.container}>
@@ -215,31 +228,58 @@ export function DiscoverScreen({ onOpenActivity, onOpenPlace, onHostActivity, mo
         ref={mapRef}
         provider={PROVIDER_DEFAULT}
         style={StyleSheet.absoluteFill}
-        initialRegion={initialRegion}
+        initialRegion={region}
+        onPanDrag={() => { userMovedMap.current = true; }}
+        onRegionChangeComplete={setRegion}
         showsUserLocation
         showsMyLocationButton={false}
       >
-        {feedActivities.map((activity) => (
-          <ActivityMapPin
-            key={activity.id}
-            activity={activity}
-            selected={activity.id === selectedActivityId}
-            onPress={handlePinPress}
+        {visibleActivities.map((activity) => {
+          const item: DiscoveryItem = { type: 'activity', id: activity.id, data: activity };
+          return <ActivityMapPin key={discoveryItemKey(item)} activity={activity} selected={discoverySelectionEquals(selectedItem, item)} onPress={() => focusItem(item)} />;
+        })}
+        {placeMapItems.map((mapItem) => mapItem.kind === 'place' ? (() => {
+          const item: DiscoveryItem = { type: 'place', id: mapItem.place.id, data: mapItem.place };
+          return <PlaceMapPin key={discoveryItemKey(item)} place={mapItem.place} selected={discoverySelectionEquals(selectedItem, item)} onPress={() => focusItem(item)} />;
+        })() : (
+          <PlaceClusterMarker
+            key={`place-cluster:${mapItem.id}`}
+            latitude={mapItem.latitude}
+            longitude={mapItem.longitude}
+            count={mapItem.places.length}
+            selected={mapItem.places.some((place) => selectedItem?.type === 'place' && place.id === selectedItem.id)}
+            onPress={() => mapRef.current?.animateToRegion({
+              latitude: mapItem.latitude,
+              longitude: mapItem.longitude,
+              latitudeDelta: Math.max(region.latitudeDelta / 2, 0.004),
+              longitudeDelta: Math.max(region.longitudeDelta / 2, 0.004),
+            }, 300)}
           />
         ))}
       </MapView>
 
       <SafeAreaView edges={['top']} style={styles.headerOverlay} pointerEvents="box-none">
-        {!searchOpen && <View style={styles.contentToggle}>
-          <View style={[styles.contentToggleOption, styles.contentToggleSelected]}><Text style={[styles.contentToggleText, styles.contentToggleTextSelected]}>Activities</Text></View>
-          <Pressable style={styles.contentToggleOption} onPress={() => setContentMode('places')}><Text style={styles.contentToggleText}>Places</Text></Pressable>
-        </View>}
+        <View style={styles.contentFilter} accessibilityRole="tablist">
+          {CONTENT_FILTERS.map((item) => (
+            <Pressable
+              key={item.key}
+              style={[styles.contentFilterOption, contentFilter === item.key && styles.contentFilterSelected]}
+              onPress={() => changeContentFilter(item.key)}
+              accessibilityRole="tab"
+              accessibilityLabel={`Show ${item.label.toLocaleLowerCase()}`}
+              accessibilityState={{ selected: contentFilter === item.key }}
+            >
+              <Text style={[styles.contentFilterText, contentFilter === item.key && styles.contentFilterTextSelected]}>{item.label}</Text>
+            </Pressable>
+          ))}
+        </View>
+
         {searchOpen ? (
           <View style={styles.searchRow}>
             <MagnifyingGlass size={iconDefaults.size.inline} color={theme.text.muted} weight={iconDefaults.weight} />
             <TextInput
-              style={[styles.searchInput, styles.searchInputLtr]}
-              placeholder="Search activities"
+              style={styles.searchInput}
+              placeholder="Search activities and places"
               placeholderTextColor={theme.text.muted}
               value={searchQuery}
               onChangeText={setSearchQuery}
@@ -247,14 +287,7 @@ export function DiscoverScreen({ onOpenActivity, onOpenPlace, onHostActivity, mo
               returnKeyType="search"
               textAlign="left"
             />
-            <Pressable
-              onPress={() => {
-                setSearchOpen(false);
-                setSearchQuery('');
-              }}
-              accessibilityLabel="Close search"
-              hitSlop={8}
-            >
+            <Pressable onPress={() => { setSearchOpen(false); setSearchQuery(''); }} accessibilityLabel="Close search" hitSlop={8}>
               <X size={16} color={theme.text.secondary} />
             </Pressable>
           </View>
@@ -263,119 +296,58 @@ export function DiscoverScreen({ onOpenActivity, onOpenPlace, onHostActivity, mo
             <Text style={styles.greeting}>{greeting}</Text>
             <View style={styles.headerActions}>
               <View style={styles.viewToggle}>
-                <Pressable
-                  style={[styles.viewToggleOption, viewMode === 'map' && styles.viewToggleOptionSelected]}
-                  onPress={() => {
-                    setViewMode('map');
-                    sheetIndex.current = SHEET_PEEK_INDEX;
-                    sheetRef.current?.snapToIndex(SHEET_PEEK_INDEX);
-                  }}
-                  accessibilityLabel="Map view"
-                  accessibilityState={{ selected: viewMode === 'map' }}
-                >
-                  <MapTrifold size={16} color={viewMode === 'map' ? theme.text.inverse : theme.text.secondary} weight={iconDefaults.weight} />
+                <Pressable style={[styles.viewToggleOption, viewMode === 'map' && styles.viewToggleSelected]} onPress={() => { setViewMode('map'); sheetRef.current?.snapToIndex(SHEET_PEEK_INDEX); }} accessibilityLabel="Map view" accessibilityState={{ selected: viewMode === 'map' }}>
+                  <MapTrifold size={16} color={viewMode === 'map' ? theme.text.inverse : theme.text.secondary} />
                 </Pressable>
-                <Pressable
-                  style={[styles.viewToggleOption, viewMode === 'list' && styles.viewToggleOptionSelected]}
-                  onPress={() => {
-                    setViewMode('list');
-                    sheetIndex.current = SHEET_FULL_INDEX;
-                    sheetRef.current?.snapToIndex(SHEET_FULL_INDEX);
-                  }}
-                  accessibilityLabel="List view"
-                  accessibilityState={{ selected: viewMode === 'list' }}
-                >
-                  <ListBullets size={16} color={viewMode === 'list' ? theme.text.inverse : theme.text.secondary} weight={iconDefaults.weight} />
+                <Pressable style={[styles.viewToggleOption, viewMode === 'list' && styles.viewToggleSelected]} onPress={() => { setViewMode('list'); sheetRef.current?.snapToIndex(SHEET_FULL_INDEX); }} accessibilityLabel="List view" accessibilityState={{ selected: viewMode === 'list' }}>
+                  <ListBullets size={16} color={viewMode === 'list' ? theme.text.inverse : theme.text.secondary} />
                 </Pressable>
               </View>
-              <Pressable style={styles.iconButton} onPress={() => setSearchOpen(true)} accessibilityLabel="Search">
-                <MagnifyingGlass size={iconDefaults.size.tabBar - 4} color={theme.text.primary} weight={iconDefaults.weight} />
+              <Pressable style={styles.iconButton} onPress={() => setSearchOpen(true)} accessibilityLabel="Search activities and places">
+                <MagnifyingGlass size={20} color={theme.text.primary} />
               </Pressable>
             </View>
           </View>
         )}
 
-        <FlatList
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          data={CATEGORIES}
-          keyExtractor={(item: (typeof CATEGORIES)[number]) => item.key}
-          contentContainerStyle={styles.chipRow}
-          renderItem={({ item }: { item: (typeof CATEGORIES)[number] }) => (
-            <CategoryChip
-              label={item.label}
-              selected={selectedCategory === item.key}
-              onPress={() => setSelectedCategory(item.key)}
-            />
-          )}
-        />
+        {contentFilter !== 'places' ? <FilterRow label={contentFilter === 'all' ? 'Activity filters' : undefined} items={ACTIVITY_CATEGORIES} selected={selectedActivityCategory} onSelect={setSelectedActivityCategory} /> : null}
+        {contentFilter !== 'activities' ? <>
+          <FilterRow label={contentFilter === 'all' ? 'Place filters' : undefined} items={PLACE_CATEGORIES} selected={selectedPlaceCategory} onSelect={setSelectedPlaceCategory} />
+          <FlatList horizontal showsHorizontalScrollIndicator={false} data={PLACE_QUICK_FILTERS} keyExtractor={(item) => item.key} contentContainerStyle={styles.chipRowCompact} renderItem={({ item }) => <CategoryChip label={item.label} selected={placeQuickFilters.has(item.key)} onPress={() => setPlaceQuickFilters((current) => togglePlaceQuickFilter(current, item.key))} />} />
+        </> : null}
       </SafeAreaView>
 
       <Pressable style={styles.fab} onPress={onHostActivity} accessibilityLabel="Host an activity">
         <Plus size={24} color={theme.text.inverse} weight="bold" />
       </Pressable>
 
-      <BottomSheet
-        ref={sheetRef}
-        index={SHEET_PEEK_INDEX}
-        snapPoints={SNAP_POINTS}
-        enableDynamicSizing={false}
-        onChange={(index) => {
-          sheetIndex.current = index;
-          setViewMode(index >= SHEET_FULL_INDEX ? 'list' : 'map');
-        }}
-        backgroundStyle={styles.sheetBackground}
-        handleIndicatorStyle={styles.sheetHandle}
-      >
+      <BottomSheet ref={sheetRef} index={SHEET_PEEK_INDEX} snapPoints={SNAP_POINTS} enableDynamicSizing={false} onChange={(index) => { sheetIndex.current = index; setViewMode(index >= SHEET_FULL_INDEX ? 'list' : 'map'); }} backgroundStyle={styles.sheetBackground} handleIndicatorStyle={styles.sheetHandle}>
         <BottomSheetView style={styles.sheetHeader}>
-          <Text style={styles.sheetTitle}>
-            {showSkeleton ? 'Finding activities…' : `${filteredFeed.length} nearby`}
-          </Text>
-          {!showSkeleton && filteredFeed.length > 0 && (
-            <Text style={styles.sheetSubtitle}>Swipe up to see them all</Text>
-          )}
+          <Text style={styles.sheetTitle}>{showSkeleton ? 'Finding nearby options…' : discoveryCountLabel(contentFilter, visibleItems.length)}</Text>
+          {!showSkeleton && visibleItems.length > 0 ? <Text style={styles.sheetSubtitle}>Swipe up to explore</Text> : null}
         </BottomSheetView>
-
+        {showActivityError ? <QueryErrorBanner label="Activities couldn't refresh" onRetry={activitiesQuery.refresh} /> : null}
+        {showPlaceError ? <QueryErrorBanner label="Places couldn't refresh" onRetry={placesQuery.refresh} /> : null}
         {showSkeleton ? (
-          <BottomSheetView style={styles.listContent}>
-            {[0, 1, 2].map((i) => (
-              <View key={i} style={styles.feedItem}>
-                <SkeletonCard />
-              </View>
-            ))}
-          </BottomSheetView>
+          <BottomSheetView style={styles.listContent}>{[0, 1, 2].map((index) => <View key={index} style={styles.feedItem}><SkeletonCard /></View>)}</BottomSheetView>
         ) : (
           <BottomSheetFlatList
             ref={listRef}
-            data={filteredFeed}
-            keyExtractor={(item: (typeof filteredFeed)[number]) => item.id}
-            renderItem={({ item }: { item: (typeof filteredFeed)[number] }) => (
-              <View style={styles.feedItem}>
-                <ActivityCard
-                  activity={item}
-                  variant="feed"
-                  onPress={() => {
-                    handleCardSelect(item);
-                    onOpenActivity(item);
-                  }}
-                  highlighted={item.id === selectedActivityId}
-                />
-              </View>
-            )}
-            ListEmptyComponent={
-              <DiscoverEmptyState
-                isOffline={isOffline}
-                error={error}
-                hasCategoryFilter={selectedCategory !== 'all'}
-                hasAnyActivities={feedActivities.length > 0}
-                locationDenied={locationDenied}
-                radiusExpanded={radiusExpanded}
-                onRetry={refresh}
-                onClearFilter={() => setSelectedCategory('all')}
-                onHostPress={onHostActivity}
-              />
-            }
+            data={visibleItems}
+            keyExtractor={discoveryItemKey}
+            renderItem={({ item }: { item: DiscoveryItem }) => <View style={styles.feedItem}>{item.type === 'activity'
+              ? <ActivityCard activity={item.data} variant="feed" onPress={() => openItem(item)} highlighted={discoverySelectionEquals(selectedItem, item)} />
+              : <PlaceCard place={item.data} onPress={() => openItem(item)} highlighted={discoverySelectionEquals(selectedItem, item)} />}
+            </View>}
             contentContainerStyle={styles.listContent}
+            initialNumToRender={6}
+            maxToRenderPerBatch={8}
+            windowSize={7}
+            removeClippedSubviews
+            onEndReached={contentFilter !== 'activities' && placesQuery.hasMore ? placesQuery.loadMore : undefined}
+            onEndReachedThreshold={0.5}
+            ListEmptyComponent={<DiscoveryEmptyState filter={contentFilter} locationDenied={position.locationDenied} onHostActivity={onHostActivity} />}
+            onScrollToIndexFailed={({ index }) => setTimeout(() => listRef.current?.scrollToIndex({ index, animated: true }), 100)}
           />
         )}
       </BottomSheet>
@@ -383,170 +355,71 @@ export function DiscoverScreen({ onOpenActivity, onOpenPlace, onHostActivity, mo
   );
 }
 
-interface DiscoverEmptyStateProps {
-  isOffline: boolean;
-  error: string | null;
-  hasCategoryFilter: boolean;
-  hasAnyActivities: boolean;
-  locationDenied: boolean;
-  radiusExpanded: boolean;
-  onRetry: () => void;
-  onClearFilter: () => void;
-  onHostPress: () => void;
+function FilterRow<TKey extends string>({ label, items, selected, onSelect }: { label?: string; items: Array<{ key: TKey; label: string }>; selected: TKey; onSelect: (key: TKey) => void }) {
+  return <View>{label ? <Text style={styles.filterLabel}>{label}</Text> : null}<FlatList horizontal showsHorizontalScrollIndicator={false} data={items} keyExtractor={(item) => item.key} contentContainerStyle={styles.chipRow} renderItem={({ item }) => <CategoryChip label={item.label} selected={selected === item.key} onPress={() => onSelect(item.key)} />} /></View>;
 }
 
-/** Priority order matters: offline and error are true dead-ends (nothing
- *  loaded at all) and must win over anything else. A category filter with
- *  zero matches is a different problem ("relax your filter") from truly
- *  nothing nearby ("be the first"), so it's checked before falling all the
- *  way through to that floor state. */
-function DiscoverEmptyState({
-  isOffline,
-  error,
-  hasCategoryFilter,
-  hasAnyActivities,
-  locationDenied,
-  radiusExpanded,
-  onRetry,
-  onClearFilter,
-  onHostPress,
-}: DiscoverEmptyStateProps) {
-  if (isOffline) {
-    return (
-      <StateCard
-        icon={WifiSlash}
-        title="You're offline"
-        body="We'll refresh the moment you're back online."
-        tone="warning"
-      />
-    );
-  }
-
-  if (error) {
-    return (
-      <StateCard
-        icon={WarningCircle}
-        title="Couldn't load activities"
-        body={error}
-        ctaLabel="Try again"
-        onCtaPress={onRetry}
-        tone="warning"
-      />
-    );
-  }
-
-  if (hasCategoryFilter && hasAnyActivities) {
-    return (
-      <StateCard
-        icon={FunnelSimpleX}
-        title="No activities match your filters"
-        body="Try a different category, or clear the filter to see everything nearby."
-        ctaLabel="Clear filter"
-        onCtaPress={onClearFilter}
-      />
-    );
-  }
-
-  if (locationDenied) {
-    return (
-      <StateCard
-        icon={MapPinLine}
-        title="Enable location to discover activities near you"
-        body="We're showing a default area for now. Turn on location access in Settings to see what's actually nearby."
-      />
-    );
-  }
-
-  return (
-    <StateCard
-      icon={Compass}
-      title={radiusExpanded ? 'No activities nearby yet' : 'Nothing nearby just yet'}
-      body={
-        radiusExpanded
-          ? 'Be the first to host an activity in your area.'
-          : "We're widening your search radius to find something for you."
-      }
-      ctaLabel={radiusExpanded ? 'Host an activity' : undefined}
-      onCtaPress={radiusExpanded ? onHostPress : undefined}
-    />
-  );
+function QueryErrorBanner({ label, onRetry }: { label: string; onRetry: () => void }) {
+  return <View style={styles.errorBanner}><WarningCircle size={17} color={theme.semantic.warning} weight="fill" /><Text style={styles.errorBannerText}>{label}</Text><Pressable onPress={onRetry} accessibilityRole="button" accessibilityLabel={`${label}. Try again`}><Text style={styles.retryText}>Try again</Text></Pressable></View>;
 }
 
-const { height: SCREEN_HEIGHT } = Dimensions.get('window');
+function DiscoveryEmptyState({ filter, locationDenied, onHostActivity }: { filter: DiscoveryContentFilter; locationDenied: boolean; onHostActivity: () => void }) {
+  const copy = filter === 'activities'
+    ? 'No activities match these filters.'
+    : filter === 'places'
+      ? 'No places match these filters.'
+      : 'No activities or places found in this area.';
+  return <View style={styles.emptyState}><Text style={styles.emptyTitle}>{copy}</Text><Text style={styles.emptyBody}>{locationDenied ? 'Location access is off, so this area may not be near you.' : 'Try moving the map, changing a filter, or searching nearby.'}</Text>{filter !== 'places' ? <Pressable style={styles.emptyAction} onPress={onHostActivity}><Text style={styles.emptyActionText}>Host an activity</Text></Pressable> : null}</View>;
+}
+
+function discoveryCountLabel(filter: DiscoveryContentFilter, count: number): string {
+  if (filter === 'activities') return `${count} ${count === 1 ? 'activity' : 'activities'} nearby`;
+  if (filter === 'places') return `${count} ${count === 1 ? 'place' : 'places'} in this area`;
+  return `${count} nearby`;
+}
+
+function togglePlaceQuickFilter(current: Set<PlaceQuickFilter>, key: PlaceQuickFilter): Set<PlaceQuickFilter> {
+  const next = new Set(current);
+  const exclusive: PlaceQuickFilter[] = key === 'indoor' ? ['outdoor'] : key === 'outdoor' ? ['indoor'] : key === 'free' ? ['paid'] : key === 'paid' ? ['free'] : ['babies', 'toddlers', 'kids'].includes(key) ? (['babies', 'toddlers', 'kids'] as PlaceQuickFilter[]).filter((candidate) => candidate !== key) : [];
+  exclusive.forEach((candidate) => next.delete(candidate));
+  if (next.has(key)) next.delete(key); else next.add(key);
+  return next;
+}
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: theme.background.app },
   headerOverlay: { position: 'absolute', top: 0, left: 0, right: 0 },
-  contentToggle: { alignSelf: 'center', flexDirection: 'row', padding: 3, borderRadius: radius.pill, backgroundColor: theme.background.surface, shadowColor: '#000', shadowOpacity: 0.12, shadowRadius: 6, shadowOffset: { width: 0, height: 2 } },
-  contentToggleOption: { minWidth: 104, minHeight: 38, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center' },
-  contentToggleSelected: { backgroundColor: theme.brand.primary },
-  contentToggleText: { ...typography.subhead, color: theme.text.secondary, fontWeight: '600' },
-  contentToggleTextSelected: { color: theme.text.inverse },
-  headerRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.sm,
-  },
-  greeting: {
-    ...typography.bodyMedium,
-    color: theme.text.primary,
-  },
+  contentFilter: { alignSelf: 'center', flexDirection: 'row', padding: 3, borderRadius: radius.pill, backgroundColor: theme.background.surface, shadowColor: '#000', shadowOpacity: 0.12, shadowRadius: 6, shadowOffset: { width: 0, height: 2 } },
+  contentFilterOption: { minWidth: 84, minHeight: 38, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center' },
+  contentFilterSelected: { backgroundColor: theme.brand.primary },
+  contentFilterText: { ...typography.subhead, color: theme.text.secondary, fontWeight: '600' },
+  contentFilterTextSelected: { color: theme.text.inverse },
+  headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: spacing.lg, paddingTop: spacing.sm },
+  greeting: { ...typography.bodyMedium, color: theme.text.primary },
   headerActions: { flexDirection: 'row', gap: spacing.sm },
-  searchRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    marginHorizontal: spacing.lg,
-    marginTop: spacing.sm,
-    backgroundColor: theme.background.surface,
-    borderRadius: radius.pill,
-    paddingHorizontal: spacing.lg,
-    height: 40,
-  },
-  searchInput: { flex: 1, ...typography.subhead, color: theme.text.primary, height: '100%' },
-  searchInputLtr: { writingDirection: 'ltr' },
-  iconButton: {
-    width: 44,
-    height: 44,
-    borderRadius: radius.md,
-    backgroundColor: theme.background.surface,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  viewToggle: {
-    flexDirection: 'row',
-    backgroundColor: theme.background.surface,
-    borderRadius: radius.md,
-    padding: 3,
-    gap: 2,
-  },
-  viewToggleOption: {
-    width: 38,
-    height: 38,
-    borderRadius: radius.sm,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  viewToggleOptionSelected: { backgroundColor: theme.brand.primary },
-  chipRow: { paddingHorizontal: spacing.lg, paddingTop: spacing.md },
-  fab: {
-    position: 'absolute',
-    right: spacing.xl,
-    bottom: SCREEN_HEIGHT * 0.25 + spacing.xl, // sits just above the default ~22% peek sheet
-    width: 56,
-    height: 56,
-    borderRadius: radius.pill,
-    backgroundColor: theme.brand.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  sheetBackground: { backgroundColor: theme.background.surface, borderTopLeftRadius: radius.xl, borderTopRightRadius: radius.xl },
-  sheetHandle: { backgroundColor: theme.border.strong, width: 36 },
+  viewToggle: { flexDirection: 'row', padding: 2, borderRadius: radius.pill, backgroundColor: theme.background.surface },
+  viewToggleOption: { width: 38, height: 38, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center' },
+  viewToggleSelected: { backgroundColor: theme.brand.primary },
+  iconButton: { width: 42, height: 42, borderRadius: 21, backgroundColor: theme.background.surface, alignItems: 'center', justifyContent: 'center' },
+  searchRow: { marginHorizontal: spacing.lg, marginTop: spacing.sm, minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingHorizontal: spacing.md, borderRadius: radius.pill, backgroundColor: theme.background.surface },
+  searchInput: { flex: 1, ...typography.body, color: theme.text.primary, direction: 'ltr' },
+  filterLabel: { ...typography.caption, color: theme.text.secondary, fontWeight: '700', paddingHorizontal: spacing.lg, marginTop: spacing.xs },
+  chipRow: { paddingHorizontal: spacing.lg, paddingTop: spacing.xs },
+  chipRowCompact: { paddingHorizontal: spacing.lg, paddingTop: 2 },
+  fab: { position: 'absolute', right: spacing.lg, bottom: '24%', width: 54, height: 54, borderRadius: 27, backgroundColor: theme.brand.primary, alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOpacity: 0.25, shadowRadius: 5, elevation: 5 },
+  sheetBackground: { backgroundColor: theme.background.app },
+  sheetHandle: { backgroundColor: theme.border.strong },
   sheetHeader: { paddingHorizontal: spacing.lg, paddingBottom: spacing.sm },
   sheetTitle: { ...typography.headline, color: theme.text.primary },
   sheetSubtitle: { ...typography.footnote, color: theme.text.secondary, marginTop: 2 },
-  listContent: { paddingBottom: spacing['6xl'] },
-  feedItem: { paddingHorizontal: spacing.lg },
+  listContent: { paddingHorizontal: spacing.lg, paddingBottom: 120 },
+  feedItem: { width: '100%' },
+  errorBanner: { marginHorizontal: spacing.lg, marginBottom: spacing.xs, minHeight: 40, paddingHorizontal: spacing.sm, flexDirection: 'row', alignItems: 'center', gap: spacing.xs, borderRadius: radius.md, backgroundColor: theme.semantic.warningTint },
+  errorBannerText: { flex: 1, ...typography.footnote, color: theme.text.primary },
+  retryText: { ...typography.footnote, color: theme.brand.primary, fontWeight: '700' },
+  emptyState: { alignItems: 'center', paddingHorizontal: spacing.lg, paddingVertical: spacing.xl },
+  emptyTitle: { ...typography.headline, color: theme.text.primary, textAlign: 'center' },
+  emptyBody: { ...typography.body, color: theme.text.secondary, textAlign: 'center', marginTop: spacing.xs },
+  emptyAction: { minHeight: 44, justifyContent: 'center', marginTop: spacing.md },
+  emptyActionText: { ...typography.subhead, color: theme.brand.primary, fontWeight: '700' },
 });

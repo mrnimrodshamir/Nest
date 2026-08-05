@@ -74,6 +74,8 @@ export function ActivityMapPin({ activity, selected, onPress }: ActivityMapPinPr
     <Marker
       coordinate={{ latitude: activity.latitude, longitude: activity.longitude }}
       onPress={() => onPress(activity)}
+      accessibilityLabel={`Activity: ${activity.title}`}
+      accessibilityRole="button"
       // tracksViewChanges only while selected — leaving this permanently
       // true tanks map performance with many pins.
       tracksViewChanges={selected}

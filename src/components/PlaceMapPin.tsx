@@ -18,13 +18,13 @@ const COLORS: Record<PlaceCategory, string> = {
 
 export function PlaceMapPin({ place, selected, onPress }: { place: FamilyFriendlyPlace; selected: boolean; onPress: (place: FamilyFriendlyPlace) => void }) {
   const Icon = ICONS[place.category] ?? MapPin;
-  return <Marker coordinate={place} onPress={() => onPress(place)} tracksViewChanges={selected} anchor={{ x: 0.5, y: 0.5 }}>
+  return <Marker coordinate={place} onPress={() => onPress(place)} accessibilityLabel={`Place: ${place.name}`} accessibilityRole="button" tracksViewChanges={selected} anchor={{ x: 0.5, y: 0.5 }}>
     <View style={[styles.marker, { backgroundColor: COLORS[place.category] }, selected && styles.selected]}>
       <Icon size={selected ? 21 : 17} color={theme.text.inverse} weight="fill" />
     </View>
   </Marker>;
 }
 const styles = StyleSheet.create({
-  marker: { width: 34, height: 34, borderRadius: 8, borderWidth: 2, borderColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOpacity: 0.22, shadowRadius: 3, shadowOffset: { width: 0, height: 2 }, elevation: 3, transform: [{ rotate: '45deg' }] },
+  marker: { width: 34, height: 34, borderRadius: 8, borderWidth: 2, borderColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOpacity: 0.22, shadowRadius: 3, shadowOffset: { width: 0, height: 2 }, elevation: 3 },
   selected: { width: 42, height: 42, borderRadius: 10, borderWidth: 3 },
 });
