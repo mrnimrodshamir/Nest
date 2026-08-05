@@ -32,9 +32,11 @@ import type { FamilyFriendlyPlace, PlaceCategory, PlaceFilters } from '@/types/f
 import { PLACE_CATEGORY_LABELS } from '@/types/familyFriendlyPlace';
 import { clusterPlacesForRegion } from '@/utils/placeClustering';
 import { regionToPlaceViewport } from '@/utils/placeViewport';
+import { distanceMeters } from '@/utils/placeViewport';
 import { discoveryEmptyCopy, transitionDiscoveryContentFilter, visibleDiscoveryFailures } from '@/utils/discoveryPresentation';
 import {
   discoveryItemKey,
+  discoveryCoordinateInViewport,
   discoverySelectionEquals,
   filterDiscoveryItems,
   mergeDiscoveryItems,
@@ -175,10 +177,15 @@ export function DiscoverScreen({ onOpenActivity, onOpenPlace, onHostActivity, mo
   }, []));
 
   const query = searchQuery.trim().toLocaleLowerCase();
-  const filteredActivities = useMemo(() => activitiesQuery.feedActivities.filter((activity) => {
-    if (selectedActivityCategory !== 'all' && activity.category !== selectedActivityCategory) return false;
-    return !query || activity.title.toLocaleLowerCase().includes(query);
-  }), [activitiesQuery.feedActivities, query, selectedActivityCategory]);
+  const filteredActivities = useMemo(() => activitiesQuery.feedActivities.flatMap((activity) => {
+    if (!discoveryCoordinateInViewport(activity, viewport)) return [];
+    if (selectedActivityCategory !== 'all' && activity.category !== selectedActivityCategory) return [];
+    if (query && !activity.title.toLocaleLowerCase().includes(query)) return [];
+    return [{
+      ...activity,
+      distanceKm: position.userCoordinate ? distanceMeters(position.userCoordinate, activity) / 1_000 : activity.distanceKm,
+    }];
+  }), [activitiesQuery.feedActivities, position.userCoordinate, query, selectedActivityCategory, viewport]);
   const filteredPlaces = useMemo(() => placesQuery.places.filter((place) => {
     if (!query) return true;
     return [place.name, place.neighborhood, place.shortDescription]

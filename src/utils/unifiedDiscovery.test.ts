@@ -4,6 +4,7 @@ import type { Activity } from '@/types/activity';
 import type { FamilyFriendlyPlace } from '@/types/familyFriendlyPlace';
 import {
   activityDiscoveryItem,
+  discoveryCoordinateInViewport,
   discoveryItemKey,
   discoverySelectionEquals,
   filterDiscoveryItems,
@@ -84,6 +85,13 @@ test('typed factories retain domain data without merging database models', () =>
 test('stable keys include type so identical database ids never collide', () => {
   assert.equal(discoveryItemKey(activityDiscoveryItem(activity('same', 32.08))), 'activity:same');
   assert.equal(discoveryItemKey(placeDiscoveryItem(place('same', 32.08))), 'place:same');
+});
+
+test('Activity presentation uses the exact shared viewport boundary', () => {
+  const viewport = { north: 32.1, south: 32.06, east: 34.8, west: 34.76 };
+  assert.equal(discoveryCoordinateInViewport({ latitude: 32.08, longitude: 34.78 }, viewport), true);
+  assert.equal(discoveryCoordinateInViewport({ latitude: 32.1, longitude: 34.8 }, viewport), true);
+  assert.equal(discoveryCoordinateInViewport({ latitude: 32.1001, longitude: 34.78 }, viewport), false);
 });
 
 test('All, Activities, and Places filters affect only presentation type', () => {

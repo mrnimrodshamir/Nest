@@ -1,5 +1,6 @@
 import type { Activity } from '@/types/activity';
 import type { FamilyFriendlyPlace } from '@/types/familyFriendlyPlace';
+import type { PlaceViewport } from '@/types/familyFriendlyPlace';
 import type {
   DiscoveryContentFilter,
   DiscoveryCoordinate,
@@ -34,6 +35,14 @@ export function filterDiscoveryItems(
   if (filter === 'all') return [...items];
   const type = filter === 'activities' ? 'activity' : 'place';
   return items.filter((item) => item.type === type);
+}
+
+export function discoveryCoordinateInViewport(
+  coordinate: DiscoveryCoordinate,
+  viewport: PlaceViewport,
+): boolean {
+  return coordinate.latitude >= viewport.south && coordinate.latitude <= viewport.north
+    && coordinate.longitude >= viewport.west && coordinate.longitude <= viewport.east;
 }
 
 /**
