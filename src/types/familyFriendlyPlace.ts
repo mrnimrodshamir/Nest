@@ -129,6 +129,15 @@ export interface PlaceFilters {
   environment?: 'indoor' | 'outdoor' | null;
   cost?: 'free' | 'paid' | null;
   ageMonths?: number | null;
+  changingTable?: boolean | null;
+  toilets?: boolean | null;
+  highChairs?: boolean | null;
+  shade?: boolean | null;
+  waterFountain?: boolean | null;
+  accessible?: boolean | null;
+  maxDistanceMeters?: number | null;
+  /** Reserved until opening hours are normalized into a timezone-aware contract. */
+  openNow?: boolean | null;
 }
 
 export interface PlaceQueryInput {
@@ -136,6 +145,7 @@ export interface PlaceQueryInput {
   filters?: PlaceFilters;
   userCoordinate?: { latitude: number; longitude: number } | null;
   limit?: number;
+  page?: number;
 }
 
 export function isPlaceCategory(value: string): value is PlaceCategory {
