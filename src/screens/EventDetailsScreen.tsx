@@ -1,8 +1,10 @@
 import React, { useMemo } from 'react';
-import { Image, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ArrowLeft, ArrowSquareOut, CalendarDots, MapPin, Repeat, WarningCircle } from 'phosphor-react-native';
+import { ContentImage } from '@/components/ContentImage';
+import { ContentImageGallery } from '@/components/ContentImageGallery';
 import { radius, spacing, theme, typography } from '@/theme';
 import type { EventDetails } from '@/types/event';
 import { buildEventDetailsPresentation } from '@/utils/eventPresentation';
@@ -27,7 +29,8 @@ export function EventDetailsScreen({ event, onBack }: EventDetailsScreenProps) {
         <View style={styles.back} />
       </View>
       <ScrollView contentContainerStyle={styles.content}>
-        {event.imageUrl ? <Image source={{ uri: event.imageUrl }} style={styles.hero} resizeMode="cover" accessibilityLabel={`${event.title} event image`} /> : null}
+        <ContentImage asset={event.images?.cover} legacyUri={event.imageUrl} variant="cover" style={styles.hero} accessibilityLabel={`${event.title} event image`} deferUntilInteraction={false} fallback={<CalendarDots size={52} color={theme.brand.primary} weight="duotone" />} />
+        {event.images?.gallery.length ? <ContentImageGallery images={event.images.gallery} /> : null}
         <View style={styles.labelRow}>
           <Text style={styles.category}>{content.categoryLabel}</Text>
           <View style={[styles.status, isInterrupted && styles.statusInterrupted]}>

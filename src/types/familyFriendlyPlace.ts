@@ -50,6 +50,8 @@ export interface FamilyFriendlyPlace {
   phone: string | null;
   coverImageUrl: string | null;
   galleryImageUrls: string[] | null;
+  /** Normalized licensed assets. Legacy URL fields remain supported during rollout. */
+  images?: ContentImageSet;
   isIndoor: boolean | null;
   isOutdoor: boolean | null;
   isFree: boolean | null;
@@ -149,3 +151,4 @@ export interface PlaceQueryInput {
 export function isPlaceCategory(value: string): value is PlaceCategory {
   return (PLACE_CATEGORIES as readonly string[]).includes(value);
 }
+import type { ContentImageSet } from '@/types/contentImage';

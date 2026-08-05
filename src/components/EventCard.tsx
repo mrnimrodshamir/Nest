@@ -1,6 +1,7 @@
 import React from 'react';
-import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { CalendarDots, Repeat } from 'phosphor-react-native';
+import { ContentImage } from '@/components/ContentImage';
 import { radius, spacing, theme, typography } from '@/theme';
 import type { EventDetails } from '@/types/event';
 import { buildEventDetailsPresentation } from '@/utils/eventPresentation';
@@ -14,7 +15,7 @@ export function EventCard({ event, highlighted, compact = false, onPress }: {
   const content = buildEventDetailsPresentation(event);
   const interrupted = event.lifecycle === 'cancelled' || event.lifecycle === 'postponed';
   return <Pressable accessibilityRole="button" accessibilityLabel={`${event.title}, ${content.lifecycleLabel}`} onPress={() => onPress(event)} style={({ pressed }) => [styles.card, compact && styles.compact, highlighted && styles.highlighted, pressed && styles.pressed]}>
-    {event.imageUrl ? <Image source={{ uri: event.imageUrl }} style={styles.image} resizeMode="cover" /> : <View style={styles.fallback}><CalendarDots size={28} color={theme.brand.primary} weight="duotone" /></View>}
+    <ContentImage asset={event.images?.card ?? event.images?.cover} legacyUri={event.imageUrl} variant="card" style={styles.image} accessibilityLabel={`${event.title} event image`} fallback={<CalendarDots size={28} color={theme.brand.primary} weight="duotone" />} />
     <View style={styles.body}>
       <View style={styles.topRow}><Text style={styles.category}>{content.categoryLabel}</Text><View style={[styles.badge, interrupted && styles.badgeInterrupted]}><Text style={[styles.badgeText, interrupted && styles.badgeTextInterrupted]}>{content.lifecycleLabel}</Text></View></View>
       <Text style={styles.title} numberOfLines={2}>{event.title}</Text>
@@ -30,8 +31,7 @@ const styles = StyleSheet.create({
   compact: { minHeight: 112 },
   highlighted: { borderColor: theme.brand.accent, borderWidth: 1.5 },
   pressed: { opacity: 0.86 },
-  image: { width: 112, alignSelf: 'stretch', backgroundColor: theme.background.surfaceAlt },
-  fallback: { width: 112, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.brand.accentTint },
+  image: { width: 112, alignSelf: 'stretch', backgroundColor: theme.brand.accentTint },
   body: { flex: 1, padding: spacing.md, justifyContent: 'center' },
   topRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.xs },
   category: { ...typography.caption, color: theme.brand.accent, textTransform: 'uppercase' },

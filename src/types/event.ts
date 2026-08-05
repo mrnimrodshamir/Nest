@@ -67,6 +67,8 @@ export interface EventEntity {
   description: string | null;
   category: EventCategory | null;
   imageUrl: string | null;
+  /** Normalized licensed assets. Legacy imageUrl remains supported during rollout. */
+  images?: ContentImageSet;
   ageMinMonths: number | null;
   ageMaxMonths: number | null;
   priceNote: string | null;
@@ -105,3 +107,4 @@ export const EVENT_CATEGORY_LABELS: Record<EventCategory, string> = {
 export function isEventCategory(value: string): value is EventCategory {
   return (EVENT_CATEGORIES as readonly string[]).includes(value);
 }
+import type { ContentImageSet } from '@/types/contentImage';

@@ -5,6 +5,7 @@ import MapView, { Marker } from 'react-native-maps';
 import { ArrowLeft, ArrowSquareOut, WarningCircle } from 'phosphor-react-native';
 import { PlaceImage } from '@/components/PlaceImage';
 import { EventCard } from '@/components/EventCard';
+import { ContentImageGallery } from '@/components/ContentImageGallery';
 import { PrimaryButton } from '@/components/PrimaryButton';
 import { StateCard } from '@/components/StateCard';
 import { getFamilyFriendlyPlace } from '@/lib/familyFriendlyPlaces';
@@ -37,7 +38,8 @@ export function PlaceDetailsScreen({ placeId, onBack, onCreateActivity, onOpenEv
   const openingHours = formatOpeningHours(place.openingHours);
   const description = place.fullDescription ?? place.shortDescription;
   return <SafeAreaView style={styles.container} edges={['top', 'bottom']}><Header onBack={onBack} /><ScrollView contentContainerStyle={styles.content}>
-    <PlaceImage uri={place.coverImageUrl} category={place.category} variant="cover" style={styles.hero} />
+    <PlaceImage uri={place.coverImageUrl} asset={place.images?.cover} category={place.category} variant="cover" style={styles.hero} name={place.name} />
+    {place.images?.gallery.length ? <ContentImageGallery images={place.images.gallery} /> : null}
     <Text style={styles.category}>{PLACE_CATEGORY_LABELS[place.category]}</Text>
     <Text style={styles.title}>{place.name}</Text>
     <Text style={styles.address}>{address}</Text>

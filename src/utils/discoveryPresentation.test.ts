@@ -46,10 +46,13 @@ test('Discovery renders one map and one typed feed with both domain cards and ma
   assert.equal(existsSync(new URL('../screens/PlacesDiscoveryView.tsx', import.meta.url)), false);
 });
 
-test('place images use fixed variants, cover scaling, and broken-URL fallback', () => {
+test('place images use shared fixed variants, category artwork, and cached broken-URL fallback', () => {
   const source = readFileSync(new URL('../components/PlaceImage.tsx', import.meta.url), 'utf8');
-  assert.match(source, /resizeMode="cover"/);
-  assert.match(source, /onError=/);
+  const shared = readFileSync(new URL('../components/ContentImage.tsx', import.meta.url), 'utf8');
+  assert.match(source, /<ContentImage/);
+  assert.match(shared, /contentFit="cover"/);
+  assert.match(shared, /onError=/);
+  assert.match(shared, /cachePolicy="memory-disk"/);
   assert.match(source, /aspectRatio: 4 \/ 3/);
   assert.match(source, /CATEGORY_ICONS/);
 });

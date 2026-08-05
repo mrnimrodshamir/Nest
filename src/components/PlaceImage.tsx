@@ -1,7 +1,9 @@
-import React, { useEffect, useState } from 'react';
-import { Image, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
+import React from 'react';
+import { StyleSheet, type StyleProp, type ViewStyle } from 'react-native';
 import { Baby, Buildings, House, MapPin, Park, SwimmingPool, Umbrella } from 'phosphor-react-native';
+import { ContentImage } from '@/components/ContentImage';
 import { theme } from '@/theme';
+import type { ContentImageAsset } from '@/types/contentImage';
 import type { PlaceCategory } from '@/types/familyFriendlyPlace';
 
 const CATEGORY_ICONS: Partial<Record<PlaceCategory, React.ComponentType<{ size: number; color: string; weight?: 'fill' }>>> = {
@@ -16,15 +18,16 @@ const CATEGORY_COLORS: Record<PlaceCategory, string> = {
   community_center: '#F1E7E4', attraction: '#F5E5EC', picnic_area: '#E4EEDF', other: theme.background.surfaceAlt,
 };
 
-export function PlaceImage({ uri, category, variant, style }: { uri: string | null; category: PlaceCategory; variant: 'card' | 'cover'; style?: StyleProp<ViewStyle> }) {
-  const [failed, setFailed] = useState(false);
-  useEffect(() => setFailed(false), [uri]);
+export function PlaceImage({ uri, asset, category, variant, style, name }: { uri: string | null; asset?: ContentImageAsset | null; category: PlaceCategory; variant: 'card' | 'cover'; style?: StyleProp<ViewStyle>; name?: string }) {
   const Icon = CATEGORY_ICONS[category] ?? MapPin;
-  return <View style={[variant === 'card' ? styles.card : styles.cover, style, { backgroundColor: CATEGORY_COLORS[category] }]}>
-    {uri && !failed
-      ? <Image source={{ uri }} style={StyleSheet.absoluteFill} resizeMode="cover" onError={() => setFailed(true)} accessibilityIgnoresInvertColors />
-      : <Icon size={variant === 'cover' ? 58 : 36} color={theme.brand.primary} weight="fill" />}
-  </View>;
+  return <ContentImage
+    asset={asset}
+    legacyUri={uri}
+    variant={variant}
+    style={[variant === 'card' ? styles.card : styles.cover, style, { backgroundColor: CATEGORY_COLORS[category] }]}
+    accessibilityLabel={name ? `${name} image` : undefined}
+    fallback={<Icon size={variant === 'cover' ? 58 : 36} color={theme.brand.primary} weight="fill" />}
+  />;
 }
 
 const styles = StyleSheet.create({

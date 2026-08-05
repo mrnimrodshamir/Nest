@@ -11,7 +11,7 @@ export function PlaceCard({ place, highlighted, onPress }: { place: FamilyFriend
   const features = placeSummaryFeatures(place);
   const setting = [place.isIndoor ? 'Indoor' : null, place.isOutdoor ? 'Outdoor' : null, place.isFree === true ? 'Free' : place.isFree === false ? 'Paid' : null].filter(Boolean).join(' · ');
   return <Pressable accessibilityRole="button" accessibilityLabel={`${place.name}, ${PLACE_CATEGORY_LABELS[place.category]}`} onPress={() => onPress(place)} style={({ pressed }) => [styles.card, highlighted && styles.highlighted, pressed && styles.pressed]}>
-    <PlaceImage uri={place.coverImageUrl} category={place.category} variant="card" />
+    <PlaceImage uri={place.coverImageUrl} asset={place.images?.card ?? place.images?.cover} category={place.category} variant="card" name={place.name} />
     <View style={styles.body}>
       <Text style={styles.title} numberOfLines={1}>{place.name}</Text>
       <Text style={styles.meta} numberOfLines={1}>{[PLACE_CATEGORY_LABELS[place.category], place.neighborhood].filter(Boolean).join(' · ')}</Text>
