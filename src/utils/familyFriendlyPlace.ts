@@ -55,7 +55,7 @@ export function placeWhatIsHere(place: FamilyFriendlyPlace): string[] {
   const facts: string[] = [];
   const categoryLabels: Partial<Record<FamilyFriendlyPlace['category'], string>> = {
     playground: 'Playground', park: 'Park', indoor_playground: 'Indoor play area',
-    zoo_or_animals: 'Animals', museum: 'Museum', library: "Children's library",
+    zoo_or_animals: 'Animals', museum: 'Museum', library: 'Library',
     beach: 'Beach access', pool: 'Pool', community_center: 'Community center',
     attraction: 'Attraction', picnic_area: 'Picnic area',
   };
