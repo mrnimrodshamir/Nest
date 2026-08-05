@@ -40,3 +40,8 @@ test('buildGoogleCalendarUrl: points at the real Google Calendar render endpoint
   const url = buildGoogleCalendarUrl(activityInfo({}));
   assert.ok(url.startsWith('https://calendar.google.com/calendar/render?'));
 });
+
+test('buildGoogleCalendarUrl: declares the activity timezone explicitly', () => {
+  const url = new URL(buildGoogleCalendarUrl(activityInfo({})));
+  assert.equal(url.searchParams.get('ctz'), 'Asia/Jerusalem');
+});
