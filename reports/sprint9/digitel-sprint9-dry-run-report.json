@@ -1,0 +1,28 @@
+{
+  "dryRun": true,
+  "writes": 0,
+  "batchId": "digitel-sprint9-20260805-v1",
+  "generatedAt": "2026-08-05T16:07:30.651Z",
+  "candidatesReviewed": 1190,
+  "pass": 30,
+  "review": 1092,
+  "fail": 68,
+  "duplicateProviderIdentities": 0,
+  "duplicateFingerprints": 0,
+  "linkedToPlaces": 11,
+  "unlinked": 19,
+  "categories": {
+    "community": 8,
+    "performance": 9,
+    "story_time": 5,
+    "workshop": 8
+  },
+  "reasons": {
+    "FAIL:adult_only_or_senior_programming": 9,
+    "FAIL:not_future": 50,
+    "FAIL:unsupported_cancellation_claim": 9,
+    "PASS:manually_verified_family_event": 30,
+    "REVIEW:not_in_manually_approved_first_batch": 1092
+  },
+  "sourceImagesPublished": 0
+}
