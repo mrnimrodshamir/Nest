@@ -38,7 +38,7 @@ export function formatPlaceDistance(distanceMeters: number | null): string | nul
   return `${(distanceMeters / 1000).toFixed(1)} km away`;
 }
 
-export function placeSummaryFeatures(place: FamilyFriendlyPlace): string[] {
+export function placeSummaryFeatures(place: FamilyFriendlyPlace, limit = 3): string[] {
   const features: string[] = [];
   if (place.shade) features.push('Shade');
   if (place.toilets) features.push('Toilets');
@@ -47,7 +47,7 @@ export function placeSummaryFeatures(place: FamilyFriendlyPlace): string[] {
   if (place.highChairs) features.push('High chairs');
   if (place.accessible) features.push('Accessible');
   if (place.waterFountain) features.push('Water fountain');
-  return features.slice(0, 3);
+  return features.slice(0, limit);
 }
 
 export function placeMatchesFilters(place: FamilyFriendlyPlace, filters: PlaceFilters): boolean {
@@ -70,4 +70,14 @@ export function formatPlaceAgeRange(min: number | null, max: number | null): str
   if (min == null) return `Up to ${label(max!)}`;
   if (max == null) return `${label(min)} and up`;
   return `${label(min)} – ${label(max)}`;
+}
+
+export function formatOpeningHours(value: Record<string, unknown> | null): string | null {
+  if (!value) return null;
+  const entries = Object.entries(value).flatMap(([day, hours]) => {
+    if (typeof hours === 'string') return [`${day}: ${hours}`];
+    if (Array.isArray(hours) && hours.every((item) => typeof item === 'string')) return [`${day}: ${hours.join(', ')}`];
+    return [];
+  });
+  return entries.length ? entries.join('\n') : null;
 }

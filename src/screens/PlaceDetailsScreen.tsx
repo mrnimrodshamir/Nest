@@ -9,14 +9,14 @@ import { getFamilyFriendlyPlace } from '@/lib/familyFriendlyPlaces';
 import { radius, spacing, theme, typography } from '@/theme';
 import type { FamilyFriendlyPlace } from '@/types/familyFriendlyPlace';
 import { PLACE_CATEGORY_LABELS } from '@/types/familyFriendlyPlace';
-import { formatPlaceAgeRange, placeSummaryFeatures } from '@/utils/familyFriendlyPlace';
+import { formatOpeningHours, formatPlaceAgeRange, placeSummaryFeatures } from '@/utils/familyFriendlyPlace';
 
 export function PlaceDetailsScreen({ placeId, onBack, onCreateActivity }: { placeId: string; onBack: () => void; onCreateActivity: (place: FamilyFriendlyPlace) => void }) {
   const [place, setPlace] = useState<FamilyFriendlyPlace | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [reload, setReload] = useState(0);
   useEffect(() => { let active = true; setError(null); getFamilyFriendlyPlace(placeId).then((value) => active && setPlace(value)).catch(() => active && setError("Couldn't load this place.")); return () => { active = false; }; }, [placeId, reload]);
-  const features = useMemo(() => place ? placeSummaryFeatures({ ...place, shade: place.shade, toilets: place.toilets }) : [], [place]);
+  const features = useMemo(() => place ? placeSummaryFeatures(place, 10) : [], [place]);
 
   if (!place) return <SafeAreaView style={styles.container}><Header onBack={onBack} />{error ? <StateCard icon={WarningCircle} title="Couldn't load place" body={error} ctaLabel="Try again" onCtaPress={() => setReload((v) => v + 1)} tone="warning" /> : <Text style={styles.loading}>Loading place…</Text>}</SafeAreaView>;
   const setting = [place.isIndoor ? 'Indoor' : null, place.isOutdoor ? 'Outdoor' : null, place.isFree === true ? 'Free' : place.isFree === false ? 'Paid' : null].filter(Boolean).join(' · ');
@@ -31,7 +31,7 @@ export function PlaceDetailsScreen({ placeId, onBack, onCreateActivity }: { plac
     {place.shortDescription ? <Text style={styles.description}>{place.fullDescription ?? place.shortDescription}</Text> : null}
     {place.minAgeMonths != null || place.maxAgeMonths != null ? <Section title="Age suitability" body={formatPlaceAgeRange(place.minAgeMonths, place.maxAgeMonths)} /> : null}
     {features.length ? <View style={styles.section}><Text style={styles.sectionTitle}>Family-friendly features</Text>{features.map((feature) => <View key={feature} style={styles.feature}><CheckCircle size={18} color={theme.brand.secondary} weight="fill" /><Text style={styles.featureText}>{feature}</Text></View>)}</View> : null}
-    {place.openingHours ? <Section title="Opening hours" body="See the venue’s current schedule before you go." /> : null}
+    {formatOpeningHours(place.openingHours) ? <Section title="Opening hours" body={formatOpeningHours(place.openingHours)!} /> : null}
     {place.websiteUrl ? <Pressable style={styles.linkRow} onPress={() => Linking.openURL(place.websiteUrl!)}><ArrowSquareOut size={18} color={theme.brand.primary} /><Text style={styles.link}>Visit website</Text></Pressable> : null}
     {place.lastVerifiedAt ? <Text style={styles.verified}>Last verified {new Date(place.lastVerifiedAt).toLocaleDateString()}</Text> : null}
     <PrimaryButton label="Create activity here" onPress={() => onCreateActivity(place)} />

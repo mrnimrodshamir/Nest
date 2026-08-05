@@ -1,7 +1,6 @@
 import type { ActivityFormSeedValues } from '@/components/ActivityForm';
 import type { ActivityCategory } from '@/types/activity';
 import type { FamilyFriendlyPlace, PlaceCategory } from '@/types/familyFriendlyPlace';
-import { normalizedPlaceToSelectedLocation } from '@/utils/activityPlaceMapping';
 
 const SUGGESTED_ACTIVITY_CATEGORY: Partial<Record<PlaceCategory, ActivityCategory>> = {
   playground: 'playground_meetup', indoor_playground: 'indoor_playground', family_cafe: 'coffee_meetup',
@@ -24,7 +23,16 @@ export function buildActivitySeedFromPlace(place: FamilyFriendlyPlace): Activity
   return {
     activityType: activityCategoryForPlace(place.category), description: '', durationMinutes: 60,
     latitude: place.latitude, longitude: place.longitude, locationName: place.name,
-    selectedLocation: normalizedPlaceToSelectedLocation(normalized), maxParticipants: 8,
+    selectedLocation: {
+      place: normalized,
+      latitude: normalized.latitude,
+      longitude: normalized.longitude,
+      displayName: normalized.name,
+      addressLabel: normalized.formattedAddress,
+      source: normalized.source,
+      wasAdjusted: false,
+    },
+    maxParticipants: 8,
     babyMinAgeMonths: place.minAgeMonths, babyMaxAgeMonths: place.maxAgeMonths, notes: '', coverImageUrl: null,
   };
 }

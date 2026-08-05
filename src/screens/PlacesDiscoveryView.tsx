@@ -30,8 +30,7 @@ export function PlacesDiscoveryView({ onShowActivities, onOpenPlace, mockPlaces 
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const viewport = useMemo(() => regionToPlaceViewport(region), [region]);
   const filters = useMemo(() => ({ category: category === 'all' ? null : category }), [category]);
-  const userCoordinate = useMemo(() => ({ latitude: region.latitude, longitude: region.longitude }), [region.latitude, region.longitude]);
-  const { places, isLoading, error, refresh } = useFamilyFriendlyPlaces({ enabled: true, viewport, filters, userCoordinate, mockPlaces });
+  const { places, isLoading, error, refresh } = useFamilyFriendlyPlaces({ enabled: true, viewport, filters, userCoordinate: null, mockPlaces });
 
   const selectPlace = useCallback((place: FamilyFriendlyPlace, open = false) => {
     setSelectedId(place.id);

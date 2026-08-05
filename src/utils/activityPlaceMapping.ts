@@ -98,6 +98,7 @@ export function selectedLocationToNormalizedPlace(selection: SelectedActivityLoc
       latitude: selection.latitude,
       longitude: selection.longitude,
     }),
+    category: selection.place?.category ?? null,
     wasAdjusted: selection.wasAdjusted,
   };
 }
