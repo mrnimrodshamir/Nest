@@ -17,7 +17,9 @@ interface ContentImageProps {
 
 export function ContentImage({ asset = null, legacyUri = null, variant, fallback, style, accessibilityLabel, deferUntilInteraction = true }: ContentImageProps) {
   const selected = selectContentImageVariant(asset, variant);
-  const uri = selected?.url ?? legacyUri;
+  // Once a normalized record exists, its rights decision is authoritative.
+  // Legacy URLs are used only for rows not yet migrated into the pipeline.
+  const uri = asset ? selected?.url ?? null : legacyUri;
   const placeholder = asset?.placeholder ?? undefined;
   const [ready, setReady] = useState(!deferUntilInteraction);
   const [failed, setFailed] = useState(false);

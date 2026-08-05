@@ -74,10 +74,14 @@ create policy "Authenticated users read approved image variants" on public.conte
 create policy "Authenticated users read visible place images" on public.place_content_images
   for select to authenticated using (exists (
     select 1 from public.places place where place.id = place_id and place.is_active and place.verification_status = 'verified'
+  ) and exists (
+    select 1 from public.content_images image where image.id = image_id and image.rights_status = 'approved'
   ));
 create policy "Authenticated users read visible event images" on public.event_content_images
   for select to authenticated using (exists (
     select 1 from public.events event where event.id = event_id and event.publication_status = 'published' and event.verification_status = 'verified'
+  ) and exists (
+    select 1 from public.content_images image where image.id = image_id and image.rights_status = 'approved'
   ));
 
 revoke insert, update, delete on public.content_images, public.content_image_variants, public.place_content_images, public.event_content_images from anon, authenticated;

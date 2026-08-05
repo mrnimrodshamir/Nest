@@ -65,6 +65,7 @@ test('renderer uses caching, lazy interaction loading, placeholder, and broken-i
   assert.match(source, /placeholder=/);
   assert.match(source, /onError=/);
   assert.match(source, /recyclingKey=/);
+  assert.match(source, /asset \? selected\?\.url \?\? null : legacyUri/);
 });
 
 test('gallery is virtualized and does not render unapproved assets', () => {
