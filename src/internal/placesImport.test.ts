@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { createPlaceSlug, dryRunPlaceImport, exportPlacesCsv, exportPlacesJson, isValidCurationImageUrl, normalizePlaceName, parsePlacesCsv, validatePlaceImportRow, type PlaceImportRow } from '@/internal/placesImport';
+import { createPlaceSlug, dryRunPlaceImport, exportPlacesCsv, exportPlacesJson, isValidCurationImageUrl, normalizePlaceName, parsePlacesCsv, stripUtf8Bom, validatePlaceImportRow, type PlaceImportRow } from '@/internal/placesImport';
 
 const valid: PlaceImportRow = {
   name: 'Fixture Park', category: 'park', latitude: 32.08, longitude: 34.78,
@@ -22,6 +22,10 @@ test('normalized nearby names and slug collisions require review', () => { const
 test('uncertain coordinate matches are returned for manual review', () => { const result = dryRunPlaceImport([valid], [{ id:'db-3',name:'Different Place',latitude:32.08005,longitude:34.78005,provider:null,providerPlaceId:null }]); assert.equal(result.rows[0].status, 'REVIEW'); assert.match(result.manualReview[0].reason, /different name/); assert.equal(result.upserts.length, 0); });
 test('name and slug normalization are deterministic for English and Hebrew', () => { assert.equal(normalizePlaceName('  Gán—Park '), 'gan park'); assert.equal(createPlaceSlug('Family Park'), 'family-park'); assert.match(createPlaceSlug('גן ילדים'), /^place-/); });
 test('CSV parser supports quoted addresses and null empty cells', () => { const header = Object.keys(valid).join(','); const values = Object.values({ ...valid, name:'Fixture, Park',formatted_address:'10 Test St, Tel Aviv' }).map((value) => value == null ? '' : String(value)); values[0] = '"Fixture, Park"'; values[4] = '"10 Test St, Tel Aviv"'; const rows = parsePlacesCsv(`${header}\n${values.join(',')}`); assert.equal(rows[0].name, 'Fixture, Park'); assert.equal(rows[0].formatted_address, '10 Test St, Tel Aviv'); assert.equal(rows[0].is_indoor, null); });
+
+test('UTF-8 BOM stripping keeps JSON snapshots parseable', () => {
+  assert.deepEqual(JSON.parse(stripUtf8Bom('\uFEFF[{"id":"place-1"}]')), [{ id: 'place-1' }]);
+});
 test('URL validation permits secure URLs without fetching', () => { assert.equal(isValidCurationImageUrl('https://cdn.example.test/image?id=1'), true); assert.equal(isValidCurationImageUrl('http://example.test/a.jpg'), false); assert.match(validatePlaceImportRow({ ...valid, source_url:'file:///secret' }).errors.join(','), /source_url/); });
 test('CSV and JSON exports preserve reviewable curation data', () => { const rows = [{ ...valid, partner_tags:['weekend','partner'] }]; assert.match(exportPlacesCsv(rows), /weekend\|partner/); assert.deepEqual(JSON.parse(exportPlacesJson(rows))[0].partner_tags, ['weekend','partner']); });
 test('published JSON schema has the exact category scope and required contract', () => { const schema = JSON.parse(readFileSync(new URL('../../docs/places/tel-aviv-places.schema.json', import.meta.url), 'utf8')); assert.equal(schema.items.properties.category.enum.length, 12); assert.equal(schema.items.properties.category.enum.includes('family_cafe'), false); assert.ok(schema.items.required.includes('last_verified_at')); });

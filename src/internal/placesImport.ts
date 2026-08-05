@@ -57,6 +57,10 @@ export function normalizePlaceName(value: string): string {
   return value.normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ').trim().replace(/\s+/g, ' ');
 }
 
+export function stripUtf8Bom(value: string): string {
+  return value.replace(/^\uFEFF/, '');
+}
+
 export function createPlaceSlug(value: string): string {
   const slug = value.normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
   return slug || `place-${simpleHash(value)}`;

@@ -2,7 +2,7 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { extname, resolve } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { createClient } from '@supabase/supabase-js';
-import { dryRunPlaceImport, parsePlacesCsv } from '../src/internal/placesImport.ts';
+import { dryRunPlaceImport, parsePlacesCsv, stripUtf8Bom } from '../src/internal/placesImport.ts';
 
 const args = process.argv.slice(2);
 const inputArg = args.find((arg) => !arg.startsWith('--'));
@@ -14,14 +14,14 @@ const reportPath = valueAfter('--report');
 
 if (!inputArg) fail('Usage: npm run places:import -- <dataset.csv|json> [--existing existing.json] [--report report.json] [--apply --confirm APPLY_PLACES]');
 const inputPath = resolve(inputArg);
-const raw = readFileSync(inputPath, 'utf8');
+const raw = stripUtf8Bom(readFileSync(inputPath, 'utf8'));
 const parsed = extname(inputPath).toLowerCase() === '.csv' ? parsePlacesCsv(raw) : JSON.parse(raw);
 if (!Array.isArray(parsed)) fail('Input JSON must be an array of place objects.');
 
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL ?? process.env.SUPABASE_URL;
 const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 let client = null;
-let existing = existingPath ? JSON.parse(readFileSync(resolve(existingPath), 'utf8')) : [];
+let existing = existingPath ? JSON.parse(stripUtf8Bom(readFileSync(resolve(existingPath), 'utf8'))) : [];
 
 if (serviceKey && supabaseUrl) {
   client = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false, autoRefreshToken: false } });
