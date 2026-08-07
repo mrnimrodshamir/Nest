@@ -1,3 +1,5 @@
+import type { ParentRole } from '@/utils/parentRole';
+
 export interface NotificationPreferences {
   activity_changes: boolean;
   chat_messages: boolean;
@@ -15,6 +17,8 @@ export interface Profile {
   avatarUrl: string | null;
   onboardingCompleted: boolean;
   notificationPreferences: NotificationPreferences;
+  /** Self-selected only; null renders as the neutral "Parent". */
+  parentRole: ParentRole;
 }
 
 /** Minimal public surface for other users — matches the `public_profiles`

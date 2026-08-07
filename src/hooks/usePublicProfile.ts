@@ -1,13 +1,23 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
+import { coerceParentRole, type ParentRole } from '@/utils/parentRole';
 
 export interface PublicProfileData {
   id: string;
   displayName: string;
   avatarUrl: string | null;
-  /** Default child's name/age only -- never every child, never a birthdate. */
-  childName: string | null;
-  childAgeMonths: number | null;
+  /** ALL children, not just the default one. Names only -- the view never
+   *  returns a birthdate, and ages arrive pre-coarsened (exact months under
+   *  two years, floored to whole years above). */
+  childNames: string[];
+  childCount: number;
+  childAgesMonths: Array<number | null>;
+  /** Self-selected only; null renders as the neutral "Parent". */
+  parentRole: ParentRole;
+  /** General area, never coordinates. */
+  neighborhood: string | null;
+  occupation: string | null;
+  bio: string | null;
   memberSince: string;
   hostedCount: number;
   joinedCount: number;
@@ -46,7 +56,9 @@ export function usePublicProfile(userId: string | null): UsePublicProfileResult 
 
         const { data: row, error: profileError } = await supabase
           .from('public_profiles')
-          .select('id, display_name, avatar_url, baby_name, baby_age_months, member_since')
+          .select(
+            'id, display_name, avatar_url, member_since, neighborhood_label, bio, occupation, parent_role, child_count, child_names, child_ages_months',
+          )
           .eq('id', userId)
           .maybeSingle();
         if (profileError) throw profileError;
@@ -95,8 +107,13 @@ export function usePublicProfile(userId: string | null): UsePublicProfileResult 
             id: row.id,
             displayName: row.display_name,
             avatarUrl: row.avatar_url,
-            childName: row.baby_name,
-            childAgeMonths: row.baby_age_months,
+            childNames: (row.child_names ?? []) as string[],
+            childCount: row.child_count ?? 0,
+            childAgesMonths: (row.child_ages_months ?? []) as Array<number | null>,
+            parentRole: coerceParentRole(row.parent_role),
+            neighborhood: row.neighborhood_label ?? null,
+            occupation: row.occupation ?? null,
+            bio: row.bio ?? null,
             memberSince: row.member_since,
             hostedCount: hostedCount ?? 0,
             joinedCount: joinedCount ?? 0,

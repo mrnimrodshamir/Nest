@@ -11,6 +11,7 @@ import { isNonEmpty } from '@/utils/validation';
 import { formatBabyAge, birthdateToMonths } from '@/utils/babyAge';
 import { useAuth } from '@/hooks/useAuth';
 import { useChildren } from '@/hooks/useChildren';
+import { parentRoleNoun, type ParentRole } from '@/utils/parentRole';
 import type { Child, ChildSex } from '@/types/child';
 
 interface EditProfileScreenProps {
@@ -22,6 +23,9 @@ export function EditProfileScreen({ onBack }: EditProfileScreenProps) {
   const { children, addChild, updateChild, removeChild, setDefaultChild } = useChildren(session?.user.id ?? null);
 
   const [displayName, setDisplayName] = useState(profile?.displayName ?? '');
+  // Self-selected only. Existing users start at null and simply keep reading
+  // "Parent" until they choose — nobody is forced to pick.
+  const [parentRole, setParentRole] = useState<ParentRole>(profile?.parentRole ?? null);
   const [photoUri, setPhotoUri] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState<string | null>(null);
@@ -31,7 +35,10 @@ export function EditProfileScreen({ onBack }: EditProfileScreenProps) {
   const inFlightRef = useRef(false);
 
   useEffect(() => {
-    if (profile) setDisplayName(profile.displayName);
+    if (profile) {
+      setDisplayName(profile.displayName);
+      setParentRole(profile.parentRole ?? null);
+    }
   }, [profile]);
 
   const handleSave = async () => {
@@ -51,6 +58,7 @@ export function EditProfileScreen({ onBack }: EditProfileScreenProps) {
       displayName: displayName.trim(),
       phone: profile?.phone ?? null,
       photoUri,
+      parentRole,
     });
     setIsSaving(false);
     inFlightRef.current = false;
@@ -80,6 +88,30 @@ export function EditProfileScreen({ onBack }: EditProfileScreenProps) {
               autoCapitalize="words"
               error={fieldErrors.displayName}
             />
+          </View>
+
+          <Text style={styles.sectionLabel}>How you'd like to be called</Text>
+          <Text style={styles.roleHint}>
+            Shown as "{parentRoleNoun(parentRole)} of 2" on your public profile. Optional — you can change it any time.
+          </Text>
+          <View style={styles.roleRow}>
+            {(['mom', 'dad', 'parent'] as const).map((option) => {
+              const selected = parentRole === option;
+              return (
+                <Pressable
+                  key={option}
+                  onPress={() => setParentRole(selected ? null : option)}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected }}
+                  accessibilityLabel={parentRoleNoun(option)}
+                  style={[styles.roleChip, selected && styles.roleChipSelected]}
+                >
+                  <Text style={[styles.roleChipLabel, selected && styles.roleChipLabelSelected]}>
+                    {parentRoleNoun(option)}
+                  </Text>
+                </Pressable>
+              );
+            })}
           </View>
 
           <Text style={styles.sectionLabel}>Children</Text>
@@ -337,6 +369,16 @@ const styles = StyleSheet.create({
   childCancel: { paddingVertical: spacing.sm, paddingHorizontal: spacing.md },
   childCancelLabel: { ...typography.bodyMedium, color: theme.text.secondary },
   childSaveButton: { flex: 1 },
+  roleHint: { ...typography.footnote, color: theme.text.secondary, marginBottom: spacing.sm },
+  roleRow: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.lg },
+  roleChip: {
+    paddingHorizontal: spacing.lg, paddingVertical: spacing.sm, borderRadius: radius.pill,
+    borderWidth: 1, borderColor: theme.border.default, backgroundColor: theme.background.surface,
+    minHeight: 44, alignItems: 'center', justifyContent: 'center',
+  },
+  roleChipSelected: { borderColor: theme.brand.primary, backgroundColor: theme.brand.primaryTint },
+  roleChipLabel: { ...typography.subhead, color: theme.text.primary },
+  roleChipLabelSelected: { color: theme.brand.primary, fontWeight: '600' },
   addChildRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingTop: spacing.sm },
   addChildLabel: { ...typography.bodyMedium, color: theme.text.accent },
   formError: { ...typography.footnote, color: theme.semantic.danger, textAlign: 'center' },

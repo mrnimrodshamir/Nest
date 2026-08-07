@@ -8,6 +8,7 @@ import { track } from '@/lib/analytics';
 import { mapAuthError } from '@/lib/authErrors';
 import { completeOnboardingCore } from '@/lib/completeOnboarding';
 import type { NotificationPreferences, Profile } from '@/types/profile';
+import { coerceParentRole, type ParentRole } from '@/utils/parentRole';
 
 /** Guards against ASAuthorizationController being presented twice at once
  *  (a real crash on-device: "already presenting a view controller"). React
@@ -87,6 +88,7 @@ interface UseAuthResult {
     displayName: string;
     phone: string | null;
     photoUri?: string | null;
+    parentRole?: ParentRole;
   }) => Promise<string | null>;
   updateNotificationPreferences: (prefs: NotificationPreferences) => Promise<string | null>;
 }
@@ -112,7 +114,7 @@ function useAuthState(): UseAuthResult {
     try {
       const { data } = await supabase
         .from('profiles')
-        .select('id, display_name, email, phone, avatar_url, onboarding_completed, notification_preferences')
+        .select('id, display_name, email, phone, avatar_url, onboarding_completed, notification_preferences, parent_role')
         .eq('id', userId)
         .maybeSingle();
       setProfile(data ? mapProfile(data) : null);
@@ -514,7 +516,14 @@ function useAuthState(): UseAuthResult {
   }, [session, loadProfile]);
 
   const updateProfileDetails = useCallback(
-    async (details: { displayName: string; phone: string | null; photoUri?: string | null }) => {
+    async (details: {
+      displayName: string;
+      phone: string | null;
+      photoUri?: string | null;
+      /** Self-selected only. `undefined` leaves the stored value untouched;
+       *  `null` clears it back to the neutral "Parent". */
+      parentRole?: ParentRole;
+    }) => {
       if (!session) return 'Not signed in';
       let avatarUrl: string | undefined;
       if (details.photoUri) {
@@ -531,6 +540,9 @@ function useAuthState(): UseAuthResult {
           display_name: details.displayName,
           phone: details.phone,
           ...(avatarUrl ? { avatar_url: avatarUrl } : {}),
+          // Only written when the caller passes the key at all, so screens
+          // that don't own this field can never blank an existing choice.
+          ...(details.parentRole !== undefined ? { parent_role: details.parentRole } : {}),
         })
         .eq('id', session.user.id);
       if (error) {
@@ -603,6 +615,7 @@ function mapProfile(row: {
   avatar_url: string | null;
   onboarding_completed: boolean;
   notification_preferences: NotificationPreferences;
+  parent_role?: string | null;
 }): Profile {
   return {
     id: row.id,
@@ -612,5 +625,6 @@ function mapProfile(row: {
     avatarUrl: row.avatar_url,
     onboardingCompleted: row.onboarding_completed,
     notificationPreferences: row.notification_preferences,
+    parentRole: coerceParentRole(row.parent_role),
   };
 }

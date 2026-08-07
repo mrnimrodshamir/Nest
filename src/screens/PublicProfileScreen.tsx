@@ -7,7 +7,7 @@ import { PersonCard } from '@/components/PersonCard';
 import { PrimaryButton } from '@/components/PrimaryButton';
 import { StateCard } from '@/components/StateCard';
 import { usePublicProfile } from '@/hooks/usePublicProfile';
-import { formatBabyAge } from '@/utils/babyAge';
+import { buildCaregiverContext } from '@/utils/caregiverContext';
 
 interface PublicProfileScreenProps {
   userId: string;
@@ -46,13 +46,18 @@ export function PublicProfileScreen({ userId, onBack, onMessage }: PublicProfile
             name={profile.displayName}
             avatarUrl={profile.avatarUrl}
             subtitle={
-              profile.childName
-                ? `Parent of ${profile.childName}${
-                    profile.childAgeMonths !== null ? ` · ${formatBabyAge(profile.childAgeMonths)}` : ''
-                  }`
-                : undefined
+              buildCaregiverContext({
+                neighborhood: profile.neighborhood,
+                parentRole: profile.parentRole,
+                childCount: profile.childCount,
+              }).context ?? undefined
             }
           />
+
+          {profile.occupation?.trim() ? (
+            <Text style={styles.occupation}>{profile.occupation.trim()}</Text>
+          ) : null}
+          {profile.bio?.trim() ? <Text style={styles.bio}>{profile.bio.trim()}</Text> : null}
 
           {profile.sharedContext && (
             <View style={styles.sharedContextCard}>
@@ -103,6 +108,8 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
   },
   sharedContextText: { ...typography.footnote, color: theme.brand.primaryPressed, textAlign: 'center' },
+  occupation: { ...typography.subhead, color: theme.text.secondary, marginTop: spacing.xs },
+  bio: { ...typography.footnote, color: theme.text.secondary, marginTop: spacing.sm, lineHeight: 20 },
   contextRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   contextText: { ...typography.caption, color: theme.text.muted },
   contextDivider: { ...typography.caption, color: theme.text.muted },
