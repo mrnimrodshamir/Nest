@@ -16,7 +16,8 @@
         "NSCameraUsageDescription": "NestUp uses your camera so you can add a profile photo or activity cover photo.",
         "NSPhotoLibraryUsageDescription": "NestUp uses your photo library so you can choose a profile photo or activity cover photo.",
         "NSCalendarsUsageDescription": "NestUp can add activities you join to your calendar.",
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "LSApplicationQueriesSchemes": ["whatsapp"]
       }
     },
     "android": {
