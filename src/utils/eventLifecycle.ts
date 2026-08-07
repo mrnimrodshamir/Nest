@@ -15,10 +15,20 @@ export function resolveEventLifecycle(input: EventLifecycleInput, now = new Date
   const start = parseTime(input.startsAt, 'startsAt');
   const end = input.endsAt == null ? null : parseTime(input.endsAt, 'endsAt');
   if (end != null && end < start) throw new Error('Event occurrence endsAt must not precede startsAt');
+
+  // Validate the timezone BEFORE any lifecycle short-circuit. It used to be
+  // checked only inside calendarDateKey on the 'today' branch below, which is
+  // unreachable once an event is live or finished — so a malformed timezone
+  // silently produced a lifecycle result instead of failing. Ingested source
+  // data is exactly where malformed timezones arrive, so validation must not
+  // depend on which branch a given event happens to take.
+  const timezone = input.timezone ?? 'Asia/Jerusalem';
+  assertValidTimezone(timezone);
+
   const current = now.getTime();
   if (end != null && current >= start && current < end) return 'live';
   if (current >= (end ?? start)) return 'finished';
-  if (calendarDateKey(now, input.timezone ?? 'Asia/Jerusalem') === calendarDateKey(new Date(start), input.timezone ?? 'Asia/Jerusalem')) return 'today';
+  if (calendarDateKey(now, timezone) === calendarDateKey(new Date(start), timezone)) return 'today';
   return 'upcoming';
 }
 
@@ -35,6 +45,16 @@ function parseTime(value: string, field: string): number {
   const parsed = Date.parse(value);
   if (!Number.isFinite(parsed)) throw new Error(`Invalid event ${field}`);
   return parsed;
+}
+
+/** Throws on an unusable IANA zone. Kept separate from calendarDateKey so it
+ *  can run unconditionally rather than only on the branch that formats a date. */
+function assertValidTimezone(timezone: string): void {
+  try {
+    new Intl.DateTimeFormat('en-CA', { timeZone: timezone });
+  } catch {
+    throw new Error(`Invalid event timezone: ${timezone}`);
+  }
 }
 
 function calendarDateKey(date: Date, timezone: string): string {
