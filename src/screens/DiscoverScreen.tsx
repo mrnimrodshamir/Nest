@@ -80,7 +80,6 @@ const SORT_OPTIONS: Array<{ key: DiscoverySort; label: string }> = [
   { key: 'default', label: 'Recommended' },
   { key: 'distance', label: 'Distance' },
   { key: 'soonest', label: 'Soonest' },
-  { key: 'newest', label: 'Newest' },
   { key: 'alphabetical', label: 'Alphabetical' },
 ];
 

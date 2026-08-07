@@ -42,6 +42,7 @@ import { AuthNavigator } from '@/navigation/AuthNavigator';
 import { AppErrorBoundary } from '@/components/AppErrorBoundary';
 import { spacing, theme } from '@/theme';
 import { useAuth, AuthProvider } from '@/hooks/useAuth';
+import { I18nProvider } from '@/i18n';
 import { computeRouteDecision } from '@/lib/routing';
 import { useActivityDetail } from '@/hooks/useActivityDetail';
 import { useActivityRsvp } from '@/hooks/useActivityRsvp';
@@ -151,10 +152,14 @@ const linking: LinkingOptions<RootStackParamList> = {
 };
 
 export default function App() {
+  // I18nProvider sits ABOVE AuthProvider: auth screens are user-facing too, so
+  // they need translations before a session exists.
   return (
-    <AuthProvider>
-      <AppInner />
-    </AuthProvider>
+    <I18nProvider>
+      <AuthProvider>
+        <AppInner />
+      </AuthProvider>
+    </I18nProvider>
   );
 }
 

@@ -124,8 +124,7 @@ export function sortDiscoveryItems(
   return [...items].sort((a, b) => {
     if (sort === 'distance') return distanceFor(a, origin) - distanceFor(b, origin) || discoveryItemKey(a).localeCompare(discoveryItemKey(b));
     if (sort === 'alphabetical') return titleFor(a).localeCompare(titleFor(b)) || discoveryItemKey(a).localeCompare(discoveryItemKey(b));
-    if (sort === 'soonest') return timeFor(a, 'soonest') - timeFor(b, 'soonest') || discoveryItemKey(a).localeCompare(discoveryItemKey(b));
-    return timeFor(b, 'newest') - timeFor(a, 'newest') || discoveryItemKey(a).localeCompare(discoveryItemKey(b));
+    return startTimeFor(a) - startTimeFor(b) || discoveryItemKey(a).localeCompare(discoveryItemKey(b));
   });
 }
 
@@ -138,10 +137,11 @@ function titleFor(item: DiscoveryItem): string {
   return item.type === 'place' ? item.data.name : item.data.title;
 }
 
-function timeFor(item: DiscoveryItem, mode: 'soonest' | 'newest'): number {
+/** Start time for `soonest`. Places have no start time and are not scheduled
+ *  at all, so they sort to the end rather than being given a fabricated one. */
+function startTimeFor(item: DiscoveryItem): number {
   if (item.type === 'activity') return Date.parse(item.data.startTime);
-  if (item.type === 'event') return Date.parse(mode === 'newest' ? item.data.createdAt : item.data.occurrence.startsAt);
-  if (mode === 'newest' && item.data.lastVerifiedAt) return Date.parse(item.data.lastVerifiedAt);
+  if (item.type === 'event') return Date.parse(item.data.occurrence.startsAt);
   return Number.MAX_SAFE_INTEGER;
 }
 

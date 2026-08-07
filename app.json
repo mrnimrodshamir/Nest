@@ -5,7 +5,10 @@
     "version": "0.1.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
-    "scheme": ["nestup", "momzi"],
+    "scheme": [
+      "nestup",
+      "momzi"
+    ],
     "icon": "./assets/icon.png",
     "ios": {
       "bundleIdentifier": "com.nest.mobile",
@@ -17,7 +20,9 @@
         "NSPhotoLibraryUsageDescription": "NestUp uses your photo library so you can choose a profile photo or activity cover photo.",
         "NSCalendarsUsageDescription": "NestUp can add activities you join to your calendar.",
         "ITSAppUsesNonExemptEncryption": false,
-        "LSApplicationQueriesSchemes": ["whatsapp"]
+        "LSApplicationQueriesSchemes": [
+          "whatsapp"
+        ]
       }
     },
     "android": {
@@ -52,7 +57,8 @@
           "resizeMode": "contain",
           "backgroundColor": "#FAF8F4"
         }
-      ]
+      ],
+      "expo-localization"
     ],
     "extra": {
       "eas": {

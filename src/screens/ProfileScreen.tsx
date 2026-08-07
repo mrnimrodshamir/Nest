@@ -21,6 +21,7 @@ import { useChildren } from '@/hooks/useChildren';
 import { formatParentSubtitle } from '@/utils/formatParentSubtitle';
 import { ensurePushRegistration } from '@/hooks/usePushNotifications';
 import { NotificationPermissionSheet } from '@/components/NotificationPermissionSheet';
+import { LanguageSelector } from '@/components/LanguageSelector';
 import { LEGAL_URLS } from '@/constants/legal';
 import type { NotificationPreferences } from '@/types/profile';
 import { APP_NAME } from '@/constants/brand';
@@ -133,6 +134,8 @@ export function ProfileScreen({ onEditProfile, onOpenMyActivities, onOpenBlocked
             ))}
           </View>
         )}
+
+        <LanguageSelector />
 
         <MenuSection>
           <MenuRow icon={ProhibitInset} label="Blocked members" onPress={onOpenBlockedUsers} isLast />

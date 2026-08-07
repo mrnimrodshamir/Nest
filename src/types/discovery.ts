@@ -4,7 +4,11 @@ import type { EventDetails } from '@/types/event';
 
 export type DiscoveryContentKey = 'activities' | 'places' | 'events';
 export type DiscoveryContentSelection = Record<DiscoveryContentKey, boolean>;
-export type DiscoverySort = 'default' | 'distance' | 'soonest' | 'newest' | 'alphabetical';
+/** `newest` was removed deliberately. Activities carry no creation timestamp
+ *  at all, so it silently ranked them by start time (furthest-future first),
+ *  and Places fell back to a sentinel that floated UNVERIFIED entries to the
+ *  top. It was correct for Events only — one of three visible content types. */
+export type DiscoverySort = 'default' | 'distance' | 'soonest' | 'alphabetical';
 
 export type ActivityDiscoveryResult = Activity;
 export type PlaceDiscoveryResult = FamilyFriendlyPlace;
