@@ -22,7 +22,11 @@ export function PlaceCard({ place, highlighted, onPress }: { place: FamilyFriend
   </Pressable>;
 }
 const styles = StyleSheet.create({
-  card: { flexDirection: 'row', minHeight: 116, backgroundColor: theme.background.surface, borderRadius: radius.lg, borderWidth: StyleSheet.hairlineWidth, borderColor: theme.border.default, overflow: 'hidden', marginBottom: spacing.sm },
+  // minHeight keeps the row able to grow for long text, but the image is now
+  // explicitly 116 tall and alignSelf:'flex-start', so the row's height can
+  // never be driven by the image. maxHeight bounds the worst case on small
+  // screens so one card can never dominate the feed.
+  card: { flexDirection: 'row', minHeight: 116, maxHeight: 168, backgroundColor: theme.background.surface, borderRadius: radius.lg, borderWidth: StyleSheet.hairlineWidth, borderColor: theme.border.default, overflow: 'hidden', marginBottom: spacing.sm },
   highlighted: { borderColor: theme.brand.secondary, borderWidth: 1.5 }, pressed: { opacity: 0.86 },
   body: { flex: 1, padding: spacing.md, justifyContent: 'center' },
   title: { ...typography.subhead, fontWeight: '700', color: theme.text.primary },

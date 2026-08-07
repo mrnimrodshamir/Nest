@@ -32,7 +32,11 @@ export function PlaceImage({ uri, asset, category, variant, style, name }: { uri
 }
 
 const styles = StyleSheet.create({
-  card: { width: 112, minHeight: 116, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+  // DEFINITE height, not minHeight. `minHeight` leaves the box's height
+  // indefinite, which is what stopped the fallback's `height: '100%'` from
+  // resolving and let a ~900pt intrinsic asset drive the whole card.
+  // alignSelf keeps the row's default `stretch` from reintroducing it.
+  card: { width: 112, height: 116, alignSelf: 'flex-start', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
   cover: { width: '100%', aspectRatio: 4 / 3, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
   artwork: { width: '100%', height: '100%' },
 });

@@ -45,10 +45,24 @@ export function ContentImage({ asset = null, legacyUri = null, variant, fallback
       onError={() => setFailed(true)}
       accessibilityLabel={accessibilityLabel}
       accessibilityIgnoresInvertColors
-    /> : fallback}
+    /> : <View style={StyleSheet.absoluteFill} pointerEvents="none">{fallback}</View>}
   </View>;
 }
 
 const styles = StyleSheet.create({
+  /** ROOT CAUSE OF THE OVERSIZED "MUZA" CARD.
+   *
+   *  The remote <Image> is absolutely filled, so it can never contribute
+   *  intrinsic height. The FALLBACK was not — it rendered as a normal flow
+   *  child. CategoryArtwork's fallback is a bundled require()d asset whose
+   *  intrinsic size is ~1200x900 POINTS, and it asks for height: '100%'.
+   *  A percentage height cannot resolve against a parent whose own height is
+   *  indefinite (a parent sized only by `minHeight`), so Yoga discarded it
+   *  and laid the asset out at intrinsic size — growing the row to ~900pt
+   *  while the 112pt-wide image column squeezed the body beside it.
+   *
+   *  Absolutely filling the fallback too makes this container's height
+   *  independent of its CONTENT in every branch, so a source image can never
+   *  determine card height regardless of what the caller passes as `style`. */
   container: { overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
 });
