@@ -1,8 +1,8 @@
 import React, { useCallback, useMemo, useState } from 'react';
-import { View, Text, SectionList, FlatList, Pressable, StyleSheet } from 'react-native';
+import { View, Text, SectionList, TextInput, Pressable, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
-import { ChatCircleDots, CaretDown, CaretUp, UsersThree, Plus } from 'phosphor-react-native';
+import { ChatCircleDots, UsersThree, Plus, MagnifyingGlass, X } from 'phosphor-react-native';
 import { theme, typography, spacing, radius } from '@/theme';
 import { StateCard } from '@/components/StateCard';
 import { PersonCard } from '@/components/PersonCard';
@@ -14,10 +14,10 @@ import { formatExactStartTime } from '@/utils/formatExactStartTime';
 import { CATEGORY_LABELS } from '@/types/activity';
 import { groupConversations } from '@/utils/groupConversations';
 import { resolveChatsUpcomingState } from '@/utils/resolveChatsUpcomingState';
-import { chatSections, sortForums, type ChatSectionKey } from '@/utils/chatSections';
+import { chatSections, filterForums, partitionForums, type ChatSectionKey } from '@/utils/chatSections';
 import { useForums, type ForumSummary } from '@/hooks/useForums';
 import { ForumRow } from '@/components/ForumRow';
-import { useI18n } from '@/i18n';
+import { useI18n, textAlignForContent } from '@/i18n';
 
 interface MessagesScreenProps {
   onOpenConversation: (conversation: Conversation) => void;
@@ -40,9 +40,12 @@ type Section = { key: 'upcoming' | 'direct' | 'past'; title: string; data: Conve
 export function MessagesScreen({ onOpenConversation, onOpenForum, onCreateActivity }: MessagesScreenProps) {
   const { conversations, isLoading, error, refresh } = useConversations();
   const { forums, isLoading: forumsLoading, error: forumsError, refresh: refreshForums } = useForums();
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
+  // Section choice and search text live in component state, which survives
+  // navigating into a conversation and back (Chats stays mounted for the
+  // session), so the user returns to the tab they left.
   const [tab, setTab] = useState<ChatSectionKey>('active');
-  const [pastOpen, setPastOpen] = useState(false);
+  const [forumQuery, setForumQuery] = useState('');
 
   // Chats stays mounted for the whole session (a sibling tab under the
   // same root, not a fresh screen instance each visit) — without this,
@@ -59,7 +62,25 @@ export function MessagesScreen({ onOpenConversation, onOpenForum, onCreateActivi
 
   const { upcoming, past, direct } = useMemo(() => groupConversations(conversations), [conversations]);
   const { active } = useMemo(() => chatSections(conversations), [conversations]);
-  const orderedForums = useMemo(() => sortForums(forums), [forums]);
+
+  // Search matches the RESOLVED title/description, not the keys, so it works
+  // identically in Hebrew and English.
+  const matchingForums = useMemo(
+    () => filterForums(forums, forumQuery, (forum) => ({ title: t(forum.titleKey), description: t(forum.descriptionKey) })),
+    [forums, forumQuery, t],
+  );
+  const forumSections = useMemo(() => {
+    const { pinned, rest } = partitionForums(matchingForums);
+    // While searching, a flat list of matches reads better than two headed
+    // groups over a handful of rows.
+    if (forumQuery) return rest.length + pinned.length > 0 ? [{ title: '', data: [...pinned, ...rest] }] : [];
+    const result: Array<{ title: string; data: ForumSummary[] }> = [];
+    if (pinned.length > 0) result.push({ title: t('forum.pinned'), data: pinned });
+    if (rest.length > 0) result.push({ title: t('forum.allForums'), data: rest });
+    return result;
+  }, [matchingForums, forumQuery, t]);
+
+  const searchDirection = textAlignForContent(forumQuery, locale);
   const upcomingState = resolveChatsUpcomingState(upcoming.length, past.length);
 
   const sections = useMemo<Section[]>(() => {
@@ -85,16 +106,48 @@ export function MessagesScreen({ onOpenConversation, onOpenForum, onCreateActivi
       <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
         <Text style={styles.headerTitle}>{t('chats.section.forums')}</Text>
         <SegmentedTabs tabs={TABS} value={tab} onChange={setTab} />
-        <FlatList
-          data={orderedForums}
+
+        <View style={styles.searchRow}>
+          <MagnifyingGlass size={16} color={theme.text.muted} />
+          <TextInput
+            style={[styles.searchInput, searchDirection]}
+            placeholder={t('forum.searchPlaceholder')}
+            placeholderTextColor={theme.text.muted}
+            value={forumQuery}
+            onChangeText={setForumQuery}
+            returnKeyType="search"
+            accessibilityLabel={t('forum.searchLabel')}
+            // Follows what was typed, so a Hebrew query in an English UI (and
+            // vice versa) is not reversed.
+            textAlign={searchDirection.textAlign}
+          />
+          {forumQuery ? (
+            <Pressable onPress={() => setForumQuery('')} hitSlop={10} accessibilityLabel={t('discovery.closeSearch')}>
+              <X size={16} color={theme.text.secondary} />
+            </Pressable>
+          ) : null}
+        </View>
+
+        <SectionList
+          sections={forumSections}
           keyExtractor={(item) => item.key}
           contentContainerStyle={styles.listContent}
+          stickySectionHeadersEnabled={false}
+          renderSectionHeader={({ section }) =>
+            // The "Pinned" heading is noise when a search has already
+            // narrowed the list to a handful of rows.
+            section.title ? <Text style={styles.sectionTitle}>{section.title}</Text> : null
+          }
           renderItem={({ item }) => <ForumRow forum={item} onPress={() => onOpenForum(item)} />}
           // Forums are seeded, so an empty list means the load failed. Showing
           // a cheerful "no forums yet" would be a lie; retry is the only
           // honest affordance.
           ListEmptyComponent={
-            forumsLoading ? null : (
+            forumsLoading ? null : forumQuery ? (
+              // A search with no matches is a legitimate empty result — quite
+              // different from the forum list failing to load.
+              <StateCard icon={UsersThree} title={t('forum.noSearchResults')} body={t('forum.noSearchResultsBody')} />
+            ) : (
               <StateCard
                 icon={UsersThree}
                 title={t('chats.error.forums')}
@@ -327,6 +380,19 @@ const styles = StyleSheet.create({
   segmentSelected: { backgroundColor: theme.background.surface },
   segmentLabel: { ...typography.footnote, color: theme.text.secondary },
   segmentLabelSelected: { color: theme.text.primary, fontWeight: '700' },
+  searchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    minHeight: 44,
+    marginHorizontal: spacing.lg,
+    marginBottom: spacing.md,
+    paddingHorizontal: spacing.md,
+    borderRadius: radius.md,
+    backgroundColor: theme.background.surface,
+  },
+  // flex:1 keeps the field from pushing the clear button off a small screen.
+  searchInput: { flex: 1, ...typography.body, color: theme.text.primary, paddingVertical: spacing.xs },
   listContent: { paddingHorizontal: spacing.lg, paddingBottom: spacing['4xl'], gap: spacing.sm },
   emptyContent: { flexGrow: 1 },
   upcomingEmptyWrap: { gap: spacing.sm, marginBottom: spacing.md },

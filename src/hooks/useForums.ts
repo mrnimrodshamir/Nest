@@ -14,6 +14,9 @@ export interface ForumSummary {
   lastMessageAt: string | null;
   lastMessageSenderName: string | null;
   hasUnread: boolean;
+  /** Bounded at 100 server-side; the badge renders "99+" beyond that. */
+  unreadCount: number;
+  pinned: boolean;
 }
 
 interface UseForumsResult {
@@ -33,6 +36,7 @@ interface ForumOverviewRow {
   last_message_at: string | null;
   last_message_sender_name: string | null;
   has_unread: boolean;
+  unread_count: number | null;
 }
 
 /** The Forums list.
@@ -74,6 +78,10 @@ export function useForums(): UseForumsResult {
           lastMessageAt: row.last_message_at,
           lastMessageSenderName: row.last_message_sender_name,
           hasUnread: Boolean(row.has_unread),
+          unreadCount: row.unread_count ?? 0,
+          // Pinning is a CLIENT-side editorial decision, not server data, so
+          // curation can change in a release without a migration.
+          pinned: Boolean(definition.pinned),
         });
       }
       setForums(mapped);

@@ -3,6 +3,7 @@ import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { ChatsCircle } from 'phosphor-react-native';
 import { theme, typography, spacing, radius } from '@/theme';
 import { useI18n, textAlignForContent } from '@/i18n';
+import { unreadBadgeLabel } from '@/utils/chatSections';
 import { formatRelativeTime } from '@/utils/formatRelativeTime';
 import type { ForumSummary } from '@/hooks/useForums';
 
@@ -26,13 +27,17 @@ export function ForumRow({ forum, onPress }: { forum: ForumSummary; onPress: () 
   // The preview is user-written and may be in either language regardless of
   // the UI locale, so it follows its own script rather than the interface's.
   const previewDirection = textAlignForContent(preview, locale);
+  const badge = unreadBadgeLabel(forum.unreadCount);
 
   return (
     <Pressable
       style={[styles.row, forum.hasUnread && styles.rowUnread]}
       onPress={onPress}
       accessibilityRole="button"
-      accessibilityLabel={title}
+      // The count is folded into the label because the badge itself is hidden
+      // from the accessibility tree — a bare "3" read after the title is
+      // meaningless out loud.
+      accessibilityLabel={badge ? t('chats.unreadLabel', { name: title, count: badge }) : title}
       accessibilityHint={description}
     >
       <View style={styles.icon}>
@@ -44,7 +49,11 @@ export function ForumRow({ forum, onPress }: { forum: ForumSummary; onPress: () 
           <Text style={[styles.title, forum.hasUnread && styles.unreadText]} numberOfLines={1}>
             {title}
           </Text>
-          {forum.hasUnread ? <View style={styles.unreadDot} /> : null}
+          {badge ? (
+            <View style={styles.badge} accessibilityElementsHidden importantForAccessibility="no">
+              <Text style={styles.badgeText}>{badge}</Text>
+            </View>
+          ) : null}
         </View>
 
         {/* The standing description is what makes a forum legible before it
@@ -96,7 +105,16 @@ const styles = StyleSheet.create({
   titleLine: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
   title: { ...typography.bodyMedium, color: theme.text.primary, flexShrink: 1 },
   unreadText: { fontWeight: '700' },
-  unreadDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: theme.brand.primary },
+  badge: {
+    minWidth: 20,
+    height: 20,
+    borderRadius: 10,
+    paddingHorizontal: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: theme.brand.primary,
+  },
+  badgeText: { ...typography.caption, color: theme.text.inverse, fontWeight: '700' },
   description: { ...typography.caption, color: theme.text.secondary, marginTop: 1 },
   footerLine: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginTop: 2 },
   preview: { ...typography.caption, color: theme.text.muted, flex: 1 },

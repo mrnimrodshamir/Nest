@@ -28,7 +28,9 @@ begin
       ('starting-solids',       'Starting Solids & Baby Nutrition',     'bowl-food',     70),
       ('things-to-do-tel-aviv', 'Things to Do with Kids in Tel Aviv',   'map-trifold',   80),
       ('local-recommendations', 'Local Recommendations',                'star',          90),
-      ('pregnancy-postpartum',  'Pregnancy & Postpartum',               'baby',         100)
+      ('pregnancy-postpartum',  'Pregnancy & Postpartum',               'baby',         100),
+      ('first-time-parents',    'First-Time Parents',                   'hand-heart',   110),
+      ('daycare-preschools',    'Daycare & Preschools',                 'backpack',     120)
     ) as t(key, fallback_title, icon, sort_order)
   loop
     -- Skip entirely if this forum already exists, so re-running never creates
@@ -106,7 +108,8 @@ returns table (
   last_message_content text,
   last_message_at timestamptz,
   last_message_sender_name text,
-  has_unread boolean
+  has_unread boolean,
+  unread_count integer
 )
 language sql
 security definer
@@ -123,9 +126,10 @@ as $$
     m.created_at,
     p.display_name,
     -- Unread only once the user has joined; an unvisited forum is not
-    -- "unread", it is simply new, and badging all ten on first launch would
-    -- be noise.
-    coalesce(m.created_at > cp.last_read_at, false) as has_unread
+    -- "unread", it is simply new, and badging all twelve on first launch
+    -- would be noise.
+    coalesce(u.unread_count, 0) > 0 as has_unread,
+    coalesce(u.unread_count, 0)::integer as unread_count
   from public.forums f
   left join lateral (
     select mm.content, mm.created_at, mm.sender_id
@@ -134,9 +138,24 @@ as $$
     order by mm.created_at desc
     limit 1
   ) m on true
-  left join public.profiles p on p.id = m.sender_id
   left join public.chat_participants cp
     on cp.chat_id = f.chat_id and cp.user_id = auth.uid()
+  left join lateral (
+    -- Bounded on purpose: the badge caps at "99+", so counting past 100 rows
+    -- per forum would be work nobody sees. Own messages never count as
+    -- unread, which also suppresses self-notification in the badge.
+    select count(*) as unread_count
+    from (
+      select 1
+      from public.messages mm
+      where mm.chat_id = f.chat_id
+        and cp.user_id is not null
+        and mm.created_at > cp.last_read_at
+        and mm.sender_id <> cp.user_id
+      limit 100
+    ) capped
+  ) u on true
+  left join public.profiles p on p.id = m.sender_id
   where f.is_active
   order by f.sort_order, f.key;
 $$;

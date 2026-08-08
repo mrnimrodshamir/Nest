@@ -8,13 +8,24 @@ import { parseSharedContentUrl } from '@/utils/contentSharing';
 
 // --- The fixed set ---------------------------------------------------------
 
-test('exactly the ten approved forums are defined', () => {
-  assert.equal(FORUMS.length, 10);
-  assert.equal(FORUM_KEYS.length, 10);
+test('exactly the twelve approved forums are defined', () => {
+  assert.equal(FORUMS.length, 12);
+  assert.equal(FORUM_KEYS.length, 12);
+});
+
+test('the two late additions are present', () => {
+  for (const key of ['first-time-parents', 'daycare-preschools']) {
+    assert.ok(forumDefinition(key), `${key} is missing`);
+  }
+});
+
+test('exactly the three approved forums are pinned', () => {
+  const pinned = FORUMS.filter((f) => f.pinned).map((f) => f.key);
+  assert.deepEqual(pinned.sort(), ['local-recommendations', 'parental-leave', 'things-to-do-tel-aviv']);
 });
 
 test('forum keys are unique and URL-safe', () => {
-  assert.equal(new Set(FORUM_KEYS).size, 10, 'duplicate key');
+  assert.equal(new Set(FORUM_KEYS).size, 12, 'duplicate key');
   for (const key of FORUM_KEYS) {
     assert.match(key, /^[a-z0-9-]+$/, `${key} is not a safe slug`);
     assert.equal(encodeURIComponent(key), key, `${key} needs escaping`);
@@ -105,6 +116,21 @@ for (const locale of ['en', 'he'] as const) {
     const titles = FORUMS.map((f) => translate(locale, f.titleKey));
     assert.equal(new Set(titles).size, titles.length, `two forums share a ${locale} title`);
   });
+
+  test(`${locale} descriptions are one concise line`, () => {
+    for (const forum of FORUMS) {
+      const description = translate(locale, forum.descriptionKey);
+      assert.ok(!description.includes('\n'), `${forum.key} description wraps lines`);
+      // Long enough to be useful, short enough for a compact row.
+      assert.ok(description.length <= 80, `${forum.key} description is ${description.length} chars`);
+      assert.ok(description.length >= 12, forum.key);
+    }
+  });
+
+  test(`${locale} descriptions are all distinct`, () => {
+    const descriptions = FORUMS.map((f) => translate(locale, f.descriptionKey));
+    assert.equal(new Set(descriptions).size, descriptions.length, `two forums share a ${locale} description`);
+  });
 }
 
 test('Hebrew forum names are actually Hebrew, not copied English', () => {
@@ -126,6 +152,8 @@ test('the approved Hebrew names are used verbatim', () => {
     'things-to-do-tel-aviv': 'פעילויות עם ילדים בתל אביב',
     'local-recommendations': 'המלצות מקומיות',
     'pregnancy-postpartum': 'הריון ואחרי לידה',
+    'first-time-parents': 'לידה ראשונה',
+    'daycare-preschools': 'מסגרות וגנים',
   };
   for (const [key, hebrew] of Object.entries(expected)) {
     const definition = forumDefinition(key);

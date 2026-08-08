@@ -35,6 +35,54 @@ export function sortForums(forums: readonly ForumSummary[]): ForumSummary[] {
   return [...forums].sort((a, b) => a.sortOrder - b.sortOrder || a.key.localeCompare(b.key));
 }
 
+/** Pinned forums first, then the rest — each group in curated order.
+ *
+ *  Pinning is NestUp-controlled, so this is deterministic: message activity
+ *  never reorders the list. A user who learns where a forum sits finds it in
+ *  the same place tomorrow. */
+export function partitionForums(forums: readonly ForumSummary[]): {
+  pinned: ForumSummary[];
+  rest: ForumSummary[];
+} {
+  const sorted = sortForums(forums);
+  return {
+    pinned: sorted.filter((forum) => forum.pinned),
+    rest: sorted.filter((forum) => !forum.pinned),
+  };
+}
+
+/** Case- and diacritic-insensitive match over the forum's NAME and
+ *  DESCRIPTION only.
+ *
+ *  Message history is deliberately not searched in this release: that needs
+ *  server-side full-text search and a very different result UI. Matching the
+ *  resolved title/description strings (not the keys) is what makes search
+ *  work in Hebrew as well as English. */
+export function filterForums(
+  forums: readonly ForumSummary[],
+  query: string,
+  resolve: (forum: ForumSummary) => { title: string; description: string },
+): ForumSummary[] {
+  const needle = normalizeForSearch(query);
+  if (!needle) return [...forums];
+  return forums.filter((forum) => {
+    const { title, description } = resolve(forum);
+    return normalizeForSearch(title).includes(needle) || normalizeForSearch(description).includes(needle);
+  });
+}
+
+/** Lowercases and strips combining marks so "Preschools" matches "preschool"
+ *  and Hebrew text with or without niqqud compares equal. */
+export function normalizeForSearch(value: string): string {
+  return value.normalize('NFD').replace(/[̀-֑ͯ-ׇ]/g, '').toLocaleLowerCase().trim();
+}
+
+/** Badge text. Caps at "99+" so a busy forum cannot widen the row. */
+export function unreadBadgeLabel(count: number): string | null {
+  if (count <= 0) return null;
+  return count > 99 ? '99+' : String(count);
+}
+
 /** True when a section should render its empty state rather than a list.
  *  Forums are excluded on purpose — a seeded forum list is never legitimately
  *  empty, so an empty result means a load failure and must show retry. */

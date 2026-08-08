@@ -1,6 +1,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { chatSections, shouldShowEmptyState, sortForums, unreadSectionCount } from './chatSections.ts';
+import {
+  chatSections, shouldShowEmptyState, sortForums, unreadSectionCount,
+  partitionForums, filterForums, normalizeForSearch, unreadBadgeLabel,
+} from './chatSections.ts';
 import type { Conversation } from '@/hooks/useConversations';
 import type { ForumSummary } from '@/hooks/useForums';
 
@@ -28,12 +31,13 @@ function directChat(id: string, lastMessageAt: string, overrides: Partial<Conver
   };
 }
 
-function forum(key: string, sortOrder: number, hasUnread = false): ForumSummary {
+function forum(key: string, sortOrder: number, hasUnread = false, extra: Partial<ForumSummary> = {}): ForumSummary {
   return {
     key: key as never, chatId: `chat-${key}`,
     titleKey: 'forum.breastfeeding.title', descriptionKey: 'forum.breastfeeding.description',
     icon: 'heart', sortOrder, lastMessagePreview: null, lastMessageAt: null,
-    lastMessageSenderName: null, hasUnread,
+    lastMessageSenderName: null, hasUnread, unreadCount: hasUnread ? 1 : 0, pinned: false,
+    ...extra,
   };
 }
 
@@ -146,4 +150,106 @@ test('unread counts span conversations and forums', () => {
 
 test('nothing unread counts as zero', () => {
   assert.equal(unreadSectionCount([], []), 0);
+});
+
+// --- Pinning ---------------------------------------------------------------
+
+test('pinned forums come first, each group in curated order', () => {
+  const list = [
+    forum('c', 30), forum('pin-b', 90, false, { pinned: true }),
+    forum('a', 10), forum('pin-a', 50, false, { pinned: true }),
+  ];
+  const { pinned, rest } = partitionForums(list);
+  assert.deepEqual(pinned.map((f) => f.key), ['pin-a', 'pin-b']);
+  assert.deepEqual(rest.map((f) => f.key), ['a', 'c']);
+});
+
+test('PREDICTABILITY: message activity never reorders forums', () => {
+  const quiet = forum('a', 10);
+  const busy = forum('b', 20, true, { lastMessageAt: '2030-01-01T00:00:00Z', unreadCount: 50 });
+  // Even a forum with 50 unread and the newest message stays in curated order.
+  assert.deepEqual(partitionForums([quiet, busy]).rest.map((f) => f.key), ['a', 'b']);
+});
+
+test('a list with no pinned forums yields an empty pinned group, not a crash', () => {
+  const { pinned, rest } = partitionForums([forum('a', 10)]);
+  assert.deepEqual(pinned, []);
+  assert.equal(rest.length, 1);
+});
+
+test('partitioning does not mutate the input', () => {
+  const list = [forum('b', 20), forum('a', 10)];
+  partitionForums(list);
+  assert.deepEqual(list.map((f) => f.key), ['b', 'a']);
+});
+
+// --- Search ----------------------------------------------------------------
+
+const resolve = (f: ForumSummary) => ({
+  title: f.key === 'sleep' ? 'Baby Sleep' : 'Daycare & Preschools',
+  description: f.key === 'sleep' ? 'Sleep routines, naps and everyday questions.' : 'Local childcare and registration.',
+});
+const SEARCHABLE = [forum('sleep', 10), forum('daycare', 20)];
+
+test('search matches the forum NAME', () => {
+  assert.deepEqual(filterForums(SEARCHABLE, 'sleep', resolve).map((f) => f.key), ['sleep']);
+});
+
+test('search matches the DESCRIPTION too', () => {
+  assert.deepEqual(filterForums(SEARCHABLE, 'registration', resolve).map((f) => f.key), ['daycare']);
+});
+
+test('search is case-insensitive and matches partial words', () => {
+  assert.deepEqual(filterForums(SEARCHABLE, 'PRESCHOOL', resolve).map((f) => f.key), ['daycare']);
+  assert.deepEqual(filterForums(SEARCHABLE, 'nap', resolve).map((f) => f.key), ['sleep']);
+});
+
+test('an empty or whitespace query returns everything', () => {
+  assert.equal(filterForums(SEARCHABLE, '', resolve).length, 2);
+  assert.equal(filterForums(SEARCHABLE, '   ', resolve).length, 2);
+});
+
+test('a query matching nothing returns an empty list, not everything', () => {
+  assert.deepEqual(filterForums(SEARCHABLE, 'zzzz', resolve), []);
+});
+
+test('search never touches message content — only title and description', () => {
+  const withMessage = [forum('sleep', 10, false, { lastMessagePreview: 'unique-message-token' })];
+  assert.deepEqual(filterForums(withMessage, 'unique-message-token', resolve), []);
+});
+
+test('Hebrew search works on Hebrew titles', () => {
+  const hebrew = [forum('x', 10)];
+  const hebrewResolve = () => ({ title: 'שינת תינוקות', description: 'שגרות שינה' });
+  assert.equal(filterForums(hebrew, 'שינת', hebrewResolve).length, 1);
+  assert.equal(filterForums(hebrew, 'הנקה', hebrewResolve).length, 0);
+});
+
+test('normalizeForSearch strips case and combining marks', () => {
+  assert.equal(normalizeForSearch('  PreSchool  '), 'preschool');
+  // Hebrew with and without niqqud must compare equal.
+  assert.equal(normalizeForSearch('שָׁלוֹם'), normalizeForSearch('שלום'));
+});
+
+test('search does not mutate the input list', () => {
+  const input = [...SEARCHABLE];
+  filterForums(input, 'sleep', resolve);
+  assert.equal(input.length, 2);
+});
+
+// --- Unread badge ----------------------------------------------------------
+
+test('the badge shows an exact count up to 99', () => {
+  assert.equal(unreadBadgeLabel(1), '1');
+  assert.equal(unreadBadgeLabel(99), '99');
+});
+
+test('the badge caps at 99+ so a busy forum cannot widen the row', () => {
+  assert.equal(unreadBadgeLabel(100), '99+');
+  assert.equal(unreadBadgeLabel(5000), '99+');
+});
+
+test('no badge is rendered at zero or below', () => {
+  assert.equal(unreadBadgeLabel(0), null);
+  assert.equal(unreadBadgeLabel(-1), null);
 });
