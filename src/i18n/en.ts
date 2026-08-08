@@ -207,6 +207,7 @@ export const en = {
   'event.attendance.cardGoing': '{count} going',
   'event.attendance.overflow': '+{count}',
   'event.attendance.title': "Who's going",
+  'event.recurring': 'Recurring',
 
   // Activity capacity.
   'activity.capacity.spotsLeft': '{count} spots left',

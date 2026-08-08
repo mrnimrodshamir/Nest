@@ -5,14 +5,22 @@ import { ContentImage } from '@/components/ContentImage';
 import { radius, spacing, theme, typography } from '@/theme';
 import type { EventDetails } from '@/types/event';
 import { buildEventDetailsPresentation } from '@/utils/eventPresentation';
+import { attendanceCardKey } from '@/utils/eventAttendance';
+import { CARD_MEDIA_MAX_HEIGHT } from '@/constants/activityArtFrame';
+import { useI18n } from '@/i18n';
 
-export function EventCard({ event, highlighted, compact = false, onPress }: {
+export function EventCard({ event, highlighted, compact = false, attendeeCount = 0, onPress }: {
   event: EventDetails;
   highlighted?: boolean;
   compact?: boolean;
+  /** NestUp RSVP count. A plain number, supplied by the list — cards never
+   *  fetch attendee profiles. */
+  attendeeCount?: number;
   onPress: (event: EventDetails) => void;
 }) {
   const content = buildEventDetailsPresentation(event);
+  const { t } = useI18n();
+  const attendance = attendanceCardKey(attendeeCount);
   const interrupted = event.lifecycle === 'cancelled' || event.lifecycle === 'postponed';
   return <Pressable accessibilityRole="button" accessibilityLabel={`${event.title}, ${content.lifecycleLabel}`} onPress={() => onPress(event)} style={({ pressed }) => [styles.card, compact && styles.compact, highlighted && styles.highlighted, pressed && styles.pressed]}>
     <ContentImage asset={event.images?.card ?? event.images?.cover} legacyUri={event.imageUrl} variant="card" style={styles.image} accessibilityLabel={`${event.title} event image`} fallback={<CalendarDots size={28} color={theme.brand.primary} weight="duotone" />} />
@@ -21,14 +29,22 @@ export function EventCard({ event, highlighted, compact = false, onPress }: {
       <Text style={styles.title} numberOfLines={2}>{event.title}</Text>
       <Text style={styles.meta} numberOfLines={1}>{content.dateLabel} · {content.timeLabel}</Text>
       <Text style={styles.meta} numberOfLines={1}>{content.locationName}</Text>
-      {event.recurrence.isRecurring ? <View style={styles.recurring}><Repeat size={13} color={theme.text.muted} /><Text style={styles.recurringText}>Recurring</Text></View> : null}
+      {/* Secondary NestUp attendance signal. Absent at zero, and a plain
+          count only — no attendee profiles are loaded for a card. It says
+          "going", never the event's real municipal attendance. */}
+      {attendance ? <Text style={styles.attendance} numberOfLines={1}>{t(attendance.key, attendance.params)}</Text> : null}
+      {event.recurrence.isRecurring ? <View style={styles.recurring}><Repeat size={13} color={theme.text.muted} /><Text style={styles.recurringText}>{t('event.recurring')}</Text></View> : null}
     </View>
   </Pressable>;
 }
 
 const styles = StyleSheet.create({
-  card: { flexDirection: 'row', minHeight: 126, backgroundColor: theme.background.surface, borderRadius: radius.lg, borderWidth: StyleSheet.hairlineWidth, borderColor: theme.border.default, overflow: 'hidden', marginBottom: spacing.sm },
+  // maxHeight matches PlaceCard and the shared card-media ceiling, so long
+  // metadata or a recurring badge can never grow the row unboundedly.
+  card: { flexDirection: 'row', minHeight: 126, maxHeight: CARD_MEDIA_MAX_HEIGHT, backgroundColor: theme.background.surface, borderRadius: radius.lg, borderWidth: StyleSheet.hairlineWidth, borderColor: theme.border.default, overflow: 'hidden', marginBottom: spacing.sm },
   compact: { minHeight: 112 },
+  // Secondary weight on purpose — it must not compete with the title.
+  attendance: { ...typography.caption, color: theme.text.accent, marginTop: 2 },
   highlighted: { borderColor: theme.brand.accent, borderWidth: 1.5 },
   pressed: { opacity: 0.86 },
   image: { width: 112, alignSelf: 'stretch', backgroundColor: theme.brand.accentTint },

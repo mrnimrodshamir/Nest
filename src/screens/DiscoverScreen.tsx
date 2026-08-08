@@ -370,13 +370,10 @@ export function DiscoverScreen({ onOpenActivity, onOpenPlace, onOpenEvent, onHos
               <X size={16} color={theme.text.secondary} />
             </Pressable>
           </View>
-        ) : (
-          <View style={styles.toolbar}>
-            <ToolbarButton icon={MagnifyingGlass} label={t('discovery.search')} onPress={() => setSearchOpen(true)} />
-            <ToolbarButton icon={Funnel} label={activeFilterCount ? t('filters.withCount', { count: activeFilterCount }) : t('discovery.filters')} onPress={() => setFiltersOpen(true)} active={activeFilterCount > 0} />
-            <ToolbarButton icon={ArrowsDownUp} label={t('discovery.sort')} onPress={() => setSortOpen(true)} active={sort !== 'default'} />
-          </View>
-        )}
+        ) : null}
+        {/* The closed-state toolbar now lives in the sheet header, so this
+            overlay carries only the expanded search field. That keeps exactly
+            one instance of Search/Filters/Sort and leaves the map clear. */}
       </SafeAreaView>
 
       {/* Both sheets are conditionally rendered, so dismissing one unmounts it
@@ -411,7 +408,18 @@ export function DiscoverScreen({ onOpenActivity, onOpenPlace, onOpenEvent, onHos
       </Pressable>
 
       <BottomSheet ref={sheetRef} index={SHEET_PEEK_INDEX} snapPoints={SNAP_POINTS} enableDynamicSizing={false} onChange={(index) => { sheetIndex.current = index; }} backgroundStyle={styles.sheetBackground} handleIndicatorStyle={styles.sheetHandle}>
+        {/* STICKY CONTROLS. They live in the sheet's fixed header rather than
+            floating over the map, so they stay reachable as the feed scrolls
+            and at every snap point — including 92%, where a map overlay would
+            be completely hidden. Being in the sheet also means they can never
+            sit on top of the map's own controls. Purely presentational: no
+            query, region or selection state is touched here. */}
         <BottomSheetView style={styles.sheetHeader}>
+          <View style={styles.toolbarSticky}>
+            <ToolbarButton icon={MagnifyingGlass} label={t('discovery.search')} onPress={() => setSearchOpen(true)} />
+            <ToolbarButton icon={Funnel} label={activeFilterCount ? t('filters.withCount', { count: activeFilterCount }) : t('discovery.filters')} onPress={() => setFiltersOpen(true)} active={activeFilterCount > 0} />
+            <ToolbarButton icon={ArrowsDownUp} label={t('discovery.sort')} onPress={() => setSortOpen(true)} active={sort !== 'default'} />
+          </View>
           <Text style={styles.sheetTitle}>{showSkeleton ? t('discovery.finding') : t(discoveryCountKey(contentSelection, visibleItems.length), { count: visibleItems.length })}</Text>
           {!showSkeleton && visibleItems.length > 0 ? <Text style={styles.sheetSubtitle}>{t('discovery.swipeUp')}</Text> : null}
         </BottomSheetView>
@@ -545,6 +553,9 @@ const styles = StyleSheet.create({
   sheetBackground: { backgroundColor: theme.background.app },
   sheetHandle: { backgroundColor: theme.border.strong },
   sheetHeader: { paddingHorizontal: spacing.lg, paddingBottom: spacing.sm },
+  // Compact by design: one row, no wrapping, so it costs little of the sheet's
+  // vertical space at the 22% peek snap point.
+  toolbarSticky: { flexDirection: 'row', gap: spacing.sm, paddingBottom: spacing.sm },
   sheetTitle: { ...typography.headline, color: theme.text.primary },
   sheetSubtitle: { ...typography.footnote, color: theme.text.secondary, marginTop: 2 },
   listContent: { paddingHorizontal: spacing.lg, paddingBottom: 120 },

@@ -196,6 +196,7 @@ export const he: Dictionary = {
   'event.attendance.cardGoing': '{count} מגיעים',
   'event.attendance.overflow': '+{count}',
   'event.attendance.title': 'מי מגיע',
+  'event.recurring': 'חוזר',
 
   'activity.capacity.spotsLeft': 'נותרו {count} מקומות',
   'activity.capacity.oneSpotLeft': 'נותר מקום אחד',

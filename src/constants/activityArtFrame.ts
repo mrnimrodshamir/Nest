@@ -17,6 +17,21 @@ export const ACTIVITY_ART_ASPECT: Record<ActivityArtVariant, number> = {
   hero: 4 / 3,
 };
 
+/** The single height ceiling for CARD media, in points.
+ *
+ *  Why a fixed value rather than a screen fraction: a feed card should look
+ *  the same on every phone, and the problem being solved is comparability
+ *  BETWEEN card types, not fit on one device.
+ *
+ *  168 is deliberately PlaceCard's existing `maxHeight`. Before this, an
+ *  ActivityCard's 16:9 image at full content width (~343pt on a 375pt screen)
+ *  rendered ~193pt of media, so the whole card ran ~290pt while a Place or
+ *  Event row was 116-168pt — one activity consumed the screen and the mixed
+ *  feed became impossible to scan. Binding all three to the same ceiling makes
+ *  a screenful show several cards while each type keeps its own shape:
+ *  Activities stay a wide image above text, Places and Events stay rows. */
+export const CARD_MEDIA_MAX_HEIGHT = 168;
+
 /** Fraction of the shorter screen dimension a hero is allowed to consume.
  *  A 4:3 hero at full content width is ~75% of the width in height, which
  *  on a 375pt-wide iPhone SE pushed the title, meta and join CTA below the
@@ -42,4 +57,11 @@ export function resolveFrameHeight(variant: ActivityArtVariant, width: number): 
  *  aspect-ratio height, clamped by the cap. */
 export function resolveHeroRenderedHeight(width: number, screenHeight: number): number {
   return Math.min(resolveFrameHeight('hero', width), resolveHeroMaxHeight(screenHeight));
+}
+
+/** The height card media actually renders at — natural aspect height, clamped
+ *  by the shared card ceiling. `cover` absorbs the difference by trimming, so
+ *  the image is never stretched. */
+export function resolveCardRenderedHeight(width: number): number {
+  return Math.min(resolveFrameHeight('card', width), CARD_MEDIA_MAX_HEIGHT);
 }

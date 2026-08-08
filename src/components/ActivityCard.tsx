@@ -7,6 +7,8 @@ import { CoverImage } from '@/components/CoverImage';
 import { CoverFrame } from '@/components/CoverFrame';
 import { formatExactStartTime } from '@/utils/formatExactStartTime';
 import { resolveBadges, type ActivityRelationship } from '@/utils/activityLifecycle';
+import { activityCapacityPresentation } from '@/utils/activityCapacity';
+import { useI18n } from '@/i18n';
 
 interface ActivityCardProps {
   activity: Activity;
@@ -37,6 +39,14 @@ export function ActivityCard({
   relationship = 'none',
 }: ActivityCardProps) {
   const isRail = variant === 'rail';
+  const { t } = useI18n();
+  // Relationship is the viewer's own state, which outranks the raw count.
+  const capacity = activityCapacityPresentation({
+    capacity: activity.capacity,
+    attendeeCount: activity.attendeeCount,
+    isAttending: relationship === 'joined',
+    isHost: relationship === 'hosting',
+  });
   const visibleAttendees = activity.attendees.slice(0, 3);
   const overflowCount = Math.max(0, activity.attendeeCount - visibleAttendees.length);
   const badges = resolveBadges(activity, relationship);
@@ -116,6 +126,18 @@ export function ActivityCard({
             </View>
           )}
         </View>
+
+        {/* Capacity state, rail excluded — a 150pt rail card has no room and
+            the feed/detail surfaces already carry it. Renders nothing when the
+            host configured no capacity. */}
+        {!isRail && capacity.key ? (
+          <Text
+            style={[styles.capacity, capacity.tone === 'urgent' && styles.capacityUrgent, capacity.tone === 'full' && styles.capacityFull]}
+            numberOfLines={1}
+          >
+            {t(capacity.key, capacity.params)}
+          </Text>
+        ) : null}
       </View>
     </Pressable>
   );
@@ -143,6 +165,9 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
   },
   cardPressed: { opacity: 0.85 },
+  capacity: { ...typography.caption, color: theme.text.secondary, marginTop: 2 },
+  capacityUrgent: { color: theme.semantic.warning, fontWeight: '600' },
+  capacityFull: { color: theme.text.muted, fontWeight: '600' },
   // Background + inner padding for the badge row only. The 16:9 ratio and
   // clipping now come from CoverFrame, so feed and rail can no longer drift
   // to different proportions (rail previously used 4:3, which is hero

@@ -155,7 +155,9 @@ test('each domain failure renders its own banner rather than a full-screen error
 // --- Header stays minimal --------------------------------------------------
 
 test('the closed header exposes only Search, Filters and Sort', () => {
-  const toolbar = source.slice(source.indexOf('<View style={styles.toolbar}>'));
+  // The controls moved into the sheet header to become sticky; the invariant
+  // (exactly three, nothing permanently expanded) is unchanged.
+  const toolbar = source.slice(source.indexOf('<View style={styles.toolbarSticky}>'));
   const block = toolbar.slice(0, toolbar.indexOf('</View>'));
   const buttons = block.match(/<ToolbarButton/g) ?? [];
   assert.equal(buttons.length, 3, 'the closed header grew extra permanent controls');

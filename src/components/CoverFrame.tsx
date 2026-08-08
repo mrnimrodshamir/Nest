@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, StyleSheet, useWindowDimensions, StyleProp, ViewStyle } from 'react-native';
 import type { ActivityArtVariant } from '@/constants/activityArtVariant';
-import { ACTIVITY_ART_ASPECT, resolveHeroMaxHeight } from '@/constants/activityArtFrame';
+import { ACTIVITY_ART_ASPECT, CARD_MEDIA_MAX_HEIGHT, resolveHeroMaxHeight } from '@/constants/activityArtFrame';
 
 interface CoverFrameProps {
   variant: ActivityArtVariant;
@@ -34,6 +34,10 @@ export function CoverFrame({ variant, radius = 0, style, children }: CoverFrameP
         styles.frame,
         { aspectRatio: ACTIVITY_ART_ASPECT[variant], borderRadius: radius },
         variant === 'hero' && { maxHeight: resolveHeroMaxHeight(screenHeight) },
+        // Card media is capped at the same ceiling as a Place/Event row, so a
+        // mixed feed shows several comparable cards rather than one tall
+        // Activity pushing everything else below the fold.
+        variant === 'card' && { maxHeight: CARD_MEDIA_MAX_HEIGHT },
         style,
       ]}
     >
