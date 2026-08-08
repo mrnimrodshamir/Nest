@@ -16,6 +16,7 @@ import { ArrowLeft, PaperPlaneTilt, WarningCircle } from 'phosphor-react-native'
 import { theme, typography, spacing, radius } from '@/theme';
 import { useChatMessages, type ChatMessage } from '@/hooks/useChatMessages';
 import { resolveBubbleRow, resolveSenderNameAlignment } from '@/utils/chatBubbleLayout';
+import { useI18n } from '@/i18n';
 
 interface ChatScreenProps {
   /** Null while still resolving (or being created) — shows a loading state. */
@@ -28,6 +29,7 @@ interface ChatScreenProps {
 
 export function ChatScreen({ chatId, resolveError, title, onBack }: ChatScreenProps) {
   const { messages, isLoading, error, send, retry } = useChatMessages(chatId);
+  const { t } = useI18n();
   const [draft, setDraft] = useState('');
   const listRef = useRef<FlatList<ChatMessage>>(null);
 
@@ -48,7 +50,7 @@ export function ChatScreen({ chatId, resolveError, title, onBack }: ChatScreenPr
     // (see utils/chatBubbleLayout.ts), which cannot be mirrored.
     <SafeAreaView style={[styles.container, styles.forceLtr]} edges={['top', 'bottom']}>
       <View style={styles.header}>
-        <Pressable onPress={onBack} style={styles.backButton} accessibilityLabel="Back">
+        <Pressable onPress={onBack} style={styles.backButton} accessibilityRole="button" accessibilityLabel={t('common.back')}>
           <ArrowLeft size={20} color={theme.text.primary} />
         </Pressable>
         <Text style={styles.headerTitle} numberOfLines={1}>{title}</Text>
@@ -84,8 +86,8 @@ export function ChatScreen({ chatId, resolveError, title, onBack }: ChatScreenPr
               onContentSizeChange={() => listRef.current?.scrollToEnd({ animated: true })}
               ListEmptyComponent={
                 <View style={styles.emptyState}>
-                  <Text style={styles.emptyTitle}>Say hello 👋</Text>
-                  <Text style={styles.emptyBody}>This is the start of your conversation.</Text>
+                  <Text style={styles.emptyTitle}>{t('chats.noMessagesYet')}</Text>
+                  <Text style={styles.emptyBody}>{t('chat.conversationStart')}</Text>
                 </View>
               }
             />
@@ -96,13 +98,13 @@ export function ChatScreen({ chatId, resolveError, title, onBack }: ChatScreenPr
           <View style={styles.inputRow}>
             <TextInput
               style={styles.input}
-              placeholder="Message"
+              placeholder={t('chat.messagePlaceholder')}
               placeholderTextColor={theme.text.muted}
               value={draft}
               onChangeText={setDraft}
               multiline
             />
-            <Pressable style={styles.sendButton} onPress={handleSend} accessibilityLabel="Send">
+            <Pressable style={styles.sendButton} onPress={handleSend} accessibilityRole="button" accessibilityLabel={t('chat.send')}>
               <PaperPlaneTilt size={18} color={theme.text.inverse} weight="fill" />
             </Pressable>
           </View>
@@ -113,6 +115,7 @@ export function ChatScreen({ chatId, resolveError, title, onBack }: ChatScreenPr
 }
 
 function MessageBubble({ message, onRetry }: { message: ChatMessage; onRetry: () => void }) {
+  const { t } = useI18n();
   const row = resolveBubbleRow(message.isMine);
   const nameAlign = resolveSenderNameAlignment(message.isMine);
 
@@ -134,7 +137,7 @@ function MessageBubble({ message, onRetry }: { message: ChatMessage; onRetry: ()
         {message.failed && (
           <Pressable onPress={onRetry} style={styles.retryRow} hitSlop={10}>
             <WarningCircle size={12} color={theme.semantic.danger} weight="fill" />
-            <Text style={styles.retryLabel}>Not sent — tap to retry</Text>
+            <Text style={styles.retryLabel}>{t('chat.notSent')}</Text>
           </Pressable>
         )}
       </View>

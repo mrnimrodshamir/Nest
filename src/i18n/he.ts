@@ -204,6 +204,68 @@ export const he: Dictionary = {
   'activity.capacity.youreGoing': 'סימנתם שאתם מגיעים',
   'activity.capacity.hosting': 'אתם מארחים',
 
+  // --- Activity Details --------------------------------------------------
+  'activity.details': 'פרטים',
+  'activity.host': 'מארח/ת',
+  'activity.location': 'מיקום',
+  'activity.directions': 'הוראות הגעה',
+  'activity.message': 'הודעה',
+  'activity.openGroupChat': 'פתיחת צ׳אט הקבוצה',
+  'activity.shareActivity': 'שיתוף הפעילות',
+  'activity.moreOptions': 'אפשרויות נוספות',
+  'activity.joining': 'מצטרפים',
+  'activity.noOneJoined': 'אף אחד אחר עוד לא הצטרף.',
+  'activity.loadingParticipants': 'טוען משתתפים…',
+  'activity.tapParticipant': 'הקישו על משתתף כדי לראות את הפרופיל',
+  'activity.createAgain': 'יצירה מחדש',
+
+  // --- Activity create / edit --------------------------------------------
+  'activity.hostActivityTitle': 'יצירת פעילות',
+  'activity.editActivity': 'עריכת הפעילות',
+  'activity.cancelActivity': 'ביטול הפעילות',
+  'activity.cancelConfirmTitle': 'לבטל את הפעילות?',
+  'activity.cancelConfirmBody': 'כל מי שהצטרף יקבל הודעה. אי אפשר לבטל את הפעולה.',
+  'activity.keepActivity': 'להשאיר את הפעילות',
+  'activity.confirmCancel': 'ביטול הפעילות',
+  'activity.retryJoining': 'נסו שוב להצטרף לפעילות',
+  'common.saveChanges': 'שמירת שינויים',
+
+  // --- Edit Profile ------------------------------------------------------
+  'profile.editTitle': 'פרופיל וילדים',
+  'profile.yourName': 'השם שלכם',
+  'profile.childName': 'שם הילד/ה',
+  'profile.enterChildName': 'הזינו את שם הילד/ה',
+  'profile.gender': 'מין',
+  'profile.girl': 'בת',
+  'profile.boy': 'בן',
+  'profile.addAnotherChild': 'הוספת ילד/ה',
+  'profile.defaultForMatching': 'ברירת מחדל להתאמה',
+  'profile.useAsDefault': 'שימוש כברירת מחדל להתאמת פעילויות',
+
+  // --- Chat --------------------------------------------------------------
+  'chat.messagePlaceholder': 'הודעה',
+  'chat.send': 'שליחה',
+  'chat.notSent': 'לא נשלח — הקישו לניסיון חוזר',
+  'chat.conversationStart': 'זו תחילת השיחה שלכם.',
+
+  // --- Share Activity ----------------------------------------------------
+  'share.live': 'הפעילות שלכם פורסמה.',
+  'share.meetingAt': 'נפגשים ב',
+  'share.chosenPoint': 'נקודת המפגש שבחרתם',
+  'share.invite': 'הזמינו הורים ומטפלים מהסביבה.',
+  'share.onWhatsApp': 'שיתוף בוואטסאפ',
+  'share.moreOptions': 'אפשרויות שיתוף נוספות',
+  'share.viewActivity': 'צפייה בפעילות',
+
+  // --- My Activities -----------------------------------------------------
+  'myActivities.upcoming': 'קרובות',
+  'myActivities.past': 'שהיו',
+
+  // --- Profile / members -------------------------------------------------
+  'profile.unblock': 'ביטול חסימה',
+  'profile.notFound': 'לא הצלחנו למצוא את המשתמש',
+  'profile.deletedAccount': 'ייתכן שהחשבון נמחק.',
+
   'common.whatsapp': 'וואטסאפ',
 
   // --- Profile -----------------------------------------------------------

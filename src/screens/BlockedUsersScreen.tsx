@@ -5,12 +5,14 @@ import { ArrowLeft, ProhibitInset } from 'phosphor-react-native';
 import { theme, typography, spacing, radius } from '@/theme';
 import { StateCard } from '@/components/StateCard';
 import { useBlockedUsers, type BlockedUser } from '@/hooks/useBlockedUsers';
+import { useI18n } from '@/i18n';
 
 interface BlockedUsersScreenProps {
   onBack: () => void;
 }
 
 export function BlockedUsersScreen({ onBack }: BlockedUsersScreenProps) {
+  const { t } = useI18n();
   const { blockedUsers, isLoading, error, refresh, unblock } = useBlockedUsers();
 
   const confirmUnblock = (user: BlockedUser) => {
@@ -29,10 +31,10 @@ export function BlockedUsersScreen({ onBack }: BlockedUsersScreenProps) {
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <View style={styles.header}>
-        <Pressable onPress={onBack} style={styles.backButton} accessibilityLabel="Back">
+        <Pressable onPress={onBack} style={styles.backButton} accessibilityLabel={t('common.back')}>
           <ArrowLeft size={20} color={theme.text.primary} />
         </Pressable>
-        <Text style={styles.headerTitle}>Blocked members</Text>
+        <Text style={styles.headerTitle}>{t('profile.blockedMembers')}</Text>
         <View style={styles.backButton} />
       </View>
 
@@ -51,7 +53,7 @@ export function BlockedUsersScreen({ onBack }: BlockedUsersScreenProps) {
             </View>
             <Text style={styles.rowName}>{item.displayName}</Text>
             <Pressable style={styles.unblockButton} onPress={() => confirmUnblock(item)} hitSlop={10}>
-              <Text style={styles.unblockLabel}>Unblock</Text>
+              <Text style={styles.unblockLabel}>{t('profile.unblock')}</Text>
             </Pressable>
           </View>
         )}

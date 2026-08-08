@@ -9,6 +9,7 @@ import { StateCard } from '@/components/StateCard';
 import { SkeletonCard } from '@/components/SkeletonCard';
 import { useMyActivities, type MyActivity } from '@/hooks/useMyActivities';
 import type { Activity } from '@/types/activity';
+import { useI18n } from '@/i18n';
 
 interface MyActivitiesScreenProps {
   onBack: () => void;
@@ -18,6 +19,7 @@ interface MyActivitiesScreenProps {
 type Tab = 'upcoming' | 'past';
 
 export function MyActivitiesScreen({ onBack, onOpenActivity }: MyActivitiesScreenProps) {
+  const { t } = useI18n();
   const [tab, setTab] = useState<Tab>('upcoming');
   const { upcoming, past, isLoading, error, refresh } = useMyActivities();
   const list = tab === 'upcoming' ? upcoming : past;
@@ -35,10 +37,10 @@ export function MyActivitiesScreen({ onBack, onOpenActivity }: MyActivitiesScree
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <View style={styles.header}>
-        <Pressable onPress={onBack} style={styles.backButton} accessibilityLabel="Back">
+        <Pressable onPress={onBack} style={styles.backButton} accessibilityLabel={t('common.back')}>
           <ArrowLeft size={20} color={theme.text.primary} />
         </Pressable>
-        <Text style={styles.headerTitle}>My Activities</Text>
+        <Text style={styles.headerTitle}>{t('nav.myActivities')}</Text>
         <View style={styles.backButton} />
       </View>
 
@@ -47,10 +49,10 @@ export function MyActivitiesScreen({ onBack, onOpenActivity }: MyActivitiesScree
           style={[styles.tab, tab === 'upcoming' && styles.tabSelected]}
           onPress={() => setTab('upcoming')}
         >
-          <Text style={[styles.tabLabel, tab === 'upcoming' && styles.tabLabelSelected]}>Upcoming</Text>
+          <Text style={[styles.tabLabel, tab === 'upcoming' && styles.tabLabelSelected]}>{t('myActivities.upcoming')}</Text>
         </Pressable>
         <Pressable style={[styles.tab, tab === 'past' && styles.tabSelected]} onPress={() => setTab('past')}>
-          <Text style={[styles.tabLabel, tab === 'past' && styles.tabLabelSelected]}>Past</Text>
+          <Text style={[styles.tabLabel, tab === 'past' && styles.tabLabelSelected]}>{t('myActivities.past')}</Text>
         </Pressable>
       </View>
 

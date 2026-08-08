@@ -7,6 +7,7 @@ import { buildShareMessage, type ShareableActivity } from '@/utils/buildShareMes
 import { AddToCalendarSheet } from '@/components/AddToCalendarSheet';
 import { formatExactStartTime } from '@/utils/formatExactStartTime';
 import { openNativeShare, openWhatsAppShare } from '@/lib/contentShare';
+import { useI18n, textAlignForContent } from '@/i18n';
 
 interface ShareActivityScreenProps {
   activity: ShareableActivity;
@@ -15,6 +16,7 @@ interface ShareActivityScreenProps {
 
 export function ShareActivityScreen({ activity, onViewActivity }: ShareActivityScreenProps) {
   const message = buildShareMessage(activity);
+  const { t, locale } = useI18n();
   const [showCalendarSheet, setShowCalendarSheet] = useState(false);
 
   const handleWhatsAppShare = async () => {
@@ -31,29 +33,30 @@ export function ShareActivityScreen({ activity, onViewActivity }: ShareActivityS
         <View style={styles.iconCircle}>
           <CheckCircle size={40} color={theme.brand.primary} weight="fill" />
         </View>
-        <Text style={styles.title}>Your activity is live.</Text>
-        <Text style={styles.eyebrow}>Meeting at</Text>
-        <Text style={styles.venue}>{['selected meeting point', 'meeting point'].includes(activity.locationName.trim().toLocaleLowerCase()) ? 'Your chosen meeting point' : activity.locationName.trim()}</Text>
+        <Text style={styles.title}>{t('share.live')}</Text>
+        <Text style={styles.eyebrow}>{t('share.meetingAt')}</Text>
+        {/* The venue name is user-chosen content, so it keeps its own script. */}
+        <Text style={[styles.venue, textAlignForContent(activity.locationName, locale)]}>{['selected meeting point', 'meeting point'].includes(activity.locationName.trim().toLocaleLowerCase()) ? t('share.chosenPoint') : activity.locationName.trim()}</Text>
         <Text style={styles.timeLabel}>{formatExactStartTime(activity.startsAt.toISOString())}</Text>
-        <Text style={styles.subtitle}>Invite nearby parents and caregivers.</Text>
+        <Text style={styles.subtitle}>{t('share.invite')}</Text>
 
-        <Pressable style={styles.whatsappButton} onPress={handleWhatsAppShare}>
+        <Pressable style={styles.whatsappButton} onPress={handleWhatsAppShare} accessibilityRole="button" accessibilityLabel={t('share.onWhatsApp')}>
           <WhatsappLogo size={20} color={theme.text.inverse} weight="fill" />
-          <Text style={styles.whatsappLabel}>Share on WhatsApp</Text>
+          <Text style={styles.whatsappLabel}>{t('share.onWhatsApp')}</Text>
         </Pressable>
 
-        <Pressable style={styles.shareButton} onPress={handleNativeShare}>
+        <Pressable style={styles.shareButton} onPress={handleNativeShare} accessibilityRole="button" accessibilityLabel={t('share.moreOptions')}>
           <ShareNetwork size={18} color={theme.text.primary} />
-          <Text style={styles.shareLabel}>More sharing options</Text>
+          <Text style={styles.shareLabel}>{t('share.moreOptions')}</Text>
         </Pressable>
 
-        <Pressable style={styles.shareButton} onPress={() => setShowCalendarSheet(true)}>
+        <Pressable style={styles.shareButton} onPress={() => setShowCalendarSheet(true)} accessibilityRole="button" accessibilityLabel={t('common.addToCalendar')}>
           <CalendarPlus size={18} color={theme.text.primary} />
-          <Text style={styles.shareLabel}>Add to calendar</Text>
+          <Text style={styles.shareLabel}>{t('common.addToCalendar')}</Text>
         </Pressable>
 
-        <Pressable style={styles.viewButton} onPress={onViewActivity}>
-          <Text style={styles.viewLabel}>View activity</Text>
+        <Pressable style={styles.viewButton} onPress={onViewActivity} accessibilityRole="button" accessibilityLabel={t('share.viewActivity')}>
+          <Text style={styles.viewLabel}>{t('share.viewActivity')}</Text>
         </Pressable>
       </View>
 

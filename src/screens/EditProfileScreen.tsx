@@ -72,10 +72,10 @@ export function EditProfileScreen({ onBack }: EditProfileScreenProps) {
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <View style={styles.header}>
-          <Pressable onPress={onBack} style={styles.backButton} accessibilityLabel="Back">
+          <Pressable onPress={onBack} style={styles.backButton} accessibilityRole="button" accessibilityLabel={t('common.back')}>
             <ArrowLeft size={20} color={theme.text.primary} />
           </Pressable>
-          <Text style={styles.headerTitle}>Profile & children</Text>
+          <Text style={styles.headerTitle}>{t('profile.editTitle')}</Text>
           <View style={styles.backButton} />
         </View>
 
@@ -84,7 +84,7 @@ export function EditProfileScreen({ onBack }: EditProfileScreenProps) {
 
           <View style={styles.form}>
             <FormField
-              label="Your name"
+              label={t('profile.yourName')}
               value={displayName}
               onChangeText={setDisplayName}
               autoCapitalize="words"
@@ -127,7 +127,7 @@ export function EditProfileScreen({ onBack }: EditProfileScreenProps) {
 
           {formError && <Text style={styles.formError}>{formError}</Text>}
 
-          <PrimaryButton label="Save changes" onPress={handleSave} loading={isSaving} />
+          <PrimaryButton label={t('common.saveChanges')} onPress={handleSave} loading={isSaving} />
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -152,6 +152,7 @@ interface ChildrenEditorProps {
  *  Kept simple deliberately: a parent with one child never sees anything
  *  but that child and an unobtrusive "+ Add another child". */
 function ChildrenEditor({ children, onAdd, onUpdate, onRemove, onSetDefault }: ChildrenEditorProps) {
+  const { t } = useI18n();
   const [editingId, setEditingId] = useState<string | 'new' | null>(null);
   const [name, setName] = useState('');
   const [birthdate, setBirthdate] = useState<string | null>(null);
@@ -184,7 +185,7 @@ function ChildrenEditor({ children, onAdd, onUpdate, onRemove, onSetDefault }: C
 
   const handleSave = async () => {
     if (inFlightRef.current) return;
-    if (!isNonEmpty(name)) return setError("Enter the child's name");
+    if (!isNonEmpty(name)) return setError(t('profile.enterChildName'));
     if (!birthdate) return setError("Select the child's date of birth");
     inFlightRef.current = true;
     setIsSaving(true);
@@ -232,7 +233,7 @@ function ChildrenEditor({ children, onAdd, onUpdate, onRemove, onSetDefault }: C
           </View>
           {child.isDefault && (
             <View style={styles.defaultPill}>
-              <Text style={styles.defaultPillLabel}>Default for matching</Text>
+              <Text style={styles.defaultPillLabel}>{t('profile.defaultForMatching')}</Text>
             </View>
           )}
           <Pressable onPress={() => startEdit(child)} accessibilityLabel={`Edit ${child.name}`} hitSlop={14}>
@@ -248,23 +249,23 @@ function ChildrenEditor({ children, onAdd, onUpdate, onRemove, onSetDefault }: C
 
       {editingId ? (
         <View style={styles.childEditor}>
-          <FormField label="Child's name" value={name} onChangeText={setName} autoCapitalize="words" />
+          <FormField label={t('profile.childName')} value={name} onChangeText={setName} autoCapitalize="words" />
           <DateOfBirthField value={birthdate} onChange={setBirthdate} />
 
           <View style={styles.sexRow}>
-            <Text style={styles.sexLabel}>Gender</Text>
+            <Text style={styles.sexLabel}>{t('profile.gender')}</Text>
             <View style={styles.sexButtons}>
               <Pressable
                 style={[styles.sexButton, sex === 'male' && styles.sexButtonSelected]}
                 onPress={() => setSex('male')}
               >
-                <Text style={[styles.sexButtonLabel, sex === 'male' && styles.sexButtonLabelSelected]}>Boy</Text>
+                <Text style={[styles.sexButtonLabel, sex === 'male' && styles.sexButtonLabelSelected]}>{t('profile.boy')}</Text>
               </Pressable>
               <Pressable
                 style={[styles.sexButton, sex === 'female' && styles.sexButtonSelected]}
                 onPress={() => setSex('female')}
               >
-                <Text style={[styles.sexButtonLabel, sex === 'female' && styles.sexButtonLabelSelected]}>Girl</Text>
+                <Text style={[styles.sexButtonLabel, sex === 'female' && styles.sexButtonLabelSelected]}>{t('profile.girl')}</Text>
               </Pressable>
             </View>
           </View>
@@ -274,7 +275,7 @@ function ChildrenEditor({ children, onAdd, onUpdate, onRemove, onSetDefault }: C
               <View style={[styles.checkbox, makeDefault && styles.checkboxChecked]}>
                 {makeDefault && <Star size={11} color={theme.text.inverse} weight="fill" />}
               </View>
-              <Text style={styles.defaultToggleLabel}>Use as default child for activity matching</Text>
+              <Text style={styles.defaultToggleLabel}>{t('profile.useAsDefault')}</Text>
             </Pressable>
           )}
 
@@ -291,7 +292,7 @@ function ChildrenEditor({ children, onAdd, onUpdate, onRemove, onSetDefault }: C
       ) : (
         <Pressable style={styles.addChildRow} onPress={startAdd}>
           <Plus size={16} color={theme.text.accent} />
-          <Text style={styles.addChildLabel}>Add another child</Text>
+          <Text style={styles.addChildLabel}>{t('profile.addAnotherChild')}</Text>
         </Pressable>
       )}
     </View>

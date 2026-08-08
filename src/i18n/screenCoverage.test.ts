@@ -16,21 +16,20 @@ const MIGRATED = [
   'MessagesScreen.tsx',
   'PlaceDetailsScreen.tsx',
   'EventDetailsScreen.tsx',
-];
-
-/** Screens still holding hardcoded English. Tracked explicitly so the gap is
- *  visible rather than forgotten. Each one moves to MIGRATED as it is done. */
-const NOT_YET_MIGRATED = [
-  'ActivityDetailScreen.tsx',
+  'MyActivitiesScreen.tsx',
   'BlockedUsersScreen.tsx',
+  'PublicProfileScreen.tsx',
+  'ActivityDetailScreen.tsx',
   'ChatScreen.tsx',
   'CreateActivityScreen.tsx',
   'EditActivityScreen.tsx',
   'EditProfileScreen.tsx',
-  'MyActivitiesScreen.tsx',
-  'PublicProfileScreen.tsx',
   'ShareActivityScreen.tsx',
 ];
+
+/** Screens still holding hardcoded English. Empty — every screen with
+ *  user-visible copy now resolves it through i18n. */
+const NOT_YET_MIGRATED: string[] = [];
 
 /** No user-visible copy at all, so nothing to translate. */
 const NO_COPY = ['LaunchScreen.tsx'];
@@ -86,6 +85,25 @@ test('every English key has a Hebrew translation — the dictionaries stay in st
 test('Hebrew introduces no key English lacks', () => {
   const englishKeys = new Set(Object.keys(en));
   assert.deepEqual(Object.keys(he).filter((k) => !englishKeys.has(k)), []);
+});
+
+test('ENCODING: no dictionary value contains mojibake', () => {
+  // A UTF-8 file read back through a legacy codepage and rewritten produces
+  // sequences like "ג€”" for an em dash or "׳©׳₪׳”" for Hebrew. TypeScript still
+  // compiles and every other test still passes, so nothing else catches it.
+  // (This guard exists because exactly that happened during development.)
+  const MOJIBAKE = /ג€|נ‘|Ã[-¿]|â€|Ð/;
+  for (const [key, value] of Object.entries({ ...en, ...he })) {
+    assert.ok(!MOJIBAKE.test(String(value)), `${key} looks double-encoded: ${value}`);
+  }
+});
+
+test('ENCODING: Hebrew values are actually Hebrew codepoints', () => {
+  // Real Hebrew lives in U+0590-U+05FF. Double-encoded Hebrew lands in
+  // Latin-1 supplement instead, so this fails loudly if the file is mangled.
+  const hebrewEntries = Object.entries(he).filter(([key]) => !key.startsWith('language.'));
+  const withHebrew = hebrewEntries.filter(([, v]) => /[֐-׿]/.test(String(v)));
+  assert.ok(withHebrew.length > 50, `only ${withHebrew.length} Hebrew values found — the file may be corrupted`);
 });
 
 test('no dictionary value is an empty or whitespace-only string', () => {

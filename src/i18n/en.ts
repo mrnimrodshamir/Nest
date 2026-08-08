@@ -216,6 +216,68 @@ export const en = {
   'activity.capacity.youreGoing': "You're going",
   'activity.capacity.hosting': "You're hosting",
 
+  // --- Activity Details --------------------------------------------------
+  'activity.details': 'Details',
+  'activity.host': 'Host',
+  'activity.location': 'Location',
+  'activity.directions': 'Directions',
+  'activity.message': 'Message',
+  'activity.openGroupChat': 'Open group chat',
+  'activity.shareActivity': 'Share activity',
+  'activity.moreOptions': 'More options',
+  'activity.joining': 'Joining',
+  'activity.noOneJoined': 'No one else has joined yet.',
+  'activity.loadingParticipants': 'Loading participants…',
+  'activity.tapParticipant': 'Tap a participant to see their profile',
+  'activity.createAgain': 'Create again',
+
+  // --- Activity create / edit --------------------------------------------
+  'activity.hostActivityTitle': 'Host an activity',
+  'activity.editActivity': 'Edit activity',
+  'activity.cancelActivity': 'Cancel this activity',
+  'activity.cancelConfirmTitle': 'Cancel this activity?',
+  'activity.cancelConfirmBody': "Everyone who joined will be notified. This can't be undone.",
+  'activity.keepActivity': 'Keep activity',
+  'activity.confirmCancel': 'Cancel activity',
+  'activity.retryJoining': 'Retry joining your activity',
+  'common.saveChanges': 'Save changes',
+
+  // --- Edit Profile ------------------------------------------------------
+  'profile.editTitle': 'Profile & children',
+  'profile.yourName': 'Your name',
+  'profile.childName': "Child's name",
+  'profile.enterChildName': "Enter the child's name",
+  'profile.gender': 'Gender',
+  'profile.girl': 'Girl',
+  'profile.boy': 'Boy',
+  'profile.addAnotherChild': 'Add another child',
+  'profile.defaultForMatching': 'Default for matching',
+  'profile.useAsDefault': 'Use as default child for activity matching',
+
+  // --- Chat --------------------------------------------------------------
+  'chat.messagePlaceholder': 'Message',
+  'chat.send': 'Send',
+  'chat.notSent': 'Not sent — tap to retry',
+  'chat.conversationStart': 'This is the start of your conversation.',
+
+  // --- Share Activity ----------------------------------------------------
+  'share.live': 'Your activity is live.',
+  'share.meetingAt': 'Meeting at',
+  'share.chosenPoint': 'Your chosen meeting point',
+  'share.invite': 'Invite nearby parents and caregivers.',
+  'share.onWhatsApp': 'Share on WhatsApp',
+  'share.moreOptions': 'More sharing options',
+  'share.viewActivity': 'View activity',
+
+  // --- My Activities -----------------------------------------------------
+  'myActivities.upcoming': 'Upcoming',
+  'myActivities.past': 'Past',
+
+  // --- Profile / members -------------------------------------------------
+  'profile.unblock': 'Unblock',
+  'profile.notFound': 'This member could not be found',
+  'profile.deletedAccount': 'They may have deleted their account.',
+
   'common.whatsapp': 'WhatsApp',
 
   // --- Profile -----------------------------------------------------------

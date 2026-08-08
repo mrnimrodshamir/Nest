@@ -14,6 +14,7 @@ import { formatDuration } from '@/utils/formatDuration';
 import { resolveParticipantCounts } from '@/utils/attendanceSummary';
 import { resolveBadges, resolveLifecycle } from '@/utils/activityLifecycle';
 import { canCreateAgain } from '@/utils/createAgain';
+import { useI18n } from '@/i18n';
 import { formatAgeRange } from '@/utils/babyAge';
 import { buildShareMessage } from '@/utils/buildShareMessage';
 import { APP_NAME } from '@/constants/brand';
@@ -77,6 +78,7 @@ export function ActivityDetailScreen({
   const [showPhotoNudge, setShowPhotoNudge] = useState(false);
   const [calendarNotice, setCalendarNotice] = useState<'changed' | 'cancelled' | null>(null);
 
+  const { t, isRTL } = useI18n();
   const relationship = isHost ? 'hosting' : activity.viewerStatus === 'going' ? 'joined' : 'none';
   const lifecycle = resolveLifecycle(activity);
   const badges = resolveBadges(activity, relationship);
@@ -264,21 +266,21 @@ export function ActivityDetailScreen({
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <View style={styles.topBar}>
-        <Pressable style={styles.roundButton} onPress={onBack} accessibilityLabel="Back">
+        <Pressable style={styles.roundButton} onPress={onBack} accessibilityRole="button" accessibilityLabel={t('common.back')}>
           <ArrowLeft size={20} color={theme.text.primary} />
         </Pressable>
         <View style={styles.heroActions}>
           {!isCancelled && (
-            <Pressable style={styles.roundButton} onPress={handleShare} accessibilityLabel="Share activity">
+            <Pressable style={styles.roundButton} onPress={handleShare} accessibilityRole="button" accessibilityLabel={t('activity.shareActivity')}>
               <ShareNetwork size={18} color={theme.text.primary} />
             </Pressable>
           )}
           {isHost && onEdit && (
-            <Pressable style={styles.roundButton} onPress={onEdit} accessibilityLabel="Edit activity">
+            <Pressable style={styles.roundButton} onPress={onEdit} accessibilityRole="button" accessibilityLabel={t('activity.editActivity')}>
               <PencilSimple size={18} color={theme.text.primary} />
             </Pressable>
           )}
-          <Pressable style={styles.roundButton} onPress={handleMorePress} accessibilityLabel="More options">
+          <Pressable style={styles.roundButton} onPress={handleMorePress} accessibilityRole="button" accessibilityLabel={t('activity.moreOptions')}>
             <DotsThree size={18} color={theme.text.primary} weight="bold" />
           </Pressable>
         </View>
@@ -344,7 +346,7 @@ export function ActivityDetailScreen({
               ) : null}
             </View>
 
-            <Text style={styles.participantGroupLabel}>Host</Text>
+            <Text style={styles.participantGroupLabel}>{t('activity.host')}</Text>
             <PersonCard
               size="row"
               name={firstName(hostAttendance?.displayName ?? activity.host.displayName)}
@@ -353,24 +355,24 @@ export function ActivityDetailScreen({
               onPress={() => onOpenPerson(activity.host.id)}
               accessoryRight={
                 <Pressable onPress={() => onMessageHost(activity.host.id)} hitSlop={12}>
-                  <Text style={styles.messageLink}>Message</Text>
+                  <Text style={styles.messageLink}>{t('activity.message')}</Text>
                 </Pressable>
               }
             />
 
-            <Text style={styles.participantGroupLabel}>Joining</Text>
+            <Text style={styles.participantGroupLabel}>{t('activity.joining')}</Text>
             {attendance.isLoading ? (
               <View style={styles.participantsState}>
                 <ActivityIndicator size="small" color={theme.brand.primary} />
-                <Text style={styles.participantsStateText}>Loading participants…</Text>
+                <Text style={styles.participantsStateText}>{t('activity.loadingParticipants')}</Text>
               </View>
             ) : attendance.error ? (
               <Pressable style={styles.participantsState} onPress={attendance.refresh}>
                 <Text style={styles.participantsError}>{attendance.error}</Text>
-                <Text style={styles.retryLabel}>Try again</Text>
+                <Text style={styles.retryLabel}>{t('common.retry')}</Text>
               </Pressable>
             ) : joiningParticipants.length === 0 ? (
-              <Text style={styles.participantsStateText}>No one else has joined yet.</Text>
+              <Text style={styles.participantsStateText}>{t('activity.noOneJoined')}</Text>
             ) : (
               joiningParticipants.map((person) => (
                 <PersonCard
@@ -383,13 +385,15 @@ export function ActivityDetailScreen({
                 />
               ))
             )}
-            <Text style={styles.tapHint}>Tap a participant to see their profile →</Text>
+            {/* The arrow is decorative; it is a physical direction, so it
+                mirrors with the layout rather than being baked into the copy. */}
+            <Text style={styles.tapHint}>{t('activity.tapParticipant')} {isRTL ? '←' : '→'}</Text>
           </View>
 
           {canOpenChat && onOpenChat && (
             <Pressable style={styles.chatRow} onPress={onOpenChat}>
               <ChatCircleDots size={18} color={theme.brand.primary} weight="fill" />
-              <Text style={styles.chatRowLabel}>Open group chat</Text>
+              <Text style={styles.chatRowLabel}>{t('activity.openGroupChat')}</Text>
               {hasUnreadChat && <View style={styles.unreadDot} />}
             </Pressable>
           )}
@@ -397,18 +401,18 @@ export function ActivityDetailScreen({
           {showCreateAgain && (
             <Pressable style={styles.createAgainRow} onPress={onCreateAgain}>
               <ArrowClockwise size={18} color={theme.brand.secondary} weight="bold" />
-              <Text style={styles.createAgainLabel}>Create again</Text>
+              <Text style={styles.createAgainLabel}>{t('activity.createAgain')}</Text>
             </Pressable>
           )}
 
           {activity.description ? (
             <>
-              <Text style={styles.sectionLabel}>Details</Text>
+              <Text style={styles.sectionLabel}>{t('activity.details')}</Text>
               <Text style={styles.description}>{activity.description}</Text>
             </>
           ) : null}
 
-          <Text style={styles.sectionLabel}>Location</Text>
+          <Text style={styles.sectionLabel}>{t('activity.location')}</Text>
           <View style={styles.mapPlaceholder}>
             <MapView
               provider={PROVIDER_DEFAULT}
@@ -431,7 +435,7 @@ export function ActivityDetailScreen({
             <Text style={styles.locationLabel}>{activity.location.label}</Text>
             <View style={styles.directionsButton}>
               <NavigationArrow size={14} color={theme.text.accent} weight="fill" />
-              <Text style={styles.directionsLabel}>Directions</Text>
+              <Text style={styles.directionsLabel}>{t('activity.directions')}</Text>
             </View>
           </Pressable>
 
@@ -468,7 +472,7 @@ export function ActivityDetailScreen({
           // host attendee row (activity.hostId is the authoritative check
           // here, not viewerStatus, which depends on that row existing).
           <View style={[styles.ctaButton, styles.ctaButtonGoing]}>
-            <Text style={[styles.ctaLabel, styles.ctaLabelGoing]}>You're hosting</Text>
+            <Text style={[styles.ctaLabel, styles.ctaLabelGoing]}>{t('activity.capacity.hosting')}</Text>
           </View>
         ) : (
           <Pressable

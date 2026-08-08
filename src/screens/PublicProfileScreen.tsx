@@ -8,6 +8,7 @@ import { PrimaryButton } from '@/components/PrimaryButton';
 import { StateCard } from '@/components/StateCard';
 import { usePublicProfile } from '@/hooks/usePublicProfile';
 import { buildCaregiverContext } from '@/utils/caregiverContext';
+import { useI18n } from '@/i18n';
 
 interface PublicProfileScreenProps {
   userId: string;
@@ -20,10 +21,11 @@ interface PublicProfileScreenProps {
  *  when they joined NestUp, and factual hosted/joined context shown small. */
 export function PublicProfileScreen({ userId, onBack, onMessage }: PublicProfileScreenProps) {
   const { profile, isLoading, error } = usePublicProfile(userId);
+  const { t } = useI18n();
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-      <Pressable onPress={onBack} style={styles.backButton} accessibilityLabel="Back">
+      <Pressable onPress={onBack} style={styles.backButton} accessibilityRole="button" accessibilityLabel={t('common.back')}>
         <ArrowLeft size={20} color={theme.text.primary} />
       </Pressable>
 
@@ -35,8 +37,8 @@ export function PublicProfileScreen({ userId, onBack, onMessage }: PublicProfile
         <View style={styles.centerState}>
           <StateCard
             icon={MapPin}
-            title={error ?? 'This member could not be found'}
-            body="They may have deleted their account."
+            title={error ?? t('profile.notFound')}
+            body={t('profile.deletedAccount')}
           />
         </View>
       ) : (

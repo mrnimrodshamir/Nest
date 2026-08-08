@@ -6,6 +6,7 @@ import { theme, typography, spacing } from '@/theme';
 import { ActivityForm, type ActivityFormSeedValues } from '@/components/ActivityForm';
 import { PrimaryButton } from '@/components/PrimaryButton';
 import { useCreateActivity, type CreateActivityInput } from '@/hooks/useCreateActivity';
+import { useI18n } from '@/i18n';
 
 type CreateActivityScreenProps = {
   onBack: () => void;
@@ -24,6 +25,7 @@ export function CreateActivityScreen({
   initialValues,
 }: CreateActivityScreenProps) {
   const { isSubmitting, stage, error, submit, retryHostJoin } = useCreateActivity();
+  const { t } = useI18n();
   // Set only when the activity itself was created but the host's own
   // join failed — the activity is real and must never be silently
   // discarded or re-created; the user retries just the join step.
@@ -55,10 +57,10 @@ export function CreateActivityScreen({
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <View style={styles.header}>
-          <Pressable onPress={onBack} style={styles.backButton} accessibilityLabel="Back">
+          <Pressable onPress={onBack} style={styles.backButton} accessibilityRole="button" accessibilityLabel={t('common.back')}>
             <ArrowLeft size={20} color={theme.text.primary} />
           </Pressable>
-          <Text style={styles.headerTitle}>Host an activity</Text>
+          <Text style={styles.headerTitle}>{t('activity.hostActivityTitle')}</Text>
           <View style={styles.backButton} />
         </View>
 
@@ -70,7 +72,7 @@ export function CreateActivityScreen({
                 initialLocation: { latitude: initialLatitude!, longitude: initialLongitude! },
                 initialValues,
               })}
-          submitLabel="Create activity"
+          submitLabel={t('common.createActivity')}
           // Also disabled while a host-join retry is pending — the activity
           // already exists at this point, so tapping "Create activity"
           // again would create a second one instead of finishing the first.
@@ -83,7 +85,7 @@ export function CreateActivityScreen({
             pendingJoin ? (
               <View style={styles.retryRow}>
                 <PrimaryButton
-                  label="Retry joining your activity"
+                  label={t('activity.retryJoining')}
                   onPress={handleRetryJoin}
                   loading={isSubmitting}
                   variant="outline"

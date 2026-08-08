@@ -5,6 +5,7 @@ import { ArrowLeft } from 'phosphor-react-native';
 import { theme, typography, spacing } from '@/theme';
 import { ActivityForm } from '@/components/ActivityForm';
 import { useEditActivity } from '@/hooks/useEditActivity';
+import { useI18n } from '@/i18n';
 import { useHostAttendance } from '@/hooks/useHostAttendance';
 import type { ActivityDetail } from '@/types/activity';
 import type { CreateActivityInput } from '@/hooks/useCreateActivity';
@@ -17,6 +18,7 @@ interface EditActivityScreenProps {
 }
 
 export function EditActivityScreen({ activity, onBack, onSaved, onCancelled }: EditActivityScreenProps) {
+  const { t } = useI18n();
   const { isSubmitting, stage, error, update, cancelActivity } = useEditActivity(activity.id);
   // ActivityForm reads initialValues.hostChildIds into local state once, on
   // mount — so the form must not render until this resolves, or a host
@@ -31,12 +33,12 @@ export function EditActivityScreen({ activity, onBack, onSaved, onCancelled }: E
 
   const handleCancelActivity = () => {
     Alert.alert(
-      'Cancel this activity?',
-      'Everyone who joined will be notified. This can\'t be undone.',
+      t('activity.cancelConfirmTitle'),
+      t('activity.cancelConfirmBody'),
       [
-        { text: 'Keep activity', style: 'cancel' },
+        { text: t('activity.keepActivity'), style: 'cancel' },
         {
-          text: 'Cancel activity',
+          text: t('activity.confirmCancel'),
           style: 'destructive',
           onPress: async () => {
             const success = await cancelActivity();
@@ -51,10 +53,10 @@ export function EditActivityScreen({ activity, onBack, onSaved, onCancelled }: E
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <View style={styles.header}>
-          <Pressable onPress={onBack} style={styles.backButton} accessibilityLabel="Back">
+          <Pressable onPress={onBack} style={styles.backButton} accessibilityRole="button" accessibilityLabel={t('common.back')}>
             <ArrowLeft size={20} color={theme.text.primary} />
           </Pressable>
-          <Text style={styles.headerTitle}>Edit activity</Text>
+          <Text style={styles.headerTitle}>{t('activity.editActivity')}</Text>
           <View style={styles.backButton} />
         </View>
 
@@ -82,14 +84,14 @@ export function EditActivityScreen({ activity, onBack, onSaved, onCancelled }: E
               coverImageUrl: activity.coverImageUrl,
               hostChildIds,
             }}
-            submitLabel="Save changes"
+            submitLabel={t('common.saveChanges')}
             isSubmitting={isSubmitting}
             stage={stage}
             error={error}
             onSubmit={handleSubmit}
             footer={
               <Pressable style={styles.cancelButton} onPress={handleCancelActivity} disabled={isSubmitting}>
-                <Text style={styles.cancelButtonLabel}>Cancel this activity</Text>
+                <Text style={styles.cancelButtonLabel}>{t('activity.cancelActivity')}</Text>
               </Pressable>
             }
           />
