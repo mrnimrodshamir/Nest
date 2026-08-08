@@ -42,10 +42,15 @@ export function resolveLocale(
   storedPreference: LocalePreference | null | undefined,
 ): AppLocale {
   if (storedPreference === 'en' || storedPreference === 'he') return storedPreference;
-  for (const tag of deviceTags) {
-    const match = normalizeLanguageTag(tag);
-    if (match) return match;
-  }
+
+  // HEBREW IS OPT-IN. A user in Israel, on a Hebrew device, with an Israeli
+  // number still opens the app in English until they choose otherwise.
+  // Auto-switching on device language surprised testers who wanted English, and
+  // the product decision is that English is the default for everyone.
+  //
+  // `system` is kept only so previously stored values coerce safely; it no
+  // longer consults the device, and the selector no longer offers it.
+  void deviceTags;
   return DEFAULT_LOCALE;
 }
 

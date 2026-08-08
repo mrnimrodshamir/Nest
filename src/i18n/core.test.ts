@@ -85,16 +85,20 @@ test('unsupported languages return null so the caller can fall back', () => {
   assert.equal(normalizeLanguageTag(null), null);
 });
 
-test('device Hebrew with no stored choice resolves to Hebrew', () => {
-  assert.equal(resolveLocale(['he-IL'], null), 'he');
+test('HEBREW IS OPT-IN: a Hebrew device does not auto-switch', () => {
+  // Product rule: English is the default for everyone. Device language, country
+  // and phone number never select Hebrew — only an explicit choice does.
+  assert.equal(resolveLocale(['he-IL'], null), 'en');
+  assert.equal(resolveLocale(['iw-IL'], null), 'en');
 });
 
 test('device French with no stored choice falls back to English', () => {
   assert.equal(resolveLocale(['fr-FR'], null), 'en');
 });
 
-test('the first SUPPORTED device tag wins, skipping unsupported ones', () => {
-  assert.equal(resolveLocale(['fr-FR', 'he-IL', 'en-US'], null), 'he');
+test('no device tag combination can select Hebrew without a stored choice', () => {
+  assert.equal(resolveLocale(['fr-FR', 'he-IL', 'en-US'], null), 'en');
+  assert.equal(resolveLocale(['he-IL', 'he'], null), 'en');
 });
 
 test('no device tags at all still resolves to English', () => {
@@ -108,8 +112,10 @@ test('an explicit choice overrides the device language', () => {
   assert.equal(resolveLocale(['en-US'], 'he'), 'he');
 });
 
-test('"system" defers to the device rather than pinning a language', () => {
-  assert.equal(resolveLocale(['he-IL'], 'system'), 'he');
+test('a legacy stored "system" value now resolves to English, not the device', () => {
+  // 'system' is retained only so previously stored values coerce safely; it is
+  // no longer offered in the selector and no longer consults the device.
+  assert.equal(resolveLocale(['he-IL'], 'system'), 'en');
   assert.equal(resolveLocale(['en-US'], 'system'), 'en');
 });
 
@@ -117,7 +123,7 @@ test('corrupt stored values are ignored, not rendered', () => {
   assert.equal(coerceLocalePreference('klingon'), null);
   assert.equal(coerceLocalePreference(''), null);
   assert.equal(coerceLocalePreference(null), null);
-  assert.equal(resolveLocale(['he-IL'], coerceLocalePreference('klingon')), 'he');
+  assert.equal(resolveLocale(['he-IL'], coerceLocalePreference('klingon')), 'en');
 });
 
 test('valid stored values round-trip', () => {

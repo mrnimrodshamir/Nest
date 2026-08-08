@@ -7,14 +7,15 @@ test('full context: area, role and count', () => {
     neighborhood: 'Florentin', parentRole: 'mom', childCount: 2,
     occupation: 'Product Designer', bio: 'Loves long stroller walks.',
   });
-  assert.equal(c.context, 'Florentin · Mom of 2');
+  // Order is age · role · area, matching the approved "27 · Dad of 3 / Tel Aviv".
+  assert.equal(c.context, 'Mom of 2 · Florentin');
   assert.equal(c.occupation, 'Product Designer');
   assert.equal(c.bio, 'Loves long stroller walks.');
 });
 
 test('occupation missing is omitted, not rendered blank', () => {
   const c = buildCaregiverContext({ neighborhood: 'Florentin', parentRole: 'mom', childCount: 2 });
-  assert.equal(c.context, 'Florentin · Mom of 2');
+  assert.equal(c.context, 'Mom of 2 · Florentin');
   assert.equal(c.occupation, null);
 });
 
@@ -70,5 +71,5 @@ test('PRIVACY: no child name, coordinate, email or phone can reach the context l
   assert.ok(!/@/.test(all), 'email leaked');
   assert.ok(!/\d{4}-\d{2}-\d{2}/.test(all), 'date leaked');
   // Count only — a name list would be more identifying than needed here.
-  assert.equal(c.context, 'Florentin · Mom of 3');
+  assert.equal(c.context, 'Mom of 3 · Florentin');
 });

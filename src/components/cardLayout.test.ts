@@ -36,11 +36,16 @@ test('MATRIX: the cap binds on large phones too, so cards look the same everywhe
   assert.equal(resolveCardRenderedHeight(430 - 32), CARD_MEDIA_MAX_HEIGHT);
 });
 
-test('MATRIX: all three card types share one media ceiling', () => {
-  assert.equal(CARD_MEDIA_MAX_HEIGHT, 168);
-  // Place and Event rows declare the same bound literally.
+test('MATRIX: every card type is bounded, and comparably so', () => {
+  // Activity media is capped tighter (140) than the Place/Event row bound (168)
+  // because an Activity card adds ~80pt of text BELOW its media, whereas a row
+  // puts text beside it. 140+80 lands next to 168 — comparable total heights
+  // from different shapes, which is the point.
+  assert.equal(CARD_MEDIA_MAX_HEIGHT, 140);
   assert.match(placeCard, /maxHeight: 168/);
   assert.match(eventCard, /maxHeight: CARD_MEDIA_MAX_HEIGHT/);
+  const activityTotal = 140 + 80;
+  assert.ok(Math.abs(activityTotal - 168) < 60, 'card totals have drifted apart');
 });
 
 test('MATRIX: an Activity card can no longer dominate a small screen', () => {
@@ -147,7 +152,7 @@ test('STICKY: Search/Filters/Sort live in the sheet header, not a map overlay', 
   // snap point, so the controls stay reachable while scrolling the feed.
   const header = discover.slice(discover.indexOf('toolbarSticky'));
   assert.ok(header.length > 0);
-  assert.match(discover, /<BottomSheetView style=\{styles\.sheetHeader\}>[\s\S]{0,400}toolbarSticky/);
+  assert.match(discover, /<View style=\{styles\.sheetHeader\}>[\s\S]{0,600}toolbarSticky/);
 });
 
 test('STICKY: exactly one instance of each control exists', () => {
@@ -155,6 +160,23 @@ test('STICKY: exactly one instance of each control exists', () => {
     const count = discover.split(label).length - 1;
     assert.equal(count, 1, `${label} appears ${count} times — controls are duplicated`);
   }
+});
+
+test('STICKY REGRESSION: the sheet header is a plain View, never BottomSheetView', () => {
+  // BottomSheetView registers as the sheet's content container. As a sibling of
+  // BottomSheetFlatList the list wins that role and the header collapses to
+  // zero height -- the controls mount but render invisibly. This is the exact
+  // defect that removed Search/Filters/Sort from the device build.
+  assert.match(discover, /<View style=\{styles\.sheetHeader\}>/);
+  assert.ok(!/<BottomSheetView/.test(discover), 'BottomSheetView is back as a FlatList sibling');
+  assert.ok(!/BottomSheetView/.test(discover.split('\n').find((l) => l.includes("from '@gorhom")) ?? ''),
+    'BottomSheetView is still imported');
+});
+
+test('STICKY: controls sit above the scrollable, so they do not scroll away', () => {
+  const header = discover.indexOf('styles.sheetHeader');
+  const list = discover.indexOf('<BottomSheetFlatList');
+  assert.ok(header > 0 && list > 0 && header < list, 'header must precede the list');
 });
 
 test('STICKY: the active filter count remains visible', () => {

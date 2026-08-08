@@ -10,6 +10,12 @@ import type { EventDetails } from '@/types/event';
 import { buildEventDetailsPresentation } from '@/utils/eventPresentation';
 import { buildEventShareMessage } from '@/utils/contentSharing';
 import { openNativeShare, openWhatsAppShare } from '@/lib/contentShare';
+import { Dimensions } from 'react-native';
+import { resolveHeroMaxHeight } from '@/constants/activityArtFrame';
+
+// Module scope is safe: the app is portrait-locked (app.json), so window
+// height does not change for the lifetime of the process.
+const HERO_MAX = resolveHeroMaxHeight(Dimensions.get('window').height);
 import { AddEventToCalendarSheet } from '@/components/AddEventToCalendarSheet';
 import { useI18n, textAlignForContent } from '@/i18n';
 import { useEventRsvp } from '@/hooks/useEventRsvp';
@@ -176,7 +182,16 @@ const styles = StyleSheet.create({
   rsvpNote: { ...typography.caption, color: theme.text.muted, marginTop: spacing.xs, textAlign: 'center' },
   headerTitle: { ...typography.headline, color: theme.text.primary },
   content: { paddingHorizontal: spacing.lg, paddingBottom: 48, gap: spacing.md },
-  hero: { width: '100%', aspectRatio: 4 / 3, borderRadius: radius.lg, backgroundColor: theme.background.surfaceAlt },
+  // A raw 4:3 with no screen-height cap is 38% of an iPhone SE. maxHeight
+  // applies the same ceiling CoverFrame gives the Activity hero, so all three
+  // detail screens bound their hero identically.
+  hero: {
+    width: '100%',
+    aspectRatio: 4 / 3,
+    maxHeight: HERO_MAX,
+    borderRadius: radius.lg,
+    backgroundColor: theme.background.surfaceAlt,
+  },
   labelRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm },
   category: { ...typography.footnote, color: theme.text.accent, textTransform: 'uppercase' },
   status: { paddingHorizontal: spacing.sm, paddingVertical: spacing.xs, borderRadius: radius.pill, backgroundColor: theme.brand.primaryTint },

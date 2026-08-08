@@ -3,7 +3,7 @@ import { FlatList, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, Vi
 import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MapView, { PROVIDER_DEFAULT, type Region } from 'react-native-maps';
-import BottomSheet, { BottomSheetFlatList, BottomSheetView } from '@gorhom/bottom-sheet';
+import BottomSheet, { BottomSheetFlatList } from '@gorhom/bottom-sheet';
 import {
   MagnifyingGlass,
   Funnel,
@@ -408,13 +408,18 @@ export function DiscoverScreen({ onOpenActivity, onOpenPlace, onOpenEvent, onHos
       </Pressable>
 
       <BottomSheet ref={sheetRef} index={SHEET_PEEK_INDEX} snapPoints={SNAP_POINTS} enableDynamicSizing={false} onChange={(index) => { sheetIndex.current = index; }} backgroundStyle={styles.sheetBackground} handleIndicatorStyle={styles.sheetHandle}>
-        {/* STICKY CONTROLS. They live in the sheet's fixed header rather than
-            floating over the map, so they stay reachable as the feed scrolls
-            and at every snap point — including 92%, where a map overlay would
-            be completely hidden. Being in the sheet also means they can never
-            sit on top of the map's own controls. Purely presentational: no
-            query, region or selection state is touched here. */}
-        <BottomSheetView style={styles.sheetHeader}>
+        {/* STICKY CONTROLS. In the sheet's fixed header rather than floating
+            over the map, so they stay reachable as the feed scrolls and at
+            every snap point — including 92%, where a map overlay would be
+            completely hidden. Purely presentational: no query, region or
+            selection state is touched here.
+
+            MUST be a plain View, never BottomSheetView. BottomSheetView
+            registers itself as the sheet's content container; as a sibling of
+            BottomSheetFlatList the list wins the content area and this header
+            collapses to zero height — the controls mount but render invisibly,
+            which is exactly how Search/Filters/Sort vanished on device. */}
+        <View style={styles.sheetHeader}>
           <View style={styles.toolbarSticky}>
             <ToolbarButton icon={MagnifyingGlass} label={t('discovery.search')} onPress={() => setSearchOpen(true)} />
             <ToolbarButton icon={Funnel} label={activeFilterCount ? t('filters.withCount', { count: activeFilterCount }) : t('discovery.filters')} onPress={() => setFiltersOpen(true)} active={activeFilterCount > 0} />
@@ -422,14 +427,14 @@ export function DiscoverScreen({ onOpenActivity, onOpenPlace, onOpenEvent, onHos
           </View>
           <Text style={styles.sheetTitle}>{showSkeleton ? t('discovery.finding') : t(discoveryCountKey(contentSelection, visibleItems.length), { count: visibleItems.length })}</Text>
           {!showSkeleton && visibleItems.length > 0 ? <Text style={styles.sheetSubtitle}>{t('discovery.swipeUp')}</Text> : null}
-        </BottomSheetView>
+        </View>
         {/* One banner per FAILED domain only — the domains that loaded stay
             listed below rather than being replaced by a full-screen error. */}
         {showActivityError ? <QueryErrorBanner label={t('discovery.error.activities')} onRetry={activitiesQuery.refresh} /> : null}
         {showPlaceError ? <QueryErrorBanner label={t('discovery.error.places')} onRetry={placesQuery.refresh} /> : null}
         {showEventError ? <QueryErrorBanner label={t('discovery.error.events')} onRetry={eventsQuery.refresh} /> : null}
         {showSkeleton ? (
-          <BottomSheetView style={styles.listContent}>{[0, 1, 2].map((index) => <View key={index} style={styles.feedItem}><SkeletonCard /></View>)}</BottomSheetView>
+          <View style={styles.listContent}>{[0, 1, 2].map((index) => <View key={index} style={styles.feedItem}><SkeletonCard /></View>)}</View>
         ) : (
           <BottomSheetFlatList
             ref={listRef}

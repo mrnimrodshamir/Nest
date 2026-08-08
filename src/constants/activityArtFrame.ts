@@ -23,14 +23,18 @@ export const ACTIVITY_ART_ASPECT: Record<ActivityArtVariant, number> = {
  *  the same on every phone, and the problem being solved is comparability
  *  BETWEEN card types, not fit on one device.
  *
- *  168 is deliberately PlaceCard's existing `maxHeight`. Before this, an
- *  ActivityCard's 16:9 image at full content width (~343pt on a 375pt screen)
- *  rendered ~193pt of media, so the whole card ran ~290pt while a Place or
- *  Event row was 116-168pt — one activity consumed the screen and the mixed
- *  feed became impossible to scan. Binding all three to the same ceiling makes
- *  a screenful show several cards while each type keeps its own shape:
- *  Activities stay a wide image above text, Places and Events stay rows. */
-export const CARD_MEDIA_MAX_HEIGHT = 168;
+ *  Originally 168 (PlaceCard's row bound). Device testing showed that still too
+ *  tall: 168 of media plus ~80 of title/meta/capacity is a ~250pt card against
+ *  a 116-168pt Place/Event row, so Activities still dominated My Activities and
+ *  the mixed feed.
+ *
+ *  140 puts an Activity card at ~220pt — close enough to the 168pt row bound
+ *  that the feed scans evenly, while the media stays a generous banner rather
+ *  than a thumbnail. Roughly three cards per screen on a small iPhone.
+ *
+ *  Each type still keeps its own shape: Activities are a wide image above text,
+ *  Places and Events stay side-by-side rows. */
+export const CARD_MEDIA_MAX_HEIGHT = 140;
 
 /** Fraction of the shorter screen dimension a hero is allowed to consume.
  *  A 4:3 hero at full content width is ~75% of the width in height, which

@@ -12,6 +12,8 @@
  *  for activity/matching defaults only; using it for identity copy hid the
  *  user's other children, which is the bug this replaces. */
 
+import { parentRoleNoun, type ParentRole } from '@/utils/parentRole';
+
 export interface ChildLike {
   name: string;
 }
@@ -19,7 +21,13 @@ export interface ChildLike {
 /** How many names are spelled out before collapsing to a "+N" remainder. */
 const MAX_NAMED = 2;
 
-export function formatParentSubtitle(children: readonly ChildLike[] | null | undefined): string | undefined {
+export function formatParentSubtitle(
+  children: readonly ChildLike[] | null | undefined,
+  /** The role the user selected for themselves. Null renders the neutral
+   *  "Parent". NEVER inferred — this function has no input from which it
+   *  could guess, and that is deliberate. */
+  role: ParentRole = null,
+): string | undefined {
   if (!children || children.length === 0) return undefined;
 
   // Defensive: a child mid-creation can have a blank name; excluding it
@@ -27,9 +35,14 @@ export function formatParentSubtitle(children: readonly ChildLike[] | null | und
   const names = children.map((c) => c?.name?.trim()).filter((n): n is string => Boolean(n));
   if (names.length === 0) return undefined;
 
-  if (names.length === 1) return `Parent of ${names[0]}`;
-  if (names.length === 2) return `Parent of ${names[0]} and ${names[1]}`;
+  // Previously hardcoded "Parent" here, so a user who had selected Dad in Edit
+  // Profile still read "Parent of ..." on their profile. The role now flows
+  // through from the stored value.
+  const noun = parentRoleNoun(role);
+
+  if (names.length === 1) return `${noun} of ${names[0]}`;
+  if (names.length === 2) return `${noun} of ${names[0]} and ${names[1]}`;
 
   const shown = names.slice(0, MAX_NAMED).join(', ');
-  return `Parent of ${shown} +${names.length - MAX_NAMED}`;
+  return `${noun} of ${shown} +${names.length - MAX_NAMED}`;
 }

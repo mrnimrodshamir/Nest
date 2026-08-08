@@ -87,7 +87,7 @@ export function ProfileScreen({ onEditProfile, onOpenMyActivities, onOpenBlocked
 
   // Built from the FULL children list, never children[0] or the default
   // child — see utils/formatParentSubtitle.ts for the documented rule.
-  const childSummary = formatParentSubtitle(children);
+  const childSummary = formatParentSubtitle(children, profile?.parentRole ?? null);
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>

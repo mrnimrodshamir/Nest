@@ -52,6 +52,7 @@ export function PublicProfileScreen({ userId, onBack, onMessage }: PublicProfile
                 neighborhood: profile.neighborhood,
                 parentRole: profile.parentRole,
                 childCount: profile.childCount,
+                ageYears: profile.ageYears,
               }).context ?? undefined
             }
           />

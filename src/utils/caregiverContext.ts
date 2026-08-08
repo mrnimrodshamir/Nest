@@ -6,6 +6,9 @@ export interface CaregiverContextInput {
   childCount?: number | null;
   occupation?: string | null;
   bio?: string | null;
+  /** Whole years, already derived. The BIRTHDATE never reaches this module —
+   *  only the coarse integer, so a raw date cannot leak into public copy. */
+  ageYears?: number | null;
 }
 
 export interface CaregiverContextLines {
@@ -46,7 +49,13 @@ export function buildCaregiverContext(input: CaregiverContextInput): CaregiverCo
     ? parentRoleWithCount(input.parentRole ?? null, input.childCount)
     : null;
 
-  const contextParts = [area, roleLine].filter(Boolean) as string[];
+  // Age leads when present: "27 · Dad of 3 · Florentin". It is the shortest,
+  // most human opener, and omitted entirely when unknown — never a placeholder.
+  const age = typeof input.ageYears === 'number' && Number.isFinite(input.ageYears)
+    ? String(input.ageYears)
+    : null;
+
+  const contextParts = [age, roleLine, area].filter(Boolean) as string[];
 
   return {
     context: contextParts.length ? contextParts.join(' · ') : null,

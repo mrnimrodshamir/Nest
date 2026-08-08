@@ -14,6 +14,9 @@ export interface PublicProfileData {
   childAgesMonths: Array<number | null>;
   /** Self-selected only; null renders as the neutral "Parent". */
   parentRole: ParentRole;
+  /** Whole years, derived in the view. Null when unknown or implausible —
+   *  the birthdate itself is never exposed. */
+  ageYears: number | null;
   /** General area, never coordinates. */
   neighborhood: string | null;
   occupation: string | null;
@@ -57,7 +60,9 @@ export function usePublicProfile(userId: string | null): UsePublicProfileResult 
         const { data: row, error: profileError } = await supabase
           .from('public_profiles')
           .select(
-            'id, display_name, avatar_url, member_since, neighborhood_label, bio, occupation, parent_role, child_count, child_names, child_ages_months',
+            // age_years only — the birthdate itself is not in the view and
+            // must never be selected here.
+            'id, display_name, avatar_url, member_since, neighborhood_label, bio, occupation, parent_role, age_years, child_count, child_names, child_ages_months',
           )
           .eq('id', userId)
           .maybeSingle();
@@ -111,6 +116,7 @@ export function usePublicProfile(userId: string | null): UsePublicProfileResult 
             childCount: row.child_count ?? 0,
             childAgesMonths: (row.child_ages_months ?? []) as Array<number | null>,
             parentRole: coerceParentRole(row.parent_role),
+            ageYears: typeof row.age_years === 'number' ? row.age_years : null,
             neighborhood: row.neighborhood_label ?? null,
             occupation: row.occupation ?? null,
             bio: row.bio ?? null,

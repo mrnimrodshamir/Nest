@@ -15,6 +15,7 @@ import { resolveParticipantCounts } from '@/utils/attendanceSummary';
 import { resolveBadges, resolveLifecycle } from '@/utils/activityLifecycle';
 import { canCreateAgain } from '@/utils/createAgain';
 import { useI18n } from '@/i18n';
+import { openNativeShare } from '@/lib/contentShare';
 import { formatAgeRange } from '@/utils/babyAge';
 import { buildShareMessage } from '@/utils/buildShareMessage';
 import { APP_NAME } from '@/constants/brand';
@@ -136,7 +137,9 @@ export function ActivityDetailScreen({
       ios: `maps://?daddr=${latitude},${longitude}&q=${encodeURIComponent(label)}`,
       default: `https://maps.google.com/?daddr=${latitude},${longitude}`,
     });
-    if (url) Linking.openURL(url);
+    // Explicitly caught: an un-awaited openURL that rejects becomes an
+    // unhandled promise rejection, which is fatal in a release build.
+    if (url) void Linking.openURL(url).catch(() => undefined);
   };
 
   const promptReportReason = () => {
@@ -186,11 +189,10 @@ export function ActivityDetailScreen({
       babyMaxAgeMonths: activity.babyMaxAgeMonths,
       status: activity.status,
     });
-    try {
-      await Share.share({ message });
-    } catch {
-      // User dismissed the native share sheet — nothing to recover from.
-    }
+    // Routed through the shared helper rather than calling Share directly, so
+    // every share surface gets the same double-tap guard and the same
+    // never-rejects contract.
+    await openNativeShare(message);
   };
 
   const handleMorePress = () => {

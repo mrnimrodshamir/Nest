@@ -19,6 +19,11 @@ import { groupPlaceEvents } from '@/utils/placeEvents';
 import { buildPlaceShareMessage } from '@/utils/contentSharing';
 import { openNativeShare, openWhatsAppShare } from '@/lib/contentShare';
 import { useI18n, textAlignForContent } from '@/i18n';
+import { Dimensions } from 'react-native';
+import { resolveHeroMaxHeight } from '@/constants/activityArtFrame';
+
+// Portrait-locked app, so a module-level read is stable.
+const HERO_MAX = resolveHeroMaxHeight(Dimensions.get('window').height);
 
 export function PlaceDetailsScreen({ placeId, onBack, onCreateActivity, onOpenEvent }: { placeId: string; onBack: () => void; onCreateActivity: (place: FamilyFriendlyPlace) => void; onOpenEvent: (event: EventDetails) => void }) {
   const [place, setPlace] = useState<FamilyFriendlyPlace | null>(null);
@@ -97,7 +102,10 @@ const styles = StyleSheet.create({
   headerTitle: { ...typography.headline, color: theme.text.primary },
   content: { paddingHorizontal: spacing.lg, paddingBottom: 48, gap: spacing.sm },
   loading: { ...typography.body, textAlign: 'center', color: theme.text.secondary, marginTop: 80 },
-  hero: { borderRadius: radius.lg },
+  // PlaceImage supplies the 4:3 ratio; this adds the screen-height ceiling the
+  // Activity hero already gets from CoverFrame, so no detail hero can swallow a
+  // small screen.
+  hero: { borderRadius: radius.lg, maxHeight: HERO_MAX },
   category: { ...typography.footnote, color: theme.text.accent, textTransform: 'uppercase', marginTop: spacing.sm },
   title: { ...typography.title2, color: theme.text.primary },
   address: { ...typography.body, color: theme.text.secondary },
