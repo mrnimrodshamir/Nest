@@ -34,16 +34,40 @@ export const en = {
   'discovery.map': 'Map',
   'discovery.list': 'List',
 
-  // Empty states, one per content combination.
-  'discovery.empty.all': 'No activities, places, or events found in this area.',
-  'discovery.empty.activities': 'No activities match these filters.',
-  'discovery.empty.places': 'No places match these filters.',
-  'discovery.empty.events': 'No events match these filters.',
+  'discovery.contentTypes': 'Content types',
+  'discovery.selectAll': 'Select all',
+  'discovery.sortListTitle': 'Sort list',
+  'discovery.sortHint': 'Sorting changes the list only. Map markers stay in place.',
+  'discovery.swipeUp': 'Swipe up to explore',
+  'discovery.finding': 'Finding nearby options…',
+  'discovery.searchThisArea': 'Search this area',
+
+  // Result counts. one/other are separate keys rather than an inline ternary
+  // because Hebrew pluralizes differently from English.
+  'discovery.count.activities.one': '1 activity nearby',
+  'discovery.count.activities.other': '{count} activities nearby',
+  'discovery.count.places.one': '1 place in this area',
+  'discovery.count.places.other': '{count} places in this area',
+  'discovery.count.events.one': '1 event in this area',
+  'discovery.count.events.other': '{count} events in this area',
+  'discovery.count.mixed': '{count} nearby',
+
+  // Empty states — one per content combination, so mixed selections read
+  // naturally instead of falling back to a generic catch-all.
+  'discovery.empty.all': 'Nothing nearby matches your filters yet.',
+  'discovery.empty.activities': 'No activities match your filters.',
+  'discovery.empty.places': 'No places match your filters.',
+  'discovery.empty.events': 'No events match your filters.',
+  'discovery.empty.activitiesPlaces': 'No activities or places match your filters.',
+  'discovery.empty.activitiesEvents': 'No activities or events match your filters.',
+  'discovery.empty.placesEvents': 'No places or events match your filters.',
+  'discovery.empty.body': 'Try moving the map, changing a filter, or searching nearby.',
+  'discovery.empty.bodyLocationOff': 'Location access is off, so this area may not be near you.',
 
   // Partial-failure banners.
-  'discovery.error.activities': "Couldn't load activities.",
-  'discovery.error.places': "Couldn't load places.",
-  'discovery.error.events': "Couldn't load events.",
+  'discovery.error.activities': "Activities couldn't refresh",
+  'discovery.error.places': "Places couldn't refresh",
+  'discovery.error.events': "Events couldn't refresh",
 
   // --- Filters -----------------------------------------------------------
   'filters.title': 'Filters',
@@ -53,6 +77,9 @@ export const en = {
   'filters.apply': 'Apply',
   'filters.activeCount': '{count} active',
   'filters.keepOneType': 'Keep at least one content type selected.',
+  /** Accessibility label for a content-type checkbox. */
+  'filters.showType': 'Show {type}',
+  'filters.withCount': 'Filters · {count}',
 
   // --- Sort --------------------------------------------------------------
   'sort.title': 'Sort',
@@ -74,6 +101,9 @@ export const en = {
   'common.cancel': 'Cancel',
   'common.save': 'Save',
   'common.done': 'Done',
+  'common.close': 'Close {what}',
+  'common.retry': 'Try again',
+  'common.retryLabel': '{label}. Try again',
 
   // --- Profile -----------------------------------------------------------
   'profile.role.mom': 'Mom',
@@ -82,6 +112,13 @@ export const en = {
   'profile.role.label': 'I am a',
   'profile.role.hint': 'Shown on your public profile. You can leave this blank.',
   'profile.children': 'Children',
+  'profile.editProfileAndChildren': 'Edit Profile & Children',
+  'profile.notificationSettings': 'Notification settings',
+  'profile.blockedMembers': 'Blocked members',
+  'profile.terms': 'Terms of Service',
+  'profile.privacy': 'Privacy Policy',
+  'profile.signOut': 'Sign out',
+  'profile.signOutConfirm': 'Sign out?',
   'profile.neighborhood': 'Neighborhood',
   'profile.occupation': 'Occupation',
   'profile.bio': 'About',

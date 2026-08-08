@@ -1,7 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { sortDiscoveryItems, mergeDiscoveryItems, filterDiscoveryItems } from './unifiedDiscovery.ts';
-import { ALL_DISCOVERY_CONTENT, toggleDiscoveryContent, selectedContentKeys, visibleDiscoveryFailures, discoveryEmptyCopy } from './discoveryPresentation.ts';
+import { ALL_DISCOVERY_CONTENT, toggleDiscoveryContent, selectedContentKeys, visibleDiscoveryFailures, discoveryEmptyCopyKey } from './discoveryPresentation.ts';
+import { translate } from '@/i18n/core';
 import type { DiscoveryItem, DiscoveryContentSelection } from '@/types/discovery';
 
 // --- Fixtures --------------------------------------------------------------
@@ -137,11 +138,16 @@ for (const { name, selection, expected } of COMBINATIONS) {
     }
   });
 
-  test(`COMBINATION ${name}: empty copy names the selected types`, () => {
-    const copy = discoveryEmptyCopy(selection);
-    assert.ok(copy.length > 0);
+  test(`COMBINATION ${name}: empty copy is distinct and renders in both languages`, () => {
+    const key = discoveryEmptyCopyKey(selection);
+    for (const locale of ['en', 'he'] as const) {
+      const copy = translate(locale, key);
+      assert.ok(copy.length > 0, `${name} / ${locale}`);
+      // A raw key leaking through would mean the dictionary entry is missing.
+      assert.notEqual(copy, key, `${name} / ${locale} fell through to the key`);
+    }
     const keys = selectedContentKeys(selection);
-    if (keys.length === 1) assert.ok(copy.toLowerCase().includes(keys[0]), copy);
+    if (keys.length === 1) assert.ok(key.toLowerCase().includes(keys[0]), key);
   });
 }
 

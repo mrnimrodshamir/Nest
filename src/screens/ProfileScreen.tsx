@@ -22,6 +22,7 @@ import { formatParentSubtitle } from '@/utils/formatParentSubtitle';
 import { ensurePushRegistration } from '@/hooks/usePushNotifications';
 import { NotificationPermissionSheet } from '@/components/NotificationPermissionSheet';
 import { LanguageSelector } from '@/components/LanguageSelector';
+import { useI18n } from '@/i18n';
 import { LEGAL_URLS } from '@/constants/legal';
 import type { NotificationPreferences } from '@/types/profile';
 import { APP_NAME } from '@/constants/brand';
@@ -55,10 +56,12 @@ export function ProfileScreen({ onEditProfile, onOpenMyActivities, onOpenBlocked
   const [showNotificationSheet, setShowNotificationSheet] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
+  const { t } = useI18n();
+
   const handleSignOut = () => {
-    Alert.alert('Sign out?', undefined, [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Sign out', style: 'destructive', onPress: signOut },
+    Alert.alert(t('profile.signOutConfirm'), undefined, [
+      { text: t('common.cancel'), style: 'cancel' },
+      { text: t('profile.signOut'), style: 'destructive', onPress: signOut },
     ]);
   };
 
@@ -94,17 +97,17 @@ export function ProfileScreen({ onEditProfile, onOpenMyActivities, onOpenBlocked
 
         <Pressable style={styles.editLink} onPress={onEditProfile}>
           <PencilSimple size={14} color={theme.text.accent} />
-          <Text style={styles.editLinkLabel}>Edit profile</Text>
+          <Text style={styles.editLinkLabel}>{t('common.editProfile')}</Text>
         </Pressable>
 
         <MenuSection>
-          <MenuRow icon={CalendarBlank} label="My Activities" onPress={onOpenMyActivities} />
-          <MenuRow icon={PencilSimple} label="Edit Profile & Children" onPress={onEditProfile} isLast />
+          <MenuRow icon={CalendarBlank} label={t('nav.myActivities')} onPress={onOpenMyActivities} />
+          <MenuRow icon={PencilSimple} label={t('profile.editProfileAndChildren')} onPress={onEditProfile} isLast />
         </MenuSection>
 
         <View style={styles.sectionHeader}>
           <BellSimple size={16} color={theme.text.secondary} />
-          <Text style={styles.sectionHeaderLabel}>Notification settings</Text>
+          <Text style={styles.sectionHeaderLabel}>{t('profile.notificationSettings')}</Text>
         </View>
         {profile && (
           <View style={styles.notificationCard}>
@@ -138,17 +141,17 @@ export function ProfileScreen({ onEditProfile, onOpenMyActivities, onOpenBlocked
         <LanguageSelector />
 
         <MenuSection>
-          <MenuRow icon={ProhibitInset} label="Blocked members" onPress={onOpenBlockedUsers} isLast />
+          <MenuRow icon={ProhibitInset} label={t('profile.blockedMembers')} onPress={onOpenBlockedUsers} isLast />
         </MenuSection>
 
         <MenuSection>
-          <MenuRow icon={FileText} label="Terms of Service" onPress={() => Linking.openURL(LEGAL_URLS.terms)} />
-          <MenuRow icon={ShieldCheck} label="Privacy Policy" onPress={() => Linking.openURL(LEGAL_URLS.privacy)} isLast />
+          <MenuRow icon={FileText} label={t('profile.terms')} onPress={() => Linking.openURL(LEGAL_URLS.terms)} />
+          <MenuRow icon={ShieldCheck} label={t('profile.privacy')} onPress={() => Linking.openURL(LEGAL_URLS.privacy)} isLast />
         </MenuSection>
 
         <Pressable style={styles.signOutButton} onPress={handleSignOut}>
           <SignOut size={18} color={theme.semantic.danger} />
-          <Text style={styles.signOutLabel}>Sign out</Text>
+          <Text style={styles.signOutLabel}>{t('profile.signOut')}</Text>
         </Pressable>
 
         <Pressable style={styles.deleteButton} onPress={handleDeleteAccount} disabled={isDeleting}>

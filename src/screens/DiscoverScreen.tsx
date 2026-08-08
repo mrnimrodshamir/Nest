@@ -38,7 +38,9 @@ import { PLACE_CATEGORY_LABELS } from '@/types/familyFriendlyPlace';
 import { clusterPlacesForRegion } from '@/utils/placeClustering';
 import { regionToPlaceViewport } from '@/utils/placeViewport';
 import { distanceMeters } from '@/utils/placeViewport';
-import { ALL_DISCOVERY_CONTENT, discoveryEmptyCopy, selectedContentKeys, toggleDiscoveryContent, visibleDiscoveryFailures } from '@/utils/discoveryPresentation';
+import { ALL_DISCOVERY_CONTENT, discoveryEmptyCopyKey, selectedContentKeys, toggleDiscoveryContent, visibleDiscoveryFailures } from '@/utils/discoveryPresentation';
+import { useI18n, textAlignForContent, type TranslationKey } from '@/i18n';
+import { applyContentSelectionChange } from '@/utils/discoveryScreenState';
 import {
   discoveryItemKey,
   discoveryItemCoordinate,
@@ -70,17 +72,20 @@ const PLACE_CATEGORIES: Array<{ key: PlaceCategory | 'all'; label: string }> = [
   { key: 'pool', label: 'Pools' },
 ];
 
-const CONTENT_TYPES: Array<{ key: DiscoveryContentKey; label: string }> = [
-  { key: 'activities', label: 'Activities' },
-  { key: 'places', label: 'Places' },
-  { key: 'events', label: 'Events' },
+// Both tables carry translation KEYS, resolved at render time. Holding
+// resolved strings in a module constant would freeze them at the language
+// active on first import and never update when the user switches.
+const CONTENT_TYPES: Array<{ key: DiscoveryContentKey; labelKey: TranslationKey }> = [
+  { key: 'activities', labelKey: 'discovery.activities' },
+  { key: 'places', labelKey: 'discovery.places' },
+  { key: 'events', labelKey: 'discovery.events' },
 ];
 
-const SORT_OPTIONS: Array<{ key: DiscoverySort; label: string }> = [
-  { key: 'default', label: 'Recommended' },
-  { key: 'distance', label: 'Distance' },
-  { key: 'soonest', label: 'Soonest' },
-  { key: 'alphabetical', label: 'Alphabetical' },
+const SORT_OPTIONS: Array<{ key: DiscoverySort; labelKey: TranslationKey }> = [
+  { key: 'default', labelKey: 'sort.default' },
+  { key: 'distance', labelKey: 'sort.distance' },
+  { key: 'soonest', labelKey: 'sort.soonest' },
+  { key: 'alphabetical', labelKey: 'sort.alphabetical' },
 ];
 
 const EVENT_CATEGORIES: Array<{ key: EventCategory | 'all'; label: string }> = [
@@ -144,6 +149,11 @@ export function DiscoverScreen({ onOpenActivity, onOpenPlace, onOpenEvent, onHos
   const [sortOpen, setSortOpen] = useState(false);
   const [sort, setSort] = useState<DiscoverySort>('default');
   const [filterNotice, setFilterNotice] = useState<string | null>(null);
+
+  const { t, locale } = useI18n();
+  // Follows the TYPED text, not the UI language, so an English query in a
+  // Hebrew UI is not reversed (and vice versa). Empty input uses the locale.
+  const searchDirection = textAlignForContent(searchQuery, locale);
 
   const mapRef = useRef<MapView>(null);
   const sheetRef = useRef<BottomSheet>(null);
@@ -265,15 +275,28 @@ export function DiscoverScreen({ onOpenActivity, onOpenPlace, onOpenEvent, onHos
   }, [focusItem, onOpenActivity, onOpenEvent, onOpenPlace]);
 
   const changeContentSelection = useCallback((key: DiscoveryContentKey) => {
-    const result = toggleDiscoveryContent(contentSelection, key);
-    setFilterNotice(result.prevented ? 'Keep at least one content type selected.' : null);
-    if (result.prevented) return;
-    setContentSelection(result.selection);
-    if (contentSelection[key]) {
-      const itemType = key === 'activities' ? 'activity' : key === 'places' ? 'place' : 'event';
-      setSelectedItem((current) => current?.type === itemType ? null : current);
-    }
-  }, [contentSelection]);
+    // The rules (keep one type selected; drop a now-hidden selected marker)
+    // live in a pure module so they can be asserted without mounting the map.
+    const next = applyContentSelectionChange({ selection: contentSelection, selectedItem }, key);
+    setFilterNotice(next.prevented ? t('filters.keepOneType') : null);
+    if (next.prevented) return;
+    setContentSelection(next.selection);
+    setSelectedItem(next.selectedItem);
+    // Deliberately does NOT touch `region` — changing what is shown must never
+    // move the camera the user positioned — and issues no refetch: this is a
+    // visibility change over data already cached.
+  }, [contentSelection, selectedItem, t]);
+
+  /** Restores every filter to its default. Content selection returns to all
+   *  three, which is always valid, so the keep-one-type rule cannot trip. */
+  const resetAllFilters = useCallback(() => {
+    setContentSelection({ ...ALL_DISCOVERY_CONTENT });
+    setSelectedActivityCategory('all');
+    setSelectedPlaceCategory('all');
+    setSelectedEventCategory('all');
+    setPlaceQuickFilters(new Set());
+    setFilterNotice(null);
+  }, []);
 
   const hasCachedContent = visibleItems.length > 0;
   const showSkeleton = !hasCachedContent && (activitiesQuery.isRefreshing || placesQuery.isLoading || eventsQuery.isLoading || position.isResolving);
@@ -330,57 +353,73 @@ export function DiscoverScreen({ onOpenActivity, onOpenPlace, onOpenEvent, onHos
           <View style={styles.searchRow}>
             <MagnifyingGlass size={iconDefaults.size.inline} color={theme.text.muted} weight={iconDefaults.weight} />
             <TextInput
-              style={styles.searchInput}
-              placeholder="Search activities, places, and events"
+              style={[styles.searchInput, searchDirection]}
+              placeholder={t('discovery.searchPlaceholder')}
               placeholderTextColor={theme.text.muted}
               value={searchQuery}
               onChangeText={setSearchQuery}
               autoFocus
               returnKeyType="search"
-              textAlign="left"
+              // Direction follows what has been TYPED, not the UI language: a
+              // Hebrew UI must not reverse an English venue name, and an
+              // English UI must not left-align a Hebrew query. Empty input
+              // falls back to the locale.
+              textAlign={searchDirection.textAlign}
             />
-            <Pressable onPress={() => { setSearchOpen(false); setSearchQuery(''); }} accessibilityLabel="Close search" hitSlop={8}>
+            <Pressable onPress={() => { setSearchOpen(false); setSearchQuery(''); }} accessibilityLabel={t('discovery.closeSearch')} hitSlop={8}>
               <X size={16} color={theme.text.secondary} />
             </Pressable>
           </View>
         ) : (
           <View style={styles.toolbar}>
-            <ToolbarButton icon={MagnifyingGlass} label="Search" onPress={() => setSearchOpen(true)} />
-            <ToolbarButton icon={Funnel} label={activeFilterCount ? `Filters · ${activeFilterCount}` : 'Filters'} onPress={() => setFiltersOpen(true)} active={activeFilterCount > 0} />
-            <ToolbarButton icon={ArrowsDownUp} label="Sort" onPress={() => setSortOpen(true)} active={sort !== 'default'} />
+            <ToolbarButton icon={MagnifyingGlass} label={t('discovery.search')} onPress={() => setSearchOpen(true)} />
+            <ToolbarButton icon={Funnel} label={activeFilterCount ? t('filters.withCount', { count: activeFilterCount }) : t('discovery.filters')} onPress={() => setFiltersOpen(true)} active={activeFilterCount > 0} />
+            <ToolbarButton icon={ArrowsDownUp} label={t('discovery.sort')} onPress={() => setSortOpen(true)} active={sort !== 'default'} />
           </View>
         )}
       </SafeAreaView>
 
-      {filtersOpen ? <ModalSheet visible title="Filters" onDismiss={() => setFiltersOpen(false)}>
-        <View style={styles.contentTypeHeader}><Text style={styles.filterLabel}>Content types</Text><Pressable onPress={() => { setContentSelection({ ...ALL_DISCOVERY_CONTENT }); setFilterNotice(null); }} accessibilityRole="button"><Text style={styles.selectAll}>Select all</Text></Pressable></View>
-        <View style={styles.contentTypeOptions}>{CONTENT_TYPES.map((item) => <ContentTypeOption key={item.key} label={item.label} selected={contentSelection[item.key]} onPress={() => changeContentSelection(item.key)} />)}</View>
+      {/* Both sheets are conditionally rendered, so dismissing one unmounts it
+          and its transient state cannot leak into the next open. */}
+      {filtersOpen ? <ModalSheet visible title={t('filters.title')} onDismiss={() => setFiltersOpen(false)}>
+        <View style={styles.contentTypeHeader}><Text style={styles.filterLabel}>{t('discovery.contentTypes')}</Text><Pressable onPress={() => { setContentSelection({ ...ALL_DISCOVERY_CONTENT }); setFilterNotice(null); }} accessibilityRole="button" accessibilityLabel={t('discovery.selectAll')}><Text style={styles.selectAll}>{t('discovery.selectAll')}</Text></Pressable></View>
+        <View style={styles.contentTypeOptions}>{CONTENT_TYPES.map((item) => <ContentTypeOption key={item.key} label={t(item.labelKey)} selected={contentSelection[item.key]} onPress={() => changeContentSelection(item.key)} />)}</View>
         {filterNotice ? <Text style={styles.filterNotice} accessibilityLiveRegion="polite">{filterNotice}</Text> : null}
-        <FilterRow label="Activities" items={ACTIVITY_CATEGORIES} selected={selectedActivityCategory} onSelect={setSelectedActivityCategory} />
-        <>
-          <FilterRow label="Places" items={PLACE_CATEGORIES} selected={selectedPlaceCategory} onSelect={setSelectedPlaceCategory} />
-          <View style={styles.wrapChips}>{PLACE_QUICK_FILTERS.map((item) => <CategoryChip key={item.key} label={item.label} selected={placeQuickFilters.has(item.key)} onPress={() => setPlaceQuickFilters((current) => togglePlaceQuickFilter(current, item.key))} />)}</View>
-        </>
-        <FilterRow label="Events" items={EVENT_CATEGORIES} selected={selectedEventCategory} onSelect={setSelectedEventCategory} />
+        {/* Only the sections for currently-selected content types are shown. */}
+        {contentSelection.activities ? <FilterRow label={t('discovery.activities')} items={ACTIVITY_CATEGORIES} selected={selectedActivityCategory} onSelect={setSelectedActivityCategory} /> : null}
+        {contentSelection.places ? (
+          <>
+            <FilterRow label={t('discovery.places')} items={PLACE_CATEGORIES} selected={selectedPlaceCategory} onSelect={setSelectedPlaceCategory} />
+            <View style={styles.wrapChips}>{PLACE_QUICK_FILTERS.map((item) => <CategoryChip key={item.key} label={item.label} selected={placeQuickFilters.has(item.key)} onPress={() => setPlaceQuickFilters((current) => togglePlaceQuickFilter(current, item.key))} />)}</View>
+          </>
+        ) : null}
+        {contentSelection.events ? <FilterRow label={t('discovery.events')} items={EVENT_CATEGORIES} selected={selectedEventCategory} onSelect={setSelectedEventCategory} /> : null}
+        {activeFilterCount > 0 ? (
+          <Pressable style={styles.resetAll} onPress={resetAllFilters} accessibilityRole="button" accessibilityLabel={t('filters.resetAll')}>
+            <Text style={styles.resetAllText}>{t('filters.resetAll')}</Text>
+          </Pressable>
+        ) : null}
       </ModalSheet> : null}
 
-      {sortOpen ? <ModalSheet visible title="Sort list" onDismiss={() => setSortOpen(false)}>
-        <View style={styles.sortOptions}>{SORT_OPTIONS.map((item) => <Pressable key={item.key} style={[styles.sortOption, sort === item.key && styles.sortOptionSelected]} onPress={() => { setSort(item.key); setSortOpen(false); }} accessibilityRole="radio" accessibilityState={{ checked: sort === item.key }}><Text style={[styles.sortOptionText, sort === item.key && styles.sortOptionTextSelected]}>{item.label}</Text></Pressable>)}</View>
-        <Text style={styles.sortHint}>Sorting changes the list only. Map markers stay in place.</Text>
+      {sortOpen ? <ModalSheet visible title={t('discovery.sortListTitle')} onDismiss={() => setSortOpen(false)}>
+        <View style={styles.sortOptions}>{SORT_OPTIONS.map((item) => <Pressable key={item.key} style={[styles.sortOption, sort === item.key && styles.sortOptionSelected]} onPress={() => { setSort(item.key); setSortOpen(false); }} accessibilityRole="radio" accessibilityState={{ checked: sort === item.key }} accessibilityLabel={t(item.labelKey)}><Text style={[styles.sortOptionText, sort === item.key && styles.sortOptionTextSelected]}>{t(item.labelKey)}</Text></Pressable>)}</View>
+        <Text style={styles.sortHint}>{t('discovery.sortHint')}</Text>
       </ModalSheet> : null}
 
-      <Pressable style={styles.fab} onPress={onHostActivity} accessibilityLabel="Host an activity">
+      <Pressable style={styles.fab} onPress={onHostActivity} accessibilityLabel={t('discovery.hostActivity')}>
         <Plus size={24} color={theme.text.inverse} weight="bold" />
       </Pressable>
 
       <BottomSheet ref={sheetRef} index={SHEET_PEEK_INDEX} snapPoints={SNAP_POINTS} enableDynamicSizing={false} onChange={(index) => { sheetIndex.current = index; }} backgroundStyle={styles.sheetBackground} handleIndicatorStyle={styles.sheetHandle}>
         <BottomSheetView style={styles.sheetHeader}>
-          <Text style={styles.sheetTitle}>{showSkeleton ? 'Finding nearby options…' : discoveryCountLabel(contentSelection, visibleItems.length)}</Text>
-          {!showSkeleton && visibleItems.length > 0 ? <Text style={styles.sheetSubtitle}>Swipe up to explore</Text> : null}
+          <Text style={styles.sheetTitle}>{showSkeleton ? t('discovery.finding') : t(discoveryCountKey(contentSelection, visibleItems.length), { count: visibleItems.length })}</Text>
+          {!showSkeleton && visibleItems.length > 0 ? <Text style={styles.sheetSubtitle}>{t('discovery.swipeUp')}</Text> : null}
         </BottomSheetView>
-        {showActivityError ? <QueryErrorBanner label="Activities couldn't refresh" onRetry={activitiesQuery.refresh} /> : null}
-        {showPlaceError ? <QueryErrorBanner label="Places couldn't refresh" onRetry={placesQuery.refresh} /> : null}
-        {showEventError ? <QueryErrorBanner label="Events couldn't refresh" onRetry={eventsQuery.refresh} /> : null}
+        {/* One banner per FAILED domain only — the domains that loaded stay
+            listed below rather than being replaced by a full-screen error. */}
+        {showActivityError ? <QueryErrorBanner label={t('discovery.error.activities')} onRetry={activitiesQuery.refresh} /> : null}
+        {showPlaceError ? <QueryErrorBanner label={t('discovery.error.places')} onRetry={placesQuery.refresh} /> : null}
+        {showEventError ? <QueryErrorBanner label={t('discovery.error.events')} onRetry={eventsQuery.refresh} /> : null}
         {showSkeleton ? (
           <BottomSheetView style={styles.listContent}>{[0, 1, 2].map((index) => <View key={index} style={styles.feedItem}><SkeletonCard /></View>)}</BottomSheetView>
         ) : (
@@ -419,28 +458,35 @@ function ToolbarButton({ icon: Icon, label, onPress, active = false }: { icon: R
 }
 
 function ContentTypeOption({ label, selected, onPress }: { label: string; selected: boolean; onPress: () => void }) {
-  return <Pressable style={styles.contentTypeOption} onPress={onPress} accessibilityRole="checkbox" accessibilityState={{ checked: selected }} accessibilityLabel={`Show ${label.toLocaleLowerCase()}`}><View style={[styles.checkbox, selected && styles.checkboxSelected]}>{selected ? <Check size={14} color={theme.text.inverse} weight="bold" /> : null}</View><Text style={styles.contentTypeLabel}>{label}</Text></Pressable>;
+  const { t } = useI18n();
+  return <Pressable style={styles.contentTypeOption} onPress={onPress} accessibilityRole="checkbox" accessibilityState={{ checked: selected }} accessibilityLabel={t('filters.showType', { type: label.toLocaleLowerCase() })}><View style={[styles.checkbox, selected && styles.checkboxSelected]}>{selected ? <Check size={14} color={theme.text.inverse} weight="bold" /> : null}</View><Text style={styles.contentTypeLabel}>{label}</Text></Pressable>;
 }
 
 function ModalSheet({ visible, title, onDismiss, children }: { visible: boolean; title: string; onDismiss: () => void; children: React.ReactNode }) {
-  return <Modal visible={visible} transparent animationType="slide" onRequestClose={onDismiss}><Pressable style={styles.modalOverlay} onPress={onDismiss}><Pressable style={styles.modalSheet} onPress={(event) => event.stopPropagation()}><View style={styles.modalHeader}><Text style={styles.modalTitle}>{title}</Text><Pressable onPress={onDismiss} accessibilityLabel={`Close ${title.toLocaleLowerCase()}`} hitSlop={10}><X size={20} color={theme.text.primary} /></Pressable></View><ScrollView contentContainerStyle={styles.modalContent} keyboardShouldPersistTaps="handled">{children}</ScrollView></Pressable></Pressable></Modal>;
+  const { t } = useI18n();
+  return <Modal visible={visible} transparent animationType="slide" onRequestClose={onDismiss}><Pressable style={styles.modalOverlay} onPress={onDismiss}><Pressable style={styles.modalSheet} onPress={(event) => event.stopPropagation()}><View style={styles.modalHeader}><Text style={styles.modalTitle}>{title}</Text><Pressable onPress={onDismiss} accessibilityLabel={t('common.close', { what: title.toLocaleLowerCase() })} hitSlop={10}><X size={20} color={theme.text.primary} /></Pressable></View><ScrollView contentContainerStyle={styles.modalContent} keyboardShouldPersistTaps="handled">{children}</ScrollView></Pressable></Pressable></Modal>;
 }
 
 function QueryErrorBanner({ label, onRetry }: { label: string; onRetry: () => void }) {
-  return <View style={styles.errorBanner}><WarningCircle size={17} color={theme.semantic.warning} weight="fill" /><Text style={styles.errorBannerText}>{label}</Text><Pressable onPress={onRetry} accessibilityRole="button" accessibilityLabel={`${label}. Try again`}><Text style={styles.retryText}>Try again</Text></Pressable></View>;
+  const { t } = useI18n();
+  return <View style={styles.errorBanner}><WarningCircle size={17} color={theme.semantic.warning} weight="fill" /><Text style={styles.errorBannerText}>{label}</Text><Pressable onPress={onRetry} style={styles.retryButton} hitSlop={8} accessibilityRole="button" accessibilityLabel={t('common.retryLabel', { label })}><Text style={styles.retryText}>{t('common.retry')}</Text></Pressable></View>;
 }
 
 function DiscoveryEmptyState({ selection, locationDenied, onHostActivity }: { selection: DiscoveryContentSelection; locationDenied: boolean; onHostActivity: () => void }) {
-  const copy = discoveryEmptyCopy(selection);
-  return <View style={styles.emptyState}><Text style={styles.emptyTitle}>{copy}</Text><Text style={styles.emptyBody}>{locationDenied ? 'Location access is off, so this area may not be near you.' : 'Try moving the map, changing a filter, or searching nearby.'}</Text>{selection.activities ? <Pressable style={styles.emptyAction} onPress={onHostActivity}><Text style={styles.emptyActionText}>Host an activity</Text></Pressable> : null}</View>;
+  const { t } = useI18n();
+  return <View style={styles.emptyState}><Text style={styles.emptyTitle}>{t(discoveryEmptyCopyKey(selection))}</Text><Text style={styles.emptyBody}>{t(locationDenied ? 'discovery.empty.bodyLocationOff' : 'discovery.empty.body')}</Text>{/* Only offered when Activities are selected — hosting would not affect a Places-only or Events-only result set, and an action that does nothing is worse than none. */}{selection.activities ? <Pressable style={styles.emptyAction} onPress={onHostActivity} accessibilityRole="button" accessibilityLabel={t('discovery.hostActivity')}><Text style={styles.emptyActionText}>{t('discovery.hostActivity')}</Text></Pressable> : null}</View>;
 }
 
-function discoveryCountLabel(selection: DiscoveryContentSelection, count: number): string {
+/** Returns the translation key for the result-count line. A mixed selection
+ *  uses a type-neutral count, since naming three types in one line reads badly
+ *  in both languages. */
+export function discoveryCountKey(selection: DiscoveryContentSelection, count: number): TranslationKey {
   const keys = selectedContentKeys(selection);
-  if (keys.length === 1 && keys[0] === 'activities') return `${count} ${count === 1 ? 'activity' : 'activities'} nearby`;
-  if (keys.length === 1 && keys[0] === 'places') return `${count} ${count === 1 ? 'place' : 'places'} in this area`;
-  if (keys.length === 1 && keys[0] === 'events') return `${count} ${count === 1 ? 'event' : 'events'} in this area`;
-  return `${count} nearby`;
+  if (keys.length !== 1) return 'discovery.count.mixed';
+  const plural = count === 1 ? 'one' : 'other';
+  if (keys[0] === 'activities') return `discovery.count.activities.${plural}` as TranslationKey;
+  if (keys[0] === 'places') return `discovery.count.places.${plural}` as TranslationKey;
+  return `discovery.count.events.${plural}` as TranslationKey;
 }
 
 function togglePlaceQuickFilter(current: Set<PlaceQuickFilter>, key: PlaceQuickFilter): Set<PlaceQuickFilter> {
@@ -478,6 +524,17 @@ const styles = StyleSheet.create({
   modalHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: spacing.lg, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: theme.border.default },
   modalTitle: { ...typography.title3, color: theme.text.primary },
   modalContent: { paddingBottom: spacing.lg, gap: spacing.sm },
+  resetAll: {
+    // 48 keeps this above the 44pt minimum target even with tight padding.
+    minHeight: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: spacing.lg,
+    borderRadius: radius.md,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: theme.border.default,
+  },
+  resetAllText: { ...typography.bodyMedium, color: theme.text.accent },
   sortOptions: { paddingHorizontal: spacing.lg, paddingTop: spacing.sm, gap: spacing.xs },
   sortOption: { minHeight: 48, justifyContent: 'center', paddingHorizontal: spacing.md, borderRadius: radius.md, backgroundColor: theme.background.app },
   sortOptionSelected: { backgroundColor: theme.brand.primaryTint, borderWidth: 1, borderColor: theme.brand.primary },
@@ -492,8 +549,11 @@ const styles = StyleSheet.create({
   sheetSubtitle: { ...typography.footnote, color: theme.text.secondary, marginTop: 2 },
   listContent: { paddingHorizontal: spacing.lg, paddingBottom: 120 },
   feedItem: { width: '100%' },
-  errorBanner: { marginHorizontal: spacing.lg, marginBottom: spacing.xs, minHeight: 40, paddingHorizontal: spacing.sm, flexDirection: 'row', alignItems: 'center', gap: spacing.xs, borderRadius: radius.md, backgroundColor: theme.semantic.warningTint },
+  errorBanner: { marginHorizontal: spacing.lg, marginBottom: spacing.xs, minHeight: 44, paddingHorizontal: spacing.sm, flexDirection: 'row', alignItems: 'center', gap: spacing.xs, borderRadius: radius.md, backgroundColor: theme.semantic.warningTint },
   errorBannerText: { flex: 1, ...typography.footnote, color: theme.text.primary },
+  // The Pressable wraps only a text node, so without an explicit target it is
+  // about the height of the text — far under the 44pt minimum.
+  retryButton: { minHeight: 44, justifyContent: 'center', paddingHorizontal: spacing.xs },
   retryText: { ...typography.footnote, color: theme.brand.primary, fontWeight: '700' },
   emptyState: { alignItems: 'center', paddingHorizontal: spacing.lg, paddingVertical: spacing.xl },
   emptyTitle: { ...typography.headline, color: theme.text.primary, textAlign: 'center' },

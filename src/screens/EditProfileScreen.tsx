@@ -11,7 +11,8 @@ import { isNonEmpty } from '@/utils/validation';
 import { formatBabyAge, birthdateToMonths } from '@/utils/babyAge';
 import { useAuth } from '@/hooks/useAuth';
 import { useChildren } from '@/hooks/useChildren';
-import { parentRoleNoun, type ParentRole } from '@/utils/parentRole';
+import { parentRoleKey, type ParentRole } from '@/utils/parentRole';
+import { useI18n } from '@/i18n';
 import type { Child, ChildSex } from '@/types/child';
 
 interface EditProfileScreenProps {
@@ -22,6 +23,7 @@ export function EditProfileScreen({ onBack }: EditProfileScreenProps) {
   const { profile, session, updateProfileDetails } = useAuth();
   const { children, addChild, updateChild, removeChild, setDefaultChild } = useChildren(session?.user.id ?? null);
 
+  const { t } = useI18n();
   const [displayName, setDisplayName] = useState(profile?.displayName ?? '');
   // Self-selected only. Existing users start at null and simply keep reading
   // "Parent" until they choose — nobody is forced to pick.
@@ -90,31 +92,31 @@ export function EditProfileScreen({ onBack }: EditProfileScreenProps) {
             />
           </View>
 
-          <Text style={styles.sectionLabel}>How you'd like to be called</Text>
-          <Text style={styles.roleHint}>
-            Shown as "{parentRoleNoun(parentRole)} of 2" on your public profile. Optional — you can change it any time.
-          </Text>
+          <Text style={styles.sectionLabel}>{t('profile.role.label')}</Text>
+          <Text style={styles.roleHint}>{t('profile.role.hint')}</Text>
           <View style={styles.roleRow}>
             {(['mom', 'dad', 'parent'] as const).map((option) => {
               const selected = parentRole === option;
               return (
                 <Pressable
                   key={option}
+                  // Tapping the selected chip clears it: choosing a role is
+                  // opt-in, so it has to be un-choosable too.
                   onPress={() => setParentRole(selected ? null : option)}
                   accessibilityRole="button"
                   accessibilityState={{ selected }}
-                  accessibilityLabel={parentRoleNoun(option)}
+                  accessibilityLabel={t(parentRoleKey(option))}
                   style={[styles.roleChip, selected && styles.roleChipSelected]}
                 >
                   <Text style={[styles.roleChipLabel, selected && styles.roleChipLabelSelected]}>
-                    {parentRoleNoun(option)}
+                    {t(parentRoleKey(option))}
                   </Text>
                 </Pressable>
               );
             })}
           </View>
 
-          <Text style={styles.sectionLabel}>Children</Text>
+          <Text style={styles.sectionLabel}>{t('profile.children')}</Text>
           <ChildrenEditor
             children={children}
             onAdd={addChild}

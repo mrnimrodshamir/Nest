@@ -4,7 +4,7 @@ import test from 'node:test';
 import {
   ALL_DISCOVERY_CONTENT,
   contentSelectionIncludes,
-  discoveryEmptyCopy,
+  discoveryEmptyCopyKey,
   toggleDiscoveryContent,
   visibleDiscoveryFailures,
 } from '@/utils/discoveryPresentation';
@@ -22,10 +22,11 @@ test('content inclusion and empty copy cover combined and single selections', ()
   assert.equal(contentSelectionIncludes(ALL_DISCOVERY_CONTENT, 'activity'), true);
   assert.equal(contentSelectionIncludes({ activities: true, places: false, events: true }, 'place'), false);
   assert.equal(contentSelectionIncludes({ activities: true, places: false, events: true }, 'event'), true);
-  assert.equal(discoveryEmptyCopy(ALL_DISCOVERY_CONTENT), 'No activities, places, or events found in this area.');
-  assert.equal(discoveryEmptyCopy({ activities: true, places: false, events: false }), 'No activities match these filters.');
-  assert.equal(discoveryEmptyCopy({ activities: false, places: true, events: false }), 'No places match these filters.');
-  assert.equal(discoveryEmptyCopy({ activities: false, places: false, events: true }), 'No events match these filters.');
+  // Now resolves to a translation key; the rendered copy lives in the dictionaries.
+  assert.equal(discoveryEmptyCopyKey(ALL_DISCOVERY_CONTENT), 'discovery.empty.all');
+  assert.equal(discoveryEmptyCopyKey({ activities: true, places: false, events: false }), 'discovery.empty.activities');
+  assert.equal(discoveryEmptyCopyKey({ activities: false, places: true, events: false }), 'discovery.empty.places');
+  assert.equal(discoveryEmptyCopyKey({ activities: false, places: false, events: true }), 'discovery.empty.events');
 });
 
 test('partial failures remain scoped to visible content and never imply a full-screen failure', () => {
@@ -59,11 +60,12 @@ test('place images use shared fixed variants, category artwork, and cached broke
 
 test('Discovery exposes Search, Filters, and Sort in its compact toolbar', () => {
   const source = readFileSync(new URL('../screens/DiscoverScreen.tsx', import.meta.url), 'utf8');
-  assert.match(source, /label="Search"/);
-  assert.match(source, /label={activeFilterCount \? `Filters · \$\{activeFilterCount\}` : 'Filters'}/);
-  assert.match(source, /label="Sort"/);
-  assert.match(source, /{filtersOpen \? <ModalSheet visible/);
-  assert.match(source, /Sorting changes the list only/);
+  // Labels are now translation keys rather than English literals.
+  assert.match(source, /label=\{t\('discovery\.search'\)\}/);
+  assert.match(source, /label=\{activeFilterCount \? t\('filters\.withCount'/);
+  assert.match(source, /label=\{t\('discovery\.sort'\)\}/);
+  assert.match(source, /\{filtersOpen \? <ModalSheet visible/);
+  assert.match(source, /t\('discovery\.sortHint'\)/);
   assert.doesNotMatch(source, /DiscoveryContentFilter|CONTENT_FILTERS/);
   const filterSheetStart = source.indexOf('{filtersOpen ? <ModalSheet visible');
   const filterSheetEnd = source.indexOf('</ModalSheet>', filterSheetStart);

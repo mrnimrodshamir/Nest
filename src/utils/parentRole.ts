@@ -2,14 +2,9 @@
  *  relationship, or anything else. `null` is a first-class value meaning "the
  *  user has not chosen", and it renders as the neutral "Parent".
  *
- *  SCHEMA STATE: `profiles.parent_role` does NOT exist in production yet
- *  (verified against ghzpzimcxvccbmjsttlf — profiles has avatar_url, bio,
- *  created_at, display_name, due_date, email, id, location,
- *  neighborhood_label, notification_preferences, onboarding_completed, phone,
- *  updated_at, verified_at). The migration is prepared locally and NOT
- *  applied; until it lands every caller passes null and copy reads "Parent",
- *  which is exactly the current behaviour — so this module is safe to ship
- *  ahead of the migration. */
+ *  SCHEMA STATE: `profiles.parent_role` is APPLIED in production
+ *  (ghzpzimcxvccbmjsttlf) as a nullable enum with no backfill, so existing
+ *  users read null and render "Parent" until they choose. */
 export type ParentRole = 'mom' | 'dad' | 'parent' | null;
 
 const ROLE_NOUN: Record<'mom' | 'dad' | 'parent', string> = {
@@ -18,10 +13,20 @@ const ROLE_NOUN: Record<'mom' | 'dad' | 'parent', string> = {
   parent: 'Parent',
 };
 
-/** "Mom" / "Dad" / "Parent". Unknown or null always degrades to "Parent". */
+/** "Mom" / "Dad" / "Parent". Unknown or null always degrades to "Parent".
+ *  English only — UI that needs the user's language calls parentRoleKey(). */
 export function parentRoleNoun(role: ParentRole): string {
   if (role === 'mom' || role === 'dad' || role === 'parent') return ROLE_NOUN[role];
   return ROLE_NOUN.parent;
+}
+
+/** Translation key for the role noun. Returned as a plain string so this
+ *  module stays dependency-free and testable without the i18n runtime; the
+ *  keys are asserted to exist by the dictionary test. */
+export function parentRoleKey(role: ParentRole): 'profile.role.mom' | 'profile.role.dad' | 'profile.role.parent' {
+  if (role === 'mom') return 'profile.role.mom';
+  if (role === 'dad') return 'profile.role.dad';
+  return 'profile.role.parent';
 }
 
 /** Whether a stored value is a role we recognise. Guards against a future

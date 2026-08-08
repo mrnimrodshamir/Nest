@@ -42,7 +42,7 @@ import { AuthNavigator } from '@/navigation/AuthNavigator';
 import { AppErrorBoundary } from '@/components/AppErrorBoundary';
 import { spacing, theme } from '@/theme';
 import { useAuth, AuthProvider } from '@/hooks/useAuth';
-import { I18nProvider } from '@/i18n';
+import { I18nProvider, useI18n } from '@/i18n';
 import { computeRouteDecision } from '@/lib/routing';
 import { useActivityDetail } from '@/hooks/useActivityDetail';
 import { useActivityRsvp } from '@/hooks/useActivityRsvp';
@@ -405,6 +405,9 @@ function MainNavigator() {
 }
 
 function Tabs() {
+  // Route NAMES stay English — they are internal identifiers that deep links
+  // and navigation calls depend on. Only the visible tabBarLabel is localized.
+  const { t } = useI18n();
   return (
     <Tab.Navigator
       screenOptions={{
@@ -416,13 +419,13 @@ function Tabs() {
     >
       <Tab.Screen
         name="Discovery"
-        options={{ tabBarIcon: ({ color, size }) => <Compass size={size} color={color} weight="fill" /> }}
+        options={{ tabBarLabel: t('nav.discovery'), tabBarIcon: ({ color, size }) => <Compass size={size} color={color} weight="fill" /> }}
       >
         {({ navigation }) => <DiscoverScreenContainer navigation={navigation} />}
       </Tab.Screen>
       <Tab.Screen
         name="Chats"
-        options={{ tabBarIcon: ({ color, size }) => <ChatCircleDots size={size} color={color} weight="fill" /> }}
+        options={{ tabBarLabel: t('nav.chats'), tabBarIcon: ({ color, size }) => <ChatCircleDots size={size} color={color} weight="fill" /> }}
       >
         {({ navigation }) => (
           <MessagesScreen
@@ -440,7 +443,7 @@ function Tabs() {
       </Tab.Screen>
       <Tab.Screen
         name="Profile"
-        options={{ tabBarIcon: ({ color, size }) => <UserCircle size={size} color={color} weight="fill" /> }}
+        options={{ tabBarLabel: t('nav.profile'), tabBarIcon: ({ color, size }) => <UserCircle size={size} color={color} weight="fill" /> }}
       >
         {({ navigation }) => (
           <ProfileScreen

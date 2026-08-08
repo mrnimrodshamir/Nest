@@ -11,13 +11,34 @@ export function toggleDiscoveryContent(
   return { selection: { ...selection, [key]: !selection[key] }, prevented: false };
 }
 
-export function discoveryEmptyCopy(selection: DiscoveryContentSelection): string {
+/** Returns a TRANSLATION KEY rather than a literal so the copy lives in one
+ *  place and can be rendered in either language. Every one of the seven
+ *  content combinations gets its own key, so a mixed selection reads naturally
+ *  ("No activities or places…") instead of collapsing to a generic catch-all. */
+export function discoveryEmptyCopyKey(selection: DiscoveryContentSelection): DiscoveryEmptyKey {
   const keys = selectedContentKeys(selection);
-  if (keys.length === 1 && keys[0] === 'activities') return 'No activities match these filters.';
-  if (keys.length === 1 && keys[0] === 'places') return 'No places match these filters.';
-  if (keys.length === 1 && keys[0] === 'events') return 'No events match these filters.';
-  return 'No activities, places, or events found in this area.';
+  const has = (key: DiscoveryContentKey) => keys.includes(key);
+  if (keys.length === 1) {
+    if (has('activities')) return 'discovery.empty.activities';
+    if (has('places')) return 'discovery.empty.places';
+    return 'discovery.empty.events';
+  }
+  if (keys.length === 2) {
+    if (has('activities') && has('places')) return 'discovery.empty.activitiesPlaces';
+    if (has('activities') && has('events')) return 'discovery.empty.activitiesEvents';
+    return 'discovery.empty.placesEvents';
+  }
+  return 'discovery.empty.all';
 }
+
+export type DiscoveryEmptyKey =
+  | 'discovery.empty.all'
+  | 'discovery.empty.activities'
+  | 'discovery.empty.places'
+  | 'discovery.empty.events'
+  | 'discovery.empty.activitiesPlaces'
+  | 'discovery.empty.activitiesEvents'
+  | 'discovery.empty.placesEvents';
 
 export function contentSelectionIncludes(selection: DiscoveryContentSelection, type: 'activity' | 'place' | 'event'): boolean {
   return selection[type === 'activity' ? 'activities' : type === 'place' ? 'places' : 'events'];
