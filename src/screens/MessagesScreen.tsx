@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo, useState } from 'react';
-import { View, Text, SectionList, Pressable, StyleSheet } from 'react-native';
+import { View, Text, SectionList, FlatList, Pressable, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { ChatCircleDots, CaretDown, CaretUp, UsersThree, Plus } from 'phosphor-react-native';
@@ -14,21 +14,34 @@ import { formatExactStartTime } from '@/utils/formatExactStartTime';
 import { CATEGORY_LABELS } from '@/types/activity';
 import { groupConversations } from '@/utils/groupConversations';
 import { resolveChatsUpcomingState } from '@/utils/resolveChatsUpcomingState';
+import { chatSections, sortForums, type ChatSectionKey } from '@/utils/chatSections';
+import { useForums, type ForumSummary } from '@/hooks/useForums';
+import { ForumRow } from '@/components/ForumRow';
+import { useI18n } from '@/i18n';
 
 interface MessagesScreenProps {
   onOpenConversation: (conversation: Conversation) => void;
+  onOpenForum: (forum: ForumSummary) => void;
   onCreateActivity: () => void;
 }
 
 type Section = { key: 'upcoming' | 'direct' | 'past'; title: string; data: Conversation[] };
 
-/** The Chats tab — activity group chats grouped into "my upcoming plans"
- *  and a quieter, collapsed-by-default past archive, plus a standing
- *  section for person-to-person direct chats (not activity-dated, so they
- *  don't fit either bucket). This reads as "my upcoming communities and
- *  plans," not a generic flat inbox. */
-export function MessagesScreen({ onOpenConversation, onCreateActivity }: MessagesScreenProps) {
+/** The Chats tab, split into three clearly separate spaces:
+ *
+ *    Chats      — live activity chats and direct messages
+ *    Past Chats — activity chats whose activity is over, kept readable
+ *    Forums     — permanent NestUp community spaces, not tied to an activity
+ *
+ *  The three are segmented rather than stacked because they answer different
+ *  questions ("what's happening", "what happened", "where do I ask"), and
+ *  because mixing standing community spaces into dated activity chats was
+ *  exactly the confusion this structure removes. */
+export function MessagesScreen({ onOpenConversation, onOpenForum, onCreateActivity }: MessagesScreenProps) {
   const { conversations, isLoading, error, refresh } = useConversations();
+  const { forums, isLoading: forumsLoading, error: forumsError, refresh: refreshForums } = useForums();
+  const { t } = useI18n();
+  const [tab, setTab] = useState<ChatSectionKey>('active');
   const [pastOpen, setPastOpen] = useState(false);
 
   // Chats stays mounted for the whole session (a sibling tab under the
@@ -45,68 +58,139 @@ export function MessagesScreen({ onOpenConversation, onCreateActivity }: Message
   );
 
   const { upcoming, past, direct } = useMemo(() => groupConversations(conversations), [conversations]);
+  const { active } = useMemo(() => chatSections(conversations), [conversations]);
+  const orderedForums = useMemo(() => sortForums(forums), [forums]);
   const upcomingState = resolveChatsUpcomingState(upcoming.length, past.length);
 
   const sections = useMemo<Section[]>(() => {
+    if (tab === 'past') {
+      // Past is its own tab now, so it is always expanded — there is nothing
+      // to collapse it away from.
+      return past.length > 0 ? [{ key: 'past', title: t('chats.section.past'), data: past }] : [];
+    }
     const result: Section[] = [];
-    if (upcoming.length > 0) result.push({ key: 'upcoming', title: 'Upcoming activities', data: upcoming });
-    if (direct.length > 0) result.push({ key: 'direct', title: 'Direct messages', data: direct });
-    if (past.length > 0) result.push({ key: 'past', title: 'Past activities', data: pastOpen ? past : [] });
+    if (upcoming.length > 0) result.push({ key: 'upcoming', title: t('chats.section.active'), data: upcoming });
+    if (direct.length > 0) result.push({ key: 'direct', title: t('chats.directChat'), data: direct });
     return result;
-  }, [upcoming, direct, past, pastOpen]);
+  }, [tab, upcoming, direct, past, t]);
+
+  const TABS: Array<{ key: ChatSectionKey; label: string }> = [
+    { key: 'active', label: t('chats.section.active') },
+    { key: 'past', label: t('chats.section.past') },
+    { key: 'forums', label: t('chats.section.forums') },
+  ];
+
+  if (tab === 'forums') {
+    return (
+      <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+        <Text style={styles.headerTitle}>{t('chats.section.forums')}</Text>
+        <SegmentedTabs tabs={TABS} value={tab} onChange={setTab} />
+        <FlatList
+          data={orderedForums}
+          keyExtractor={(item) => item.key}
+          contentContainerStyle={styles.listContent}
+          renderItem={({ item }) => <ForumRow forum={item} onPress={() => onOpenForum(item)} />}
+          // Forums are seeded, so an empty list means the load failed. Showing
+          // a cheerful "no forums yet" would be a lie; retry is the only
+          // honest affordance.
+          ListEmptyComponent={
+            forumsLoading ? null : (
+              <StateCard
+                icon={UsersThree}
+                title={t('chats.error.forums')}
+                body={t('discovery.empty.body')}
+                ctaLabel={t('common.retry')}
+                onCtaPress={refreshForums}
+                tone="warning"
+              />
+            )
+          }
+        />
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-      <Text style={styles.headerTitle}>Chats</Text>
+      <Text style={styles.headerTitle}>{t('chats.section.active')}</Text>
+      <SegmentedTabs tabs={TABS} value={tab} onChange={setTab} />
 
       <SectionList
         sections={sections}
         keyExtractor={(item) => item.chatId}
         contentContainerStyle={conversations.length === 0 ? styles.emptyContent : styles.listContent}
         stickySectionHeadersEnabled={false}
-        // The "no upcoming activities" nudge always sits where the
-        // Upcoming section would be — even when Past/Direct chats exist
-        // below, since those don't answer "what do I do next."
+        // The "no upcoming activities" nudge belongs to the live tab only —
+        // it answers "what do I do next", which the archive is not about.
         ListHeaderComponent={
-          upcomingState !== 'has-upcoming' ? (
+          tab === 'active' && upcomingState !== 'has-upcoming' ? (
             <UpcomingEmptyState onCreateActivity={onCreateActivity} />
           ) : null
         }
-        renderSectionHeader={({ section }) =>
-          section.key === 'past' ? (
-            <Pressable style={styles.pastHeader} onPress={() => setPastOpen((v) => !v)}>
-              <Text style={styles.sectionTitle}>{section.title}</Text>
-              {pastOpen ? (
-                <CaretUp size={16} color={theme.text.secondary} />
-              ) : (
-                <CaretDown size={16} color={theme.text.secondary} />
-              )}
-            </Pressable>
-          ) : (
-            <Text style={styles.sectionTitle}>{section.title}</Text>
-          )
-        }
+        renderSectionHeader={({ section }) => <Text style={styles.sectionTitle}>{section.title}</Text>}
         renderItem={({ item }) =>
           item.activity ? (
-            <ActivityConversationRow conversation={item} onPress={() => onOpenConversation(item)} />
+            <ActivityConversationRow conversation={item} onPress={() => onOpenConversation(item)} past={tab === 'past'} />
           ) : (
             <DirectConversationRow conversation={item} onPress={() => onOpenConversation(item)} />
           )
         }
         ListEmptyComponent={
-          !isLoading && error ? (
+          isLoading ? null : error ? (
             <StateCard
               icon={ChatCircleDots}
-              title="Couldn't load your messages."
-              body="Tap below to try again."
-              ctaLabel="Try again"
+              title={t('chats.error.load')}
+              body={t('discovery.empty.body')}
+              ctaLabel={t('common.retry')}
               onCtaPress={refresh}
               tone="warning"
             />
-          ) : null
+          ) : (
+            // Only reached when the load succeeded and there genuinely is
+            // nothing — never when it failed.
+            <StateCard
+              icon={ChatCircleDots}
+              title={t(tab === 'past' ? 'chats.empty.past' : 'chats.empty.active')}
+              body={t(tab === 'past' ? 'chats.empty.pastBody' : 'chats.empty.activeBody')}
+            />
+          )
         }
       />
     </SafeAreaView>
+  );
+}
+
+/** Chats / Past Chats / Forums. A single row of three so the whole control
+ *  fits a small iPhone without truncating any label. */
+function SegmentedTabs({
+  tabs,
+  value,
+  onChange,
+}: {
+  tabs: Array<{ key: ChatSectionKey; label: string }>;
+  value: ChatSectionKey;
+  onChange: (key: ChatSectionKey) => void;
+}) {
+  return (
+    <View style={styles.segmented} accessibilityRole="tablist">
+      {tabs.map((item) => {
+        const selected = item.key === value;
+        return (
+          <Pressable
+            key={item.key}
+            style={[styles.segment, selected && styles.segmentSelected]}
+            onPress={() => onChange(item.key)}
+            accessibilityRole="tab"
+            accessibilityState={{ selected }}
+            accessibilityLabel={item.label}
+          >
+            <Text style={[styles.segmentLabel, selected && styles.segmentLabelSelected]} numberOfLines={1}>
+              {item.label}
+            </Text>
+          </Pressable>
+        );
+      })}
+    </View>
   );
 }
 
@@ -135,9 +219,13 @@ function UpcomingEmptyState({ onCreateActivity }: { onCreateActivity: () => void
 function ActivityConversationRow({
   conversation,
   onPress,
+  past = false,
 }: {
   conversation: Conversation;
   onPress: () => void;
+  /** Renders the row subdued, so an archived chat cannot be mistaken for a
+   *  live plan. It stays fully readable and openable. */
+  past?: boolean;
 }) {
   const activity = conversation.activity!;
   const timingLabel = formatExactStartTime(activity.startTime);
@@ -149,7 +237,7 @@ function ActivityConversationRow({
 
   return (
     <Pressable
-      style={[styles.activityRow, conversation.hasUnread && styles.activityRowUnread]}
+      style={[styles.activityRow, conversation.hasUnread && styles.activityRowUnread, past && styles.activityRowPast]}
       onPress={onPress}
       accessibilityRole="button"
     >
@@ -217,6 +305,28 @@ function DirectConversationRow({ conversation, onPress }: { conversation: Conver
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: theme.background.app },
   headerTitle: { ...typography.title1, color: theme.text.primary, paddingHorizontal: spacing.lg, paddingVertical: spacing.md },
+  segmented: {
+    flexDirection: 'row',
+    marginHorizontal: spacing.lg,
+    marginBottom: spacing.md,
+    padding: 3,
+    borderRadius: radius.md,
+    backgroundColor: theme.background.app,
+    gap: 2,
+  },
+  segment: {
+    // flex:1 splits the width three ways, so no label is clipped even on a
+    // small iPhone; numberOfLines={1} keeps a long Hebrew label on one line.
+    flex: 1,
+    minHeight: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: spacing.xs,
+    borderRadius: radius.sm,
+  },
+  segmentSelected: { backgroundColor: theme.background.surface },
+  segmentLabel: { ...typography.footnote, color: theme.text.secondary },
+  segmentLabelSelected: { color: theme.text.primary, fontWeight: '700' },
   listContent: { paddingHorizontal: spacing.lg, paddingBottom: spacing['4xl'], gap: spacing.sm },
   emptyContent: { flexGrow: 1 },
   upcomingEmptyWrap: { gap: spacing.sm, marginBottom: spacing.md },
@@ -284,6 +394,10 @@ const styles = StyleSheet.create({
     borderColor: theme.brand.primary,
     borderWidth: 1.5,
   },
+  // Archived chats read as finished, not active. Opacity rather than a
+  // muted palette so the row stays fully legible and every child element
+  // dims consistently.
+  activityRowPast: { opacity: 0.72 },
   // Fixed width only — CoverFrame supplies the 4:3 height and clipping, so
   // this tile can never grow the chat row's height.
   activityThumb: {

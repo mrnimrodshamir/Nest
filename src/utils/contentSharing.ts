@@ -42,16 +42,23 @@ export function buildWhatsAppUrl(message: string): string {
 export type SharedContentRoute =
   | { screen: 'ActivityDetail'; params: { activityId: string } }
   | { screen: 'PlaceDetails'; params: { placeId: string } }
-  | { screen: 'EventDetails'; params: { occurrenceId: string } };
+  | { screen: 'EventDetails'; params: { occurrenceId: string } }
+  /** Forums reuse the Chat screen; `forumKey` is the stable catalogue slug,
+   *  resolved to a chat id (and joined) on open. */
+  | { screen: 'Chat'; params: { kind: 'forum'; forumKey: string } };
 
-/** Parses canonical and legacy custom-scheme links without accepting arbitrary routes. */
+/** Parses canonical and legacy custom-scheme links without accepting arbitrary
+ *  routes. `forum` is a distinct path segment, so forum links can never
+ *  collide with the existing activity/place/event links. */
 export function parseSharedContentUrl(value: string): SharedContentRoute | null {
-  const match = /^(?:nestup|momzi):\/\/(activity|place|event)\/([^/?#]+)(?:[?#].*)?$/i.exec(value.trim());
+  const match = /^(?:nestup|momzi):\/\/(activity|place|event|forum)\/([^/?#]+)(?:[?#].*)?$/i.exec(value.trim());
   if (!match) return null;
   let id: string;
   try { id = decodeURIComponent(match[2]); } catch { return null; }
   if (!id.trim()) return null;
-  if (match[1].toLowerCase() === 'activity') return { screen: 'ActivityDetail', params: { activityId: id } };
-  if (match[1].toLowerCase() === 'place') return { screen: 'PlaceDetails', params: { placeId: id } };
+  const kind = match[1].toLowerCase();
+  if (kind === 'activity') return { screen: 'ActivityDetail', params: { activityId: id } };
+  if (kind === 'place') return { screen: 'PlaceDetails', params: { placeId: id } };
+  if (kind === 'forum') return { screen: 'Chat', params: { kind: 'forum', forumKey: id } };
   return { screen: 'EventDetails', params: { occurrenceId: id } };
 }

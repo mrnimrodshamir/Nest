@@ -39,7 +39,9 @@ test('Hebrew introduces no key English lacks', () => {
 test('no Hebrew value is left as an untranslated English string', () => {
   // A language selector names each language in its OWN script, so these two
   // are deliberately identical across dictionaries.
-  const allowed = new Set(['language.english', 'language.hebrew']);
+  // language.* name each language in its own script; chats.happenedOn is a
+  // pure placeholder pattern with no words to translate.
+  const allowed = new Set(['language.english', 'language.hebrew', 'chats.happenedOn']);
   const untranslated = (Object.keys(he) as Array<keyof typeof en>).filter(
     (key) => !allowed.has(key) && he[key] === en[key],
   );

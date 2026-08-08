@@ -43,6 +43,8 @@ import { AppErrorBoundary } from '@/components/AppErrorBoundary';
 import { spacing, theme } from '@/theme';
 import { useAuth, AuthProvider } from '@/hooks/useAuth';
 import { I18nProvider, useI18n } from '@/i18n';
+import { openForum } from '@/hooks/useForums';
+import { isForumKey, type ForumKey } from '@/constants/forums';
 import { computeRouteDecision } from '@/lib/routing';
 import { useActivityDetail } from '@/hooks/useActivityDetail';
 import { useActivityRsvp } from '@/hooks/useActivityRsvp';
@@ -114,7 +116,9 @@ export type RootStackParamList = {
   PlaceDetails: { placeId: string };
   EventDetails: { occurrenceId: string };
   ShareActivity: { activity: ShareableActivity };
-  Chat: { kind: 'group' | 'direct'; activityId?: string; otherUserId?: string; title?: string };
+  // `forumKey` is the stable slug from the forum catalogue, not a chat id —
+  // the id is resolved (and the user silently joined) on open.
+  Chat: { kind: 'group' | 'direct' | 'forum'; activityId?: string; otherUserId?: string; forumKey?: ForumKey; title?: string };
   PublicProfile: { userId: string };
   EditProfile: undefined;
   MyActivities: undefined;
@@ -187,7 +191,13 @@ function AppInner() {
     pendingSharedRoute.current = null;
     if (route.screen === 'ActivityDetail') navigationRef.navigate('ActivityDetail', route.params);
     else if (route.screen === 'PlaceDetails') navigationRef.navigate('PlaceDetails', route.params);
-    else navigationRef.navigate('EventDetails', route.params);
+    else if (route.screen === 'Chat') {
+      // Unknown forum keys are dropped rather than opening an empty chat —
+      // a link may come from a newer build than this one.
+      if (isForumKey(route.params.forumKey)) {
+        navigationRef.navigate('Chat', { kind: 'forum', forumKey: route.params.forumKey });
+      }
+    } else navigationRef.navigate('EventDetails', route.params);
   }, [session, profile?.onboardingCompleted]);
 
   useEffect(() => {
@@ -360,7 +370,13 @@ function MainNavigator() {
       </Stack.Screen>
       <Stack.Screen name="Chat">
         {({ route, navigation }) =>
-          route.params.kind === 'direct' && route.params.otherUserId ? (
+          route.params.kind === 'forum' && route.params.forumKey ? (
+            <ForumChatContainer
+              forumKey={route.params.forumKey}
+              title={route.params.title}
+              onBack={() => navigation.goBack()}
+            />
+          ) : route.params.kind === 'direct' && route.params.otherUserId ? (
             <DirectChatContainer
               otherUserId={route.params.otherUserId}
               title={route.params.title}
@@ -435,6 +451,15 @@ function Tabs() {
                 activityId: conversation.activityId ?? undefined,
                 otherUserId: conversation.otherUserId ?? undefined,
                 title: conversation.title,
+              })
+            }
+            onOpenForum={(forum) =>
+              navigation.getParent()?.navigate('Chat', {
+                kind: 'forum',
+                forumKey: forum.key,
+                // Resolved here so the chat header reads in the user's
+                // language rather than the catalogue's English fallback.
+                title: t(forum.titleKey),
               })
             }
             onCreateActivity={() => navigation.getParent()?.navigate('CreateActivity')}
@@ -612,6 +637,37 @@ function ActivityDetailWithRsvp({
       }
     />
   );
+}
+
+/** Forums reuse ChatScreen wholesale. The only extra step is resolving the
+ *  forum key to a chat id, which also joins the user transparently — forum
+ *  membership exists purely to satisfy the participation-based RLS that
+ *  already guards every chat, and is never surfaced as a "Join" button. */
+function ForumChatContainer({
+  forumKey,
+  title,
+  onBack,
+}: {
+  forumKey: ForumKey;
+  title?: string;
+  onBack: () => void;
+}) {
+  const [chatId, setChatId] = React.useState<string | null>(null);
+  const [resolveError, setResolveError] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    let cancelled = false;
+    openForum(forumKey).then((id) => {
+      if (cancelled) return;
+      if (id) setChatId(id);
+      else setResolveError("Couldn't open this forum.");
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [forumKey]);
+
+  return <ChatScreen chatId={chatId} resolveError={resolveError} title={title ?? ''} onBack={onBack} />;
 }
 
 function GroupChatContainer({
