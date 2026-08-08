@@ -18,12 +18,14 @@ import { buildAppleMapsPlaceUrl, formatOpeningHours, placeWhatIsHere } from '@/u
 import { groupPlaceEvents } from '@/utils/placeEvents';
 import { buildPlaceShareMessage } from '@/utils/contentSharing';
 import { openNativeShare, openWhatsAppShare } from '@/lib/contentShare';
+import { useI18n, textAlignForContent } from '@/i18n';
 
 export function PlaceDetailsScreen({ placeId, onBack, onCreateActivity, onOpenEvent }: { placeId: string; onBack: () => void; onCreateActivity: (place: FamilyFriendlyPlace) => void; onOpenEvent: (event: EventDetails) => void }) {
   const [place, setPlace] = useState<FamilyFriendlyPlace | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [reload, setReload] = useState(0);
   const placeEvents = usePlaceEvents(placeId);
+  const { t, locale } = useI18n();
   useEffect(() => {
     let active = true;
     setError(null);
@@ -33,7 +35,7 @@ export function PlaceDetailsScreen({ placeId, onBack, onCreateActivity, onOpenEv
   const facts = useMemo(() => place ? placeWhatIsHere(place) : [], [place]);
   const eventGroups = useMemo(() => groupPlaceEvents(placeEvents.events), [placeEvents.events]);
 
-  if (!place) return <SafeAreaView style={styles.container}><Header onBack={onBack} />{error ? <StateCard icon={WarningCircle} title="Couldn't load place" body={error} ctaLabel="Try again" onCtaPress={() => setReload((value) => value + 1)} tone="warning" /> : <Text style={styles.loading}>Loading place…</Text>}</SafeAreaView>;
+  if (!place) return <SafeAreaView style={styles.container}><Header onBack={onBack} />{error ? <StateCard icon={WarningCircle} title={t('place.loadError')} body={error} ctaLabel={t('common.retry')} onCtaPress={() => setReload((value) => value + 1)} tone="warning" /> : <Text style={styles.loading}>{t('place.loading')}</Text>}</SafeAreaView>;
 
   const address = place.formattedAddress ?? place.neighborhood ?? place.city;
   const mapsUrl = buildAppleMapsPlaceUrl(place);
@@ -47,27 +49,34 @@ export function PlaceDetailsScreen({ placeId, onBack, onCreateActivity, onOpenEv
     <Text style={styles.title}>{place.name}</Text>
     <Text style={styles.address}>{address}</Text>
     <MapView style={styles.map} region={{ latitude: place.latitude, longitude: place.longitude, latitudeDelta: 0.015, longitudeDelta: 0.015 }} scrollEnabled={false} zoomEnabled={false} pointerEvents="none"><Marker coordinate={place} /></MapView>
-    <Pressable style={styles.linkRow} onPress={() => Linking.openURL(mapsUrl)}><ArrowSquareOut size={18} color={theme.brand.primary} /><Text style={styles.link}>Open in Apple Maps</Text></Pressable>
+    <Pressable style={styles.linkRow} onPress={() => Linking.openURL(mapsUrl)}><ArrowSquareOut size={18} color={theme.brand.primary} /><Text style={styles.link}>{t('place.openInAppleMaps')}</Text></Pressable>
     <View style={styles.shareRow}>
-      <Pressable accessibilityRole="button" accessibilityLabel={`Share ${place.name}`} style={styles.shareButton} onPress={() => void openNativeShare(shareMessage)}><ShareNetwork size={18} color={theme.text.primary} /><Text style={styles.shareText}>Share</Text></Pressable>
-      <Pressable accessibilityRole="button" accessibilityLabel={`Share ${place.name} on WhatsApp`} style={styles.shareButton} onPress={() => void openWhatsAppShare(shareMessage)}><WhatsappLogo size={18} color={theme.text.primary} weight="fill" /><Text style={styles.shareText}>WhatsApp</Text></Pressable>
+      {/* place.name is a venue name — interpolated, never translated. */}
+      <Pressable accessibilityRole="button" accessibilityLabel={t('place.shareLabel', { name: place.name })} style={styles.shareButton} onPress={() => void openNativeShare(shareMessage)}><ShareNetwork size={18} color={theme.text.primary} /><Text style={styles.shareText}>{t('common.share')}</Text></Pressable>
+      <Pressable accessibilityRole="button" accessibilityLabel={t('place.shareWhatsAppLabel', { name: place.name })} style={styles.shareButton} onPress={() => void openWhatsAppShare(shareMessage)}><WhatsappLogo size={18} color={theme.text.primary} weight="fill" /><Text style={styles.shareText}>{t('common.whatsapp')}</Text></Pressable>
     </View>
-    {description ? <Text style={styles.description}>{description}</Text> : null}
-    {facts.length ? <View style={styles.section}><Text style={styles.sectionTitle}>What's here</Text><View style={styles.factWrap}>{facts.map((fact) => <View key={fact} style={styles.fact}><Text style={styles.factText}>{fact}</Text></View>)}</View></View> : null}
-    {place.priceNote ? <Section title="Cost" body={place.priceNote} /> : null}
-    {openingHours ? <Section title="Opening hours" body={openingHours} /> : null}
-    {placeEvents.isLoading ? <Text style={styles.eventLoading}>Loading events here…</Text> : null}
-    {placeEvents.error ? <View style={styles.eventError}><Text style={styles.eventErrorText}>{placeEvents.error}</Text><Pressable onPress={placeEvents.refresh}><Text style={styles.link}>Try again</Text></Pressable></View> : null}
-    {eventGroups.today.length ? <EventSection title="Today Here" events={eventGroups.today} onOpenEvent={onOpenEvent} /> : null}
-    {eventGroups.upcoming.length ? <EventSection title="Upcoming Here" events={eventGroups.upcoming} onOpenEvent={onOpenEvent} /> : null}
-    {place.websiteUrl ? <Pressable style={styles.linkRow} onPress={() => Linking.openURL(place.websiteUrl!)}><ArrowSquareOut size={18} color={theme.brand.primary} /><Text style={styles.link}>Visit website</Text></Pressable> : null}
-    {place.lastVerifiedAt ? <Text style={styles.verified}>Last verified {new Date(place.lastVerifiedAt).toLocaleDateString()}</Text> : null}
-    <PrimaryButton label="Create activity here" onPress={() => onCreateActivity(place)} />
+    {/* Venue description comes from the provider — rendered in its own script. */}
+    {description ? <Text style={[styles.description, textAlignForContent(description, locale)]}>{description}</Text> : null}
+    {facts.length ? <View style={styles.section}><Text style={styles.sectionTitle}>{t('place.whatsHere')}</Text><View style={styles.factWrap}>{facts.map((fact) => <View key={fact} style={styles.fact}><Text style={styles.factText}>{fact}</Text></View>)}</View></View> : null}
+    {place.priceNote ? <Section title={t('place.cost')} body={place.priceNote} /> : null}
+    {openingHours ? <Section title={t('place.openingHours')} body={openingHours} /> : null}
+    {placeEvents.isLoading ? <Text style={styles.eventLoading}>{t('place.loadingEvents')}</Text> : null}
+    {placeEvents.error ? <View style={styles.eventError}><Text style={styles.eventErrorText}>{placeEvents.error}</Text><Pressable onPress={placeEvents.refresh} accessibilityRole="button" accessibilityLabel={t('common.retry')}><Text style={styles.link}>{t('common.retry')}</Text></Pressable></View> : null}
+    {eventGroups.today.length ? <EventSection title={t('place.todayHere')} events={eventGroups.today} onOpenEvent={onOpenEvent} /> : null}
+    {eventGroups.upcoming.length ? <EventSection title={t('place.upcomingHere')} events={eventGroups.upcoming} onOpenEvent={onOpenEvent} /> : null}
+    {place.websiteUrl ? <Pressable style={styles.linkRow} onPress={() => Linking.openURL(place.websiteUrl!)}><ArrowSquareOut size={18} color={theme.brand.primary} /><Text style={styles.link}>{t('place.visitWebsite')}</Text></Pressable> : null}
+    {place.lastVerifiedAt ? <Text style={styles.verified}>{t('place.lastVerified', { date: new Date(place.lastVerifiedAt).toLocaleDateString(locale === 'he' ? 'he-IL' : 'en-US') })}</Text> : null}
+    <PrimaryButton label={t('place.createActivityHere')} onPress={() => onCreateActivity(place)} />
   </ScrollView></SafeAreaView>;
 }
 
 function Header({ onBack }: { onBack: () => void }) {
-  return <View style={styles.header}><Pressable onPress={onBack} accessibilityLabel="Back" style={styles.back}><ArrowLeft size={20} color={theme.text.primary} /></Pressable><Text style={styles.headerTitle}>Place details</Text><View style={styles.back} /></View>;
+  const { t, isRTL } = useI18n();
+  return <View style={styles.header}><Pressable onPress={onBack} accessibilityRole="button" accessibilityLabel={t('common.back')} style={styles.back}>
+    {/* The back arrow is directional: it must point back, which is right in
+        a Hebrew layout. Non-directional icons are never flipped. */}
+    <ArrowLeft size={20} color={theme.text.primary} style={isRTL ? styles.flipped : undefined} />
+  </Pressable><Text style={styles.headerTitle}>{t('place.title')}</Text><View style={styles.back} /></View>;
 }
 
 function Section({ title, body }: { title: string; body: string }) {
@@ -82,6 +91,9 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: theme.background.app },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: spacing.lg, paddingVertical: spacing.sm },
   back: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.background.surface },
+  // Mirrors the back arrow in RTL. Applied only to genuinely directional
+  // icons — a map pin or a heart must never be flipped.
+  flipped: { transform: [{ scaleX: -1 }] },
   headerTitle: { ...typography.headline, color: theme.text.primary },
   content: { paddingHorizontal: spacing.lg, paddingBottom: 48, gap: spacing.sm },
   loading: { ...typography.body, textAlign: 'center', color: theme.text.secondary, marginTop: 80 },

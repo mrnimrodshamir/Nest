@@ -33,7 +33,7 @@ test('Place Details shows full copy and cost only when values exist', () => {
   const source = readFileSync(new URL('../screens/PlaceDetailsScreen.tsx', import.meta.url), 'utf8');
   assert.match(source, /const description = place\.fullDescription \?\? place\.shortDescription/);
   assert.match(source, /description \? <Text/);
-  assert.match(source, /place\.priceNote \? <Section title="Cost"/);
+  assert.match(source, /place\.priceNote \? <Section title=\{t\('place\.cost'\)\}/);
   assert.match(source, /buildAppleMapsPlaceUrl\(place\)/);
 });
 test('development fixtures are fictional, varied, and never verified', () => { assert.equal(MOCK_FAMILY_FRIENDLY_PLACES.length, 11); assert.equal(new Set(MOCK_FAMILY_FRIENDLY_PLACES.map((place) => place.category)).size, 11); assert.ok(MOCK_FAMILY_FRIENDLY_PLACES.every((place) => place.sourceName === 'Development fixture' && place.verificationStatus === 'draft')); });

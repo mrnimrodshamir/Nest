@@ -150,6 +150,36 @@ export const he: Dictionary = {
   'forum.daycare-preschools.title': 'מסגרות וגנים',
   'forum.daycare-preschools.description': 'מעונות, גנים, רישום ומסגרות באזור.',
 
+  // --- Place details -----------------------------------------------------
+  'place.title': 'פרטי המקום',
+  'place.loadError': 'לא הצלחנו לטעון את המקום',
+  'place.loading': 'טוען מקום…',
+  'place.openInAppleMaps': 'פתיחה ב-Apple Maps',
+  'place.whatsHere': 'מה יש כאן',
+  'place.cost': 'עלות',
+  'place.openingHours': 'שעות פתיחה',
+  'place.todayHere': 'היום כאן',
+  'place.upcomingHere': 'בקרוב כאן',
+  'place.loadingEvents': 'טוען אירועים כאן…',
+  'place.visitWebsite': 'לאתר',
+  'place.lastVerified': 'עודכן לאחרונה {date}',
+  'place.createActivityHere': 'יצירת פעילות כאן',
+  'place.shareLabel': 'שיתוף {name}',
+  'place.shareWhatsAppLabel': 'שיתוף {name} בוואטסאפ',
+
+  // --- Event details -----------------------------------------------------
+  'event.title': 'פרטי האירוע',
+  'event.loadError': 'לא הצלחנו לטעון את האירוע',
+  'event.loading': 'טוען אירוע…',
+  'event.registration': 'הרשמה',
+  'event.viewSource': 'למקור הרשמי',
+  'event.addToCalendarLabel': 'הוספת {name} ליומן',
+  'event.location': 'מיקום',
+  'event.cancelled': 'בוטל',
+  'event.postponed': 'נדחה',
+
+  'common.whatsapp': 'וואטסאפ',
+
   // --- Profile -----------------------------------------------------------
   'profile.role.mom': 'אמא',
   'profile.role.dad': 'אבא',

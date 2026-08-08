@@ -55,7 +55,9 @@ test('Event marker, card, details route, and place integration are present witho
   assert.match(card, /EventCard/);
   assert.match(app, /EventDetails: \{ occurrenceId: string \}/);
   assert.match(app, /event\/:occurrenceId/);
-  assert.match(placeDetails, /Today Here/);
-  assert.match(placeDetails, /Upcoming Here/);
+  // Now rendered through i18n, so the assertion follows the KEY rather than
+  // the English string — the copy itself is covered by the dictionary tests.
+  assert.match(placeDetails, /t\('place\.todayHere'\)/);
+  assert.match(placeDetails, /t\('place\.upcomingHere'\)/);
   assert.doesNotMatch(`${marker}\n${card}\n${placeDetails}`, /recommend|personaliz|\bai\b|saved/i);
 });

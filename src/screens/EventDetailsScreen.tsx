@@ -11,6 +11,7 @@ import { buildEventDetailsPresentation } from '@/utils/eventPresentation';
 import { buildEventShareMessage } from '@/utils/contentSharing';
 import { openNativeShare, openWhatsAppShare } from '@/lib/contentShare';
 import { AddEventToCalendarSheet } from '@/components/AddEventToCalendarSheet';
+import { useI18n, textAlignForContent } from '@/i18n';
 
 interface EventDetailsScreenProps {
   event: EventDetails;
@@ -21,6 +22,7 @@ interface EventDetailsScreenProps {
  * Discovery or navigation until Events publication is separately approved. */
 export function EventDetailsScreen({ event, onBack }: EventDetailsScreenProps) {
   const content = useMemo(() => buildEventDetailsPresentation(event), [event]);
+  const { t, locale, isRTL } = useI18n();
   const [showCalendar, setShowCalendar] = useState(false);
   const isInterrupted = event.lifecycle === 'cancelled' || event.lifecycle === 'postponed';
   const shareMessage = buildEventShareMessage({ occurrenceId: event.occurrence.id, title: event.title, startsAt: event.occurrence.startsAt, location: event.location.name ?? event.location.formattedAddress, status: event.occurrence.status });
@@ -28,10 +30,11 @@ export function EventDetailsScreen({ event, onBack }: EventDetailsScreenProps) {
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <View style={styles.header}>
-        <Pressable onPress={onBack} accessibilityRole="button" accessibilityLabel="Back" style={styles.back}>
-          <ArrowLeft size={20} color={theme.text.primary} />
+        <Pressable onPress={onBack} accessibilityRole="button" accessibilityLabel={t('common.back')} style={styles.back}>
+          {/* Directional icon: must point back, which flips in RTL. */}
+          <ArrowLeft size={20} color={theme.text.primary} style={isRTL ? styles.flipped : undefined} />
         </Pressable>
-        <Text style={styles.headerTitle}>Event details</Text>
+        <Text style={styles.headerTitle}>{t('event.title')}</Text>
         <View style={styles.back} />
       </View>
       <ScrollView contentContainerStyle={styles.content}>
@@ -51,10 +54,11 @@ export function EventDetailsScreen({ event, onBack }: EventDetailsScreenProps) {
         {content.recurrenceLabel ? <InfoRow icon={Repeat} title={content.recurrenceLabel} /> : null}
         <InfoRow icon={MapPin} title={content.locationName} body={content.addressLabel} />
         <View style={styles.actionRow}>
-          <Pressable accessibilityRole="button" accessibilityLabel={`Share ${event.title}`} style={styles.action} onPress={() => void openNativeShare(shareMessage)}><ShareNetwork size={18} color={theme.text.primary} /><Text style={styles.actionText}>Share</Text></Pressable>
-          <Pressable accessibilityRole="button" accessibilityLabel={`Share ${event.title} on WhatsApp`} style={styles.action} onPress={() => void openWhatsAppShare(shareMessage)}><WhatsappLogo size={18} color={theme.text.primary} weight="fill" /><Text style={styles.actionText}>WhatsApp</Text></Pressable>
+          {/* event.title comes from an external source — interpolated only. */}
+          <Pressable accessibilityRole="button" accessibilityLabel={t('place.shareLabel', { name: event.title })} style={styles.action} onPress={() => void openNativeShare(shareMessage)}><ShareNetwork size={18} color={theme.text.primary} /><Text style={styles.actionText}>{t('common.share')}</Text></Pressable>
+          <Pressable accessibilityRole="button" accessibilityLabel={t('place.shareWhatsAppLabel', { name: event.title })} style={styles.action} onPress={() => void openWhatsAppShare(shareMessage)}><WhatsappLogo size={18} color={theme.text.primary} weight="fill" /><Text style={styles.actionText}>{t('common.whatsapp')}</Text></Pressable>
         </View>
-        <Pressable accessibilityRole="button" accessibilityLabel={`Add ${event.title} to calendar`} style={styles.calendarAction} onPress={() => setShowCalendar(true)}><CalendarPlus size={18} color={theme.brand.primary} /><Text style={styles.link}>Add to calendar</Text></Pressable>
+        <Pressable accessibilityRole="button" accessibilityLabel={t('event.addToCalendarLabel', { name: event.title })} style={styles.calendarAction} onPress={() => setShowCalendar(true)}><CalendarPlus size={18} color={theme.brand.primary} /><Text style={styles.link}>{t('common.addToCalendar')}</Text></Pressable>
         <MapView
           style={styles.map}
           region={{ latitude: event.location.latitude, longitude: event.location.longitude, latitudeDelta: 0.015, longitudeDelta: 0.015 }}
@@ -64,10 +68,11 @@ export function EventDetailsScreen({ event, onBack }: EventDetailsScreenProps) {
         >
           <Marker coordinate={event.location} />
         </MapView>
-        {content.description ? <Text style={styles.description}>{content.description}</Text> : null}
-        {event.priceNote ? <Section title="Cost" body={event.priceNote} /> : null}
+        {/* External event copy — rendered in whatever script it arrives in. */}
+        {content.description ? <Text style={[styles.description, textAlignForContent(content.description, locale)]}>{content.description}</Text> : null}
+        {event.priceNote ? <Section title={t('place.cost')} body={event.priceNote} /> : null}
         {content.registrationLabel && content.registrationUrl ? <ExternalLink label={content.registrationLabel} url={content.registrationUrl} /> : null}
-        {content.sourceLabel ? <View style={styles.source}><Text style={styles.sourceText}>{content.sourceLabel}</Text>{content.sourceUrl ? <ExternalLink label="View official source" url={content.sourceUrl} /> : null}</View> : null}
+        {content.sourceLabel ? <View style={styles.source}><Text style={styles.sourceText}>{content.sourceLabel}</Text>{content.sourceUrl ? <ExternalLink label={t('event.viewSource')} url={content.sourceUrl} /> : null}</View> : null}
       </ScrollView>
       <AddEventToCalendarSheet visible={showCalendar} event={calendarEvent} onDismiss={() => setShowCalendar(false)} />
     </SafeAreaView>
@@ -90,6 +95,8 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: theme.background.app },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: spacing.lg, paddingVertical: spacing.sm },
   back: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.background.surface },
+  // Directional icons only — never applied to map pins or category glyphs.
+  flipped: { transform: [{ scaleX: -1 }] },
   headerTitle: { ...typography.headline, color: theme.text.primary },
   content: { paddingHorizontal: spacing.lg, paddingBottom: 48, gap: spacing.md },
   hero: { width: '100%', aspectRatio: 4 / 3, borderRadius: radius.lg, backgroundColor: theme.background.surfaceAlt },

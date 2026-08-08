@@ -158,6 +158,37 @@ export const en = {
   'forum.daycare-preschools.title': 'Daycare & Preschools',
   'forum.daycare-preschools.description': 'Local childcare, registration, daycare and preschool discussions.',
 
+  // --- Place details -----------------------------------------------------
+  'place.title': 'Place details',
+  'place.loadError': "Couldn't load place",
+  'place.loading': 'Loading place…',
+  'place.openInAppleMaps': 'Open in Apple Maps',
+  'place.whatsHere': "What's here",
+  'place.cost': 'Cost',
+  'place.openingHours': 'Opening hours',
+  'place.todayHere': 'Today Here',
+  'place.upcomingHere': 'Upcoming Here',
+  'place.loadingEvents': 'Loading events here…',
+  'place.visitWebsite': 'Visit website',
+  'place.lastVerified': 'Last verified {date}',
+  'place.createActivityHere': 'Create activity here',
+  /** {name} is a venue name — never translated, only interpolated. */
+  'place.shareLabel': 'Share {name}',
+  'place.shareWhatsAppLabel': 'Share {name} on WhatsApp',
+
+  // --- Event details -----------------------------------------------------
+  'event.title': 'Event details',
+  'event.loadError': "Couldn't load event",
+  'event.loading': 'Loading event…',
+  'event.registration': 'Registration',
+  'event.viewSource': 'View official source',
+  'event.addToCalendarLabel': 'Add {name} to calendar',
+  'event.location': 'Location',
+  'event.cancelled': 'Cancelled',
+  'event.postponed': 'Postponed',
+
+  'common.whatsapp': 'WhatsApp',
+
   // --- Profile -----------------------------------------------------------
   'profile.role.mom': 'Mom',
   'profile.role.dad': 'Dad',
