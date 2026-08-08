@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ArrowLeft, ArrowSquareOut, CalendarDots, CalendarPlus, MapPin, Repeat, ShareNetwork, WarningCircle, WhatsappLogo } from 'phosphor-react-native';
+import { ArrowLeft, ArrowSquareOut, CalendarDots, CalendarPlus, Check, MapPin, Repeat, ShareNetwork, WarningCircle, WhatsappLogo } from 'phosphor-react-native';
 import { ContentImage } from '@/components/ContentImage';
 import { ContentImageGallery } from '@/components/ContentImageGallery';
 import { radius, spacing, theme, typography } from '@/theme';
@@ -12,18 +12,28 @@ import { buildEventShareMessage } from '@/utils/contentSharing';
 import { openNativeShare, openWhatsAppShare } from '@/lib/contentShare';
 import { AddEventToCalendarSheet } from '@/components/AddEventToCalendarSheet';
 import { useI18n, textAlignForContent } from '@/i18n';
+import { useEventRsvp } from '@/hooks/useEventRsvp';
+import { rsvpPresentation, attendanceSummaryKey, attendeePreview } from '@/utils/eventAttendance';
+import { PersonCard } from '@/components/PersonCard';
 
 interface EventDetailsScreenProps {
   event: EventDetails;
   onBack: () => void;
+  /** Opens an attendee's existing Public Profile. Optional so the screen still
+   *  renders in contexts that have no profile route wired. */
+  onOpenProfile?: (userId: string) => void;
 }
 
 /** Standalone Sprint 6 detail surface. It is intentionally not registered in
  * Discovery or navigation until Events publication is separately approved. */
-export function EventDetailsScreen({ event, onBack }: EventDetailsScreenProps) {
+export function EventDetailsScreen({ event, onBack, onOpenProfile }: EventDetailsScreenProps) {
   const content = useMemo(() => buildEventDetailsPresentation(event), [event]);
   const { t, locale, isRTL } = useI18n();
   const [showCalendar, setShowCalendar] = useState(false);
+  const { isGoing, attendees, attendeeCount, isSaving, toggle } = useEventRsvp(event.occurrence.id);
+  const rsvp = rsvpPresentation({ isGoing, attendeeCount, lifecycle: event.lifecycle });
+  const attendanceSummary = attendanceSummaryKey(attendeeCount);
+  const preview = attendeePreview(attendees);
   const isInterrupted = event.lifecycle === 'cancelled' || event.lifecycle === 'postponed';
   const shareMessage = buildEventShareMessage({ occurrenceId: event.occurrence.id, title: event.title, startsAt: event.occurrence.startsAt, location: event.location.name ?? event.location.formattedAddress, status: event.occurrence.status });
   const calendarEvent = { occurrenceId: event.occurrence.id, title: event.title, description: event.description, startsAt: event.occurrence.startsAt, endsAt: event.occurrence.endsAt, locationName: event.location.name ?? event.location.formattedAddress, sourceUrl: event.source.sourceUrl, status: event.occurrence.status };
@@ -71,6 +81,49 @@ export function EventDetailsScreen({ event, onBack }: EventDetailsScreenProps) {
         {/* External event copy — rendered in whatever script it arrives in. */}
         {content.description ? <Text style={[styles.description, textAlignForContent(content.description, locale)]}>{content.description}</Text> : null}
         {event.priceNote ? <Section title={t('place.cost')} body={event.priceNote} /> : null}
+
+        {/* --- NestUp social layer -------------------------------------
+            Deliberately ABOVE external registration and visually separated
+            from it. A parent must never confuse "other NestUp parents know
+            I'm coming" with "I hold a place with the organizer". */}
+        {attendanceSummary ? (
+          <View style={styles.attendanceBlock}>
+            <Text style={styles.sectionTitle}>{t('event.attendance.title')}</Text>
+            <Text style={styles.attendanceCount}>{t(attendanceSummary.key, attendanceSummary.params)}</Text>
+            <View style={styles.avatarRow}>
+              {preview.shown.map((attendee) => (
+                <Pressable
+                  key={attendee.userId}
+                  onPress={() => onOpenProfile?.(attendee.userId)}
+                  accessibilityRole="button"
+                  accessibilityLabel={attendee.displayName}
+                  style={styles.avatarTap}
+                >
+                  <PersonCard size="compact" name={attendee.displayName} avatarUrl={attendee.avatarUrl} />
+                </Pressable>
+              ))}
+              {preview.overflow > 0 ? (
+                <Text style={styles.overflow}>{t('event.attendance.overflow', { count: preview.overflow })}</Text>
+              ) : null}
+            </View>
+          </View>
+        ) : null}
+
+        <Pressable
+          style={[styles.rsvp, rsvp.selected && styles.rsvpSelected, !rsvp.enabled && styles.rsvpDisabled]}
+          onPress={() => void toggle()}
+          disabled={!rsvp.enabled || isSaving}
+          accessibilityRole="button"
+          accessibilityState={{ selected: rsvp.selected, disabled: !rsvp.enabled || isSaving }}
+          accessibilityLabel={t(rsvp.key)}
+        >
+          {rsvp.selected ? <Check size={18} color={theme.text.inverse} weight="bold" /> : null}
+          <Text style={[styles.rsvpText, rsvp.selected && styles.rsvpTextSelected]}>{t(rsvp.key)}</Text>
+        </Pressable>
+        {/* States plainly that this is not organizer registration. */}
+        {rsvp.enabled ? <Text style={styles.rsvpNote}>{t('event.rsvp.disclaimer')}</Text> : null}
+
+        {/* --- External registration, a separate action ------------------ */}
         {content.registrationLabel && content.registrationUrl ? <ExternalLink label={content.registrationLabel} url={content.registrationUrl} /> : null}
         {content.sourceLabel ? <View style={styles.source}><Text style={styles.sourceText}>{content.sourceLabel}</Text>{content.sourceUrl ? <ExternalLink label={t('event.viewSource')} url={content.sourceUrl} /> : null}</View> : null}
       </ScrollView>
@@ -97,6 +150,30 @@ const styles = StyleSheet.create({
   back: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.background.surface },
   // Directional icons only — never applied to map pins or category glyphs.
   flipped: { transform: [{ scaleX: -1 }] },
+  attendanceBlock: { paddingVertical: spacing.sm, gap: spacing.xs },
+  attendanceCount: { ...typography.subhead, color: theme.text.secondary },
+  // Wraps rather than scrolls, so a long attendee list cannot push the row
+  // off a small screen.
+  avatarRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: spacing.xs, marginTop: spacing.xs },
+  avatarTap: { minHeight: 44, justifyContent: 'center' },
+  overflow: { ...typography.subhead, color: theme.text.muted, marginStart: spacing.xs },
+  rsvp: {
+    minHeight: 48,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.xs,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: theme.brand.primary,
+    backgroundColor: theme.background.surface,
+    marginTop: spacing.sm,
+  },
+  rsvpSelected: { backgroundColor: theme.brand.primary },
+  rsvpDisabled: { opacity: 0.5, borderColor: theme.border.default },
+  rsvpText: { ...typography.bodyMedium, color: theme.brand.primary, fontWeight: '600' },
+  rsvpTextSelected: { color: theme.text.inverse },
+  rsvpNote: { ...typography.caption, color: theme.text.muted, marginTop: spacing.xs, textAlign: 'center' },
   headerTitle: { ...typography.headline, color: theme.text.primary },
   content: { paddingHorizontal: spacing.lg, paddingBottom: 48, gap: spacing.md },
   hero: { width: '100%', aspectRatio: 4 / 3, borderRadius: radius.lg, backgroundColor: theme.background.surfaceAlt },

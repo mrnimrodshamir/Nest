@@ -178,6 +178,31 @@ export const he: Dictionary = {
   'event.cancelled': 'בוטל',
   'event.postponed': 'נדחה',
 
+  'event.lifecycle.live': 'קורה עכשיו',
+  'event.lifecycle.startingSoon': 'מתחיל בקרוב',
+  'event.lifecycle.today': 'היום',
+  'event.lifecycle.upcoming': 'בקרוב',
+  'event.lifecycle.finished': 'הסתיים',
+  'event.lifecycle.cancelled': 'בוטל',
+  'event.lifecycle.postponed': 'נדחה',
+
+  'event.rsvp.join': 'אני מגיע/ה',
+  'event.rsvp.going': 'סימנתם שאתם מגיעים',
+  'event.rsvp.unavailable': 'האירוע אינו פתוח',
+  'event.rsvp.disclaimer': 'זה מיידע הורים אחרים ב-NestUp. זו אינה הרשמה אצל המארגן.',
+  'event.registerExternally': 'הרשמה אצל המארגן',
+  'event.attendance.going': '{count} הורים מ-NestUp מגיעים',
+  'event.attendance.oneGoing': 'הורה אחד מ-NestUp מגיע',
+  'event.attendance.cardGoing': '{count} מגיעים',
+  'event.attendance.overflow': '+{count}',
+  'event.attendance.title': 'מי מגיע',
+
+  'activity.capacity.spotsLeft': 'נותרו {count} מקומות',
+  'activity.capacity.oneSpotLeft': 'נותר מקום אחד',
+  'activity.capacity.full': 'מלא',
+  'activity.capacity.youreGoing': 'סימנתם שאתם מגיעים',
+  'activity.capacity.hosting': 'אתם מארחים',
+
   'common.whatsapp': 'וואטסאפ',
 
   // --- Profile -----------------------------------------------------------

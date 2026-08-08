@@ -187,6 +187,34 @@ export const en = {
   'event.cancelled': 'Cancelled',
   'event.postponed': 'Postponed',
 
+  // Event lifecycle badges.
+  'event.lifecycle.live': 'LIVE NOW',
+  'event.lifecycle.startingSoon': 'STARTING SOON',
+  'event.lifecycle.today': 'TODAY',
+  'event.lifecycle.upcoming': 'Upcoming',
+  'event.lifecycle.finished': 'Finished',
+  'event.lifecycle.cancelled': 'Cancelled',
+  'event.lifecycle.postponed': 'Postponed',
+
+  // NestUp RSVP. Never implies external registration.
+  'event.rsvp.join': "I'm going",
+  'event.rsvp.going': "You're going",
+  'event.rsvp.unavailable': 'This event is not open',
+  'event.rsvp.disclaimer': 'This tells other NestUp parents. It does not register you with the organizer.',
+  'event.registerExternally': 'Register with organizer',
+  'event.attendance.going': '{count} NestUp parents going',
+  'event.attendance.oneGoing': '1 NestUp parent going',
+  'event.attendance.cardGoing': '{count} going',
+  'event.attendance.overflow': '+{count}',
+  'event.attendance.title': "Who's going",
+
+  // Activity capacity.
+  'activity.capacity.spotsLeft': '{count} spots left',
+  'activity.capacity.oneSpotLeft': '1 spot left',
+  'activity.capacity.full': 'Full',
+  'activity.capacity.youreGoing': "You're going",
+  'activity.capacity.hosting': "You're hosting",
+
   'common.whatsapp': 'WhatsApp',
 
   // --- Profile -----------------------------------------------------------

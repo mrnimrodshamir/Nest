@@ -41,7 +41,11 @@ test('no Hebrew value is left as an untranslated English string', () => {
   // are deliberately identical across dictionaries.
   // language.* name each language in its own script; chats.happenedOn is a
   // pure placeholder pattern with no words to translate.
-  const allowed = new Set(['language.english', 'language.hebrew', 'chats.happenedOn']);
+  const allowed = new Set([
+    'language.english', 'language.hebrew',
+    // Pure format patterns with no words to translate.
+    'chats.happenedOn', 'event.attendance.overflow',
+  ]);
   const untranslated = (Object.keys(he) as Array<keyof typeof en>).filter(
     (key) => !allowed.has(key) && he[key] === en[key],
   );

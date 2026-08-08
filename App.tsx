@@ -341,7 +341,7 @@ function MainNavigator() {
         {({ route, navigation }) => <PlaceDetailsScreen placeId={route.params.placeId} onBack={() => navigation.goBack()} onOpenEvent={(event) => navigation.navigate('EventDetails', { occurrenceId: event.occurrence.id })} onCreateActivity={(place) => navigation.navigate('CreateActivity', { mode: 'place', initialValues: buildActivitySeedFromPlace(place) })} />}
       </Stack.Screen>
       <Stack.Screen name="EventDetails">
-        {({ route, navigation }) => <EventDetailsContainer occurrenceId={route.params.occurrenceId} onBack={() => navigation.goBack()} />}
+        {({ route, navigation }) => <EventDetailsContainer occurrenceId={route.params.occurrenceId} onBack={() => navigation.goBack()} onOpenProfile={(userId) => navigation.navigate('PublicProfile', { userId })} />}
       </Stack.Screen>
       <Stack.Screen name="EditActivity">
         {({ route, navigation }) => (
@@ -569,9 +569,9 @@ function ActivityDetailContainer({
   return <ActivityDetailWithRsvp detail={detail} onBack={onBack} navigation={navigation} refresh={refresh} />;
 }
 
-function EventDetailsContainer({ occurrenceId, onBack }: { occurrenceId: string; onBack: () => void }) {
+function EventDetailsContainer({ occurrenceId, onBack, onOpenProfile }: { occurrenceId: string; onBack: () => void; onOpenProfile?: (userId: string) => void }) {
   const { event, isLoading, error, refresh } = useEventDetails(occurrenceId);
-  if (event) return <EventDetailsScreen event={event} onBack={onBack} />;
+  if (event) return <EventDetailsScreen event={event} onBack={onBack} onOpenProfile={onOpenProfile} />;
   return <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.md, backgroundColor: theme.background.app }}>
     {isLoading ? <ActivityIndicator color={theme.brand.primary} /> : null}
     {error ? <><Text style={{ color: theme.text.secondary }}>{error}</Text><Pressable onPress={refresh}><Text style={{ color: theme.brand.primary, fontWeight: '700' }}>Try again</Text></Pressable></> : null}
