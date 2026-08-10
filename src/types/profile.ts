@@ -19,6 +19,9 @@ export interface Profile {
   notificationPreferences: NotificationPreferences;
   /** Self-selected only; null renders as the neutral "Parent". */
   parentRole: ParentRole;
+  /** ISO date, optional and PRIVATE. Never published — other users see only
+   *  the derived whole-year age via public_profiles.age_years. */
+  birthdate: string | null;
 }
 
 /** Minimal public surface for other users — matches the `public_profiles`

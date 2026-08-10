@@ -9,6 +9,7 @@ import { mapAuthError } from '@/lib/authErrors';
 import { completeOnboardingCore } from '@/lib/completeOnboarding';
 import type { NotificationPreferences, Profile } from '@/types/profile';
 import { coerceParentRole, type ParentRole } from '@/utils/parentRole';
+import { hasDisplayableAge } from '@/utils/parentAge';
 
 /** Guards against ASAuthorizationController being presented twice at once
  *  (a real crash on-device: "already presenting a view controller"). React
@@ -89,6 +90,7 @@ interface UseAuthResult {
     phone: string | null;
     photoUri?: string | null;
     parentRole?: ParentRole;
+    birthdate?: string | null;
   }) => Promise<string | null>;
   updateNotificationPreferences: (prefs: NotificationPreferences) => Promise<string | null>;
 }
@@ -114,7 +116,9 @@ function useAuthState(): UseAuthResult {
     try {
       const { data } = await supabase
         .from('profiles')
-        .select('id, display_name, email, phone, avatar_url, onboarding_completed, notification_preferences, parent_role')
+        // `birthdate` is safe here: this reads the caller's OWN private row
+        // under RLS. It must never reach public_profiles — only age_years does.
+        .select('id, display_name, email, phone, avatar_url, onboarding_completed, notification_preferences, parent_role, birthdate')
         .eq('id', userId)
         .maybeSingle();
       setProfile(data ? mapProfile(data) : null);
@@ -523,6 +527,9 @@ function useAuthState(): UseAuthResult {
       /** Self-selected only. `undefined` leaves the stored value untouched;
        *  `null` clears it back to the neutral "Parent". */
       parentRole?: ParentRole;
+      /** Private. `undefined` leaves it untouched; `null` clears it. Only the
+       *  derived age_years is ever published. */
+      birthdate?: string | null;
     }) => {
       if (!session) return 'Not signed in';
       let avatarUrl: string | undefined;
@@ -543,6 +550,12 @@ function useAuthState(): UseAuthResult {
           // Only written when the caller passes the key at all, so screens
           // that don't own this field can never blank an existing choice.
           ...(details.parentRole !== undefined ? { parent_role: details.parentRole } : {}),
+          // Rejected here as well as in the picker: a stored value can predate
+          // this screen, and an impossible date must never reach the column
+          // that age_years is derived from.
+          ...(details.birthdate !== undefined
+            ? { birthdate: hasDisplayableAge(details.birthdate) ? details.birthdate : null }
+            : {}),
         })
         .eq('id', session.user.id);
       if (error) {
@@ -616,6 +629,7 @@ function mapProfile(row: {
   onboarding_completed: boolean;
   notification_preferences: NotificationPreferences;
   parent_role?: string | null;
+  birthdate?: string | null;
 }): Profile {
   return {
     id: row.id,
@@ -626,5 +640,8 @@ function mapProfile(row: {
     onboardingCompleted: row.onboarding_completed,
     notificationPreferences: row.notification_preferences,
     parentRole: coerceParentRole(row.parent_role),
+    // Normalised to a plain ISO date: Postgres `date` comes back as
+    // YYYY-MM-DD, but a timestamp-ish value would break date-only comparisons.
+    birthdate: row.birthdate ? row.birthdate.slice(0, 10) : null,
   };
 }

@@ -7,6 +7,7 @@ import { FormField } from '@/components/FormField';
 import { PrimaryButton } from '@/components/PrimaryButton';
 import { AvatarPicker } from '@/components/AvatarPicker';
 import { DateOfBirthField } from '@/components/DateOfBirthField';
+import { ParentBirthdateField } from '@/components/ParentBirthdateField';
 import { isNonEmpty } from '@/utils/validation';
 import { formatBabyAge, birthdateToMonths } from '@/utils/babyAge';
 import { useAuth } from '@/hooks/useAuth';
@@ -28,6 +29,8 @@ export function EditProfileScreen({ onBack }: EditProfileScreenProps) {
   // Self-selected only. Existing users start at null and simply keep reading
   // "Parent" until they choose — nobody is forced to pick.
   const [parentRole, setParentRole] = useState<ParentRole>(profile?.parentRole ?? null);
+  // Optional and private. Only the derived age ever leaves this device.
+  const [parentBirthdate, setBirthdate] = useState<string | null>(profile?.birthdate ?? null);
   const [photoUri, setPhotoUri] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState<string | null>(null);
@@ -36,11 +39,28 @@ export function EditProfileScreen({ onBack }: EditProfileScreenProps) {
   // fire two onPress handlers before the disabled-button re-render commits.
   const inFlightRef = useRef(false);
 
+  // Seed the form from the stored profile ONCE per account, not on every
+  // `profile` identity change.
+  //
+  // This was a real data-loss bug: useAuth refetches the profile on every
+  // Supabase auth event, and supabase-js emits TOKEN_REFRESHED on its own
+  // schedule and whenever the app returns to the foreground. Each refetch
+  // builds a NEW profile object, so an effect keyed on `profile` re-ran and
+  // silently overwrote whatever the user had picked but not yet saved. Choose
+  // Dad, take a moment over the children editor, and the chip quietly snapped
+  // back to unselected — then Save wrote that null to the database. It matched
+  // the symptom exactly: Dad visibly selected on screen, parent_role null in
+  // production for every profile.
+  //
+  // Keying on the account id means a genuine account switch still re-seeds,
+  // while a background token refresh cannot touch in-progress edits.
+  const seededForRef = useRef<string | null>(null);
   useEffect(() => {
-    if (profile) {
-      setDisplayName(profile.displayName);
-      setParentRole(profile.parentRole ?? null);
-    }
+    if (!profile || seededForRef.current === profile.id) return;
+    seededForRef.current = profile.id;
+    setDisplayName(profile.displayName);
+    setParentRole(profile.parentRole ?? null);
+    setBirthdate(profile.birthdate ?? null);
   }, [profile]);
 
   const handleSave = async () => {
@@ -61,6 +81,7 @@ export function EditProfileScreen({ onBack }: EditProfileScreenProps) {
       phone: profile?.phone ?? null,
       photoUri,
       parentRole,
+      birthdate: parentBirthdate,
     });
     setIsSaving(false);
     inFlightRef.current = false;
@@ -114,6 +135,10 @@ export function EditProfileScreen({ onBack }: EditProfileScreenProps) {
                 </Pressable>
               );
             })}
+          </View>
+
+          <View style={styles.birthdateBlock}>
+            <ParentBirthdateField value={parentBirthdate} onChange={setBirthdate} />
           </View>
 
           <Text style={styles.sectionLabel}>{t('profile.children')}</Text>
@@ -373,6 +398,7 @@ const styles = StyleSheet.create({
   childCancelLabel: { ...typography.bodyMedium, color: theme.text.secondary },
   childSaveButton: { flex: 1 },
   roleHint: { ...typography.footnote, color: theme.text.secondary, marginBottom: spacing.sm },
+  birthdateBlock: { marginTop: spacing.md },
   roleRow: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.lg },
   roleChip: {
     paddingHorizontal: spacing.lg, paddingVertical: spacing.sm, borderRadius: radius.pill,

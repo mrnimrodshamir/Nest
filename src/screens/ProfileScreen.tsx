@@ -3,6 +3,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { View, Text, Switch, StyleSheet, ScrollView, Alert, Pressable, Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Notifications from 'expo-notifications';
+import * as Application from 'expo-application';
 import {
   CalendarBlank,
   PencilSimple,
@@ -26,6 +27,7 @@ import { useI18n } from '@/i18n';
 import { LEGAL_URLS } from '@/constants/legal';
 import type { NotificationPreferences } from '@/types/profile';
 import { APP_NAME } from '@/constants/brand';
+import { formatAppVersion } from '@/utils/appVersion';
 
 interface ProfileScreenProps {
   onEditProfile: () => void;
@@ -88,6 +90,14 @@ export function ProfileScreen({ onEditProfile, onOpenMyActivities, onOpenBlocked
   // Built from the FULL children list, never children[0] or the default
   // child — see utils/formatParentSubtitle.ts for the documented rule.
   const childSummary = formatParentSubtitle(children, profile?.parentRole ?? null);
+
+  // Read from the installed binary, so this line identifies the build a tester
+  // is actually running rather than what the repo says it should be.
+  const versionLine = formatAppVersion(
+    APP_NAME,
+    Application.nativeApplicationVersion,
+    Application.nativeBuildVersion,
+  );
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
@@ -158,6 +168,14 @@ export function ProfileScreen({ onEditProfile, onOpenMyActivities, onOpenBlocked
           <Trash size={14} color={theme.text.muted} />
           <Text style={styles.deleteButtonLabel}>{isDeleting ? 'Deleting…' : 'Delete account'}</Text>
         </Pressable>
+
+        {/* Footer metadata: quiet, read-only, and selectable so a tester can
+            copy it into a bug report. */}
+        {versionLine && (
+          <Text style={styles.versionLine} selectable>
+            {versionLine}
+          </Text>
+        )}
       </ScrollView>
 
       <NotificationPermissionSheet
@@ -258,4 +276,11 @@ const styles = StyleSheet.create({
   signOutLabel: { ...typography.bodyMedium, color: theme.semantic.danger },
   deleteButton: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, minHeight: 44 },
   deleteButtonLabel: { ...typography.caption, color: theme.text.muted },
+  // Deliberately the quietest text on the screen: diagnostic, not a feature.
+  versionLine: {
+    ...typography.caption,
+    color: theme.text.muted,
+    textAlign: 'center',
+    marginTop: spacing.md,
+  },
 });
