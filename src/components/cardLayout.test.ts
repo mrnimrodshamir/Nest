@@ -6,6 +6,7 @@ import {
   CARD_MEDIA_MAX_HEIGHT,
   resolveCardRenderedHeight,
   resolveFrameHeight,
+  resolveFrameRenderedHeight,
   resolveHeroRenderedHeight,
 } from '@/constants/activityArtFrame';
 
@@ -74,7 +75,9 @@ test('MATRIX: aspect ratios are declared centrally, not per surface', () => {
 
 test('CoverFrame owns height: the child is absolutely filled', () => {
   assert.match(coverFrame, /StyleSheet\.absoluteFill/);
-  assert.match(coverFrame, /aspectRatio: ACTIVITY_ART_ASPECT\[variant\]/);
+  // Height is a resolved number, never aspectRatio - see the width-collapse
+  // regression below for why that distinction is the whole point.
+  assert.match(coverFrame, /height, borderRadius: radius/);
 });
 
 test('CoverFrame always clips, so a cover cannot paint outside its frame', () => {
@@ -82,8 +85,36 @@ test('CoverFrame always clips, so a cover cannot paint outside its frame', () =>
 });
 
 test('CoverFrame caps both hero and card variants', () => {
-  assert.match(coverFrame, /variant === 'hero' && \{ maxHeight/);
-  assert.match(coverFrame, /variant === 'card' && \{ maxHeight: CARD_MEDIA_MAX_HEIGHT \}/);
+  // The caps now live in resolveFrameRenderedHeight, asserted numerically.
+  assert.match(coverFrame, /resolveFrameRenderedHeight\(variant, width, screenHeight\)/);
+  assert.equal(resolveFrameRenderedHeight('card', CONTENT_WIDTH, SMALL_HEIGHT), CARD_MEDIA_MAX_HEIGHT);
+  assert.equal(
+    resolveFrameRenderedHeight('hero', SMALL_WIDTH, SMALL_HEIGHT),
+    Math.round(SMALL_HEIGHT * 0.32),
+  );
+});
+
+test('WIDTH COLLAPSE REGRESSION: a capped frame keeps its full width', () => {
+  // The device bug: `width: '100%'` + `aspectRatio` + `maxHeight` looks like it
+  // clamps height, but Yoga re-derives the WIDTH from the clamped height when an
+  // aspectRatio is present. A 16:9 card capped at 140 collapsed to 140*16/9 =
+  // 249pt inside a 343pt card, rendering the media as a left-aligned letterbox
+  // with a bare gutter beside it. Height must therefore be a plain number, and
+  // aspectRatio must not appear in the frame's own style.
+  // Comments stripped: the file explains the banned pattern by name.
+  const frameCode = coverFrame.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
+  assert.ok(!/aspectRatio/.test(frameCode), 'aspectRatio is back in CoverFrame');
+  assert.match(coverFrame, /width: '100%'/);
+
+  const collapsedWidth = CARD_MEDIA_MAX_HEIGHT * ACTIVITY_ART_ASPECT.card;
+  assert.ok(collapsedWidth < CONTENT_WIDTH, 'test is meaningless unless the old bug would bind here');
+});
+
+test('the frame measures its real width instead of assuming the window width', () => {
+  // Cards sit inside padded parents and fixed-width rails, so the window width
+  // is only a first-paint estimate.
+  assert.match(coverFrame, /onLayout=/);
+  assert.match(coverFrame, /measuredWidth \?\? windowWidth/);
 });
 
 test('REGRESSION: the image fallback stays out of normal layout flow', () => {
@@ -159,6 +190,34 @@ test('STICKY: exactly one instance of each control exists', () => {
   for (const label of ["t('discovery.search')", "t('discovery.sort')"]) {
     const count = discover.split(label).length - 1;
     assert.equal(count, 1, `${label} appears ${count} times — controls are duplicated`);
+  }
+});
+
+test('LAYOUT OWNERSHIP: the sheet is given exactly one content child', () => {
+  // @gorhom/bottom-sheet 5.x renders `children` into ONE container of height
+  // `sheetHeight - handleHeight` with overflow hidden, and supports a single
+  // content element. Passing the header, the error banners and the list as
+  // siblings let the scrollable claim that area, pushing everything above it
+  // outside the clipped box -- the controls mounted but never appeared. This
+  // asserts the structure, not the presence of a string.
+  const sheet = discover.slice(discover.indexOf('<BottomSheet '), discover.indexOf('</BottomSheet>'));
+  const topLevel = sheet.split('\n').filter((line) => /^ {8}[<{]/.test(line));
+  // Only the skeleton/list ternary may sit directly under the sheet.
+  assert.ok(topLevel.length <= 2, `sheet has ${topLevel.length} top-level children:\n${topLevel.join('\n')}`);
+  assert.ok(!/^ {8}<View style=\{styles\.sheetHeader\}>/m.test(sheet), 'the header is a sheet sibling again');
+});
+
+test('LAYOUT OWNERSHIP: the toolbar is the list header and is pinned while scrolling', () => {
+  assert.match(discover, /ListHeaderComponent=\{<DiscoverySheetHeader \/>\}/);
+  assert.match(discover, /stickyHeaderIndices=\{\[0\]\}/);
+  // A transparent sticky header would let cards scroll through it.
+  assert.match(discover, /sheetHeader: \{[^}]*backgroundColor: theme\.background\.app/);
+});
+
+test('LAYOUT OWNERSHIP: error banners ride in the header, not as sheet siblings', () => {
+  const header = discover.slice(discover.indexOf('const DiscoverySheetHeader'), discover.indexOf('/** Restores every filter'));
+  for (const banner of ['discovery.error.activities', 'discovery.error.places', 'discovery.error.events']) {
+    assert.ok(header.includes(banner), `${banner} is not in the sheet header`);
   }
 });
 

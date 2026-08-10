@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, StyleSheet, useWindowDimensions, StyleProp, ViewStyle } from 'react-native';
 import type { ActivityArtVariant } from '@/constants/activityArtVariant';
-import { ACTIVITY_ART_ASPECT, CARD_MEDIA_MAX_HEIGHT, resolveHeroMaxHeight } from '@/constants/activityArtFrame';
+import { resolveFrameRenderedHeight } from '@/constants/activityArtFrame';
 
 interface CoverFrameProps {
   variant: ActivityArtVariant;
@@ -26,20 +26,29 @@ interface CoverFrameProps {
  *  The child image is absolutely filled, so it can never contribute
  *  intrinsic height and can never stretch — `cover` trims instead. */
 export function CoverFrame({ variant, radius = 0, style, children }: CoverFrameProps) {
-  const { height: screenHeight } = useWindowDimensions();
+  const { width: windowWidth, height: screenHeight } = useWindowDimensions();
+  const [measuredWidth, setMeasuredWidth] = useState<number | null>(null);
+
+  // Height is resolved to a NUMBER rather than expressed as aspectRatio +
+  // maxHeight. That combination looks equivalent but is not: when Yoga has a
+  // definite width and an aspectRatio, clamping the height with maxHeight makes
+  // it RE-DERIVE the width from the clamped height. The frame silently narrowed
+  // to `cap * aspect` and the media rendered as a left-aligned letterbox with a
+  // gutter down the right of the card -- the "broken image" seen on device. A
+  // numeric height leaves `width: '100%'` untouched, and `cover` trims the
+  // overflow exactly as intended.
+  const width = measuredWidth ?? windowWidth;
+  const height = resolveFrameRenderedHeight(variant, width, screenHeight);
 
   return (
     <View
-      style={[
-        styles.frame,
-        { aspectRatio: ACTIVITY_ART_ASPECT[variant], borderRadius: radius },
-        variant === 'hero' && { maxHeight: resolveHeroMaxHeight(screenHeight) },
-        // Card media is capped at the same ceiling as a Place/Event row, so a
-        // mixed feed shows several comparable cards rather than one tall
-        // Activity pushing everything else below the fold.
-        variant === 'card' && { maxHeight: CARD_MEDIA_MAX_HEIGHT },
-        style,
-      ]}
+      onLayout={(event) => {
+        const next = event.nativeEvent.layout.width;
+        // Guard the set: onLayout fires on every re-layout, and writing an
+        // unchanged value would loop.
+        setMeasuredWidth((current) => (current !== null && Math.abs(current - next) < 1 ? current : next));
+      }}
+      style={[styles.frame, { height, borderRadius: radius }, style]}
     >
       <View style={StyleSheet.absoluteFill}>{children}</View>
     </View>

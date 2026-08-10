@@ -69,3 +69,23 @@ export function resolveHeroRenderedHeight(width: number, screenHeight: number): 
 export function resolveCardRenderedHeight(width: number): number {
   return Math.min(resolveFrameHeight('card', width), CARD_MEDIA_MAX_HEIGHT);
 }
+
+/** The concrete height, in points, a frame renders at for any variant.
+ *
+ *  CoverFrame applies this as a NUMBER. It must never express the same thing
+ *  as `aspectRatio` + `maxHeight`: given a definite width and an aspectRatio,
+ *  Yoga responds to a clamped height by re-deriving the WIDTH from it, so the
+ *  frame narrows to `cap * aspect` and the media renders as a left-aligned
+ *  letterbox with a gutter beside it. That was the confirmed cause of the
+ *  broken card images on device. */
+export function resolveFrameRenderedHeight(
+  variant: ActivityArtVariant,
+  width: number,
+  screenHeight: number,
+): number {
+  const natural = resolveFrameHeight(variant, width);
+  if (variant === 'hero') return Math.min(natural, resolveHeroMaxHeight(screenHeight));
+  if (variant === 'card') return Math.min(natural, CARD_MEDIA_MAX_HEIGHT);
+  // Thumbs are already small and fixed-width; no ceiling applies.
+  return natural;
+}

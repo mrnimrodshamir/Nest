@@ -287,6 +287,30 @@ export function DiscoverScreen({ onOpenActivity, onOpenPlace, onOpenEvent, onHos
     // visibility change over data already cached.
   }, [contentSelection, selectedItem, t]);
 
+  /** The sheet's sticky header: the controls, the result count, and any
+   *  per-domain error banners.
+   *
+   *  It is the FlatList's ListHeaderComponent rather than a sibling of the
+   *  list, because the sheet renders exactly one content child (see the note
+   *  at the BottomSheet below). Opaque background: as a sticky header it sits
+   *  over the feed while scrolling and must not let cards show through. */
+  const DiscoverySheetHeader = () => (
+    <View style={styles.sheetHeader}>
+      <View style={styles.toolbarSticky}>
+        <ToolbarButton icon={MagnifyingGlass} label={t('discovery.search')} onPress={() => setSearchOpen(true)} />
+        <ToolbarButton icon={Funnel} label={activeFilterCount ? t('filters.withCount', { count: activeFilterCount }) : t('discovery.filters')} onPress={() => setFiltersOpen(true)} active={activeFilterCount > 0} />
+        <ToolbarButton icon={ArrowsDownUp} label={t('discovery.sort')} onPress={() => setSortOpen(true)} active={sort !== 'default'} />
+      </View>
+      <Text style={styles.sheetTitle}>{showSkeleton ? t('discovery.finding') : t(discoveryCountKey(contentSelection, visibleItems.length), { count: visibleItems.length })}</Text>
+      {!showSkeleton && visibleItems.length > 0 ? <Text style={styles.sheetSubtitle}>{t('discovery.swipeUp')}</Text> : null}
+      {/* One banner per FAILED domain only — the domains that loaded stay
+          listed below rather than being replaced by a full-screen error. */}
+      {showActivityError ? <QueryErrorBanner label={t('discovery.error.activities')} onRetry={activitiesQuery.refresh} /> : null}
+      {showPlaceError ? <QueryErrorBanner label={t('discovery.error.places')} onRetry={placesQuery.refresh} /> : null}
+      {showEventError ? <QueryErrorBanner label={t('discovery.error.events')} onRetry={eventsQuery.refresh} /> : null}
+    </View>
+  );
+
   /** Restores every filter to its default. Content selection returns to all
    *  three, which is always valid, so the keep-one-type rule cannot trip. */
   const resetAllFilters = useCallback(() => {
@@ -408,36 +432,31 @@ export function DiscoverScreen({ onOpenActivity, onOpenPlace, onOpenEvent, onHos
       </Pressable>
 
       <BottomSheet ref={sheetRef} index={SHEET_PEEK_INDEX} snapPoints={SNAP_POINTS} enableDynamicSizing={false} onChange={(index) => { sheetIndex.current = index; }} backgroundStyle={styles.sheetBackground} handleIndicatorStyle={styles.sheetHandle}>
-        {/* STICKY CONTROLS. In the sheet's fixed header rather than floating
-            over the map, so they stay reachable as the feed scrolls and at
-            every snap point — including 92%, where a map overlay would be
-            completely hidden. Purely presentational: no query, region or
-            selection state is touched here.
+        {/* ONE CHILD ONLY.
+            @gorhom/bottom-sheet renders `children` into a single container of
+            height `sheetHeight - handleHeight` with `overflow: hidden`, and its
+            supported shape is exactly one content element. This screen used to
+            pass five siblings — a header, three error banners and the list —
+            and the scrollable claimed the content area, so everything above it
+            was pushed outside the clipped box and never appeared. That is why
+            Search/Filters/Sort were missing on device even after the header was
+            changed from BottomSheetView to a plain View: the sibling structure,
+            not the component type, was the defect.
 
-            MUST be a plain View, never BottomSheetView. BottomSheetView
-            registers itself as the sheet's content container; as a sibling of
-            BottomSheetFlatList the list wins the content area and this header
-            collapses to zero height — the controls mount but render invisibly,
-            which is exactly how Search/Filters/Sort vanished on device. */}
-        <View style={styles.sheetHeader}>
-          <View style={styles.toolbarSticky}>
-            <ToolbarButton icon={MagnifyingGlass} label={t('discovery.search')} onPress={() => setSearchOpen(true)} />
-            <ToolbarButton icon={Funnel} label={activeFilterCount ? t('filters.withCount', { count: activeFilterCount }) : t('discovery.filters')} onPress={() => setFiltersOpen(true)} active={activeFilterCount > 0} />
-            <ToolbarButton icon={ArrowsDownUp} label={t('discovery.sort')} onPress={() => setSortOpen(true)} active={sort !== 'default'} />
-          </View>
-          <Text style={styles.sheetTitle}>{showSkeleton ? t('discovery.finding') : t(discoveryCountKey(contentSelection, visibleItems.length), { count: visibleItems.length })}</Text>
-          {!showSkeleton && visibleItems.length > 0 ? <Text style={styles.sheetSubtitle}>{t('discovery.swipeUp')}</Text> : null}
-        </View>
-        {/* One banner per FAILED domain only — the domains that loaded stay
-            listed below rather than being replaced by a full-screen error. */}
-        {showActivityError ? <QueryErrorBanner label={t('discovery.error.activities')} onRetry={activitiesQuery.refresh} /> : null}
-        {showPlaceError ? <QueryErrorBanner label={t('discovery.error.places')} onRetry={placesQuery.refresh} /> : null}
-        {showEventError ? <QueryErrorBanner label={t('discovery.error.events')} onRetry={eventsQuery.refresh} /> : null}
+            The toolbar is now the list's own sticky header, so there is one
+            child, the controls survive every snap point, and they stay pinned
+            while the feed scrolls. Purely presentational: no query, region or
+            selection state is touched here. */}
         {showSkeleton ? (
-          <View style={styles.listContent}>{[0, 1, 2].map((index) => <View key={index} style={styles.feedItem}><SkeletonCard /></View>)}</View>
+          <View style={styles.listContent}>
+            <DiscoverySheetHeader />
+            {[0, 1, 2].map((index) => <View key={index} style={styles.feedItem}><SkeletonCard /></View>)}
+          </View>
         ) : (
           <BottomSheetFlatList
             ref={listRef}
+            ListHeaderComponent={<DiscoverySheetHeader />}
+            stickyHeaderIndices={[0]}
             data={listItems}
             keyExtractor={discoveryItemKey}
             renderItem={({ item }: { item: DiscoveryItem }) => <View style={styles.feedItem}>{item.type === 'activity'
@@ -557,7 +576,8 @@ const styles = StyleSheet.create({
   fab: { position: 'absolute', right: spacing.lg, bottom: '24%', width: 54, height: 54, borderRadius: 27, backgroundColor: theme.brand.primary, alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOpacity: 0.25, shadowRadius: 5, elevation: 5 },
   sheetBackground: { backgroundColor: theme.background.app },
   sheetHandle: { backgroundColor: theme.border.strong },
-  sheetHeader: { paddingHorizontal: spacing.lg, paddingBottom: spacing.sm },
+  // Opaque, because this is a sticky header scrolling over the feed.
+  sheetHeader: { paddingHorizontal: spacing.lg, paddingBottom: spacing.sm, backgroundColor: theme.background.app },
   // Compact by design: one row, no wrapping, so it costs little of the sheet's
   // vertical space at the 22% peek snap point.
   toolbarSticky: { flexDirection: 'row', gap: spacing.sm, paddingBottom: spacing.sm },
