@@ -32,3 +32,7 @@ scripts/_tmp_*
 
 # Supabase CLI local link/cache metadata
 supabase/.temp/
+
+# Python bytecode from the film pipeline
+__pycache__/
+*.pyc

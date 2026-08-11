@@ -6,7 +6,11 @@ export const en = {
   // --- Language selector -------------------------------------------------
   'language.title': 'Language',
   'language.english': 'English',
+  // Each language is named in its OWN script, so a speaker can find their
+  // language without already reading the current one.
   'language.hebrew': 'עברית',
+  'language.french': 'Français',
+  'language.russian': 'Русский',
   'language.system': 'Match device',
   'language.systemHint': 'Follow your device language',
   'language.restartHint': 'Restart NestUp to finish switching the layout direction.',

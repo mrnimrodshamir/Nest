@@ -1,3 +1,5 @@
+import { activeDateLocale } from '@/i18n/core';
+
 /** "11 hours ago" / "Yesterday" / "3 days ago" / "Jun 12" — how a past
  *  activity's timing reads in Chats' Past section. Deliberately distinct
  *  from formatStartTime (which is future-oriented: "In 2 hours", "Today
@@ -19,5 +21,5 @@ export function formatPastRelativeTime(iso: string, now: Date = new Date()): str
   const diffDays = Math.floor(diffHours / 24);
   if (diffDays < 7) return `${diffDays} ${diffDays === 1 ? 'day' : 'days'} ago`;
 
-  return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  return date.toLocaleDateString(activeDateLocale(), { month: 'short', day: 'numeric' });
 }

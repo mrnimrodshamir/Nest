@@ -7,6 +7,7 @@ import {
   coerceLocalePreference,
   isRtlLocale,
   resolveLocale,
+  setActiveDateLocale,
   translate,
   type AppLocale,
   type LocalePreference,
@@ -62,6 +63,11 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
 
   const locale = useMemo(() => resolveLocale(deviceTags, preference), [deviceTags, preference]);
   const isRTL = isRtlLocale(locale);
+
+  // Set synchronously during render, not in an effect: the date formatters are
+  // called by children on this same pass, and an effect would leave the first
+  // render formatting dates in the previous language.
+  setActiveDateLocale(locale);
 
   useEffect(() => {
     // Allow RTL always; force it to match the resolved locale. Both are no-ops

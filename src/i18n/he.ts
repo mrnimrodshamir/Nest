@@ -8,6 +8,8 @@ export const he: Dictionary = {
   'language.title': 'שפה',
   'language.english': 'English',
   'language.hebrew': 'עברית',
+  'language.french': 'Français',
+  'language.russian': 'Русский',
   'language.system': 'לפי המכשיר',
   'language.systemHint': 'השתמש בשפת המכשיר',
   'language.restartHint': 'הפעילו מחדש את NestUp כדי להשלים את שינוי כיוון התצוגה.',

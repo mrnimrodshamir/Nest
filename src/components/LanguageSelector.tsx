@@ -7,25 +7,30 @@ import type { AppLocale } from '@/i18n';
 
 /** Language choice, shown in Profile.
  *
- *  A two-option segmented control. Each option is labelled in its OWN script —
- *  someone who has landed in the wrong language must be able to find their way
- *  out without reading the language they can't read.
+ *  A 2x2 GRID, not a four-across row. "Français" and "Русский" are long enough
+ *  that four segments on a 375pt screen leave roughly 80pt each, which either
+ *  truncates the label or — worse, and seen on device before — wraps it one
+ *  character per line. Two columns give every label ~160pt, which fits all four
+ *  comfortably in every language.
  *
- *  LAYOUT: each option is `flex: 1` inside a fixed-width row, and every label is
- *  `numberOfLines={1}`. The previous version nested a `flex: 1` column inside a
- *  row that could collapse to zero width, which made Text wrap at every
- *  character — the "C / h / d / ev / ic / e" column seen on device. A single
- *  flex level plus a hard line cap makes that impossible.
+ *  Each option is labelled in its OWN script. Someone who has landed in a
+ *  language they cannot read must be able to find their way out without reading
+ *  it, so 'Русский' is never rendered as 'Russian'.
+ *
+ *  LAYOUT RULES that keep the earlier bug dead: every cell is a fixed 48%
+ *  width — not a nested flex that can collapse to zero — and every label is
+ *  `numberOfLines={1}`. Vertical letter-stacking is structurally impossible.
  *
  *  There is deliberately no "Match device" option. English is the default for
- *  everyone; Hebrew is an explicit choice. Exposing device-locale mechanics is
- *  developer-facing and was the source of the broken label. */
+ *  everyone; every other language is an explicit choice. */
 export function LanguageSelector() {
   const { t, locale, setPreference, needsRestart } = useI18n();
 
   const options: Array<{ key: AppLocale; label: string }> = [
     { key: 'en', label: t('language.english') },
     { key: 'he', label: t('language.hebrew') },
+    { key: 'fr', label: t('language.french') },
+    { key: 'ru', label: t('language.russian') },
   ];
 
   return (
@@ -35,13 +40,13 @@ export function LanguageSelector() {
         <Text style={styles.sectionHeaderLabel}>{t('language.title')}</Text>
       </View>
 
-      <View style={styles.segmented} accessibilityRole="radiogroup">
+      <View style={styles.grid} accessibilityRole="radiogroup">
         {options.map((option) => {
           const selected = locale === option.key;
           return (
             <Pressable
               key={option.key}
-              style={[styles.segment, selected && styles.segmentSelected]}
+              style={[styles.cell, selected && styles.cellSelected]}
               onPress={() => setPreference(option.key)}
               accessibilityRole="radio"
               accessibilityState={{ checked: selected }}
@@ -49,7 +54,7 @@ export function LanguageSelector() {
             >
               {selected ? <Check size={15} color={theme.brand.primary} weight="bold" /> : null}
               <Text
-                style={[styles.segmentLabel, selected && styles.segmentLabelSelected]}
+                style={[styles.cellLabel, selected && styles.cellLabelSelected]}
                 numberOfLines={1}
               >
                 {option.label}
@@ -73,17 +78,21 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
   },
   sectionHeaderLabel: { ...typography.footnote, color: theme.text.secondary },
-  segmented: {
+  grid: {
     flexDirection: 'row',
-    // Full width so the two flex children always have real space to divide.
+    flexWrap: 'wrap',
+    // Full width so the percentage-width cells resolve against real space.
     alignSelf: 'stretch',
     padding: 3,
     borderRadius: radius.md,
     backgroundColor: theme.background.app,
     gap: 3,
   },
-  segment: {
-    flex: 1,
+  cell: {
+    // A fixed share of the row rather than `flex: 1`: a percentage cannot
+    // collapse to zero width the way a nested flex child can, and zero width is
+    // what made labels wrap one character per line.
+    width: '48%',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -93,13 +102,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.sm,
     borderRadius: radius.sm,
   },
-  segmentSelected: {
+  cellSelected: {
     backgroundColor: theme.background.surface,
     borderWidth: 1,
     borderColor: theme.brand.primary,
   },
-  segmentLabel: { ...typography.bodyMedium, color: theme.text.secondary },
-  segmentLabelSelected: { color: theme.text.primary, fontWeight: '700' },
+  cellLabel: { ...typography.bodyMedium, color: theme.text.secondary },
+  cellLabelSelected: { color: theme.text.primary, fontWeight: '700' },
   restartNote: {
     ...typography.caption,
     color: theme.text.muted,

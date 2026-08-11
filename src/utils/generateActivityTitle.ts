@@ -1,3 +1,5 @@
+import { activeDateLocale } from '@/i18n/core';
+
 import { CATEGORY_LABELS } from '../types/activity';
 import type { ActivityCategory } from '../types/activity';
 
@@ -10,7 +12,7 @@ export function relativeDayWord(date: Date, now: Date = new Date()): string {
   const tomorrow = new Date(now.getTime() + 86400000);
   if (date.toDateString() === tomorrow.toDateString()) return 'Tomorrow';
 
-  return date.toLocaleDateString(undefined, { weekday: 'long' });
+  return date.toLocaleDateString(activeDateLocale(), { weekday: 'long' });
 }
 
 /** '' / ' tomorrow' / ' on Friday' — a natural-sentence fragment, not a

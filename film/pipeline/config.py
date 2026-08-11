@@ -135,7 +135,9 @@ class Shot:
     audio: str = ""
 
     def full_prompt(self) -> str:
-        cast = " ".join(CHARACTERS[k].description for k in self.characters)
+        # Joined with a separator: run together, two descriptions read as one
+        # impossible person and the model blends them into a single face.
+        cast = "; ".join(CHARACTERS[k].description for k in self.characters)
         parts = [self.prompt]
         if cast:
             parts.append(f"The people in shot: {cast}. Their appearance must not change.")

@@ -1,3 +1,5 @@
+import { activeDateLocale } from '@/i18n/core';
+
 /** Short, chat-inbox-style relative timestamp: "2m", "3h", "Tue", "Mar 4". */
 export function formatRelativeTime(iso: string): string {
   const date = new Date(iso);
@@ -11,6 +13,6 @@ export function formatRelativeTime(iso: string): string {
   if (diffHours < 24 && date.toDateString() === now.toDateString()) return `${diffHours}h`;
 
   const diffDays = Math.floor(diffHours / 24);
-  if (diffDays < 7) return date.toLocaleDateString('en-US', { weekday: 'short' });
-  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  if (diffDays < 7) return date.toLocaleDateString(activeDateLocale(), { weekday: 'short' });
+  return date.toLocaleDateString(activeDateLocale(), { month: 'short', day: 'numeric' });
 }

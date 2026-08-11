@@ -1,3 +1,5 @@
+import { activeDateLocale } from '@/i18n/core';
+
 /**
  * Formats an activity start time the way a person would say it out loud —
  * urgency-forward for anything happening within the next 24h, calendar-style
@@ -21,10 +23,10 @@ export function formatStartTime(iso: string, now: Date = new Date()): string {
     : start.toDateString() ===
         new Date(now.getTime() + 86400000).toDateString()
       ? 'Tomorrow'
-      : start.toLocaleDateString(undefined, { weekday: 'short' });
+      : start.toLocaleDateString(activeDateLocale(), { weekday: 'short' });
 
   const timeLabel = start
-    .toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })
+    .toLocaleTimeString(activeDateLocale(), { hour: 'numeric', minute: '2-digit' })
     .toLowerCase()
     .replace(' ', '');
 

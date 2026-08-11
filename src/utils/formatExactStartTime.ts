@@ -1,3 +1,5 @@
+import { activeDateLocale } from '@/i18n/core';
+
 /** The exact start time a parent can actually plan around, with relative
  *  context alongside it rather than instead of it — "In 2 hours" alone
  *  forces a mental-math round trip every time the screen re-renders.
@@ -6,7 +8,7 @@
  *  never ambiguous between "9:00" meaning morning or evening. */
 export function formatExactStartTime(iso: string, now: Date = new Date()): string {
   const start = new Date(iso);
-  const timeLabel = start.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+  const timeLabel = start.toLocaleTimeString(activeDateLocale(), { hour: 'numeric', minute: '2-digit' });
   const isSameDay = start.toDateString() === now.toDateString();
 
   if (isSameDay) {
@@ -24,6 +26,6 @@ export function formatExactStartTime(iso: string, now: Date = new Date()): strin
     return `Tomorrow at ${timeLabel}`;
   }
 
-  const dateLabel = start.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+  const dateLabel = start.toLocaleDateString(activeDateLocale(), { weekday: 'short', month: 'short', day: 'numeric' });
   return `${dateLabel} at ${timeLabel}`;
 }

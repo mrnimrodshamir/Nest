@@ -42,7 +42,7 @@ test('no Hebrew value is left as an untranslated English string', () => {
   // language.* name each language in its own script; chats.happenedOn is a
   // pure placeholder pattern with no words to translate.
   const allowed = new Set([
-    'language.english', 'language.hebrew',
+    'language.english', 'language.hebrew', 'language.french', 'language.russian',
     // Pure format patterns with no words to translate.
     'chats.happenedOn', 'event.attendance.overflow',
   ]);
@@ -63,8 +63,10 @@ test('a key missing from Hebrew falls back to English, never to a raw key', () =
 });
 
 test('an unknown locale falls back to English rather than throwing', () => {
+  // `de` is deliberately not shipped — this is the shape of a corrupt stored
+  // value, not a language we support. (It used to be `fr`, which now ships.)
   // @ts-expect-error deliberately invalid locale, as could arrive from storage
-  assert.equal(translate('fr', 'nav.chats'), 'Chats');
+  assert.equal(translate('de', 'nav.chats'), 'Chats');
 });
 
 // --- Locale detection ------------------------------------------------------
@@ -80,7 +82,9 @@ test('accepts the legacy "iw" code Android still emits for Hebrew', () => {
 });
 
 test('unsupported languages return null so the caller can fall back', () => {
-  assert.equal(normalizeLanguageTag('fr-FR'), null);
+  // German and Spanish are not shipped; French and Russian now are.
+  assert.equal(normalizeLanguageTag('de-DE'), null);
+  assert.equal(normalizeLanguageTag('es-ES'), null);
   assert.equal(normalizeLanguageTag(''), null);
   assert.equal(normalizeLanguageTag(null), null);
 });
