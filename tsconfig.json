@@ -3,6 +3,10 @@
   "compilerOptions": {
     "strict": true,
     "ignoreDeprecations": "6.0",
+    // The DigiTel connector is shared with the Supabase Edge Function, and Deno
+    // requires explicit .ts extensions on relative imports. Safe here because we
+    // only ever run `tsc --noEmit`; Metro resolves the extension fine.
+    "allowImportingTsExtensions": true,
     "baseUrl": ".",
     "paths": {
       "@/*": [
