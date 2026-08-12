@@ -9,34 +9,75 @@ export const EVENT_OCCURRENCE_COLUMNS = 'id,event_id,provider_occurrence_id,occu
 const DISCOVERY_EVENT_LIMIT = 200;
 const DISCOVERY_HORIZON_DAYS = 90;
 
+/** The database view that already excludes finished, cancelled and archived
+ *  occurrences. Reading from it means the row limit is spent on events a parent
+ *  can actually attend.
+ *
+ *  Selecting events first and discarding finished occurrences afterwards — the
+ *  previous shape — looks equivalent and is not: dead events still consume the
+ *  200-row budget. With a scheduler appending occurrences every six hours, the
+ *  accumulated finished ones would eventually fill the limit and Discovery would
+ *  quietly go empty while the table was full. Filtering must precede the limit,
+ *  which means it belongs in the database. */
+const ACTIVE_EVENTS_VIEW = 'active_event_occurrences';
+
 export async function queryDiscoveryEvents(viewport: PlaceViewport, now = new Date()): Promise<EventDetails[]> {
   validateViewport(viewport);
-  const { data: eventData, error: eventError } = await supabase
-    .from('events')
-    .select(EVENT_COLUMNS)
-    .eq('publication_status', 'published')
-    .eq('verification_status', 'verified')
+  const horizonEnd = new Date(startOfLocalDay(now).getTime() + DISCOVERY_HORIZON_DAYS * 24 * 60 * 60 * 1_000);
+  const { data, error } = await supabase
+    .from(ACTIVE_EVENTS_VIEW)
+    .select('*')
     .gte('latitude', viewport.south)
     .lte('latitude', viewport.north)
     .gte('longitude', viewport.west)
     .lte('longitude', viewport.east)
+    .lt('starts_at', horizonEnd.toISOString())
+    .order('starts_at', { ascending: true })
     .limit(DISCOVERY_EVENT_LIMIT);
-  if (eventError) throw new Error(eventError.message);
-  const eventRows = (eventData ?? []) as unknown as EventRow[];
-  return loadOccurrences(eventRows, now, DISCOVERY_HORIZON_DAYS);
+  if (error) throw new Error(error.message);
+  return mapActiveRows(data ?? [], now);
 }
 
 export async function queryEventsAtPlace(placeId: string, now = new Date()): Promise<EventDetails[]> {
   if (!placeId.trim()) return [];
+  const horizonEnd = new Date(startOfLocalDay(now).getTime() + DISCOVERY_HORIZON_DAYS * 24 * 60 * 60 * 1_000);
   const { data, error } = await supabase
-    .from('events')
-    .select(EVENT_COLUMNS)
+    .from(ACTIVE_EVENTS_VIEW)
+    .select('*')
     .eq('place_id', placeId)
-    .eq('publication_status', 'published')
-    .eq('verification_status', 'verified')
+    .lt('starts_at', horizonEnd.toISOString())
+    .order('starts_at', { ascending: true })
     .limit(DISCOVERY_EVENT_LIMIT);
   if (error) throw new Error(error.message);
-  return loadOccurrences((data ?? []) as unknown as EventRow[], now, DISCOVERY_HORIZON_DAYS);
+  return mapActiveRows(data ?? [], now);
+}
+
+/** Splits a joined view row back into the event and occurrence shapes the
+ *  existing mapper expects, so no presentation logic changes. */
+function mapActiveRows(rows: readonly unknown[], now: Date): EventDetails[] {
+  return rows.flatMap((raw) => {
+    const row = raw as Record<string, unknown>;
+    const occurrence = {
+      id: row.occurrence_id,
+      event_id: row.event_id,
+      provider_occurrence_id: row.provider_occurrence_id,
+      occurrence_fingerprint: row.occurrence_fingerprint,
+      starts_at: row.starts_at,
+      ends_at: row.ends_at,
+      original_starts_at: row.original_starts_at,
+      occurrence_status: row.occurrence_status,
+      cancellation_reason: row.occurrence_cancellation_reason,
+      source_updated_at: row.occurrence_source_updated_at,
+      provider_metadata: row.occurrence_provider_metadata,
+    } as unknown as EventOccurrenceRow;
+    const details = mapEventDetails({ ...row, id: row.event_id } as unknown as EventRow, occurrence, now);
+    // The view already excludes finished occurrences, but `now` here is the
+    // client's clock and the view used the database's. Keep the guard so a
+    // skewed device cannot surface an event that has just ended.
+    return details.lifecycle === 'finished' ? [] : [details];
+  }).sort((left, right) =>
+    Date.parse(left.occurrence.startsAt) - Date.parse(right.occurrence.startsAt)
+    || left.occurrence.id.localeCompare(right.occurrence.id));
 }
 
 export async function getEventDetails(occurrenceId: string, now = new Date()): Promise<EventDetails> {
