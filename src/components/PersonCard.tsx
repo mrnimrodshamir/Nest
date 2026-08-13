@@ -59,7 +59,13 @@ export function PersonCard({
 
   if (size === 'hero') {
     return (
-      <Pressable onPress={onPress} disabled={!onPress} style={styles.heroContainer}>
+      <Pressable
+        onPress={onPress}
+        disabled={!onPress}
+        accessibilityLabel={accessibilityLabel}
+        accessibilityRole={onPress ? 'button' : undefined}
+        style={styles.heroContainer}
+      >
         <View style={styles.heroAvatar}>
           {avatarUrl ? (
             <Image source={{ uri: avatarUrl }} style={StyleSheet.absoluteFill} />
@@ -80,6 +86,7 @@ export function PersonCard({
     <Pressable
       onPress={onPress}
       disabled={!onPress}
+      accessibilityLabel={accessibilityLabel}
       accessibilityRole={onPress ? 'button' : undefined}
       style={styles.rowContainer}
     >

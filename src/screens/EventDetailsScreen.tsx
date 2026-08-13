@@ -21,6 +21,7 @@ import { useI18n, textAlignForContent } from '@/i18n';
 import { useEventRsvp } from '@/hooks/useEventRsvp';
 import { rsvpPresentation, attendanceSummaryKey, attendeePreview } from '@/utils/eventAttendance';
 import { PersonCard } from '@/components/PersonCard';
+import { EventAttendeesSheet } from '@/components/EventAttendeesSheet';
 
 interface EventDetailsScreenProps {
   event: EventDetails;
@@ -36,6 +37,7 @@ export function EventDetailsScreen({ event, onBack, onOpenProfile }: EventDetail
   const content = useMemo(() => buildEventDetailsPresentation(event), [event]);
   const { t, locale, isRTL } = useI18n();
   const [showCalendar, setShowCalendar] = useState(false);
+  const [showAttendees, setShowAttendees] = useState(false);
   const { isGoing, attendees, attendeeCount, isSaving, toggle } = useEventRsvp(event.occurrence.id);
   const rsvp = rsvpPresentation({ isGoing, attendeeCount, lifecycle: event.lifecycle });
   const attendanceSummary = attendanceSummaryKey(attendeeCount);
@@ -95,23 +97,24 @@ export function EventDetailsScreen({ event, onBack, onOpenProfile }: EventDetail
         {attendanceSummary ? (
           <View style={styles.attendanceBlock}>
             <Text style={styles.sectionTitle}>{t('event.attendance.title')}</Text>
+            <Pressable
+              onPress={() => setShowAttendees(true)}
+              accessibilityRole="button"
+              accessibilityLabel={t('event.attendance.openList', { count: attendeeCount })}
+              style={styles.attendanceTap}
+            >
             <Text style={styles.attendanceCount}>{t(attendanceSummary.key, attendanceSummary.params)}</Text>
-            <View style={styles.avatarRow}>
+            <View style={styles.avatarRow} pointerEvents="none">
               {preview.shown.map((attendee) => (
-                <Pressable
-                  key={attendee.userId}
-                  onPress={() => onOpenProfile?.(attendee.userId)}
-                  accessibilityRole="button"
-                  accessibilityLabel={attendee.displayName}
-                  style={styles.avatarTap}
-                >
+                <View key={attendee.userId} style={styles.avatarTap}>
                   <PersonCard size="compact" name={attendee.displayName} avatarUrl={attendee.avatarUrl} />
-                </Pressable>
+                </View>
               ))}
               {preview.overflow > 0 ? (
                 <Text style={styles.overflow}>{t('event.attendance.overflow', { count: preview.overflow })}</Text>
               ) : null}
             </View>
+            </Pressable>
           </View>
         ) : null}
 
@@ -134,6 +137,7 @@ export function EventDetailsScreen({ event, onBack, onOpenProfile }: EventDetail
         {content.sourceLabel ? <View style={styles.source}><Text style={styles.sourceText}>{content.sourceLabel}</Text>{content.sourceUrl ? <ExternalLink label={t('event.viewSource')} url={content.sourceUrl} /> : null}</View> : null}
       </ScrollView>
       <AddEventToCalendarSheet visible={showCalendar} event={calendarEvent} onDismiss={() => setShowCalendar(false)} />
+      <EventAttendeesSheet visible={showAttendees} attendees={attendees} onDismiss={() => setShowAttendees(false)} onOpenProfile={onOpenProfile} />
     </SafeAreaView>
   );
 }
@@ -158,6 +162,7 @@ const styles = StyleSheet.create({
   flipped: { transform: [{ scaleX: -1 }] },
   attendanceBlock: { paddingVertical: spacing.sm, gap: spacing.xs },
   attendanceCount: { ...typography.subhead, color: theme.text.secondary },
+  attendanceTap: { minHeight: 44, justifyContent: 'center' },
   // Wraps rather than scrolls, so a long attendee list cannot push the row
   // off a small screen.
   avatarRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: spacing.xs, marginTop: spacing.xs },

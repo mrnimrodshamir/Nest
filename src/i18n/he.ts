@@ -198,6 +198,8 @@ export const he: Dictionary = {
   'event.attendance.cardGoing': '{count} מגיעים',
   'event.attendance.overflow': '+{count}',
   'event.attendance.title': 'מי מגיע',
+  'event.attendance.openList': 'הצגת {count} ההורים מ-NestUp שמגיעים',
+  'event.attendance.openProfile': 'פתיחת הפרופיל של {name}',
   'event.recurring': 'חוזר',
 
   'activity.capacity.spotsLeft': 'נותרו {count} מקומות',

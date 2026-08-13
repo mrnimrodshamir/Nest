@@ -213,6 +213,8 @@ export const ru: Dictionary = {
   'event.attendance.cardGoing': 'Идут: {count}',
   'event.attendance.overflow': '+{count}',
   'event.attendance.title': 'Кто идёт',
+  'event.attendance.openList': 'Посмотреть родителей NestUp, которые идут: {count}',
+  'event.attendance.openProfile': 'Открыть профиль: {name}',
   'event.recurring': 'Регулярное',
 
   'activity.capacity.spotsLeft': 'Свободных мест: {count}',
