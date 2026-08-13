@@ -15,6 +15,7 @@ interface ParentBirthdateFieldProps {
   /** ISO date (YYYY-MM-DD), or null when the parent has not set one. */
   value: string | null;
   onChange: (isoDate: string | null) => void;
+  optional?: boolean;
 }
 
 function toIsoDate(date: Date): string {
@@ -32,7 +33,7 @@ function toIsoDate(date: Date): string {
  *  adult. Only the derived whole-year age is ever published — see parentAge.ts
  *  for why the date itself stays private.
  */
-export function ParentBirthdateField({ value, onChange }: ParentBirthdateFieldProps) {
+export function ParentBirthdateField({ value, onChange, optional = true }: ParentBirthdateFieldProps) {
   const { t } = useI18n();
   const [showPicker, setShowPicker] = useState(false);
 
@@ -53,7 +54,7 @@ export function ParentBirthdateField({ value, onChange }: ParentBirthdateFieldPr
     <View style={styles.container}>
       <View style={styles.labelRow}>
         <Text style={styles.label}>{t('profile.birthdate.label')}</Text>
-        <Text style={styles.optional}>{t('common.optional')}</Text>
+        {optional ? <Text style={styles.optional}>{t('common.optional')}</Text> : null}
       </View>
 
       <Pressable

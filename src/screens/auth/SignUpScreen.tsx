@@ -22,23 +22,23 @@ import { isValidEmail, isValidPassword, isNonEmpty } from '@/utils/validation';
 import { useAuth, type RegistrationStage } from '@/hooks/useAuth';
 import { useFormDraft } from '@/hooks/useFormDraft';
 import { APP_NAME } from '@/constants/brand';
+import { AvatarPicker } from '@/components/AvatarPicker';
+import { FamilyProfileFields, type FamilyProfileDraft } from '@/components/FamilyProfileFields';
+import { useI18n } from '@/i18n';
 
 interface SignUpScreenProps {
   onBack: () => void;
 }
 
 interface DraftFields {
-  fullName: string;
+  familyProfile: FamilyProfileDraft;
   email: string;
   children: OnboardingChild[];
 }
 
 const EMPTY_CHILD: OnboardingChild = { name: '', birthdate: null };
-
-const STAGE_LABELS: Record<RegistrationStage, string> = {
-  'creating-account': 'Creating your account…',
-  'uploading-photo': 'Uploading your photo…',
-  'saving-profile': 'Almost done…',
+const EMPTY_PROFILE: FamilyProfileDraft = {
+  displayName: '', parentRole: null, birthdate: null, neighborhood: '', occupation: '', bio: '',
 };
 
 /** One continuous screen — the minimum needed to start discovering: name,
@@ -47,12 +47,14 @@ const STAGE_LABELS: Record<RegistrationStage, string> = {
 export function SignUpScreen({ onBack }: SignUpScreenProps) {
   const { register } = useAuth();
   const { initialDraft, save, clear } = useFormDraft<DraftFields>('signup');
+  const { t, isRTL } = useI18n();
 
-  const [fullName, setFullName] = useState('');
+  const [familyProfile, setFamilyProfile] = useState<FamilyProfileDraft>(EMPTY_PROFILE);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [children, setChildren] = useState<OnboardingChild[]>([EMPTY_CHILD]);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [photoUri, setPhotoUri] = useState<string | null>(null);
 
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [childErrors, setChildErrors] = useState<Array<{ name?: string; birthdate?: string }>>([]);
@@ -70,28 +72,31 @@ export function SignUpScreen({ onBack }: SignUpScreenProps) {
   // Restore a draft left behind by a closed app or dropped connection.
   useEffect(() => {
     if (!initialDraft) return;
-    setFullName(initialDraft.fullName);
+    if (initialDraft.familyProfile) setFamilyProfile(initialDraft.familyProfile);
     setEmail(initialDraft.email);
     if (initialDraft.children?.length) setChildren(initialDraft.children);
   }, [initialDraft]);
 
   useEffect(() => {
-    save({ fullName, email, children });
-  }, [fullName, email, children, save]);
+    save({ familyProfile, email, children });
+  }, [familyProfile, email, children, save]);
 
   const handleSubmit = async () => {
     if (inFlightRef.current) return; // synchronous — checked before any state/render
     const errors: Record<string, string> = {};
-    if (!isNonEmpty(fullName)) errors.fullName = 'Enter your name';
-    if (!isValidEmail(email)) errors.email = 'Enter a valid email address';
-    if (!isValidPassword(password)) errors.password = 'Password must be at least 8 characters';
+    if (!isNonEmpty(familyProfile.displayName)) errors.displayName = t('onboarding.nameRequired');
+    if (!familyProfile.parentRole) errors.parentRole = t('onboarding.roleRequired');
+    if (!familyProfile.birthdate) errors.birthdate = t('onboarding.birthdateRequired');
+    if (!isNonEmpty(familyProfile.neighborhood)) errors.neighborhood = t('onboarding.areaRequired');
+    if (!isValidEmail(email)) errors.email = t('onboarding.emailInvalid');
+    if (!isValidPassword(password)) errors.password = t('onboarding.passwordInvalid');
     const perChild = children.map((child) => {
       const e: { name?: string; birthdate?: string } = {};
-      if (!isNonEmpty(child.name)) e.name = "Enter your child's name";
-      if (!child.birthdate) e.birthdate = "Select your child's date of birth";
+      if (!isNonEmpty(child.name)) e.name = t('onboarding.childNameRequired');
+      if (!child.birthdate) e.birthdate = t('onboarding.childBirthdateRequired');
       return e;
     });
-    if (!acceptedTerms) errors.terms = 'Please accept the Terms and Privacy Policy to continue';
+    if (!acceptedTerms) errors.terms = t('onboarding.acceptTermsRequired');
     setFieldErrors(errors);
     setChildErrors(perChild);
     if (Object.keys(errors).length > 0 || perChild.some((e) => e.name || e.birthdate)) return;
@@ -102,10 +107,16 @@ export function SignUpScreen({ onBack }: SignUpScreenProps) {
     try {
       const result = await register(
         {
-          fullName: fullName.trim(),
+          fullName: familyProfile.displayName.trim(),
           email: email.trim(),
           password,
           children: children.map((child) => ({ name: child.name.trim(), birthdate: child.birthdate! })),
+          photoUri,
+          parentRole: familyProfile.parentRole,
+          birthdate: familyProfile.birthdate,
+          neighborhood: familyProfile.neighborhood.trim(),
+          occupation: familyProfile.occupation,
+          bio: familyProfile.bio,
         },
         setStage,
       );
@@ -129,30 +140,20 @@ export function SignUpScreen({ onBack }: SignUpScreenProps) {
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-          <Pressable onPress={onBack} style={styles.backButton} accessibilityLabel="Back">
-            <ArrowLeft size={20} color={theme.text.primary} />
+          <Pressable onPress={onBack} style={styles.backButton} accessibilityLabel={t('common.back')}>
+            <ArrowLeft size={20} color={theme.text.primary} style={isRTL ? styles.flipped : undefined} />
           </Pressable>
 
-          <Text style={styles.title}>Create your account</Text>
-          <Text style={styles.subtitle}>Just enough to get you discovering activities nearby.</Text>
+          <Text style={styles.title}>{t('onboarding.profileTitle')}</Text>
+          <Text style={styles.subtitle}>{t('onboarding.profileSubtitle')}</Text>
 
           <View style={styles.form}>
-            <FormField
-              label="Your name"
-              placeholder="Your name"
-              value={fullName}
-              onChangeText={setFullName}
-              autoCapitalize="words"
-              textContentType="name"
-              autoComplete="name"
-              returnKeyType="next"
-              onSubmitEditing={() => emailRef.current?.focus()}
-              error={fieldErrors.fullName}
-            />
+            <AvatarPicker uri={photoUri} onChange={setPhotoUri} />
+            <FamilyProfileFields value={familyProfile} onChange={setFamilyProfile} errors={fieldErrors} />
             <FormField
               ref={emailRef}
-              label="Email"
-              placeholder="you@example.com"
+              label={t('onboarding.email')}
+              placeholder={t('onboarding.emailPlaceholder')}
               value={email}
               onChangeText={setEmail}
               autoCapitalize="none"
@@ -166,8 +167,8 @@ export function SignUpScreen({ onBack }: SignUpScreenProps) {
             />
             <FormField
               ref={passwordRef}
-              label="Password"
-              placeholder="At least 8 characters"
+              label={t('onboarding.password')}
+              placeholder={t('onboarding.passwordPlaceholder')}
               value={password}
               onChangeText={setPassword}
               isPassword
@@ -180,13 +181,13 @@ export function SignUpScreen({ onBack }: SignUpScreenProps) {
             <OnboardingChildrenEditor children={children} onChange={setChildren} errors={childErrors} />
 
             <Checkbox checked={acceptedTerms} onToggle={() => setAcceptedTerms((v) => !v)}>
-              I agree to {APP_NAME}'s{' '}
+              {t('onboarding.agreePrefix', { appName: APP_NAME })}{' '}
               <Text style={styles.legalLink} onPress={() => Linking.openURL(LEGAL_URLS.terms)}>
-                Terms of Service
+                {t('profile.terms')}
               </Text>{' '}
-              and{' '}
+              {t('onboarding.and')}{' '}
               <Text style={styles.legalLink} onPress={() => Linking.openURL(LEGAL_URLS.privacy)}>
-                Privacy Policy
+                {t('profile.privacy')}
               </Text>
             </Checkbox>
             {fieldErrors.terms && <Text style={styles.termsError}>{fieldErrors.terms}</Text>}
@@ -194,7 +195,7 @@ export function SignUpScreen({ onBack }: SignUpScreenProps) {
             {formError && <Text style={styles.formError}>{formError}</Text>}
 
             <StaticPrimaryButton
-              label={isSubmitting ? (stage ? STAGE_LABELS[stage] : 'Please wait…') : 'Create account'}
+              label={isSubmitting ? stageLabel(stage, t) : t('onboarding.createAccount')}
               onPress={handleSubmit}
               loading={isSubmitting}
             />
@@ -203,6 +204,13 @@ export function SignUpScreen({ onBack }: SignUpScreenProps) {
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
+}
+
+function stageLabel(stage: RegistrationStage | null, t: ReturnType<typeof useI18n>['t']): string {
+  if (stage === 'creating-account') return t('onboarding.stage.create');
+  if (stage === 'uploading-photo') return t('onboarding.stage.photo');
+  if (stage === 'saving-profile') return t('onboarding.stage.save');
+  return t('onboarding.wait');
 }
 
 const styles = StyleSheet.create({
@@ -218,6 +226,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: spacing.xl,
   },
+  flipped: { transform: [{ scaleX: -1 }] },
   title: { ...typography.title1, color: theme.text.primary, marginTop: spacing.xl },
   subtitle: { ...typography.body, color: theme.text.secondary, marginBottom: spacing.xl },
   form: { gap: spacing.lg },

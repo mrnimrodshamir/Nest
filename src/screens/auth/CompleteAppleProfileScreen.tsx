@@ -10,20 +10,18 @@ import { LEGAL_URLS } from '@/constants/legal';
 import { useAuth, type AppleProfileInput, type RegistrationStage } from '@/hooks/useAuth';
 import { useFormDraft } from '@/hooks/useFormDraft';
 import { APP_NAME } from '@/constants/brand';
+import { AvatarPicker } from '@/components/AvatarPicker';
+import { FamilyProfileFields, type FamilyProfileDraft } from '@/components/FamilyProfileFields';
+import { useI18n } from '@/i18n';
 
 interface CompleteAppleProfileScreenProps {
   input: AppleProfileInput;
 }
 
 interface DraftFields {
+  familyProfile: FamilyProfileDraft;
   children: OnboardingChild[];
 }
-
-const STAGE_LABELS: Record<RegistrationStage, string> = {
-  'creating-account': 'Setting up your account…',
-  'uploading-photo': 'Uploading your photo…',
-  'saving-profile': 'Almost done…',
-};
 
 const EMPTY_CHILD: OnboardingChild = { name: '', birthdate: null };
 
@@ -32,10 +30,20 @@ const EMPTY_CHILD: OnboardingChild = { name: '', birthdate: null };
  *  children. Phone and photo are optional and collected later from Edit
  *  Profile. */
 export function CompleteAppleProfileScreen({ input }: CompleteAppleProfileScreenProps) {
-  const { completeAppleProfile } = useAuth();
+  const { completeAppleProfile, profile } = useAuth();
   const { initialDraft, save, clear } = useFormDraft<DraftFields>('apple-profile');
+  const { t } = useI18n();
 
+  const [familyProfile, setFamilyProfile] = useState<FamilyProfileDraft>({
+    displayName: input.displayName ?? input.fallbackFullName ?? profile?.displayName ?? '',
+    parentRole: input.parentRole ?? null,
+    birthdate: input.birthdate ?? null,
+    neighborhood: input.neighborhood ?? '',
+    occupation: input.occupation ?? '',
+    bio: input.bio ?? '',
+  });
   const [children, setChildren] = useState<OnboardingChild[]>([EMPTY_CHILD]);
+  const [photoUri, setPhotoUri] = useState<string | null>(null);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
 
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
@@ -46,24 +54,29 @@ export function CompleteAppleProfileScreen({ input }: CompleteAppleProfileScreen
   const inFlightRef = useRef(false);
 
   useEffect(() => {
-    if (!initialDraft?.children?.length) return;
-    setChildren(initialDraft.children);
+    if (!initialDraft) return;
+    if (initialDraft.familyProfile) setFamilyProfile(initialDraft.familyProfile);
+    if (initialDraft.children?.length) setChildren(initialDraft.children);
   }, [initialDraft]);
 
   useEffect(() => {
-    save({ children });
-  }, [children, save]);
+    save({ familyProfile, children });
+  }, [familyProfile, children, save]);
 
   const handleSubmit = async () => {
     if (inFlightRef.current) return; // synchronous — checked before any state/render
     const errors: Record<string, string> = {};
+    if (!isNonEmpty(familyProfile.displayName)) errors.displayName = t('onboarding.nameRequired');
+    if (!familyProfile.parentRole) errors.parentRole = t('onboarding.roleRequired');
+    if (!familyProfile.birthdate) errors.birthdate = t('onboarding.birthdateRequired');
+    if (!isNonEmpty(familyProfile.neighborhood)) errors.neighborhood = t('onboarding.areaRequired');
     const perChild = children.map((child) => {
       const e: { name?: string; birthdate?: string } = {};
-      if (!isNonEmpty(child.name)) e.name = "Enter your child's name";
-      if (!child.birthdate) e.birthdate = "Select your child's date of birth";
+      if (!isNonEmpty(child.name)) e.name = t('onboarding.childNameRequired');
+      if (!child.birthdate) e.birthdate = t('onboarding.childBirthdateRequired');
       return e;
     });
-    if (!acceptedTerms) errors.terms = 'Please accept the Terms and Privacy Policy to continue';
+    if (!acceptedTerms) errors.terms = t('onboarding.acceptTermsRequired');
     setFieldErrors(errors);
     setChildErrors(perChild);
     if (Object.keys(errors).length > 0 || perChild.some((e) => e.name || e.birthdate)) return;
@@ -75,6 +88,13 @@ export function CompleteAppleProfileScreen({ input }: CompleteAppleProfileScreen
       const result = await completeAppleProfile(
         {
           ...input,
+          displayName: familyProfile.displayName.trim(),
+          photoUri,
+          parentRole: familyProfile.parentRole,
+          birthdate: familyProfile.birthdate,
+          neighborhood: familyProfile.neighborhood.trim(),
+          occupation: familyProfile.occupation,
+          bio: familyProfile.bio,
           children: children.map((child) => ({ name: child.name.trim(), birthdate: child.birthdate! })),
         },
         setStage,
@@ -92,22 +112,22 @@ export function CompleteAppleProfileScreen({ input }: CompleteAppleProfileScreen
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-          <Text style={styles.title}>
-            {input.fallbackFullName ? `Welcome, ${input.fallbackFullName}` : 'Almost there'}
-          </Text>
-          <Text style={styles.subtitle}>One last thing — tell us about your child.</Text>
+          <Text style={styles.title}>{t('onboarding.profileTitle')}</Text>
+          <Text style={styles.subtitle}>{t('onboarding.profileSubtitle')}</Text>
 
           <View style={styles.form}>
+            <AvatarPicker uri={photoUri} onChange={setPhotoUri} />
+            <FamilyProfileFields value={familyProfile} onChange={setFamilyProfile} errors={fieldErrors} />
             <OnboardingChildrenEditor children={children} onChange={setChildren} errors={childErrors} />
 
             <Checkbox checked={acceptedTerms} onToggle={() => setAcceptedTerms((v) => !v)}>
-              I agree to {APP_NAME}'s{' '}
+              {t('onboarding.agreePrefix', { appName: APP_NAME })}{' '}
               <Text style={styles.legalLink} onPress={() => Linking.openURL(LEGAL_URLS.terms)}>
-                Terms of Service
+                {t('profile.terms')}
               </Text>{' '}
-              and{' '}
+              {t('onboarding.and')}{' '}
               <Text style={styles.legalLink} onPress={() => Linking.openURL(LEGAL_URLS.privacy)}>
-                Privacy Policy
+                {t('profile.privacy')}
               </Text>
             </Checkbox>
             {fieldErrors.terms && <Text style={styles.termsError}>{fieldErrors.terms}</Text>}
@@ -115,7 +135,7 @@ export function CompleteAppleProfileScreen({ input }: CompleteAppleProfileScreen
             {formError && <Text style={styles.formError}>{formError}</Text>}
 
             <StaticPrimaryButton
-              label={isSubmitting ? (stage ? STAGE_LABELS[stage] : 'Please wait…') : 'Start discovering'}
+              label={isSubmitting ? stageLabel(stage, t) : t('onboarding.continue')}
               onPress={handleSubmit}
               loading={isSubmitting}
             />
@@ -124,6 +144,13 @@ export function CompleteAppleProfileScreen({ input }: CompleteAppleProfileScreen
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
+}
+
+function stageLabel(stage: RegistrationStage | null, t: ReturnType<typeof useI18n>['t']): string {
+  if (stage === 'creating-account') return t('onboarding.stage.setup');
+  if (stage === 'uploading-photo') return t('onboarding.stage.photo');
+  if (stage === 'saving-profile') return t('onboarding.stage.save');
+  return t('onboarding.wait');
 }
 
 const styles = StyleSheet.create({

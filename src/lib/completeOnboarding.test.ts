@@ -35,9 +35,11 @@ const env = loadEnv();
 const SUPABASE_URL = env.EXPO_PUBLIC_SUPABASE_URL;
 const SUPABASE_ANON_KEY = env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
 
-const canRun = Boolean(SUPABASE_URL && SUPABASE_ANON_KEY);
+// Production safety: local credentials alone must never make an ordinary test
+// run create remote users. Live coverage is explicitly opt-in.
+const canRun = process.env.RUN_LIVE_SUPABASE_TESTS === '1' && Boolean(SUPABASE_URL && SUPABASE_ANON_KEY);
 if (!canRun) {
-  test('completeOnboardingCore integration harness (skipped — no .env credentials)', () => {});
+  test('completeOnboardingCore integration harness (skipped — live tests not explicitly enabled)', () => {});
 }
 
 /** Creates a throwaway user via the real signUp() endpoint (email

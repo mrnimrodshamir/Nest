@@ -15,6 +15,7 @@ import { useChildren } from '@/hooks/useChildren';
 import { parentRoleKey, type ParentRole } from '@/utils/parentRole';
 import { useI18n } from '@/i18n';
 import type { Child, ChildSex } from '@/types/child';
+import { PROFILE_BIO_MAX_LENGTH } from '@/utils/publicFamilyProfile';
 
 interface EditProfileScreenProps {
   onBack: () => void;
@@ -31,6 +32,9 @@ export function EditProfileScreen({ onBack }: EditProfileScreenProps) {
   const [parentRole, setParentRole] = useState<ParentRole>(profile?.parentRole ?? null);
   // Optional and private. Only the derived age ever leaves this device.
   const [parentBirthdate, setBirthdate] = useState<string | null>(profile?.birthdate ?? null);
+  const [neighborhood, setNeighborhood] = useState(profile?.neighborhood ?? '');
+  const [occupation, setOccupation] = useState(profile?.occupation ?? '');
+  const [bio, setBio] = useState(profile?.bio ?? '');
   const [photoUri, setPhotoUri] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState<string | null>(null);
@@ -61,6 +65,9 @@ export function EditProfileScreen({ onBack }: EditProfileScreenProps) {
     setDisplayName(profile.displayName);
     setParentRole(profile.parentRole ?? null);
     setBirthdate(profile.birthdate ?? null);
+    setNeighborhood(profile.neighborhood ?? '');
+    setOccupation(profile.occupation ?? '');
+    setBio(profile.bio ?? '');
   }, [profile]);
 
   const handleSave = async () => {
@@ -82,6 +89,9 @@ export function EditProfileScreen({ onBack }: EditProfileScreenProps) {
       photoUri,
       parentRole,
       birthdate: parentBirthdate,
+      neighborhood,
+      occupation,
+      bio,
     });
     setIsSaving(false);
     inFlightRef.current = false;
@@ -139,6 +149,34 @@ export function EditProfileScreen({ onBack }: EditProfileScreenProps) {
 
           <View style={styles.birthdateBlock}>
             <ParentBirthdateField value={parentBirthdate} onChange={setBirthdate} />
+          </View>
+
+          <View style={styles.richProfileFields}>
+            <FormField
+              label={t('profile.neighborhood')}
+              value={neighborhood}
+              onChangeText={setNeighborhood}
+              autoCapitalize="words"
+            />
+            <FormField
+              label={t('profile.occupation')}
+              value={occupation}
+              onChangeText={setOccupation}
+              autoCapitalize="sentences"
+            />
+            <FormField
+              label={t('profile.bio')}
+              value={bio}
+              onChangeText={setBio}
+              multiline
+              maxLength={PROFILE_BIO_MAX_LENGTH}
+              textAlignVertical="top"
+              style={styles.bioInput}
+            />
+            <View style={styles.bioMeta}>
+              <Text style={styles.bioHint}>{t('profile.bioHint')}</Text>
+              <Text style={styles.bioCount}>{t('profile.bioCount', { count: bio.length })}</Text>
+            </View>
           </View>
 
           <Text style={styles.sectionLabel}>{t('profile.children')}</Text>
@@ -399,6 +437,11 @@ const styles = StyleSheet.create({
   childSaveButton: { flex: 1 },
   roleHint: { ...typography.footnote, color: theme.text.secondary, marginBottom: spacing.sm },
   birthdateBlock: { marginTop: spacing.md },
+  richProfileFields: { gap: spacing.lg, marginTop: spacing.lg },
+  bioInput: { minHeight: 104 },
+  bioMeta: { flexDirection: 'row', justifyContent: 'space-between', gap: spacing.sm },
+  bioHint: { ...typography.caption, color: theme.text.muted, flex: 1 },
+  bioCount: { ...typography.caption, color: theme.text.muted },
   roleRow: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.lg },
   roleChip: {
     paddingHorizontal: spacing.lg, paddingVertical: spacing.sm, borderRadius: radius.pill,

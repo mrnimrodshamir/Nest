@@ -10,6 +10,7 @@ import { completeOnboardingCore } from '@/lib/completeOnboarding';
 import type { NotificationPreferences, Profile } from '@/types/profile';
 import { coerceParentRole, type ParentRole } from '@/utils/parentRole';
 import { hasDisplayableAge } from '@/utils/parentAge';
+import { normalizeOptionalProfileText, normalizeProfileBio } from '@/utils/publicFamilyProfile';
 
 /** Guards against ASAuthorizationController being presented twice at once
  *  (a real crash on-device: "already presenting a view controller"). React
@@ -39,6 +40,11 @@ export interface RegistrationInput {
   /** All optional — collected later from Edit Profile, never required to finish signup. */
   phone?: string;
   photoUri?: string | null;
+  parentRole: ParentRole;
+  birthdate: string | null;
+  neighborhood: string | null;
+  occupation?: string | null;
+  bio?: string | null;
 }
 
 export interface AppleProfileInput {
@@ -48,6 +54,12 @@ export interface AppleProfileInput {
   /** Only present on Apple's very first authorization for this account. */
   fallbackFullName: string | null;
   fallbackEmail: string | null;
+  displayName?: string | null;
+  parentRole?: ParentRole;
+  birthdate?: string | null;
+  neighborhood?: string | null;
+  occupation?: string | null;
+  bio?: string | null;
 }
 
 export type RegisterResult =
@@ -63,6 +75,11 @@ export interface OnboardingCompletionInput {
   /** Only overwrites the stub profile's value when non-null/non-empty. */
   displayName?: string | null;
   email?: string | null;
+  parentRole?: ParentRole;
+  birthdate?: string | null;
+  neighborhood?: string | null;
+  occupation?: string | null;
+  bio?: string | null;
 }
 
 interface UseAuthResult {
@@ -91,6 +108,9 @@ interface UseAuthResult {
     photoUri?: string | null;
     parentRole?: ParentRole;
     birthdate?: string | null;
+    neighborhood?: string | null;
+    occupation?: string | null;
+    bio?: string | null;
   }) => Promise<string | null>;
   updateNotificationPreferences: (prefs: NotificationPreferences) => Promise<string | null>;
 }
@@ -118,7 +138,7 @@ function useAuthState(): UseAuthResult {
         .from('profiles')
         // `birthdate` is safe here: this reads the caller's OWN private row
         // under RLS. It must never reach public_profiles — only age_years does.
-        .select('id, display_name, email, phone, avatar_url, onboarding_completed, notification_preferences, parent_role, birthdate')
+        .select('id, display_name, email, phone, avatar_url, onboarding_completed, notification_preferences, parent_role, birthdate, neighborhood_label, occupation, bio')
         .eq('id', userId)
         .maybeSingle();
       setProfile(data ? mapProfile(data) : null);
@@ -174,6 +194,13 @@ function useAuthState(): UseAuthResult {
           avatarUrl,
           displayName: input.displayName,
           email: input.email,
+          parentRole: input.parentRole,
+          birthdate: input.birthdate === undefined
+            ? undefined
+            : hasDisplayableAge(input.birthdate) ? input.birthdate : null,
+          neighborhood: input.neighborhood !== undefined ? normalizeOptionalProfileText(input.neighborhood) : undefined,
+          occupation: input.occupation !== undefined ? normalizeOptionalProfileText(input.occupation) : undefined,
+          bio: input.bio !== undefined ? normalizeProfileBio(input.bio) : undefined,
         },
         (message, meta) => console.log(message, meta ?? ''),
       );
@@ -315,6 +342,11 @@ function useAuthState(): UseAuthResult {
           photoUri: input.photoUri,
           displayName: input.fullName.trim(),
           email: normalizeEmail(input.email),
+          parentRole: input.parentRole,
+          birthdate: input.birthdate,
+          neighborhood: input.neighborhood,
+          occupation: input.occupation,
+          bio: input.bio,
         },
         onStage,
       );
@@ -441,6 +473,7 @@ function useAuthState(): UseAuthResult {
           children: [],
           fallbackFullName: fullName || null,
           fallbackEmail: credential.email ?? data.user.email ?? null,
+          displayName: fullName || null,
         },
       };
     } catch (err: any) {
@@ -470,8 +503,13 @@ function useAuthState(): UseAuthResult {
           children: input.children,
           phone: input.phone,
           photoUri: input.photoUri,
-          displayName: input.fallbackFullName,
+          displayName: input.displayName ?? input.fallbackFullName,
           email: input.fallbackEmail ?? userData.user?.email ?? null,
+          parentRole: input.parentRole,
+          birthdate: input.birthdate,
+          neighborhood: input.neighborhood,
+          occupation: input.occupation,
+          bio: input.bio,
         },
         onStage,
       );
@@ -530,6 +568,9 @@ function useAuthState(): UseAuthResult {
       /** Private. `undefined` leaves it untouched; `null` clears it. Only the
        *  derived age_years is ever published. */
       birthdate?: string | null;
+      neighborhood?: string | null;
+      occupation?: string | null;
+      bio?: string | null;
     }) => {
       if (!session) return 'Not signed in';
       let avatarUrl: string | undefined;
@@ -556,6 +597,13 @@ function useAuthState(): UseAuthResult {
           ...(details.birthdate !== undefined
             ? { birthdate: hasDisplayableAge(details.birthdate) ? details.birthdate : null }
             : {}),
+          ...(details.neighborhood !== undefined
+            ? { neighborhood_label: normalizeOptionalProfileText(details.neighborhood) }
+            : {}),
+          ...(details.occupation !== undefined
+            ? { occupation: normalizeOptionalProfileText(details.occupation) }
+            : {}),
+          ...(details.bio !== undefined ? { bio: normalizeProfileBio(details.bio) } : {}),
         })
         .eq('id', session.user.id);
       if (error) {
@@ -630,6 +678,9 @@ function mapProfile(row: {
   notification_preferences: NotificationPreferences;
   parent_role?: string | null;
   birthdate?: string | null;
+  neighborhood_label?: string | null;
+  occupation?: string | null;
+  bio?: string | null;
 }): Profile {
   return {
     id: row.id,
@@ -643,5 +694,8 @@ function mapProfile(row: {
     // Normalised to a plain ISO date: Postgres `date` comes back as
     // YYYY-MM-DD, but a timestamp-ish value would break date-only comparisons.
     birthdate: row.birthdate ? row.birthdate.slice(0, 10) : null,
+    neighborhood: row.neighborhood_label?.trim() || null,
+    occupation: row.occupation?.trim() || null,
+    bio: row.bio?.trim() || null,
   };
 }

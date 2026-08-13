@@ -10,6 +10,7 @@ export function computeRouteDecision(
   profile: { onboardingCompleted: boolean } | null,
 ): RouteDecision {
   if (!session) return 'auth-navigator';
-  if (!profile || !profile.onboardingCompleted) return 'complete-profile';
+  if (needsInitialProfileSetup(profile)) return 'complete-profile';
   return 'main-navigator';
 }
+import { needsInitialProfileSetup } from '@/utils/profileCompleteness';

@@ -4,6 +4,7 @@ import { Plus, Trash } from 'phosphor-react-native';
 import { theme, typography, spacing, radius } from '@/theme';
 import { FormField } from '@/components/FormField';
 import { DateOfBirthField } from '@/components/DateOfBirthField';
+import { useI18n } from '@/i18n';
 
 export interface OnboardingChild {
   name: string;
@@ -27,6 +28,7 @@ interface OnboardingChildrenEditorProps {
  *  removed. Adding/removing never touches sibling cards' already-entered
  *  data. */
 export function OnboardingChildrenEditor({ children, onChange, errors }: OnboardingChildrenEditorProps) {
+  const { t } = useI18n();
   const updateChild = (index: number, patch: Partial<OnboardingChild>) => {
     onChange(children.map((child, i) => (i === index ? { ...child, ...patch } : child)));
   };
@@ -45,29 +47,30 @@ export function OnboardingChildrenEditor({ children, onChange, errors }: Onboard
       {children.map((child, index) => (
         <View key={index} style={styles.card}>
           <View style={styles.cardHeader}>
-            <Text style={styles.cardTitle}>{`Child ${index + 1}`}</Text>
+            <Text style={styles.cardTitle}>{t('onboarding.childNumber', { count: index + 1 })}</Text>
             {children.length > 1 && (
               <Pressable
                 onPress={() => removeChild(index)}
-                accessibilityLabel={`Remove child ${index + 1}`}
+                accessibilityLabel={t('onboarding.removeChild', { count: index + 1 })}
                 hitSlop={10}
                 style={styles.removeButton}
               >
                 <Trash size={16} color={theme.semantic.danger} />
-                <Text style={styles.removeLabel}>Remove</Text>
+                <Text style={styles.removeLabel}>{t('onboarding.remove')}</Text>
               </Pressable>
             )}
           </View>
 
           <FormField
-            label="Name"
-            placeholder="Child's name"
+            label={t('onboarding.childName')}
+            placeholder={t('onboarding.childNamePlaceholder')}
             value={child.name}
             onChangeText={(name) => updateChild(index, { name })}
             autoCapitalize="words"
             error={errors?.[index]?.name}
           />
           <DateOfBirthField
+            label={t('onboarding.childBirthdate')}
             value={child.birthdate}
             onChange={(birthdate) => updateChild(index, { birthdate })}
           />
@@ -77,7 +80,7 @@ export function OnboardingChildrenEditor({ children, onChange, errors }: Onboard
 
       <Pressable onPress={addChild} style={styles.addButton} accessibilityRole="button">
         <Plus size={16} color={theme.text.accent} weight="bold" />
-        <Text style={styles.addLabel}>Add another child</Text>
+        <Text style={styles.addLabel}>{t('onboarding.addChild')}</Text>
       </Pressable>
     </View>
   );

@@ -24,6 +24,11 @@ export interface OnboardingCoreInput {
   /** Only overwrites the stub profile's value when non-null/non-empty. */
   displayName?: string | null;
   email?: string | null;
+  parentRole?: 'mom' | 'dad' | 'parent' | null;
+  birthdate?: string | null;
+  neighborhood?: string | null;
+  occupation?: string | null;
+  bio?: string | null;
 }
 
 export type OnboardingCoreResult =
@@ -67,6 +72,11 @@ export async function completeOnboardingCore(
   if (input.displayName) profileUpdate.display_name = input.displayName;
   if (input.email) profileUpdate.email = input.email;
   if (input.avatarUrl) profileUpdate.avatar_url = input.avatarUrl;
+  if (input.parentRole !== undefined) profileUpdate.parent_role = input.parentRole;
+  if (input.birthdate !== undefined) profileUpdate.birthdate = input.birthdate;
+  if (input.neighborhood !== undefined) profileUpdate.neighborhood_label = input.neighborhood;
+  if (input.occupation !== undefined) profileUpdate.occupation = input.occupation;
+  if (input.bio !== undefined) profileUpdate.bio = input.bio;
 
   const { error: profileError } = await supabase.from('profiles').update(profileUpdate).eq('id', userId);
   if (profileError) {

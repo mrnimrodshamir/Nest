@@ -3,6 +3,7 @@ import { View, Text, Pressable, StyleSheet, Platform } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { theme, typography, spacing, radius } from '@/theme';
 import { birthdateToMonths, formatBabyAge } from '@/utils/babyAge';
+import { useI18n } from '@/i18n';
 
 interface DateOfBirthFieldProps {
   label?: string;
@@ -25,7 +26,9 @@ function toIsoDate(date: Date): string {
  *  the source of truth is always date_of_birth, never a manually
  *  maintained years/months pair, so the displayed age stays correct
  *  automatically as time passes. */
-export function DateOfBirthField({ label = "Child's date of birth", value, onChange, maxYearsAgo = 6 }: DateOfBirthFieldProps) {
+export function DateOfBirthField({ label, value, onChange, maxYearsAgo = 6 }: DateOfBirthFieldProps) {
+  const { t } = useI18n();
+  const resolvedLabel = label ?? t('onboarding.childBirthdate');
   const [showPicker, setShowPicker] = useState(false);
   const today = new Date();
   const minimumDate = new Date(today.getFullYear() - maxYearsAgo, today.getMonth(), today.getDate());
@@ -33,20 +36,18 @@ export function DateOfBirthField({ label = "Child's date of birth", value, onCha
 
   const formatted = value
     ? selectedDate.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })
-    : 'Select date of birth';
+    : t('onboarding.selectBirthdate');
 
   const ageLabel = value ? formatBabyAge(birthdateToMonths(value)) : null;
 
   return (
     <View style={styles.container}>
-      <Text style={styles.label}>{label}</Text>
+      <Text style={styles.label}>{resolvedLabel}</Text>
       <Pressable style={styles.field} onPress={() => setShowPicker(true)} accessibilityRole="button">
         <Text style={value ? styles.value : styles.placeholder}>{formatted}</Text>
       </Pressable>
       {ageLabel && (
-        <Text style={styles.ageLabel}>
-          Age: <Text style={styles.ageValue}>{ageLabel}</Text>
-        </Text>
+        <Text style={styles.ageLabel}>{t('onboarding.childAge', { age: ageLabel })}</Text>
       )}
 
       {showPicker && (
@@ -66,7 +67,7 @@ export function DateOfBirthField({ label = "Child's date of birth", value, onCha
 
       {showPicker && Platform.OS === 'ios' && (
         <Pressable style={styles.doneButton} onPress={() => setShowPicker(false)} hitSlop={8}>
-          <Text style={styles.doneLabel}>Done</Text>
+          <Text style={styles.doneLabel}>{t('common.done')}</Text>
         </Pressable>
       )}
     </View>
