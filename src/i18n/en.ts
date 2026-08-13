@@ -211,6 +211,8 @@ export const en = {
   'event.attendance.cardGoing': '{count} going',
   'event.attendance.overflow': '+{count}',
   'event.attendance.title': "Who's going",
+  'event.attendance.openList': "See the {count} NestUp parents who are going",
+  'event.attendance.openProfile': "Open {name}'s profile",
   'event.recurring': 'Recurring',
 
   // Activity capacity.

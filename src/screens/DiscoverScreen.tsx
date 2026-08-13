@@ -463,7 +463,7 @@ export function DiscoverScreen({ onOpenActivity, onOpenPlace, onOpenEvent, onHos
               ? <ActivityCard activity={item.data} variant="feed" onPress={() => openItem(item)} highlighted={discoverySelectionEquals(selectedItem, item)} />
               : item.type === 'place'
                 ? <PlaceCard place={item.data} onPress={() => openItem(item)} highlighted={discoverySelectionEquals(selectedItem, item)} />
-                : <EventCard event={item.data} onPress={() => openItem(item)} highlighted={discoverySelectionEquals(selectedItem, item)} />}
+                : <EventCard event={item.data} attendeeCount={eventsQuery.attendeeCounts[item.data.occurrence.id] ?? 0} onPress={() => openItem(item)} highlighted={discoverySelectionEquals(selectedItem, item)} />}
             </View>}
             contentContainerStyle={styles.listContent}
             initialNumToRender={6}

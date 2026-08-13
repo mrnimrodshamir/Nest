@@ -207,6 +207,8 @@ export const fr: Dictionary = {
   'event.attendance.cardGoing': '{count} participants',
   'event.attendance.overflow': '+{count}',
   'event.attendance.title': 'Qui vient',
+  'event.attendance.openList': 'Voir les {count} parents NestUp qui viennent',
+  'event.attendance.openProfile': 'Ouvrir le profil de {name}',
   'event.recurring': 'Récurrent',
 
   'activity.capacity.spotsLeft': '{count} places restantes',

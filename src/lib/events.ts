@@ -52,6 +52,24 @@ export async function queryEventsAtPlace(placeId: string, now = new Date()): Pro
   return mapActiveRows(data ?? [], now);
 }
 
+/** Counts only NestUp RSVPs. It intentionally selects no profiles: Discovery
+ * needs a small social signal, not attendee identities. */
+export async function queryEventAttendanceCounts(occurrenceIds: readonly string[]): Promise<Record<string, number>> {
+  const uniqueIds = [...new Set(occurrenceIds.filter(Boolean))];
+  if (uniqueIds.length === 0) return {};
+  const { data, error } = await supabase
+    .from('event_attendees')
+    .select('event_occurrence_id')
+    .in('event_occurrence_id', uniqueIds);
+  if (error) throw new Error(error.message);
+  const counts: Record<string, number> = {};
+  for (const row of data ?? []) {
+    const id = row.event_occurrence_id as string;
+    counts[id] = (counts[id] ?? 0) + 1;
+  }
+  return counts;
+}
+
 /** Splits a joined view row back into the event and occurrence shapes the
  *  existing mapper expects, so no presentation logic changes. */
 function mapActiveRows(rows: readonly unknown[], now: Date): EventDetails[] {

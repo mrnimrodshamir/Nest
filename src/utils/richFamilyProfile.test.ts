@@ -11,6 +11,7 @@ const emailSignup = read('../screens/auth/SignUpScreen.tsx');
 const appleSignup = read('../screens/auth/CompleteAppleProfileScreen.tsx');
 const activityDetails = read('../screens/ActivityDetailScreen.tsx');
 const eventDetails = read('../screens/EventDetailsScreen.tsx');
+const eventAttendees = read('../components/EventAttendeesSheet.tsx');
 
 test('public profile query exposes rich family data without private fields', () => {
   for (const field of ['child_names', 'child_ages_months', 'age_years', 'parent_role', 'occupation', 'bio']) {
@@ -52,5 +53,6 @@ test('established users remain gated only by the existing onboarding flag', () =
 
 test('activity participants and event attendees both open Public Profile', () => {
   assert.match(activityDetails, /onOpenPerson\(person\.userId\)/);
-  assert.match(eventDetails, /onOpenProfile\?\.\(attendee\.userId\)/);
+  assert.match(eventDetails, /<EventAttendeesSheet/);
+  assert.match(eventAttendees, /onOpenProfile\(attendee\.userId\)/);
 });

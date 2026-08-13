@@ -1,10 +1,15 @@
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
+import { coerceParentRole, type ParentRole } from '@/utils/parentRole';
 
 export interface EventAttendee {
   userId: string;
   displayName: string;
   avatarUrl: string | null;
+  ageYears: number | null;
+  parentRole: ParentRole;
+  childCount: number;
+  neighborhood: string | null;
 }
 
 interface UseEventRsvpResult {
@@ -31,6 +36,7 @@ interface UseEventRsvpResult {
 export function useEventRsvp(occurrenceId: string | null): UseEventRsvpResult {
   const [isGoing, setIsGoing] = useState(false);
   const [attendees, setAttendees] = useState<EventAttendee[]>([]);
+  const [attendeeCount, setAttendeeCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -38,6 +44,7 @@ export function useEventRsvp(occurrenceId: string | null): UseEventRsvpResult {
   const load = useCallback(async () => {
     if (!occurrenceId) {
       setAttendees([]);
+      setAttendeeCount(0);
       setIsGoing(false);
       setIsLoading(false);
       return;
@@ -55,6 +62,7 @@ export function useEventRsvp(occurrenceId: string | null): UseEventRsvpResult {
       if (rowsError) throw rowsError;
 
       const userIds = (rows ?? []).map((row) => row.user_id as string);
+      setAttendeeCount(userIds.length);
       setIsGoing(viewerId != null && userIds.includes(viewerId));
 
       if (userIds.length === 0) {
@@ -65,13 +73,19 @@ export function useEventRsvp(occurrenceId: string | null): UseEventRsvpResult {
       // privacy contract — no email, phone, birthdate or coordinates.
       const { data: profiles } = await supabase
         .from('public_profiles')
-        .select('id, display_name, avatar_url')
+        // Public, derived fields only. No email, phone, exact birthdate,
+        // coordinates or exact address can enter the attendee surface.
+        .select('id, display_name, avatar_url, age_years, parent_role, child_count, neighborhood_label')
         .in('id', userIds);
       setAttendees(
         (profiles ?? []).map((p) => ({
           userId: p.id as string,
           displayName: p.display_name as string,
           avatarUrl: (p.avatar_url as string | null) ?? null,
+          ageYears: typeof p.age_years === 'number' ? p.age_years : null,
+          parentRole: coerceParentRole(p.parent_role),
+          childCount: typeof p.child_count === 'number' ? Math.max(0, p.child_count) : 0,
+          neighborhood: (p.neighborhood_label as string | null) ?? null,
         })),
       );
     } catch (err) {
@@ -129,7 +143,7 @@ export function useEventRsvp(occurrenceId: string | null): UseEventRsvpResult {
 
   return {
     isGoing,
-    attendeeCount: attendees.length,
+    attendeeCount,
     attendees,
     isLoading,
     isSaving,
