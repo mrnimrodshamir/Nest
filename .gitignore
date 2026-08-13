@@ -12,8 +12,12 @@ web-build/
 .expo-shared/
 
 # Env
+# Glob, not two literals: `.env` and `.env.local` alone would have let a
+# `.env.production` or `.env.deploy` be committed, which is exactly where
+# deployment and registrar credentials tend to end up.
 .env
-.env.local
+.env.*
+!.env.example
 
 # TypeScript
 *.tsbuildinfo
