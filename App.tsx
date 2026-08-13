@@ -282,7 +282,7 @@ function AppInner() {
               <MainNavigator />
             ) : !session ? (
               <AuthNavigator />
-            ) : !profile || !profile.onboardingCompleted ? (
+            ) : routeDecision === 'complete-profile' ? (
               // Signed in but the profile is missing OR still a stub (the
               // auth-user-creation trigger now creates a profile row for
               // every account, including a first-time Apple sign-in before

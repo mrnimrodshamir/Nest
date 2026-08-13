@@ -25,10 +25,9 @@ interface DraftFields {
 
 const EMPTY_CHILD: OnboardingChild = { name: '', birthdate: null };
 
-/** One continuous screen — the only thing still needed after Apple already
- *  handled identity is who NestUp matches activities against: one or more
- *  children. Phone and photo are optional and collected later from Edit
- *  Profile. */
+/** Apple establishes authentication only. This shared setup collects the same
+ * family profile as email signup; Apple-supplied name/email are initial values,
+ * never permanent truth. */
 export function CompleteAppleProfileScreen({ input }: CompleteAppleProfileScreenProps) {
   const { completeAppleProfile, profile } = useAuth();
   const { initialDraft, save, clear } = useFormDraft<DraftFields>('apple-profile');

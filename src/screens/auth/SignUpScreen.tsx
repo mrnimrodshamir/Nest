@@ -41,9 +41,8 @@ const EMPTY_PROFILE: FamilyProfileDraft = {
   displayName: '', parentRole: null, birthdate: null, neighborhood: '', occupation: '', bio: '',
 };
 
-/** One continuous screen — the minimum needed to start discovering: name,
- *  email/password, and the first child's name + age. Photo and phone are
- *  optional and collected later from Edit Profile, never here. */
+/** One continuous, scrollable family-profile setup. Required identity/family
+ * context is kept distinct from the optional photo, occupation and bio. */
 export function SignUpScreen({ onBack }: SignUpScreenProps) {
   const { register } = useAuth();
   const { initialDraft, save, clear } = useFormDraft<DraftFields>('signup');
