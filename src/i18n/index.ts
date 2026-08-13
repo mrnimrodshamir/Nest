@@ -10,6 +10,7 @@ export {
   coerceLocalePreference,
   translate,
   interpolate,
+  dateLocaleTag,
   missingKeys,
   type AppLocale,
   type LocalePreference,

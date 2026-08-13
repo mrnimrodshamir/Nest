@@ -1,14 +1,15 @@
 import React from 'react';
-import { View, Text, ActivityIndicator, ScrollView, Pressable, StyleSheet } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ArrowLeft, MapPin } from 'phosphor-react-native';
-import { theme, typography, spacing, radius } from '@/theme';
+import { ArrowLeft, Baby, Briefcase, MapPin } from 'phosphor-react-native';
 import { PersonCard } from '@/components/PersonCard';
 import { PrimaryButton } from '@/components/PrimaryButton';
 import { StateCard } from '@/components/StateCard';
 import { usePublicProfile } from '@/hooks/usePublicProfile';
-import { buildCaregiverContext } from '@/utils/caregiverContext';
-import { useI18n } from '@/i18n';
+import { dateLocaleTag, useI18n } from '@/i18n';
+import { radius, spacing, theme, typography } from '@/theme';
+import { parentRoleKey } from '@/utils/parentRole';
+import { buildPublicChildren } from '@/utils/publicFamilyProfile';
 
 interface PublicProfileScreenProps {
   userId: string;
@@ -16,68 +17,84 @@ interface PublicProfileScreenProps {
   onMessage: (userId: string, displayName: string) => void;
 }
 
-/** See who you'd be meeting, before you join. No phone-verified badge, no
- *  trust score, no ranking -- just a name, a photo (or a branded initial),
- *  when they joined NestUp, and factual hosted/joined context shown small. */
+/** A factual family introduction. The hook accepts only the privacy-safe
+ * public_profiles contract, so exact birthdates, contact details and precise
+ * locations cannot reach this screen. Missing optional sections disappear. */
 export function PublicProfileScreen({ userId, onBack, onMessage }: PublicProfileScreenProps) {
   const { profile, isLoading, error } = usePublicProfile(userId);
-  const { t } = useI18n();
+  const { t, locale, isRTL } = useI18n();
+  const children = profile ? buildPublicChildren(profile.childNames, profile.childAgesMonths) : [];
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <Pressable onPress={onBack} style={styles.backButton} accessibilityRole="button" accessibilityLabel={t('common.back')}>
-        <ArrowLeft size={20} color={theme.text.primary} />
+        <ArrowLeft size={20} color={theme.text.primary} style={isRTL ? styles.flipped : undefined} />
       </Pressable>
 
       {isLoading ? (
-        <View style={styles.centerState}>
-          <ActivityIndicator color={theme.brand.primary} />
-        </View>
+        <View style={styles.centerState}><ActivityIndicator color={theme.brand.primary} /></View>
       ) : !profile ? (
         <View style={styles.centerState}>
-          <StateCard
-            icon={MapPin}
-            title={error ?? t('profile.notFound')}
-            body={t('profile.deletedAccount')}
-          />
+          <StateCard icon={MapPin} title={error ?? t('profile.notFound')} body={t('profile.deletedAccount')} />
         </View>
       ) : (
         <ScrollView contentContainerStyle={styles.content}>
           <PersonCard
             size="hero"
-            name={profile.displayName}
+            name={profile.ageYears === null ? profile.displayName : `${profile.displayName}, ${profile.ageYears}`}
             avatarUrl={profile.avatarUrl}
-            subtitle={
-              buildCaregiverContext({
-                neighborhood: profile.neighborhood,
-                parentRole: profile.parentRole,
-                childCount: profile.childCount,
-                ageYears: profile.ageYears,
-              }).context ?? undefined
-            }
+            subtitle={[
+              t(parentRoleKey(profile.parentRole)),
+              profile.neighborhood?.trim() || null,
+            ].filter(Boolean).join(' · ') || undefined}
           />
 
-          {profile.occupation?.trim() ? (
-            <Text style={styles.occupation}>{profile.occupation.trim()}</Text>
+          {children.length ? (
+            <ProfileSection title={t('profile.childrenHeading')} icon={Baby}>
+              {children.map((child) => (
+                <View key={`${child.name}-${child.ageMonths ?? 'unknown'}`} style={styles.childRow}>
+                  <Text style={styles.childName}>{child.name}</Text>
+                  {child.ageKey ? (
+                    <Text style={styles.childAge}>
+                      {t(child.ageKey, child.ageCount === null ? undefined : { count: child.ageCount })}
+                    </Text>
+                  ) : null}
+                </View>
+              ))}
+            </ProfileSection>
           ) : null}
-          {profile.bio?.trim() ? <Text style={styles.bio}>{profile.bio.trim()}</Text> : null}
 
-          {profile.sharedContext && (
+          {profile.occupation?.trim() ? (
+            <ProfileSection title={t('profile.occupation')} icon={Briefcase}>
+              <Text style={[styles.sectionBody, isRTL && styles.rtlText]}>{profile.occupation.trim()}</Text>
+            </ProfileSection>
+          ) : null}
+          {profile.bio?.trim() ? (
+            <ProfileSection title={t('profile.aboutHeading')}>
+              <Text style={[styles.sectionBody, isRTL && styles.rtlText]}>{profile.bio.trim()}</Text>
+            </ProfileSection>
+          ) : null}
+
+          {profile.sharedActivityTitle ? (
             <View style={styles.sharedContextCard}>
-              <Text style={styles.sharedContextText}>{profile.sharedContext}</Text>
+              <Text style={styles.sharedContextText}>{t('profile.sharedActivity', { title: profile.sharedActivityTitle })}</Text>
             </View>
-          )}
+          ) : null}
 
           <View style={styles.contextRow}>
-            <Text style={styles.contextText}>Member since {formatMemberSince(profile.memberSince)}</Text>
-            <Text style={styles.contextDivider}>·</Text>
             <Text style={styles.contextText}>
-              Hosted {profile.hostedCount} · Joined {profile.joinedCount}
+              {t('profile.memberSince', { date: formatMemberSince(profile.memberSince, dateLocaleTag(locale)) })}
+            </Text>
+            <Text style={styles.contextText}>
+              {t('profile.activityContext', { hosted: profile.hostedCount, joined: profile.joinedCount })}
             </Text>
           </View>
 
           <View style={styles.messageButton}>
-            <PrimaryButton label={`Message ${profile.displayName.split(' ')[0]}`} onPress={() => onMessage(profile.id, profile.displayName)} />
+            <PrimaryButton
+              label={t('profile.messagePerson', { name: profile.displayName.split(' ')[0] })}
+              onPress={() => onMessage(profile.id, profile.displayName)}
+            />
           </View>
         </ScrollView>
       )}
@@ -85,36 +102,42 @@ export function PublicProfileScreen({ userId, onBack, onMessage }: PublicProfile
   );
 }
 
-function formatMemberSince(iso: string): string {
-  const date = new Date(iso);
-  return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+function formatMemberSince(iso: string, locale: string): string {
+  return new Date(iso).toLocaleDateString(locale, { month: 'long', year: 'numeric' });
+}
+
+function ProfileSection({ title, icon: Icon, children }: { title: string; icon?: typeof Baby; children: React.ReactNode }) {
+  return (
+    <View style={styles.section}>
+      <View style={styles.sectionHeader}>
+        {Icon ? <Icon size={18} color={theme.brand.primary} /> : null}
+        <Text style={styles.sectionTitle}>{title}</Text>
+      </View>
+      {children}
+    </View>
+  );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: theme.background.app },
   backButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: theme.background.surface,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginLeft: spacing.lg,
-    marginTop: spacing.sm,
+    width: 44, height: 44, borderRadius: 22, backgroundColor: theme.background.surface,
+    alignItems: 'center', justifyContent: 'center', marginLeft: spacing.lg, marginTop: spacing.sm,
   },
+  flipped: { transform: [{ scaleX: -1 }] },
   centerState: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  content: { alignItems: 'center', padding: spacing['2xl'], paddingTop: spacing.md, gap: spacing.lg },
-  sharedContextCard: {
-    backgroundColor: theme.brand.primaryTint,
-    borderRadius: radius.md,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm,
-  },
+  content: { padding: spacing['2xl'], paddingTop: spacing.md, gap: spacing.lg },
+  section: { borderRadius: radius.lg, backgroundColor: theme.background.surface, padding: spacing.lg, gap: spacing.sm },
+  sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
+  sectionTitle: { ...typography.headline, color: theme.text.primary },
+  sectionBody: { ...typography.body, color: theme.text.secondary, lineHeight: 23 },
+  rtlText: { textAlign: 'right' },
+  childRow: { minHeight: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.md },
+  childName: { ...typography.bodyMedium, color: theme.text.primary, flex: 1 },
+  childAge: { ...typography.subhead, color: theme.text.secondary },
+  sharedContextCard: { backgroundColor: theme.brand.primaryTint, borderRadius: radius.md, padding: spacing.md },
   sharedContextText: { ...typography.footnote, color: theme.brand.primaryPressed, textAlign: 'center' },
-  occupation: { ...typography.subhead, color: theme.text.secondary, marginTop: spacing.xs },
-  bio: { ...typography.footnote, color: theme.text.secondary, marginTop: spacing.sm, lineHeight: 20 },
-  contextRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  contextText: { ...typography.caption, color: theme.text.muted },
-  contextDivider: { ...typography.caption, color: theme.text.muted },
+  contextRow: { alignItems: 'center', gap: spacing.xs },
+  contextText: { ...typography.caption, color: theme.text.muted, textAlign: 'center' },
   messageButton: { width: '100%', marginTop: spacing.md },
 });

@@ -22,6 +22,11 @@ export interface Profile {
   /** ISO date, optional and PRIVATE. Never published — other users see only
    *  the derived whole-year age via public_profiles.age_years. */
   birthdate: string | null;
+  /** Caregiver-facing area label only. Exact coordinates are not profile data. */
+  neighborhood: string | null;
+  occupation: string | null;
+  /** Optional public introduction, limited to 300 characters by every writer. */
+  bio: string | null;
 }
 
 /** Minimal public surface for other users — matches the `public_profiles`
@@ -30,8 +35,14 @@ export interface PublicProfile {
   id: string;
   displayName: string;
   avatarUrl: string | null;
-  babyName: string | null;
-  babyAgeMonths: number | null;
+  childNames: string[];
+  childAgesMonths: Array<number | null>;
+  childCount: number;
+  parentRole: ParentRole;
+  ageYears: number | null;
+  neighborhood: string | null;
+  occupation: string | null;
+  bio: string | null;
   verified: boolean;
   memberSince: string;
 }

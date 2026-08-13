@@ -25,7 +25,7 @@ export interface PublicProfileData {
   hostedCount: number;
   joinedCount: number;
   /** Plain-language, computed per-viewer -- never a public stat. */
-  sharedContext: string | null;
+  sharedActivityTitle: string | null;
 }
 
 interface UsePublicProfileResult {
@@ -84,7 +84,7 @@ export function usePublicProfile(userId: string | null): UsePublicProfileResult 
         const hostedCount = counts?.hosted_count ?? 0;
         const joinedCount = counts?.joined_count ?? 0;
 
-        let sharedContext: string | null = null;
+        let sharedActivityTitle: string | null = null;
         if (viewerId && viewerId !== userId) {
           const [{ data: viewerActivities }, { data: theirActivities }] = await Promise.all([
             supabase
@@ -103,7 +103,7 @@ export function usePublicProfile(userId: string | null): UsePublicProfileResult 
           if (shared) {
             const activity = shared.activities as unknown as { title: string } | { title: string }[] | null;
             const title = Array.isArray(activity) ? activity[0]?.title : activity?.title;
-            if (title) sharedContext = `You're both going to ${title}`;
+            if (title) sharedActivityTitle = title;
           }
         }
 
@@ -123,7 +123,7 @@ export function usePublicProfile(userId: string | null): UsePublicProfileResult 
             memberSince: row.member_since,
             hostedCount: hostedCount ?? 0,
             joinedCount: joinedCount ?? 0,
-            sharedContext,
+            sharedActivityTitle,
           });
         }
       } catch (err) {
