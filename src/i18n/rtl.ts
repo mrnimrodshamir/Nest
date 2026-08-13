@@ -3,8 +3,17 @@ import { isRtlLocale } from './core';
 
 /** Hebrew, Arabic, and the Hebrew/Arabic presentation-form blocks. */
 const RTL_CHAR = /[֐-׿؀-ۿ܀-ݏיִ-﷿ﹰ-﻿]/;
-/** Basic Latin/Latin-1/Latin-Extended letters. */
-const LTR_CHAR = /[A-Za-zÀ-ʯ]/;
+/** Strong left-to-right letters.
+ *
+ *  Latin (basic, Latin-1, Latin Extended-A/B and IPA), Greek, and Cyrillic.
+ *
+ *  Cyrillic was missing until Russian shipped, and its absence was not inert:
+ *  a script that matches NEITHER pattern is reported as direction-neutral, so
+ *  detectTextDirection returned null and the caller fell back to the UI locale.
+ *  A Russian bio therefore rendered right-aligned to a Hebrew viewer. Any
+ *  strongly-directional script the app ships must appear in one of these two
+ *  patterns or it inherits the reader's direction instead of its own. */
+const LTR_CHAR = /[A-Za-zÀ-ʯΆ-ώЀ-ӿ]/;
 
 export type TextDirection = 'ltr' | 'rtl';
 

@@ -6,7 +6,7 @@ import { PersonCard } from '@/components/PersonCard';
 import { PrimaryButton } from '@/components/PrimaryButton';
 import { StateCard } from '@/components/StateCard';
 import { usePublicProfile } from '@/hooks/usePublicProfile';
-import { dateLocaleTag, useI18n } from '@/i18n';
+import { dateLocaleTag, textAlignForContent, useI18n } from '@/i18n';
 import { radius, spacing, theme, typography } from '@/theme';
 import { parentRoleKey } from '@/utils/parentRole';
 import { buildPublicChildren } from '@/utils/publicFamilyProfile';
@@ -19,7 +19,13 @@ interface PublicProfileScreenProps {
 
 /** A factual family introduction. The hook accepts only the privacy-safe
  * public_profiles contract, so exact birthdates, contact details and precise
- * locations cannot reach this screen. Missing optional sections disappear. */
+ * locations cannot reach this screen. Missing optional sections disappear.
+ *
+ * DIRECTION. App copy follows the UI locale; user-written text — a bio, an
+ * occupation, a child's name — follows its OWN script via textAlignForContent,
+ * the same rule the rest of the app already uses. Aligning by UI locale instead
+ * meant a French bio rendered right-aligned for a Hebrew viewer, and a Hebrew
+ * name left-aligned for an English one. */
 export function PublicProfileScreen({ userId, onBack, onMessage }: PublicProfileScreenProps) {
   const { profile, isLoading, error } = usePublicProfile(userId);
   const { t, locale, isRTL } = useI18n();
@@ -53,9 +59,14 @@ export function PublicProfileScreen({ userId, onBack, onMessage }: PublicProfile
             <ProfileSection title={t('profile.childrenHeading')} icon={Baby}>
               {children.map((child) => (
                 <View key={`${child.name}-${child.ageMonths ?? 'unknown'}`} style={styles.childRow}>
-                  <Text style={styles.childName}>{child.name}</Text>
+                  {/* A child's name follows ITS OWN script, not the UI's. */}
+                  <Text style={[styles.childName, textAlignForContent(child.name, locale)]}>{child.name}</Text>
                   {child.ageKey ? (
-                    <Text style={styles.childAge}>
+                    // The age label is app copy, so it follows the UI locale.
+                    // numberOfLines={1} keeps a long Russian or French age
+                    // ("11 месяцев", "2 ans et demi") from wrapping under a
+                    // long name and breaking the row on a small iPhone.
+                    <Text style={styles.childAge} numberOfLines={1}>
                       {t(child.ageKey, child.ageCount === null ? undefined : { count: child.ageCount })}
                     </Text>
                   ) : null}
@@ -66,12 +77,16 @@ export function PublicProfileScreen({ userId, onBack, onMessage }: PublicProfile
 
           {profile.occupation?.trim() ? (
             <ProfileSection title={t('profile.occupation')} icon={Briefcase}>
-              <Text style={[styles.sectionBody, isRTL && styles.rtlText]}>{profile.occupation.trim()}</Text>
+              <Text style={[styles.sectionBody, textAlignForContent(profile.occupation, locale)]}>
+                {profile.occupation.trim()}
+              </Text>
             </ProfileSection>
           ) : null}
           {profile.bio?.trim() ? (
             <ProfileSection title={t('profile.aboutHeading')}>
-              <Text style={[styles.sectionBody, isRTL && styles.rtlText]}>{profile.bio.trim()}</Text>
+              <Text style={[styles.sectionBody, textAlignForContent(profile.bio, locale)]}>
+                {profile.bio.trim()}
+              </Text>
             </ProfileSection>
           ) : null}
 
@@ -131,7 +146,6 @@ const styles = StyleSheet.create({
   sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
   sectionTitle: { ...typography.headline, color: theme.text.primary },
   sectionBody: { ...typography.body, color: theme.text.secondary, lineHeight: 23 },
-  rtlText: { textAlign: 'right' },
   childRow: { minHeight: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.md },
   childName: { ...typography.bodyMedium, color: theme.text.primary, flex: 1 },
   childAge: { ...typography.subhead, color: theme.text.secondary },
