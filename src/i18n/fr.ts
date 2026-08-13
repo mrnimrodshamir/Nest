@@ -314,7 +314,7 @@ export const fr: Dictionary = {
   'profile.sharedActivity': 'Vous participez tous les deux à {title}',
   'profile.messagePerson': 'Écrire à {name}',
   'profile.bioHint': 'Une courte présentation pour les autres parents et aidants (300 caractères maximum).',
-  'profile.bioCount': '{count}/300',
+  'profile.bioCount': '{count} sur 300',
   'onboarding.profileTitle': 'Configurez votre profil familial',
   'onboarding.profileSubtitle': 'Aidez les parents et aidants à proximité à savoir qui ils vont rencontrer.',
   'onboarding.nameRequired': 'Saisissez votre nom',
