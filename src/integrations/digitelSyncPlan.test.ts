@@ -40,6 +40,7 @@ function existing(over: Partial<ExistingOccurrence> = {}): ExistingOccurrence {
     occurrenceId: 'occ-1', eventId: 'ev-1', occurrenceFingerprint: 'fp-1',
     startsAt: new Date(NOW.getTime() + 3 * day).toISOString(), endsAt: null,
     provider: 'tel_aviv_digitel', missingSince: null, archivedAt: null, hasAttendees: false,
+    sourceUpdatedAt: null,
     ...over,
   };
 }
@@ -72,11 +73,20 @@ test('a hundred repeated syncs still resolve to one occurrence', () => {
 test('a changed provider record updates rather than duplicating', () => {
   const changed = candidate({
     sourceUpdatedAt: NOW.toISOString(),
-    startTime: new Date(NOW.getTime() + 4 * day).toISOString(),
   });
   const plan = buildSyncPlan({ candidates: [changed], existing: [existing()], ...complete });
   assert.equal(plan.inserts.length, 0);
   assert.equal(plan.updates.length, 1);
+});
+
+test('an older provider timestamp does not rewrite unchanged content', () => {
+  const plan = buildSyncPlan({
+    candidates: [candidate({ sourceUpdatedAt: new Date(NOW.getTime() - day).toISOString() })],
+    existing: [existing({ sourceUpdatedAt: NOW.toISOString() })],
+    ...complete,
+  });
+  assert.equal(plan.updates.length, 0);
+  assert.equal(plan.unchanged.length, 1);
 });
 
 // ===========================================================================
@@ -239,6 +249,18 @@ test('an exclusion beats an inclusion in the same record', () => {
 test('a record with no family signal at all is rejected, not defaulted in', () => {
   const decision = assessFamilyRelevance({ title: 'עדכון תעריפי חניה' });
   assert.equal(decision.relevant, false);
+});
+
+test('generic activity words do not publish adult programming without a family audience', () => {
+  for (const title of [
+    "מופע מחווה חלומי לבילי ג'ואל",
+    'הסיפור על בלה קיש מבית פודקאסט רצח',
+    'פסטיבל יין עירוני',
+  ]) assert.equal(assessFamilyRelevance({ title }).relevant, false, title);
+});
+
+test('audience substrings inside an unrelated adult name are not enough without family context', () => {
+  assert.equal(assessFamilyRelevance({ title: 'טילדה רג׳ואן ולאוניד פטשקה' }).relevant, false);
 });
 
 test('irrelevant candidates never reach the insert set', () => {

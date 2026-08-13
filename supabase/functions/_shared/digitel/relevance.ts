@@ -30,6 +30,24 @@ const INCLUDE_TERMS: readonly string[] = [
   'museum', 'library', 'park', 'playground', 'puppet', 'stroller',
 ];
 
+/** Broad activity words are useful only when the same record also identifies a
+ * family audience. Without this guard, an adult concert ("מופע") or a true-crime
+ * podcast ("סיפור") is accidentally published. */
+const AUDIENCE_TERMS: readonly string[] = [
+  'ילד', 'ילדים', 'ילדות', 'תינוק', 'תינוקות', 'פעוט', 'פעוטות', 'משפח', 'הורים',
+  'הורה', 'אמהות', 'אבות', 'אמא', 'אבא', 'חופשת לידה', 'גן ילדים',
+  'child', 'children', 'kid', 'kids', 'baby', 'babies', 'toddler', 'family', 'families',
+  'parent', 'parents', 'stroller',
+];
+const AUDIENCE_PREFIXES: readonly string[] = ['ילד', 'תינוק', 'פעוט', 'משפח'];
+const ENGLISH_AUDIENCE_PREFIXES: readonly string[] = ['child', 'kid', 'baby', 'toddler', 'famil', 'parent', 'stroller'];
+
+const BROAD_ACTIVITY_TERMS: readonly string[] = [
+  'סיפור', 'הצגה', 'הצגות', 'סדנה', 'סדנת', 'סדנאות', 'יצירה', 'טיול', 'פסטיבל',
+  'מופע', 'תיאטרון', 'קרנבל', 'חוג', 'התעמלות', 'שחייה',
+  'story time', 'storytime', 'workshop', 'puppet',
+];
+
 /** Terms that mark a record as clearly not for parents with small children,
  *  even if an include term also appears. Municipal feeds mix audiences freely:
  *  "עירוני" alone means nothing, but a tender or a council meeting is never a
@@ -71,6 +89,24 @@ export function assessFamilyRelevance(input: {
 
   const matched = INCLUDE_TERMS.filter((term) => haystack.includes(term.toLowerCase()));
   if (matched.length === 0) return { relevant: false, reason: 'no_family_signal', matched: [] };
+
+  const tokens = new Set(haystack.normalize('NFKC').split(/[\s\p{P}\p{S}]+/u).filter(Boolean));
+  const audienceMatched = AUDIENCE_TERMS.some((term) => {
+    const normalized = term.toLowerCase().normalize('NFKC');
+    return normalized.includes(' ') ? haystack.includes(normalized) : tokens.has(normalized);
+  }) || [...tokens].some((token) =>
+    AUDIENCE_PREFIXES.some((prefix) => token.startsWith(prefix) || token.startsWith(`ל${prefix}`))
+    || ENGLISH_AUDIENCE_PREFIXES.some((prefix) => token.startsWith(prefix))
+  );
+  const specificVenueMatched = ['מוזיאון', 'ספריה', 'ספרייה', 'פארק', 'גינה', 'מגרש משחקים', 'museum', 'library', 'park', 'playground']
+    .some((term) => haystack.includes(term.toLowerCase()));
+  const onlyBroadSignal = matched.every((term) => BROAD_ACTIVITY_TERMS.includes(term));
+  if (!audienceMatched && !specificVenueMatched && onlyBroadSignal) {
+    return { relevant: false, reason: 'no_family_signal', matched: [] };
+  }
+  if (!audienceMatched && !specificVenueMatched) {
+    return { relevant: false, reason: 'no_family_signal', matched: [] };
+  }
 
   return { relevant: true, matched };
 }

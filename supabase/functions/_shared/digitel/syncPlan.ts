@@ -34,6 +34,7 @@ export interface ExistingOccurrence {
   provider: string;
   missingSince: string | null;
   archivedAt: string | null;
+  sourceUpdatedAt: string | null;
   /** Whether any user has RSVP'd. Decided by the caller with a join, because
    *  "does user data exist" is a database question, not a rules question. */
   hasAttendees: boolean;
@@ -153,9 +154,10 @@ function hasContentChanged(candidate: DigitelEventCandidate, existing: ExistingO
   // Without one, treat the record as unchanged rather than rewriting a row on
   // every sync — pointless writes make the log useless for spotting real churn.
   if (!candidate.sourceUpdatedAt) return false;
+  if (!existing.sourceUpdatedAt) return true;
   const candidateUpdated = Date.parse(candidate.sourceUpdatedAt);
-  const existingStart = Date.parse(existing.startsAt);
-  return Number.isFinite(candidateUpdated) && Number.isFinite(existingStart)
-    ? candidate.startTime !== existing.startsAt
-    : false;
+  const existingUpdated = Date.parse(existing.sourceUpdatedAt);
+  return Number.isFinite(candidateUpdated) && Number.isFinite(existingUpdated)
+    ? candidateUpdated > existingUpdated
+    : candidate.sourceUpdatedAt !== existing.sourceUpdatedAt;
 }
