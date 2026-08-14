@@ -8,7 +8,7 @@ EXPECTED NEXT BUILD: `32` (EAS remote auto-increment; not created)
 
 LAST TESTFLIGHT SHA: `e74cdd081872c1dff0113b8f206a92c97130e46c`
 
-CODE RELEASE CANDIDATE SHA: `738f9cc`
+CODE AUDIT BASELINE SHA: `6ef4ccfaa435c4901ddce48a41df8f76c9ffa143`
 DATE: `2026-08-14`
 
 The final Git SHA is the clean `origin/main` SHA approved immediately before
@@ -27,6 +27,11 @@ building. This document is intentionally not an EAS build authorization.
 - DigiTel event ingestion now runs automatically with lifecycle-safe retention,
   stable identity, and provider-presence reconciliation.
 - Expo SDK 57 dependency patches aligned for release validation.
+- Privacy-safe Supabase funnel analytics across launch, onboarding/login,
+  Discovery, content opens, Activity/Event attendance, sharing, Chats, Forums,
+  and profiles. Events include per-launch session attribution and resolved app
+  language, while share completion/cancellation/failure and WhatsApp/native
+  channels remain distinct.
 
 Discovery controls, card/image sizing, Forums, and the NestUp logo were already
 present in Build 31. They remain high-priority regression checks but are not
@@ -70,3 +75,38 @@ Actual comparison: `e74cdd081872c1dff0113b8f206a92c97130e46c..origin/main`.
 - Tests/tooling: sharing regression matrix, analytics privacy/transport tests,
   DigiTel lifecycle tests, film prompt/production documents.
 - Dependencies: nine Expo SDK 57 patch versions aligned to Expo recommendations.
+
+## Build 31 comparison: definitive product classification
+
+### New in the next build
+
+- French and Russian, completing EN/HE/FR/RU; Hebrew remains RTL and Cyrillic
+  user content remains LTR.
+- Rich Family Profiles, including caregiver role, derived parent age, family
+  context, neighbourhood, occupation, and bio with exact birthdates private.
+- Unified family-profile onboarding for email and Apple Sign-In, plus centralized
+  completeness/routing for interrupted onboarding.
+- Social Event Attendance: “I’m going,” removal, attendee count/avatars,
+  Who’s Going, and existing Public Profile navigation; provider registration
+  remains separate.
+- Lifecycle-safe automated DigiTel synchronization with provider presence kept
+  separate from NestUp publication relevance and history/RSVP retention.
+- Hardened Activity/Place/Event sharing and privacy-safe funnel analytics.
+- Expo SDK 57 compatible patch alignment.
+
+### Present in Build 31 and regression-tested, not new
+
+- Compact Discovery Search / Filters / Sort controls and multi-select content
+  filters.
+- Bounded Activity/Place/Event image and card sizing.
+- Forums and forum chat.
+- Activity attendance/participants and Activity chat.
+- Existing Activity/Place/Event sharing surfaces and deep links (the runtime
+  reliability and analytics around them are new).
+- NestUp icon, splash/logo, and branding.
+- In-app `Version 0.1.0 · Build <native build>` display.
+
+### Non-app changes since Build 31
+
+- Website work and commercial-film production files are outside the mobile
+  binary. They are not part of this release’s device feature claims.

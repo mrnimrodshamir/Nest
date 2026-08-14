@@ -19,6 +19,16 @@ Discovery open/search/filter/sort/item open, Activity open/create/join/leave/sha
 Event open/RSVP/share, Place open/share, Chats and Forums, Public Profile opens,
 profile updates, and share start/completion/cancellation/failure by channel.
 
+The canonical event contract is maintained in
+[`docs/analytics/event-dictionary.md`](analytics/event-dictionary.md).
+
+Every event receives a privacy-safe per-launch `session_id` and the resolved app
+`language` (`en`, `he`, `fr`, or `ru`). Supabase adds the server timestamp and,
+when authenticated, stores the account UUID in the RLS-protected `user_id`
+column. The session identifier contains no account, device, or installation
+identifier. This lets one launch be followed from signed-out onboarding into an
+authenticated funnel without fingerprinting the device.
+
 ## Privacy contract
 
 The backing store may use the authenticated Supabase user ID as an internal,
@@ -39,3 +49,6 @@ The sanitizer drops keys for email, phone, exact or derived birthdate fields,
 child names, message content, bios, precise coordinates, addresses, credentials,
 tokens, secrets, and passwords. Strings and property counts are bounded. No
 user-generated text or full objects are sent.
+
+The JSON properties column can accept future allow-listed dimensions such as
+`acquisition_source` and `acquisition_campaign`; no schema redesign is needed.
