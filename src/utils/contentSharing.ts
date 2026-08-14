@@ -3,7 +3,14 @@ import { APP_NAME } from '@/constants/brand';
 export type ShareContentType = 'activity' | 'place' | 'event';
 
 export function contentDeepLink(type: ShareContentType, id: string): string {
-  return `nestup://${type}/${encodeURIComponent(id)}`;
+  if (!id?.trim()) return '';
+  try {
+    return `nestup://${type}/${encodeURIComponent(id)}`;
+  } catch {
+    // An unpaired Unicode surrogate makes encodeURIComponent throw. Omitting
+    // a bad link is safer than crashing a details screen or sharing one.
+    return '';
+  }
 }
 
 export function buildPlaceShareMessage(input: {
@@ -13,7 +20,8 @@ export function buildPlaceShareMessage(input: {
 }): string {
   const lines = [`Discover ${input.name.trim()}`];
   if (input.location?.trim()) lines.push(input.location.trim());
-  lines.push('', `Open in ${APP_NAME}:`, contentDeepLink('place', input.id));
+  const deepLink = contentDeepLink('place', input.id);
+  if (deepLink) lines.push('', `Open in ${APP_NAME}:`, deepLink);
   return lines.join('\n');
 }
 
@@ -31,7 +39,8 @@ export function buildEventShareMessage(input: {
     weekday: 'long', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZone: 'Asia/Jerusalem',
   }));
   if (input.location?.trim()) lines.push(input.location.trim());
-  lines.push('', `Open in ${APP_NAME}:`, contentDeepLink('event', input.occurrenceId));
+  const deepLink = contentDeepLink('event', input.occurrenceId);
+  if (deepLink) lines.push('', `Open in ${APP_NAME}:`, deepLink);
   return lines.join('\n');
 }
 

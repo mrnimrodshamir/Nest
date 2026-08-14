@@ -48,3 +48,9 @@ test('canonical and legacy links route Activity, Place, and Event safely', () =>
   assert.equal(parseSharedContentUrl('https://attacker.example/activity/a1'), null);
   assert.equal(contentDeepLink('event', 'event with spaces'), 'nestup://event/event%20with%20spaces');
 });
+
+test('malformed identifiers are omitted instead of crashing or creating broken links', () => {
+  assert.equal(contentDeepLink('event', '\uD800'), '');
+  assert.doesNotThrow(() => buildEventShareMessage({ occurrenceId: '\uD800', title: 'Family day', startsAt: '2026-08-06T14:00:00Z', location: null, status: 'scheduled' }));
+  assert.doesNotMatch(buildPlaceShareMessage({ id: '', name: 'Park', location: null }), /nestup:\/\//);
+});

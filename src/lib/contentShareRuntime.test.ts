@@ -57,14 +57,14 @@ test('native share resolves rather than throwing when the module blows up', asyn
     openURL: async () => undefined,
     share: async () => { throw new TypeError('unbound Share.share'); },
   });
-  assert.equal(r, 'dismissed');
+  assert.equal(r, 'failed');
 });
 
 test('WhatsApp share resolves rather than throwing when everything fails', async () => {
   __resetShareGuard();
   const boom = async () => { throw new Error('native module missing'); };
   const r = await openWhatsAppShare('hi', { canOpenURL: boom, openURL: boom, share: boom });
-  assert.equal(r, 'dismissed');
+  assert.equal(r, 'failed');
 });
 
 test('every caller uses void, so neither function may ever reject', () => {
@@ -73,7 +73,7 @@ test('every caller uses void, so neither function may ever reject', () => {
     assert.match(s, /void openNativeShare\(|void openWhatsAppShare\(/);
   }
   // Both functions must therefore always return, never throw.
-  assert.match(source, /NEVER REJECTS/);
+  assert.match(source, /never rejects/i);
 });
 
 // ===========================================================================
@@ -92,12 +92,35 @@ test('WhatsApp unavailable falls back to the native sheet', async () => {
   assert.equal(shared, true);
 });
 
+test('malformed Unicode in a WhatsApp URL falls back without throwing', async () => {
+  __resetShareGuard();
+  let shared = false;
+  const r = await openWhatsAppShare('\uD800', {
+    canOpenURL: async () => true,
+    openURL: async () => undefined,
+    share: async () => { shared = true; },
+  });
+  assert.equal(r, 'native');
+  assert.equal(shared, true);
+});
+
 test('user cancellation is not an error', async () => {
   __resetShareGuard();
   const r = await openNativeShare('hi', {
     canOpenURL: async () => true,
     openURL: async () => undefined,
     share: async () => { throw new Error('User dismissed'); },
+  });
+  assert.equal(r, 'dismissed');
+});
+
+test('native dismissedAction is recognised as cancellation', async () => {
+  __resetShareGuard();
+  const r = await openNativeShare('hi', {
+    canOpenURL: async () => true,
+    openURL: async () => undefined,
+    share: async () => ({ action: 'dismissedAction' }),
+    dismissedAction: 'dismissedAction',
   });
   assert.equal(r, 'dismissed');
 });
@@ -139,6 +162,20 @@ test('a double tap cannot open two share sheets', async () => {
   const [a, b] = await Promise.all([openNativeShare('hi', deps), openNativeShare('hi', deps)]);
   assert.equal(opens, 1, 'two sheets were opened');
   assert.ok([a, b].includes('opened'));
+  assert.ok([a, b].includes('dismissed'));
+});
+
+test('a double tap cannot launch WhatsApp twice', async () => {
+  __resetShareGuard();
+  let opens = 0;
+  const deps = {
+    canOpenURL: async () => true,
+    openURL: async () => { opens += 1; await new Promise((resolve) => setTimeout(resolve, 20)); },
+    share: async () => undefined,
+  };
+  const [a, b] = await Promise.all([openWhatsAppShare('hello', deps), openWhatsAppShare('hello', deps)]);
+  assert.equal(opens, 1);
+  assert.ok([a, b].includes('whatsapp'));
   assert.ok([a, b].includes('dismissed'));
 });
 
@@ -185,7 +222,7 @@ test('NO DIRECT CONTACT: the WhatsApp url never carries a recipient', async () =
 
 test('Activity share goes through the guarded helper, not a raw Share call', () => {
   const s = readFileSync(new URL('../screens/ActivityDetailScreen.tsx', import.meta.url), 'utf8');
-  assert.match(s, /openNativeShare\(message\)/);
+  assert.match(s, /openNativeShare\(message,/);
   assert.ok(!/await Share\.share\(/.test(s), 'ActivityDetail still calls Share.share directly');
 });
 

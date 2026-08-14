@@ -265,6 +265,7 @@ function useAuthState(): UseAuthResult {
   }, [loadProfile]);
 
   const signIn = useCallback(async (email: string, password: string) => {
+    track('login_started', { login_method: 'email' });
     const { error } = await supabase.auth.signInWithPassword({
       email: normalizeEmail(email),
       password,
@@ -276,6 +277,7 @@ function useAuthState(): UseAuthResult {
       console.log('[Auth] Email sign-in failed', error.message);
       return mapAuthError(error.message);
     }
+    track('login_completed', { login_method: 'email' });
     console.log('[Auth] Email sign-in succeeded');
     return null;
   }, []);
@@ -283,6 +285,7 @@ function useAuthState(): UseAuthResult {
   const register = useCallback(
     async (input: RegistrationInput, onStage?: (stage: RegistrationStage) => void): Promise<RegisterResult> => {
       track('sign_up_started');
+      track('onboarding_started', { onboarding_method: 'email' });
       onStage?.('creating-account');
 
       // Email confirmation is disabled for this project (a manual
@@ -369,6 +372,7 @@ function useAuthState(): UseAuthResult {
       return { status: 'cancelled' as const };
     }
     appleSignInInFlight = true;
+    track('login_started', { login_method: 'apple' });
     console.log('[Auth] Apple sign-in: requesting native credential');
     try {
       let credential: AppleAuthentication.AppleAuthenticationCredential;
@@ -415,6 +419,7 @@ function useAuthState(): UseAuthResult {
 
       const userId = data.user?.id;
       if (!userId) return { status: 'error' as const, message: 'Sign in with Apple failed. Please try again.' };
+      track('login_completed', { login_method: 'apple' });
       console.log('[Auth] Apple sign-in: Supabase session established', { userId, hasSession: Boolean(data.session) });
 
       // The auth-user-creation trigger already created a profile row for
@@ -448,6 +453,7 @@ function useAuthState(): UseAuthResult {
       // screen is reached reactively, not via a passed navigation param).
       console.log('[Auth] Apple sign-in: needs profile completion', { userId });
       track('sign_up_started');
+      track('onboarding_started', { onboarding_method: 'apple' });
       const fullName = credential.fullName
         ? [credential.fullName.givenName, credential.fullName.familyName].filter(Boolean).join(' ')
         : null;
@@ -611,6 +617,7 @@ function useAuthState(): UseAuthResult {
         return "Couldn't save your changes. Please try again.";
       }
       await loadProfile(session.user.id);
+      track('profile_updated');
       return null;
     },
     [session, loadProfile],

@@ -63,3 +63,8 @@ test('generic meeting-point data is never exposed in share copy', () => {
   assert.doesNotMatch(message, /selected meeting point/i);
   assert.match(message, /^Join us for Morning stroller walk/);
 });
+
+test('malformed activity ids cannot crash message generation', () => {
+  assert.doesNotThrow(() => buildShareMessage(shareable({ id: '\uD800' })));
+  assert.doesNotMatch(buildShareMessage(shareable({ id: '\uD800' })), /nestup:\/\//);
+});

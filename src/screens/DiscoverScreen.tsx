@@ -41,6 +41,7 @@ import { distanceMeters } from '@/utils/placeViewport';
 import { ALL_DISCOVERY_CONTENT, discoveryEmptyCopyKey, selectedContentKeys, toggleDiscoveryContent, visibleDiscoveryFailures } from '@/utils/discoveryPresentation';
 import { useI18n, textAlignForContent, type TranslationKey } from '@/i18n';
 import { applyContentSelectionChange } from '@/utils/discoveryScreenState';
+import { track } from '@/lib/analytics';
 import {
   discoveryItemKey,
   discoveryItemCoordinate,
@@ -163,6 +164,10 @@ export function DiscoverScreen({ onOpenActivity, onOpenPlace, onOpenEvent, onHos
   const centeredOnUser = useRef(false);
   const hasFocusedOnce = useRef(false);
 
+  useEffect(() => {
+    track('discovery_opened', { discovery_mode: 'mixed' });
+  }, []);
+
   const position = useDiscoveryPosition(!previewMode);
   const viewport = useMemo(() => regionToPlaceViewport(region), [region]);
   const placeFilters = useMemo<PlaceFilters>(() => ({
@@ -269,6 +274,7 @@ export function DiscoverScreen({ onOpenActivity, onOpenPlace, onOpenEvent, onHos
 
   const openItem = useCallback((item: DiscoveryItem) => {
     focusItem(item);
+    track('discovery_item_opened', { content_type: item.type, content_id: item.id, discovery_mode: 'mixed' });
     if (item.type === 'activity') onOpenActivity(item.data);
     else if (item.type === 'place') onOpenPlace(item.data);
     else onOpenEvent(item.data);
@@ -282,6 +288,7 @@ export function DiscoverScreen({ onOpenActivity, onOpenPlace, onOpenEvent, onHos
     if (next.prevented) return;
     setContentSelection(next.selection);
     setSelectedItem(next.selectedItem);
+    track('discovery_filter_changed', { filter_type: 'content_type', filter_value: key });
     // Deliberately does NOT touch `region` — changing what is shown must never
     // move the camera the user positioned — and issues no refetch: this is a
     // visibility change over data already cached.
@@ -382,6 +389,9 @@ export function DiscoverScreen({ onOpenActivity, onOpenPlace, onOpenEvent, onHos
               placeholderTextColor={theme.text.muted}
               value={searchQuery}
               onChangeText={setSearchQuery}
+              onSubmitEditing={() => {
+                if (searchQuery.trim().length >= 2) track('discovery_search_used', { query_length: searchQuery.trim().length });
+              }}
               autoFocus
               returnKeyType="search"
               // Direction follows what has been TYPED, not the UI language: a
@@ -407,14 +417,14 @@ export function DiscoverScreen({ onOpenActivity, onOpenPlace, onOpenEvent, onHos
         <View style={styles.contentTypeOptions}>{CONTENT_TYPES.map((item) => <ContentTypeOption key={item.key} label={t(item.labelKey)} selected={contentSelection[item.key]} onPress={() => changeContentSelection(item.key)} />)}</View>
         {filterNotice ? <Text style={styles.filterNotice} accessibilityLiveRegion="polite">{filterNotice}</Text> : null}
         {/* Only the sections for currently-selected content types are shown. */}
-        {contentSelection.activities ? <FilterRow label={t('discovery.activities')} items={ACTIVITY_CATEGORIES} selected={selectedActivityCategory} onSelect={setSelectedActivityCategory} /> : null}
+        {contentSelection.activities ? <FilterRow label={t('discovery.activities')} items={ACTIVITY_CATEGORIES} selected={selectedActivityCategory} onSelect={(value) => { setSelectedActivityCategory(value); track('discovery_filter_changed', { filter_type: 'activity_category', filter_value: value }); }} /> : null}
         {contentSelection.places ? (
           <>
-            <FilterRow label={t('discovery.places')} items={PLACE_CATEGORIES} selected={selectedPlaceCategory} onSelect={setSelectedPlaceCategory} />
-            <View style={styles.wrapChips}>{PLACE_QUICK_FILTERS.map((item) => <CategoryChip key={item.key} label={item.label} selected={placeQuickFilters.has(item.key)} onPress={() => setPlaceQuickFilters((current) => togglePlaceQuickFilter(current, item.key))} />)}</View>
+            <FilterRow label={t('discovery.places')} items={PLACE_CATEGORIES} selected={selectedPlaceCategory} onSelect={(value) => { setSelectedPlaceCategory(value); track('discovery_filter_changed', { filter_type: 'place_category', filter_value: value }); }} />
+            <View style={styles.wrapChips}>{PLACE_QUICK_FILTERS.map((item) => <CategoryChip key={item.key} label={item.label} selected={placeQuickFilters.has(item.key)} onPress={() => { setPlaceQuickFilters((current) => togglePlaceQuickFilter(current, item.key)); track('discovery_filter_changed', { filter_type: 'place_quick_filter', filter_value: item.key }); }} />)}</View>
           </>
         ) : null}
-        {contentSelection.events ? <FilterRow label={t('discovery.events')} items={EVENT_CATEGORIES} selected={selectedEventCategory} onSelect={setSelectedEventCategory} /> : null}
+        {contentSelection.events ? <FilterRow label={t('discovery.events')} items={EVENT_CATEGORIES} selected={selectedEventCategory} onSelect={(value) => { setSelectedEventCategory(value); track('discovery_filter_changed', { filter_type: 'event_category', filter_value: value }); }} /> : null}
         {activeFilterCount > 0 ? (
           <Pressable style={styles.resetAll} onPress={resetAllFilters} accessibilityRole="button" accessibilityLabel={t('filters.resetAll')}>
             <Text style={styles.resetAllText}>{t('filters.resetAll')}</Text>
@@ -423,7 +433,7 @@ export function DiscoverScreen({ onOpenActivity, onOpenPlace, onOpenEvent, onHos
       </ModalSheet> : null}
 
       {sortOpen ? <ModalSheet visible title={t('discovery.sortListTitle')} onDismiss={() => setSortOpen(false)}>
-        <View style={styles.sortOptions}>{SORT_OPTIONS.map((item) => <Pressable key={item.key} style={[styles.sortOption, sort === item.key && styles.sortOptionSelected]} onPress={() => { setSort(item.key); setSortOpen(false); }} accessibilityRole="radio" accessibilityState={{ checked: sort === item.key }} accessibilityLabel={t(item.labelKey)}><Text style={[styles.sortOptionText, sort === item.key && styles.sortOptionTextSelected]}>{t(item.labelKey)}</Text></Pressable>)}</View>
+        <View style={styles.sortOptions}>{SORT_OPTIONS.map((item) => <Pressable key={item.key} style={[styles.sortOption, sort === item.key && styles.sortOptionSelected]} onPress={() => { setSort(item.key); setSortOpen(false); track('discovery_sort_changed', { sort: item.key }); }} accessibilityRole="radio" accessibilityState={{ checked: sort === item.key }} accessibilityLabel={t(item.labelKey)}><Text style={[styles.sortOptionText, sort === item.key && styles.sortOptionTextSelected]}>{t(item.labelKey)}</Text></Pressable>)}</View>
         <Text style={styles.sortHint}>{t('discovery.sortHint')}</Text>
       </ModalSheet> : null}
 

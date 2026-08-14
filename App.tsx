@@ -603,7 +603,7 @@ function ActivityDetailWithRsvp({
   );
 
   useEffect(() => {
-    track('activity_viewed', { activity_id: activity.id });
+    track('activity_opened', { content_id: activity.id, source: 'user' });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activity.id]);
 
@@ -657,9 +657,13 @@ function ForumChatContainer({
 
   React.useEffect(() => {
     let cancelled = false;
+    track('forum_opened', { forum_key: forumKey });
     openForum(forumKey).then((id) => {
       if (cancelled) return;
-      if (id) setChatId(id);
+      if (id) {
+        setChatId(id);
+        track('forum_joined', { forum_key: forumKey });
+      }
       else setResolveError("Couldn't open this forum.");
     });
     return () => {
@@ -667,7 +671,7 @@ function ForumChatContainer({
     };
   }, [forumKey]);
 
-  return <ChatScreen chatId={chatId} resolveError={resolveError} title={title ?? ''} onBack={onBack} />;
+  return <ChatScreen chatId={chatId} resolveError={resolveError} title={title ?? ''} onBack={onBack} analyticsEvent="forum_message_sent" />;
 }
 
 function GroupChatContainer({

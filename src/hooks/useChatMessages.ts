@@ -33,7 +33,7 @@ const PAGE_SIZE = 30;
 /** Core message list + realtime + send, shared by both group (per-activity)
  *  and direct (1:1) chat — the only difference between them is how the
  *  chatId is resolved (see useActivityChatId / useDirectChatId). */
-export function useChatMessages(chatId: string | null): UseChatMessagesResult {
+export function useChatMessages(chatId: string | null, analyticsEvent: 'chat_message_sent' | 'forum_message_sent' = 'chat_message_sent'): UseChatMessagesResult {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -205,9 +205,9 @@ export function useChatMessages(chatId: string | null): UseChatMessagesResult {
         current.map((m) => (m.id === tempId ? { ...m, id: data.id, createdAt: data.created_at } : m)),
       );
       // Never track message content -- only that a send happened.
-      track('chat_message_sent', { chat_id: chatId });
+      track(analyticsEvent, analyticsEvent === 'forum_message_sent' ? { forum_session: true } : { chat_id: chatId });
     },
-    [chatId],
+    [analyticsEvent, chatId],
   );
 
   const send = useCallback((content: string) => sendRaw(content), [sendRaw]);

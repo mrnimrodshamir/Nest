@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, ScrollView, Pressable, StyleSheet, Linking, Platform, Alert, Share, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, Pressable, StyleSheet, Linking, Platform, Alert, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MapView, { Marker, PROVIDER_DEFAULT } from 'react-native-maps';
 import * as Notifications from 'expo-notifications';
@@ -192,7 +192,7 @@ export function ActivityDetailScreen({
     // Routed through the shared helper rather than calling Share directly, so
     // every share surface gets the same double-tap guard and the same
     // never-rejects contract.
-    await openNativeShare(message);
+    await openNativeShare(message, undefined, { contentType: 'activity', contentId: activity.id });
   };
 
   const handleMorePress = () => {

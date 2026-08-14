@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { coerceParentRole, type ParentRole } from '@/utils/parentRole';
+import { track } from '@/lib/analytics';
 
 export interface EventAttendee {
   userId: string;
@@ -120,6 +121,7 @@ export function useEventRsvp(occurrenceId: string | null): UseEventRsvpResult {
           .eq('event_occurrence_id', occurrenceId)
           .eq('user_id', viewerId);
         if (deleteError) throw deleteError;
+        track('event_rsvp_left', { content_id: occurrenceId });
       } else {
         // upsert on the unique (occurrence, user) pair, so a retry or a double
         // tap that slips past isSaving still cannot create a second row.
@@ -130,6 +132,7 @@ export function useEventRsvp(occurrenceId: string | null): UseEventRsvpResult {
             { onConflict: 'event_occurrence_id,user_id', ignoreDuplicates: true },
           );
         if (insertError) throw insertError;
+        track('event_rsvp_joined', { content_id: occurrenceId });
       }
       await load();
     } catch (err) {

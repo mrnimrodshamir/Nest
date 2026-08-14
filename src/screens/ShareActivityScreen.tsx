@@ -20,11 +20,11 @@ export function ShareActivityScreen({ activity, onViewActivity }: ShareActivityS
   const [showCalendarSheet, setShowCalendarSheet] = useState(false);
 
   const handleWhatsAppShare = async () => {
-    await openWhatsAppShare(message);
+    await openWhatsAppShare(message, undefined, { contentType: 'activity', contentId: activity.id });
   };
 
   const handleNativeShare = async () => {
-    await openNativeShare(message);
+    await openNativeShare(message, undefined, { contentType: 'activity', contentId: activity.id });
   };
 
   return (

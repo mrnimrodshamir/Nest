@@ -3,6 +3,7 @@ import { I18nManager } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Localization from 'expo-localization';
 import type { TranslationKey } from './en';
+import { identify, track } from '@/lib/analytics';
 import {
   coerceLocalePreference,
   isRtlLocale,
@@ -78,6 +79,8 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
 
   const setPreference = useCallback((next: LocalePreference) => {
     setPreferenceState(next);
+    track('language_changed', { language: next });
+    identify({ language: next });
     AsyncStorage.setItem(STORAGE_KEY, next).catch(() => {
       // Persisting is best-effort: the choice still applies to this session.
     });

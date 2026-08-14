@@ -18,6 +18,7 @@ import { chatSections, filterForums, partitionForums, type ChatSectionKey } from
 import { useForums, type ForumSummary } from '@/hooks/useForums';
 import { ForumRow } from '@/components/ForumRow';
 import { useI18n, textAlignForContent } from '@/i18n';
+import { track } from '@/lib/analytics';
 
 interface MessagesScreenProps {
   onOpenConversation: (conversation: Conversation) => void;
@@ -55,6 +56,7 @@ export function MessagesScreen({ onOpenConversation, onOpenForum, onCreateActivi
   // forced a remount.
   useFocusEffect(
     useCallback(() => {
+      track('chats_opened');
       refresh();
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []),

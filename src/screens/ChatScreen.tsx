@@ -25,10 +25,11 @@ interface ChatScreenProps {
   resolveError?: string | null;
   title: string;
   onBack: () => void;
+  analyticsEvent?: 'chat_message_sent' | 'forum_message_sent';
 }
 
-export function ChatScreen({ chatId, resolveError, title, onBack }: ChatScreenProps) {
-  const { messages, isLoading, error, send, retry } = useChatMessages(chatId);
+export function ChatScreen({ chatId, resolveError, title, onBack, analyticsEvent }: ChatScreenProps) {
+  const { messages, isLoading, error, send, retry } = useChatMessages(chatId, analyticsEvent);
   const { t } = useI18n();
   const [draft, setDraft] = useState('');
   const listRef = useRef<FlatList<ChatMessage>>(null);

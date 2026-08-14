@@ -4,20 +4,17 @@ export interface ShareDependencies {
   canOpenURL: (url: string) => Promise<boolean>;
   openURL: (url: string) => Promise<unknown>;
   share: (payload: { message: string }) => Promise<unknown>;
+  dismissedAction?: string;
 }
 
-/** Resolves React Native's Linking/Share.
- *
- *  THE METHODS MUST BE WRAPPED, NEVER PASSED BY REFERENCE.
- *
- *  `{ canOpenURL: Linking.canOpenURL }` detaches the function from its object.
- *  RN's Linking is a class instance (LinkingImpl extends NativeEventEmitter)
- *  and Share's statics reference themselves, so both use `this` internally.
- *  Called detached, `this` is the plain deps object and the call throws — which
- *  is how WhatsApp and native share both broke on device while every unit test
- *  passed, because the tests inject plain-function mocks that need no receiver.
- *
- *  Arrow wrappers keep the correct receiver. Do not "simplify" them back. */
+export interface ShareAnalyticsContext {
+  contentType: 'activity' | 'event' | 'place';
+  contentId: string;
+}
+
+/** Resolves React Native's Linking/Share. The methods must stay wrapped: passing
+ * them by reference detaches their native receiver and caused the device crash
+ * this helper exists to prevent. */
 async function resolveDependencies(dependencies?: ShareDependencies): Promise<ShareDependencies> {
   if (dependencies) return dependencies;
   const { Linking, Share } = await import('react-native');
@@ -25,81 +22,132 @@ async function resolveDependencies(dependencies?: ShareDependencies): Promise<Sh
     canOpenURL: (url) => Linking.canOpenURL(url),
     openURL: (url) => Linking.openURL(url),
     share: (payload) => Share.share(payload),
+    dismissedAction: Share.dismissedAction,
   };
 }
 
-/** Guards against a double tap opening two share sheets. iOS will reject the
- *  second presentation, which previously surfaced as an unhandled rejection. */
+/** One process-wide lock covers both WhatsApp and native presentation. A fast
+ * double tap must not launch WhatsApp twice or present two share sheets. */
 let inFlight = false;
 
-export type NativeShareResult = 'opened' | 'dismissed' | 'unavailable';
+export type NativeShareResult = 'opened' | 'dismissed' | 'failed' | 'unavailable';
+export type WhatsAppShareResult = 'whatsapp' | 'native' | 'dismissed' | 'failed' | 'unavailable';
 
-/** Opens the iOS share sheet.
- *
- *  NEVER REJECTS. Every caller uses `void openNativeShare(...)`, so a rejection
- *  here is an unhandled promise rejection — fatal in a release build. Cancelling
- *  the sheet is a normal outcome, not an error. */
+function shareProperties(context: ShareAnalyticsContext | undefined, channel: 'whatsapp' | 'native') {
+  return {
+    share_channel: channel,
+    ...(context ? { content_type: context.contentType, content_id: context.contentId } : {}),
+  };
+}
+
+function trackShare(event: 'share_started' | 'share_completed' | 'share_cancelled' | 'share_failed' | 'activity_shared' | 'event_shared' | 'place_shared', properties: Record<string, string>): void {
+  // Lazy so pure Node tests never load the React Native Supabase transport.
+  void import('@/lib/analytics').then(({ track }) => track(event, properties)).catch(() => undefined);
+}
+
+function trackOutcome(
+  result: NativeShareResult,
+  channel: 'whatsapp' | 'native',
+  context?: ShareAnalyticsContext,
+): void {
+  if (!context) return;
+  const properties = shareProperties(context, channel);
+  if (result === 'opened') {
+    trackShare('share_completed', properties);
+    trackShare(`${context.contentType}_shared`, properties);
+  } else if (result === 'dismissed') trackShare('share_cancelled', properties);
+  else trackShare('share_failed', properties);
+}
+
+function looksLikeCancellation(error: unknown): boolean {
+  return /cancel|dismiss/i.test(error instanceof Error ? error.message : String(error));
+}
+
+async function performNativeShare(message: string, resolved: ShareDependencies): Promise<NativeShareResult> {
+  try {
+    const response = await resolved.share({ message });
+    const action = response && typeof response === 'object' && 'action' in response
+      ? String((response as { action?: unknown }).action ?? '')
+      : '';
+    return resolved.dismissedAction && action === resolved.dismissedAction ? 'dismissed' : 'opened';
+  } catch (error) {
+    return looksLikeCancellation(error) ? 'dismissed' : 'failed';
+  }
+}
+
+/** Opens the native share sheet and never rejects. */
 export async function openNativeShare(
   message: string,
   dependencies?: ShareDependencies,
+  context?: ShareAnalyticsContext,
 ): Promise<NativeShareResult> {
-  if (!message || !message.trim()) return 'unavailable';
-  if (inFlight) return 'dismissed';
+  if (!message?.trim()) return 'unavailable';
+  if (context) trackShare('share_started', shareProperties(context, 'native'));
+  if (inFlight) {
+    trackOutcome('dismissed', 'native', context);
+    return 'dismissed';
+  }
   inFlight = true;
   try {
-    const resolved = await resolveDependencies(dependencies);
-    await resolved.share({ message });
-    return 'opened';
-  } catch (error) {
-    // Covers user cancellation and any native failure. Logged, never thrown.
-    console.log('[Share] native share unavailable', error instanceof Error ? error.message : error);
-    return 'dismissed';
+    let resolved: ShareDependencies;
+    try {
+      resolved = await resolveDependencies(dependencies);
+    } catch {
+      trackOutcome('unavailable', 'native', context);
+      return 'unavailable';
+    }
+    const result = await performNativeShare(message, resolved);
+    trackOutcome(result, 'native', context);
+    return result;
   } finally {
     inFlight = false;
   }
 }
 
-export type WhatsAppShareResult = 'whatsapp' | 'native' | 'dismissed' | 'unavailable';
-
-/** Shares general content to WhatsApp, falling back to the native sheet.
- *
- *  NEVER REJECTS, for the same reason as above. Sends a message only — never a
- *  recipient — so this can never become direct contact with a venue or an
- *  organiser. */
+/** Opens WhatsApp for general content sharing, then falls back to the native
+ * sheet. It never addresses a recipient and never rejects. */
 export async function openWhatsAppShare(
   message: string,
   dependencies?: ShareDependencies,
+  context?: ShareAnalyticsContext,
 ): Promise<WhatsAppShareResult> {
-  if (!message || !message.trim()) return 'unavailable';
-
-  let resolved: ShareDependencies;
-  try {
-    // Previously outside the try: a failure resolving the native modules
-    // escaped as an unhandled rejection instead of falling back.
-    resolved = await resolveDependencies(dependencies);
-  } catch (error) {
-    console.log('[Share] could not resolve share modules', error instanceof Error ? error.message : error);
-    return 'unavailable';
+  if (!message?.trim()) return 'unavailable';
+  if (context) trackShare('share_started', shareProperties(context, 'whatsapp'));
+  if (inFlight) {
+    trackOutcome('dismissed', 'whatsapp', context);
+    return 'dismissed';
   }
-
+  inFlight = true;
   try {
-    const url = buildWhatsAppUrl(message);
-    // canOpenURL returns false (not throws) when the scheme is undeclared in
-    // LSApplicationQueriesSchemes, so the fallback below is the normal path on
-    // a device without WhatsApp.
-    if (await resolved.canOpenURL(url)) {
-      await resolved.openURL(url);
-      return 'whatsapp';
+    let resolved: ShareDependencies;
+    try {
+      resolved = await resolveDependencies(dependencies);
+    } catch {
+      trackOutcome('unavailable', 'whatsapp', context);
+      return 'unavailable';
     }
-  } catch (error) {
-    console.log('[Share] WhatsApp unavailable, falling back', error instanceof Error ? error.message : error);
-  }
 
-  const native = await openNativeShare(message, resolved);
-  return native === 'opened' ? 'native' : native === 'unavailable' ? 'unavailable' : 'dismissed';
+    try {
+      const url = buildWhatsAppUrl(message);
+      if (await resolved.canOpenURL(url)) {
+        await resolved.openURL(url);
+        trackOutcome('opened', 'whatsapp', context);
+        return 'whatsapp';
+      }
+    } catch {
+      // WhatsApp failures deliberately fall through to the native sheet.
+    }
+
+    const nativeResult = await performNativeShare(message, resolved);
+    trackOutcome(nativeResult, 'native', context);
+    if (nativeResult === 'opened') return 'native';
+    return nativeResult;
+  } finally {
+    inFlight = false;
+  }
 }
 
-/** Test-only: clears the double-tap guard between cases. */
+/** Test-only: clears the presentation guard between cases. */
 export function __resetShareGuard(): void {
   inFlight = false;
 }

@@ -19,7 +19,12 @@ export interface ShareableActivity {
 
 /** nestup:// deep link into a specific activity — see App.tsx's linking config. */
 export function activityDeepLink(activityId: string): string {
-  return `nestup://activity/${activityId}`;
+  if (!activityId?.trim()) return '';
+  try {
+    return `nestup://activity/${encodeURIComponent(activityId)}`;
+  } catch {
+    return '';
+  }
 }
 
 /** A warm, natural sentence — never emoji-heavy or robotic — e.g. "Join us
@@ -27,12 +32,11 @@ export function activityDeepLink(activityId: string): string {
  *  activity on NestUp." A missing location or category never breaks the
  *  message; a cancelled activity is never invited to as if still live. */
 export function buildShareMessage(activity: ShareableActivity): string {
+  const deepLink = activityDeepLink(activity.id);
   if (activity.status === 'cancelled') {
     return [
       `${activity.title} has been cancelled.`,
-      '',
-      `Open in ${APP_NAME}:`,
-      activityDeepLink(activity.id),
+      ...(deepLink ? ['', `Open in ${APP_NAME}:`, deepLink] : []),
     ].join('\n');
   }
 
@@ -48,8 +52,6 @@ export function buildShareMessage(activity: ShareableActivity): string {
   return [
     invitation,
     `${day} at ${timeLabel}`,
-    '',
-    `Open in ${APP_NAME}:`,
-    activityDeepLink(activity.id),
+    ...(deepLink ? ['', `Open in ${APP_NAME}:`, deepLink] : []),
   ].join('\n');
 }

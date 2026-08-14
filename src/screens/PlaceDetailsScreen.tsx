@@ -21,6 +21,7 @@ import { openNativeShare, openWhatsAppShare } from '@/lib/contentShare';
 import { useI18n, textAlignForContent } from '@/i18n';
 import { Dimensions } from 'react-native';
 import { resolveHeroMaxHeight } from '@/constants/activityArtFrame';
+import { track } from '@/lib/analytics';
 
 // Portrait-locked app, so a module-level read is stable.
 const HERO_MAX = resolveHeroMaxHeight(Dimensions.get('window').height);
@@ -37,6 +38,9 @@ export function PlaceDetailsScreen({ placeId, onBack, onCreateActivity, onOpenEv
     getFamilyFriendlyPlace(placeId).then((value) => active && setPlace(value)).catch(() => active && setError("Couldn't load this place."));
     return () => { active = false; };
   }, [placeId, reload]);
+  useEffect(() => {
+    track('place_opened', { content_id: placeId, source: 'curated' });
+  }, [placeId]);
   const facts = useMemo(() => place ? placeWhatIsHere(place) : [], [place]);
   const eventGroups = useMemo(() => groupPlaceEvents(placeEvents.events), [placeEvents.events]);
 
@@ -57,8 +61,8 @@ export function PlaceDetailsScreen({ placeId, onBack, onCreateActivity, onOpenEv
     <Pressable style={styles.linkRow} onPress={() => Linking.openURL(mapsUrl)}><ArrowSquareOut size={18} color={theme.brand.primary} /><Text style={styles.link}>{t('place.openInAppleMaps')}</Text></Pressable>
     <View style={styles.shareRow}>
       {/* place.name is a venue name — interpolated, never translated. */}
-      <Pressable accessibilityRole="button" accessibilityLabel={t('place.shareLabel', { name: place.name })} style={styles.shareButton} onPress={() => void openNativeShare(shareMessage)}><ShareNetwork size={18} color={theme.text.primary} /><Text style={styles.shareText}>{t('common.share')}</Text></Pressable>
-      <Pressable accessibilityRole="button" accessibilityLabel={t('place.shareWhatsAppLabel', { name: place.name })} style={styles.shareButton} onPress={() => void openWhatsAppShare(shareMessage)}><WhatsappLogo size={18} color={theme.text.primary} weight="fill" /><Text style={styles.shareText}>{t('common.whatsapp')}</Text></Pressable>
+      <Pressable accessibilityRole="button" accessibilityLabel={t('place.shareLabel', { name: place.name })} style={styles.shareButton} onPress={() => void openNativeShare(shareMessage, undefined, { contentType: 'place', contentId: place.id })}><ShareNetwork size={18} color={theme.text.primary} /><Text style={styles.shareText}>{t('common.share')}</Text></Pressable>
+      <Pressable accessibilityRole="button" accessibilityLabel={t('place.shareWhatsAppLabel', { name: place.name })} style={styles.shareButton} onPress={() => void openWhatsAppShare(shareMessage, undefined, { contentType: 'place', contentId: place.id })}><WhatsappLogo size={18} color={theme.text.primary} weight="fill" /><Text style={styles.shareText}>{t('common.whatsapp')}</Text></Pressable>
     </View>
     {/* Venue description comes from the provider — rendered in its own script. */}
     {description ? <Text style={[styles.description, textAlignForContent(description, locale)]}>{description}</Text> : null}

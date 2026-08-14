@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -22,6 +22,7 @@ import { useEventRsvp } from '@/hooks/useEventRsvp';
 import { rsvpPresentation, attendanceSummaryKey, attendeePreview } from '@/utils/eventAttendance';
 import { PersonCard } from '@/components/PersonCard';
 import { EventAttendeesSheet } from '@/components/EventAttendeesSheet';
+import { track } from '@/lib/analytics';
 
 interface EventDetailsScreenProps {
   event: EventDetails;
@@ -45,6 +46,9 @@ export function EventDetailsScreen({ event, onBack, onOpenProfile }: EventDetail
   const isInterrupted = event.lifecycle === 'cancelled' || event.lifecycle === 'postponed';
   const shareMessage = buildEventShareMessage({ occurrenceId: event.occurrence.id, title: event.title, startsAt: event.occurrence.startsAt, location: event.location.name ?? event.location.formattedAddress, status: event.occurrence.status });
   const calendarEvent = { occurrenceId: event.occurrence.id, title: event.title, description: event.description, startsAt: event.occurrence.startsAt, endsAt: event.occurrence.endsAt, locationName: event.location.name ?? event.location.formattedAddress, sourceUrl: event.source.sourceUrl, status: event.occurrence.status };
+  useEffect(() => {
+    track('event_opened', { content_id: event.occurrence.id, source: event.source.provider });
+  }, [event.occurrence.id, event.source.provider]);
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <View style={styles.header}>
@@ -73,8 +77,8 @@ export function EventDetailsScreen({ event, onBack, onOpenProfile }: EventDetail
         <InfoRow icon={MapPin} title={content.locationName} body={content.addressLabel} />
         <View style={styles.actionRow}>
           {/* event.title comes from an external source — interpolated only. */}
-          <Pressable accessibilityRole="button" accessibilityLabel={t('place.shareLabel', { name: event.title })} style={styles.action} onPress={() => void openNativeShare(shareMessage)}><ShareNetwork size={18} color={theme.text.primary} /><Text style={styles.actionText}>{t('common.share')}</Text></Pressable>
-          <Pressable accessibilityRole="button" accessibilityLabel={t('place.shareWhatsAppLabel', { name: event.title })} style={styles.action} onPress={() => void openWhatsAppShare(shareMessage)}><WhatsappLogo size={18} color={theme.text.primary} weight="fill" /><Text style={styles.actionText}>{t('common.whatsapp')}</Text></Pressable>
+          <Pressable accessibilityRole="button" accessibilityLabel={t('place.shareLabel', { name: event.title })} style={styles.action} onPress={() => void openNativeShare(shareMessage, undefined, { contentType: 'event', contentId: event.occurrence.id })}><ShareNetwork size={18} color={theme.text.primary} /><Text style={styles.actionText}>{t('common.share')}</Text></Pressable>
+          <Pressable accessibilityRole="button" accessibilityLabel={t('place.shareWhatsAppLabel', { name: event.title })} style={styles.action} onPress={() => void openWhatsAppShare(shareMessage, undefined, { contentType: 'event', contentId: event.occurrence.id })}><WhatsappLogo size={18} color={theme.text.primary} weight="fill" /><Text style={styles.actionText}>{t('common.whatsapp')}</Text></Pressable>
         </View>
         <Pressable accessibilityRole="button" accessibilityLabel={t('event.addToCalendarLabel', { name: event.title })} style={styles.calendarAction} onPress={() => setShowCalendar(true)}><CalendarPlus size={18} color={theme.brand.primary} /><Text style={styles.link}>{t('common.addToCalendar')}</Text></Pressable>
         <MapView

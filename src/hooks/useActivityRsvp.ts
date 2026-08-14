@@ -80,6 +80,7 @@ export function useActivityRsvp(initial: ActivityDetail, onSettled?: () => void)
       setActivity(previous);
       setError("Couldn't leave right now — please try again.");
     } else {
+      track('activity_left', { activity_id: activity.id });
       onSettled?.();
     }
   }, [activity, onSettled]);

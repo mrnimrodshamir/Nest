@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ArrowLeft, Baby, Briefcase, MapPin } from 'phosphor-react-native';
@@ -10,6 +10,7 @@ import { dateLocaleTag, textAlignForContent, useI18n } from '@/i18n';
 import { radius, spacing, theme, typography } from '@/theme';
 import { parentRoleKey } from '@/utils/parentRole';
 import { buildPublicChildren } from '@/utils/publicFamilyProfile';
+import { track } from '@/lib/analytics';
 
 interface PublicProfileScreenProps {
   userId: string;
@@ -30,6 +31,9 @@ export function PublicProfileScreen({ userId, onBack, onMessage }: PublicProfile
   const { profile, isLoading, error } = usePublicProfile(userId);
   const { t, locale, isRTL } = useI18n();
   const children = profile ? buildPublicChildren(profile.childNames, profile.childAgesMonths) : [];
+  useEffect(() => {
+    track('public_profile_opened');
+  }, [userId]);
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
