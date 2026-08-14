@@ -1,282 +1,387 @@
 /* NestUp — nestup.best
- *
- * Tokens lifted verbatim from the app's src/theme/colors.ts so the site and the
- * product cannot drift apart. Notably: never pure white, never pure black. Both
- * read cold and clinical, which fights the brand.
- *
- * No framework, no build step, no JavaScript. The product suggestion in the
- * hero is drawn in CSS rather than screenshotted — nothing to download, and
- * nothing that goes stale the next time the app's UI moves.
- */
+   Colours are copied verbatim from the app's src/theme/colors.ts so the site
+   and the product are the same brand. Two rules carried over from the app:
+   never pure white, never pure black. */
 
 :root {
-  --rose-50:  #FDF3F5;
-  --rose-100: #F8DEE3;
-  --rose-200: #F3B6C2;
-  --rose-500: #E98F83;
-  --rose-700: #A95F70;   /* the only rose that clears AA on white */
+  --rose-700: #A95F70;   /* the only rose that clears AA on the light ground */
   --rose-900: #8B4E5D;
-
-  --sage-50:  #F1F5F1;
-  --sage-100: #E4ECE5;
+  --rose-200: #F3B6C2;
+  --rose-100: #F8DEE3;
   --sage-500: #7C9A82;
-
   --sand-100: #F1E4CE;
-  --sand-500: #C9A876;
   --sky-100:  #E6EFF3;
-  --sky-500:  #8FB4C9;
 
   --bg:      #FAF8F4;
   --surface: #FEFDFB;
   --line:    #E3E0D6;
   --text:    #2B2B28;
   --text-2:  #726F65;
-  --text-3:  #767368;
 
-  --measure: 33rem;
-  --page: 72rem;
-  --r-lg: 22px;
-  --r-md: 14px;
+  --bezel:   #16161A;
 
-  --step-0: clamp(1rem, 0.96rem + 0.2vw, 1.0625rem);
-  --step-1: clamp(1.15rem, 1.05rem + 0.45vw, 1.35rem);
-  --step-2: clamp(1.6rem, 1.3rem + 1.3vw, 2.25rem);
-  --step-3: clamp(2.5rem, 1.6rem + 4vw, 4.5rem);
+  /* One ratio-based scale, so nothing is an arbitrary number. */
+  --s1: .5rem;  --s2: 1rem;  --s3: 1.5rem;  --s4: 2.5rem;
+  --s5: 4rem;   --s6: 6rem;  --s7: 9rem;
 
-  --shadow: 0 1px 2px rgba(43,43,40,0.04), 0 8px 24px -12px rgba(43,43,40,0.10);
-  --shadow-lift: 0 2px 4px rgba(43,43,40,0.05), 0 20px 45px -20px rgba(43,43,40,0.22);
+  --shell: 1140px;
+  --ease: cubic-bezier(.22, 1, .36, 1);
 }
 
 *, *::before, *::after { box-sizing: border-box; }
-html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+
+html {
+  -webkit-text-size-adjust: 100%;
+  scroll-behavior: smooth;
+  /* The hero halo is deliberately wider than the viewport so the colour
+     bleeds off both edges. Clipping here — on html, not just body — is what
+     stops that bleed from becoming a horizontal scrollbar. `clip` rather than
+     `hidden` so it never creates a scroll container and breaks position:sticky
+     on the header. */
+  overflow-x: clip;
+}
 
 body {
   margin: 0;
   background: var(--bg);
   color: var(--text);
-  font: var(--step-0)/1.62 -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
-  /* System stack renders Latin, Hebrew and Cyrillic alike, so there is no
-     webfont to download and no flash of unstyled text. */
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-size: 17px;
+  line-height: 1.6;
   -webkit-font-smoothing: antialiased;
-  overflow-x: hidden;
+  overflow-x: clip;
 }
 
 img { max-width: 100%; height: auto; display: block; }
 
-h1, h2, h3 { line-height: 1.1; letter-spacing: -0.03em; margin: 0; text-wrap: balance; }
-h1 { font-size: var(--step-3); font-weight: 700; }
-h2 { font-size: var(--step-2); font-weight: 660; letter-spacing: -0.025em; }
-h3 { font-size: var(--step-1); font-weight: 620; letter-spacing: -0.015em; }
-p  { margin: 0; text-wrap: pretty; }
-a  { color: var(--rose-700); }
-
-.skip { position: absolute; left: -9999px; background: var(--surface); padding: .75rem 1rem; border-radius: 10px; }
-.skip:focus { left: 1rem; top: 1rem; z-index: 20; }
-:where(a, button):focus-visible { outline: 2px solid var(--rose-700); outline-offset: 3px; border-radius: 8px; }
-
-/* ---------------- Header ---------------- */
-
-.site-header {
-  position: sticky; top: 0; z-index: 10;
-  background: color-mix(in srgb, var(--bg) 88%, transparent);
-  backdrop-filter: saturate(1.4) blur(12px);
-  border-bottom: 1px solid transparent;
-  max-width: 100%;
-  padding: .85rem clamp(1.1rem, 5vw, 2.5rem);
-  display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+h1, h2, h3 {
+  margin: 0;
+  /* Large display type needs negative tracking to stop looking loose. */
+  letter-spacing: -.03em;
+  line-height: 1.05;
+  font-weight: 640;
+  text-wrap: balance;
 }
-.lockup { display: flex; align-items: center; gap: .6rem; text-decoration: none; color: var(--text); }
-.lockup img { border-radius: 24%; box-shadow: var(--shadow); }
-.wordmark { font-weight: 680; font-size: 1.18rem; letter-spacing: -0.02em; }
-.site-header nav { display: flex; align-items: center; gap: clamp(.6rem, 3vw, 1.5rem); }
-.site-header nav a:not(.btn) { color: var(--text-2); text-decoration: none; font-size: .95rem; }
-.site-header nav a:not(.btn):hover { color: var(--text); }
-@media (max-width: 26rem) { .site-header nav a:not(.btn) { display: none; } }
 
-/* ---------------- Buttons ---------------- */
+p { margin: 0; }
+
+a { color: inherit; }
+
+.skip {
+  position: absolute; left: -9999px;
+  background: var(--surface); padding: var(--s2); border-radius: 12px; z-index: 99;
+}
+.skip:focus { left: var(--s2); top: var(--s2); }
+
+:focus-visible { outline: 2px solid var(--rose-700); outline-offset: 3px; border-radius: 6px; }
+
+/* ---------- buttons ---------- */
 
 .btn {
   display: inline-flex; align-items: center; justify-content: center;
-  background: var(--rose-700); color: #fff;
-  text-decoration: none; font-weight: 620; letter-spacing: -0.01em;
-  padding: .95rem 1.75rem; border-radius: 999px;
-  min-height: 50px;                       /* comfortably over the 44px floor */
-  box-shadow: 0 1px 2px rgba(139,78,93,.2), 0 10px 22px -12px rgba(139,78,93,.55);
-  transition: background 150ms ease, transform 150ms ease, box-shadow 150ms ease;
+  background: var(--rose-700);
+  color: var(--surface);
+  text-decoration: none;
+  font-weight: 620;
+  letter-spacing: -.01em;
+  border-radius: 999px;
+  /* 44px is the iOS minimum touch target; no control here goes under it. */
+  min-height: 44px;
+  padding: 0 var(--s3);
+  box-shadow: 0 1px 2px rgba(43, 43, 40, .12), 0 8px 24px -8px rgba(169, 95, 112, .55);
+  transition: background .18s var(--ease), transform .18s var(--ease), box-shadow .18s var(--ease);
 }
-.btn:hover { background: var(--rose-900); transform: translateY(-1px); box-shadow: 0 2px 4px rgba(139,78,93,.22), 0 16px 30px -14px rgba(139,78,93,.6); }
+.btn:hover { background: var(--rose-900); transform: translateY(-1px); }
 .btn:active { transform: translateY(0); }
-/* 44px is the floor, even in the header. A smaller pill looks tidier and is
-   measurably harder to hit one-handed while holding a child. */
-.btn-small { padding: .5rem 1.15rem; min-height: 44px; font-size: .93rem; }
-.btn-ghost { background: transparent; color: var(--text); border: 1px solid var(--line); box-shadow: none; }
-.btn-ghost:hover { background: var(--surface); border-color: var(--text-3); box-shadow: var(--shadow); }
 
-/* ---------------- Hero ---------------- */
+.btn-sm { font-size: .95rem; padding: 0 1.15rem; }
+.btn-lg { min-height: 54px; padding: 0 var(--s4); font-size: 1.06rem; }
+
+.fine { color: var(--text-2); font-size: .9rem; }
+
+/* ---------- header ---------- */
+
+.bar {
+  position: sticky; top: 0; z-index: 20;
+  display: flex; align-items: center; justify-content: space-between; gap: var(--s2);
+  max-width: var(--shell);
+  margin: 0 auto;
+  padding: .85rem var(--s3);
+  /* Sticky over a scrolling page: blur keeps the mark legible without a hard
+     bar edge cutting the composition. */
+  background: color-mix(in srgb, var(--bg) 82%, transparent);
+  backdrop-filter: saturate(150%) blur(12px);
+}
+@supports not (backdrop-filter: blur(1px)) { .bar { background: var(--bg); } }
+
+.lockup {
+  display: inline-flex; align-items: center; gap: .6rem;
+  text-decoration: none; font-weight: 660; letter-spacing: -.02em; font-size: 1.1rem;
+  min-height: 44px;
+}
+.lockup img { border-radius: 9px; }
+
+/* ---------- 01 hero ---------- */
 
 .hero {
-  max-width: var(--page); margin-inline: auto;
-  padding: clamp(2.25rem, 7vw, 5rem) clamp(1.1rem, 5vw, 2.5rem) clamp(2rem, 5vw, 3.5rem);
-  display: grid; gap: clamp(2.5rem, 6vw, 4rem); align-items: center;
+  max-width: var(--shell);
+  margin: 0 auto;
+  padding: var(--s4) var(--s3) var(--s6);
+  display: grid;
+  gap: var(--s4);
+  justify-items: center;
+  text-align: center;
 }
-@media (min-width: 60rem) { .hero { grid-template-columns: 1.05fr .95fr; } }
 
-.eyebrow {
-  display: inline-flex; align-items: center; gap: .5rem;
-  text-transform: uppercase; letter-spacing: .14em; font-size: .75rem; font-weight: 650;
-  color: var(--rose-700); background: var(--rose-50);
-  border: 1px solid var(--rose-100);
-  padding: .4rem .85rem; border-radius: 999px; margin-bottom: 1.35rem;
+.hero h1 { font-size: clamp(2.2rem, 8.2vw, 3.1rem); }
+
+/* The authored line breaks are a desktop typesetting decision. On narrow
+   screens they fight text-wrap:balance and produce a worse rag, so drop
+   them and let the browser set the lines. */
+.bp { display: none; }
+
+.lede {
+  margin-top: var(--s2);
+  color: var(--text-2);
+  font-size: clamp(1.05rem, 4.2vw, 1.2rem);
+  max-width: 34ch;
+  text-wrap: pretty;
 }
-.dot { width: 6px; height: 6px; border-radius: 50%; background: var(--rose-500); }
 
-.lede { max-width: var(--measure); font-size: var(--step-1); color: var(--text-2); margin-top: 1.35rem; }
-.lede.centred { margin-inline: auto; text-align: center; }
+.hero-type .btn { margin-top: var(--s3); }
+.hero-type .fine { margin-top: .9rem; }
 
-/* The five pillars, stated as objects rather than prose so the proposition is
-   readable in about a second. */
-.pills { list-style: none; display: flex; flex-wrap: wrap; gap: .5rem; padding: 0; margin: 1.75rem 0 0; }
-.pills li {
-  font-size: .875rem; font-weight: 560; color: var(--text);
-  background: var(--surface); border: 1px solid var(--line);
-  padding: .45rem .9rem; border-radius: 999px; box-shadow: var(--shadow);
+/* The stage is the art direction: a soft brand field the device sits in front
+   of, rather than a phone floating beside a column of text. */
+.stage {
+  position: relative;
+  margin: 0;
+  width: 100%;
+  display: flex;
+  justify-content: center;
 }
-.pills li:nth-child(1) { background: var(--rose-50);  border-color: var(--rose-100); }
-.pills li:nth-child(2) { background: var(--sage-50);  border-color: var(--sage-100); }
-.pills li:nth-child(3) { background: var(--sky-100);  border-color: #d5e5ec; }
-.pills li:nth-child(4) { background: var(--sand-100); border-color: #e6d5b8; }
-.pills li:nth-child(5) { background: var(--rose-100); border-color: var(--rose-200); }
 
-.cta-row { display: flex; flex-wrap: wrap; gap: .7rem; margin-top: 2rem; }
-.cta-row.centred { justify-content: center; }
-.micro { font-size: .84rem; color: var(--text-3); margin-top: .9rem; }
-.micro.centred { text-align: center; }
-
-/* ---------------- Hero art (pure CSS) ---------------- */
-
-.hero-art { display: flex; justify-content: center; }
-.phone {
-  width: min(300px, 78vw); aspect-ratio: 9 / 18.5;
-  background: var(--surface);
-  border: 1px solid var(--line); border-radius: 40px;
-  padding: 9px; box-shadow: var(--shadow-lift);
-  rotate: -1.5deg;
-}
-.phone-screen {
-  position: relative; height: 100%; overflow: hidden;
-  border-radius: 32px;
+.halo {
+  position: absolute;
+  inset: 12% -22% 8%;
   background:
-    radial-gradient(120% 80% at 20% 12%, var(--sage-50) 0%, transparent 60%),
-    radial-gradient(110% 70% at 85% 25%, var(--sky-100) 0%, transparent 62%),
-    var(--bg);
+    radial-gradient(60% 50% at 30% 25%, var(--rose-100), transparent 70%),
+    radial-gradient(55% 45% at 75% 60%, var(--sky-100), transparent 70%),
+    radial-gradient(50% 40% at 50% 95%, var(--sand-100), transparent 72%);
+  filter: blur(28px);
+  z-index: 0;
 }
-/* Soft landmasses, suggesting a map without pretending to be one. */
-.blob { position: absolute; border-radius: 45% 55% 52% 48% / 50% 45% 55% 50%; opacity: .7; }
-.blob-a { width: 62%; height: 26%; left: -8%; top: 16%; background: var(--sage-100); }
-.blob-b { width: 55%; height: 22%; right: -10%; top: 40%; background: var(--sand-100); }
 
-.pin { position: absolute; width: 15px; height: 15px; border-radius: 50% 50% 50% 8%; rotate: -45deg;
-       box-shadow: 0 3px 8px -2px rgba(43,43,40,.35); }
-.pin-1 { background: var(--rose-700); left: 24%; top: 24%; }
-.pin-2 { background: var(--sage-500); left: 58%; top: 33%; }
-.pin-3 { background: var(--sky-500);  left: 36%; top: 45%; }
-.pin-4 { background: var(--sand-500); left: 70%; top: 52%; }
+/* ---------- device ---------- */
 
-/* The bottom sheet — the app's actual signature interaction. */
-.sheet {
-  position: absolute; left: 0; right: 0; bottom: 0; height: 42%;
+.phone {
+  position: relative;
+  z-index: 1;
+  width: 272px;
+  flex: none;
+  /* Titanium-edge feel: a hairline highlight inside the dark bezel. */
+  background: var(--bezel);
+  padding: 9px;
+  border-radius: 50px;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, .16),
+    0 2px 6px rgba(43, 43, 40, .16),
+    0 30px 60px -24px rgba(43, 43, 40, .42);
+}
+
+.phone .screen {
+  width: 100%;
+  /* The inner radius must be the outer radius minus the bezel, or the screen
+     corners cut through the frame. */
+  border-radius: 41px;
   background: var(--surface);
-  border-radius: 22px 22px 32px 32px;
+}
+
+.island {
+  position: absolute;
+  z-index: 2;
+  top: 20px; left: 50%;
+  transform: translateX(-50%);
+  width: 78px; height: 23px;
+  background: var(--bezel);
+  border-radius: 999px;
+}
+
+/* These two screens are content-dense at the top and quiet further down.
+   Showing the whole device would put empty app space on the page, so the
+   window crops to the part that carries the story and fades the device out
+   rather than cutting it with a hard line. */
+.window {
+  width: 100%;
+  height: 300px;
+  display: flex;
+  justify-content: center;
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(180deg, #000 72%, transparent 100%);
+          mask-image: linear-gradient(180deg, #000 72%, transparent 100%);
+}
+
+.phone.sm { width: 232px; padding: 8px; border-radius: 44px; align-self: start; }
+.phone.sm .screen { border-radius: 36px; }
+.phone.sm .island { top: 17px; width: 66px; height: 20px; }
+
+/* ---------- 02 product proof ---------- */
+
+.proof {
+  max-width: var(--shell);
+  margin: 0 auto;
+  padding: 0 var(--s3) var(--s6);
+}
+
+.proof-head { max-width: 26ch; margin-bottom: var(--s4); }
+.proof-head h2 { font-size: clamp(1.9rem, 6.6vw, 2.4rem); }
+
+.kicker {
+  color: var(--rose-700);
+  font-size: .8rem; font-weight: 680;
+  letter-spacing: .14em; text-transform: uppercase;
+  margin-bottom: .75rem;
+}
+
+.pair { display: grid; gap: var(--s5); }
+
+.tile {
+  margin: 0;
+  display: grid;
+  gap: var(--s3);
+  justify-items: center;
+  text-align: center;
+  padding: var(--s4) var(--s3);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 28px;
+}
+
+.tile h3 { font-size: 1.3rem; margin-bottom: .5rem; }
+.tile figcaption { max-width: 30ch; }
+.tile figcaption p { color: var(--text-2); text-wrap: pretty; }
+
+/* ---------- 03 close ---------- */
+
+.close {
+  display: grid;
+  justify-items: center;
+  gap: var(--s3);
+  text-align: center;
+  padding: var(--s6) var(--s3) var(--s5);
+  background:
+    radial-gradient(70% 100% at 50% 0%, var(--rose-100), transparent 70%),
+    var(--bg);
   border-top: 1px solid var(--line);
-  padding: .6rem .8rem; display: grid; gap: .55rem; align-content: start;
-  box-shadow: 0 -8px 24px -16px rgba(43,43,40,.35);
 }
-.grabber { width: 34px; height: 4px; border-radius: 2px; background: var(--line); margin: .1rem auto .35rem; }
-.row { display: flex; align-items: center; gap: .55rem; }
-.thumb { width: 40px; height: 40px; border-radius: 10px; background: linear-gradient(140deg, var(--sage-100), var(--sand-100)); flex: none; }
-.thumb.alt { background: linear-gradient(140deg, var(--rose-100), var(--sky-100)); }
-.lines { display: grid; gap: .3rem; flex: 1; }
-.lines i { display: block; height: 7px; border-radius: 4px; background: var(--line); }
-.lines .l1 { width: 78%; background: #d9d6cb; }
-.lines .l1.short { width: 58%; }
-.lines .l2 { width: 45%; }
+.close img { border-radius: 16px; }
+.close h2 { font-size: clamp(1.9rem, 7vw, 2.6rem); }
 
-/* ---------------- Statement ---------------- */
+/* ---------- footer ---------- */
 
-.statement {
-  background: linear-gradient(180deg, var(--sage-50), color-mix(in srgb, var(--sage-50) 55%, var(--bg)));
-  border-block: 1px solid var(--line);
-  padding: clamp(3rem, 9vw, 5.5rem) clamp(1.1rem, 5vw, 2.5rem);
-  margin-block: clamp(1.5rem, 5vw, 3rem);
+.foot {
+  max-width: var(--shell);
+  margin: 0 auto;
+  padding: var(--s3);
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
+  gap: var(--s2);
+  color: var(--text-2);
+  font-size: .9rem;
 }
-.statement p {
-  max-width: 42rem; margin-inline: auto; text-align: center;
-  font-size: var(--step-2); font-weight: 620; line-height: 1.28; letter-spacing: -0.025em;
+.foot nav { display: flex; flex-wrap: wrap; gap: var(--s2); }
+/* Inline-sized text links would be ~23px tall. Padding brings every footer
+   target up to the 44px floor without changing how they look. */
+.foot a { text-decoration: none; display: inline-flex; align-items: center; min-height: 44px; padding: 0 .5rem; }
+.foot a:hover { color: var(--text); text-decoration: underline; }
+
+/* ---------- motion ----------
+   Entrance only, and only on capable browsers. Nothing here is required to
+   read the page: if the animation never runs, the content is already visible
+   because the end state is the default. */
+
+@media (prefers-reduced-motion: no-preference) {
+  @supports (animation-timeline: view()) {
+    .reveal {
+      animation: rise linear both;
+      animation-timeline: view();
+      animation-range: entry 5% cover 34%;
+    }
+  }
+  @keyframes rise {
+    from { opacity: 0; transform: translateY(26px) scale(.97); }
+    to   { opacity: 1; transform: none; }
+  }
 }
-.statement em { display: block; margin-top: .6rem; font-style: normal; color: var(--rose-700); }
 
-/* ---------------- Sections ---------------- */
+/* ---------- 430px and up ---------- */
 
-.section { max-width: var(--page); margin-inline: auto; padding: clamp(2.25rem, 7vw, 4.5rem) clamp(1.1rem, 5vw, 2.5rem); }
-.section > h2 { margin-bottom: 2rem; }
-
-.cards { list-style: none; margin: 0; padding: 0; display: grid; gap: 1rem;
-         grid-template-columns: repeat(auto-fit, minmax(min(100%, 15.5rem), 1fr)); }
-.card {
-  background: var(--surface); border: 1px solid var(--line);
-  border-radius: var(--r-lg); padding: 1.5rem;
-  box-shadow: var(--shadow);
-  transition: transform 180ms ease, box-shadow 180ms ease;
+@media (min-width: 430px) {
+  .phone { width: 300px; }
+  .phone.sm { width: 252px; }
 }
-.card:hover { transform: translateY(-2px); box-shadow: var(--shadow-lift); }
-.card h3 { margin-bottom: .5rem; }
-.card p { color: var(--text-2); font-size: .96rem; }
-@media (min-width: 62rem) { .card-wide { grid-column: span 2; } }
 
-/* Each pillar gets a mark built from the brand palette — no icon font. */
-.glyph { display: block; width: 34px; height: 34px; border-radius: 11px; margin-bottom: 1rem; position: relative; }
-.glyph::after { content: ""; position: absolute; inset: 0; margin: auto; }
-.glyph-parents    { background: var(--rose-100); }
-.glyph-parents::after   { width: 8px; height: 8px; border-radius: 50%; background: var(--rose-700); box-shadow: 9px 0 0 var(--rose-500); translate: -4px 0; }
-.glyph-activities { background: var(--sage-100); }
-.glyph-activities::after{ width: 16px; height: 16px; border-radius: 5px; border: 2.5px solid var(--sage-500); }
-.glyph-places     { background: var(--sky-100); }
-.glyph-places::after    { width: 11px; height: 11px; border-radius: 50% 50% 50% 6%; rotate: -45deg; background: var(--sky-500); }
-.glyph-events     { background: var(--sand-100); }
-.glyph-events::after    { width: 16px; height: 14px; border-radius: 4px; border: 2.5px solid var(--sand-500); border-top-width: 5px; }
-.glyph-community  { background: var(--rose-50); }
-.glyph-community::after { width: 16px; height: 13px; border-radius: 7px 7px 7px 2px; border: 2.5px solid var(--rose-700); }
+/* ---------- tablet ---------- */
 
-.split { display: grid; gap: clamp(2rem, 5vw, 3.5rem); }
-@media (min-width: 54rem) { .split { grid-template-columns: 1.05fr .95fr; align-items: start; } }
-.split h2 { margin-bottom: 1.15rem; }
-.split p { color: var(--text-2); max-width: var(--measure); }
-.split p + p { margin-top: .9rem; }
+@media (min-width: 760px) {
+  body { font-size: 18px; }
 
-.facts { list-style: none; margin: 0; padding: 0; display: grid; gap: .7rem; }
-.facts li { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md);
-            padding: 1.05rem 1.2rem; display: grid; gap: .2rem; box-shadow: var(--shadow); }
-.facts strong { font-weight: 640; }
-.facts span { color: var(--text-2); font-size: .93rem; }
-
-.get { text-align: center; }
-.get-mark { margin: 0 auto 1.25rem; border-radius: 24%; box-shadow: var(--shadow-lift); }
-.get h2 { margin-bottom: .6rem; }
-
-/* ---------------- Footer ---------------- */
-
-.site-footer {
-  max-width: var(--page); margin-inline: auto;
-  padding: clamp(2rem, 6vw, 3.5rem) clamp(1.1rem, 5vw, 2.5rem) 3rem;
-  border-top: 1px solid var(--line);
-  display: grid; gap: 1rem; justify-items: start;
+  .pair { grid-template-columns: 1fr 1fr; gap: var(--s3); }
+  .tile { padding: var(--s5) var(--s3); }
 }
-.site-footer .lockup { font-weight: 620; gap: .5rem; }
-.site-footer nav { display: flex; gap: 1.2rem; flex-wrap: wrap; }
-.site-footer nav a { color: var(--text-2); text-decoration: none; font-size: .91rem; }
-.site-footer nav a:hover { color: var(--text); text-decoration: underline; }
+
+/* ---------- desktop ----------
+   The hero becomes one overlapping composition: the type block sits on the
+   left of the stage and the halo bleeds past it, so the two read as a single
+   art-directed frame rather than two columns parked side by side. */
+
+@media (min-width: 1000px) {
+  .hero {
+    /* The type column has to hold "Your parent community" on one line at the
+       display size, so it gets the larger share; the device only needs its
+       own width plus room for the tilt. */
+    grid-template-columns: 1.25fr .75fr;
+    align-items: center;
+    justify-items: start;
+    text-align: left;
+    gap: var(--s3);
+    padding: var(--s5) var(--s3) var(--s7);
+  }
+
+  .bp { display: inline; }
+  .hero h1 { font-size: clamp(2.9rem, 3.9vw, 3.6rem); }
+  .lede { max-width: 32ch; }
+
+  .stage { justify-content: flex-end; }
+
+  /* A restrained tilt — enough to read as a photographed object, not enough
+     to make the UI inside hard to read. */
+  .phone {
+    width: 340px;
+    transform: rotate(-3deg);
+    transition: transform .5s var(--ease);
+  }
+  .stage:hover .phone { transform: rotate(0deg); }
+
+  .halo { inset: -14% -30% -14% -55%; filter: blur(46px); }
+
+  .proof-head { margin-bottom: var(--s5); }
+  .proof-head h2 { font-size: 2.9rem; }
+
+  .pair { gap: var(--s4); }
+  /* Fixed first track rather than `auto`: the window is a clipping box, so its
+     intrinsic width would otherwise fight the device inside it. */
+  .tile { grid-template-columns: 248px 1fr; justify-items: start; text-align: left; align-items: center;
+          gap: var(--s4); padding: var(--s4); }
+  .window { height: 340px; }
+  .phone.sm { width: 224px; }
+}
 
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
-  *, *::before, *::after { transition-duration: .01ms !important; animation-duration: .01ms !important; }
+  *, *::before, *::after {
+    animation-duration: .001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .001ms !important;
+  }
+  .phone { transform: none !important; }
 }
