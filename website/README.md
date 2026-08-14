@@ -54,21 +54,42 @@ gitignored `.env.local`.
 
 ### Enabling email notification
 
-Storage works with no configuration. Email needs one variable:
+Storage works with no configuration. Notification needs **one** of two routes.
+Until either is set, signups are still captured and the function logs a
+warning — nothing is lost.
+
+**Route A — SMTP through the existing Spacemail mailbox (preferred).** No new
+account, and mail leaves from the real domain so the existing SPF and DKIM
+records authenticate it.
+
+```bash
+vercel env add SMTP_USER production   # nimrodshamir@nestup.best
+vercel env add SMTP_PASS production   # that mailbox's password
+vercel deploy --prod
+```
+
+`SMTP_HOST` defaults to `mail.spacemail.com` and `SMTP_PORT` to `465`;
+override either if Spaceship reports different settings. Port 587 is
+detected and upgraded via STARTTLS automatically. **This reads the existing
+mail records, it does not change them** — no DNS edit is involved.
+
+**Route B — Resend**, if putting a mailbox password in the environment is not
+wanted:
 
 ```bash
 vercel env add RESEND_API_KEY production
 vercel deploy --prod
 ```
 
-Until it is set, signups are still captured and the function logs a warning.
+A fresh Resend account with no verified domain may only send from
+`onboarding@resend.dev` and only to the address that owns the account — so
+sign up **as `nimrodshamir@nestup.best`** and no DNS change is needed. To send
+from a `@nestup.best` address later, verify the domain in Resend and set
+`RESEND_FROM`; that adds DNS records and must not disturb the existing
+Spacemail MX/SPF/DKIM entries.
 
-With a fresh Resend account and no verified domain, the only permitted sender
-is `onboarding@resend.dev` and the only permitted recipient is the address
-that owns the account — so sign up **as `nimrodshamir@nestup.best`** and no
-DNS change is needed. To send from a `@nestup.best` address later, verify the
-domain in Resend and set `RESEND_FROM`; that adds DNS records and must not
-disturb the existing Spacemail MX/SPF/DKIM entries.
+SMTP is tried first and Resend is the fallback. Configuring both is harmless
+but unnecessary.
 
 **No credential belongs in this folder.** `.gitignore` covers `.env*`, so the
 blob token and API key cannot be committed by accident.

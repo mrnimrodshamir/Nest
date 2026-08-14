@@ -40,32 +40,72 @@ function rateLimited(ip) {
   return hits.length > RATE_MAX;
 }
 
-async function notify({ email, at, ip, userAgent }) {
-  const key = process.env.RESEND_API_KEY;
-  if (!key) {
-    console.warn('[subscribe] lead stored but RESEND_API_KEY is unset; no email sent');
-    return { sent: false, reason: 'not_configured' };
-  }
-
+function composeNotification({ email, at, ip, userAgent }) {
   const local = new Date(at).toLocaleString('en-GB', {
     timeZone: 'Asia/Jerusalem',
     dateStyle: 'full',
     timeStyle: 'short',
   });
 
-  const body = [
-    `New NestUp beta signup`,
-    ``,
-    `Email:      ${email}`,
-    `Timestamp:  ${local} (Israel)`,
-    `            ${at} (UTC)`,
-    `Source:     ${SOURCE}`,
-    ``,
-    `IP:         ${ip ?? 'unknown'}`,
-    `User agent: ${userAgent ?? 'unknown'}`,
-    ``,
-    `Reply directly to this email to reach them.`,
-  ].join('\n');
+  return {
+    subject: `NestUp beta signup — ${email}`,
+    text: [
+      `New NestUp beta signup`,
+      ``,
+      `Email:      ${email}`,
+      `Timestamp:  ${local} (Israel)`,
+      `            ${at} (UTC)`,
+      `Source:     ${SOURCE}`,
+      ``,
+      `IP:         ${ip ?? 'unknown'}`,
+      `User agent: ${userAgent ?? 'unknown'}`,
+      ``,
+      `Reply directly to this email to reach them.`,
+    ].join('\n'),
+  };
+}
+
+/* Two delivery routes, either of which is a single configuration step:
+ *
+ *   SMTP   — uses the existing Spacemail mailbox on nestup.best. No new
+ *            account, and mail leaves from the real domain, so the existing
+ *            SPF/DKIM records do the authenticating.
+ *   Resend — an HTTPS API, no SMTP connection to hold open.
+ *
+ * SMTP is tried first because sending from the actual domain is the better
+ * outcome; Resend is the fallback if only that is configured. Whichever is
+ * present wins — configuring both is fine but unnecessary.
+ */
+
+async function sendViaSmtp({ subject, text }, replyTo) {
+  const { SMTP_USER, SMTP_PASS } = process.env;
+  if (!SMTP_USER || !SMTP_PASS) return null;
+
+  const host = process.env.SMTP_HOST || 'mail.spacemail.com';
+  const port = Number(process.env.SMTP_PORT || 465);
+
+  // Imported lazily so a Resend-only deployment never pays to load it.
+  const { default: nodemailer } = await import('nodemailer');
+  const transport = nodemailer.createTransport({
+    host,
+    port,
+    secure: port === 465, // 587 upgrades via STARTTLS instead
+    auth: { user: SMTP_USER, pass: SMTP_PASS },
+  });
+
+  await transport.sendMail({
+    from: `NestUp <${SMTP_USER}>`,
+    to: NOTIFY_TO,
+    replyTo,
+    subject,
+    text,
+  });
+  return { sent: true, via: 'smtp' };
+}
+
+async function sendViaResend({ subject, text }, replyTo) {
+  const key = process.env.RESEND_API_KEY;
+  if (!key) return null;
 
   const res = await fetch('https://api.resend.com/emails', {
     method: 'POST',
@@ -75,9 +115,9 @@ async function notify({ email, at, ip, userAgent }) {
       // later without a code change.
       from: process.env.RESEND_FROM || 'NestUp <onboarding@resend.dev>',
       to: [NOTIFY_TO],
-      reply_to: email,
-      subject: `NestUp beta signup — ${email}`,
-      text: body,
+      reply_to: replyTo,
+      subject,
+      text,
     }),
   });
 
@@ -85,7 +125,28 @@ async function notify({ email, at, ip, userAgent }) {
     console.error('[subscribe] resend rejected the send', res.status, await res.text());
     return { sent: false, reason: `resend_${res.status}` };
   }
-  return { sent: true };
+  return { sent: true, via: 'resend' };
+}
+
+async function notify(lead) {
+  const message = composeNotification(lead);
+
+  for (const send of [sendViaSmtp, sendViaResend]) {
+    let result;
+    try {
+      result = await send(message, lead.email);
+    } catch (err) {
+      console.error(`[subscribe] ${send.name} threw`, err);
+      continue; // fall through to the other route rather than giving up
+    }
+    if (result) return result; // null means "not configured", so keep looking
+  }
+
+  console.warn(
+    '[subscribe] lead stored but no mail route is configured; ' +
+      'set SMTP_USER/SMTP_PASS or RESEND_API_KEY',
+  );
+  return { sent: false, reason: 'not_configured' };
 }
 
 export default async function handler(req, res) {

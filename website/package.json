@@ -4,6 +4,7 @@
   "type": "module",
   "description": "Static landing page for nestup.best plus the beta-signup function.",
   "dependencies": {
-    "@vercel/blob": "2.8.0"
+    "@vercel/blob": "2.8.0",
+    "nodemailer": "9.0.5"
   }
 }
