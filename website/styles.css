@@ -38,9 +38,11 @@
   --display: "Fraunces Display", "Iowan Old Style", "Palatino Linotype", Georgia, serif;
   --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 
-  /* One ratio-based scale, so no spacing value is arbitrary. */
+  /* One ratio-based scale, so no spacing value is arbitrary. The top of the
+     scale is deliberately restrained: this is a three-section landing page,
+     and editorial-sized section gaps just make it feel padded. */
   --s1: .5rem;  --s2: 1rem;  --s3: 1.5rem;  --s4: 2.5rem;
-  --s5: 4rem;   --s6: 6rem;  --s7: 9rem;
+  --s5: 3rem;   --s6: 4rem;  --s7: 5rem;
 
   --shell: 1180px;
   --ease: cubic-bezier(.22, 1, .36, 1);
@@ -167,7 +169,7 @@ a { color: inherit; }
 .hero {
   max-width: var(--shell);
   margin: 0 auto;
-  padding: var(--s3) var(--s3) var(--s6);
+  padding: var(--s3) var(--s3) var(--s5);
   display: grid;
   gap: var(--s3);
   justify-items: center;
@@ -182,7 +184,7 @@ a { color: inherit; }
 .hero h1 { font-size: clamp(2.5rem, 9.6vw, 3.4rem); }
 
 .lede {
-  margin-top: var(--s3);
+  margin-top: var(--s2);
   color: var(--text-2);
   font-size: clamp(1.05rem, 4.2vw, 1.18rem);
   max-width: 34ch;
@@ -300,13 +302,13 @@ a { color: inherit; }
 .proof {
   max-width: var(--shell);
   margin: 0 auto;
-  padding: 0 var(--s3) var(--s6);
+  padding: 0 var(--s3) var(--s5);
 }
 
 /* Sized in rem, not ch: this element's own font is the 18px sans, so a ch
    measure here would constrain the display serif inside it to roughly half
    the intended width. */
-.proof-head { max-width: 22rem; margin-bottom: var(--s4); }
+.proof-head { max-width: 22rem; margin-bottom: var(--s3); }
 .proof-head h2 { font-size: clamp(2rem, 7.4vw, 2.6rem); }
 
 .kicker {
@@ -319,9 +321,9 @@ a { color: inherit; }
   margin-bottom: .8rem;
 }
 
-.duo { display: grid; gap: var(--s5); }
+.duo { display: grid; gap: var(--s4); }
 
-.duo-item { margin: 0; display: grid; gap: var(--s3); justify-items: center; text-align: center; }
+.duo-item { margin: 0; display: grid; gap: var(--s2); justify-items: center; text-align: center; }
 
 .duo-item h3 { font-size: 1.4rem; margin-bottom: .55rem; }
 .duo-item figcaption { max-width: 32ch; }
@@ -334,7 +336,7 @@ a { color: inherit; }
 .window {
   position: relative;
   width: 100%;
-  height: 300px;
+  height: 268px;
   display: flex;
   justify-content: center;
   overflow: hidden;
@@ -370,7 +372,7 @@ a { color: inherit; }
   justify-items: center;
   gap: var(--s3);
   text-align: center;
-  padding: var(--s6) var(--s3) var(--s5);
+  padding: var(--s5) var(--s3) var(--s4);
   background:
     radial-gradient(72% 100% at 50% 0%, var(--rose-100), transparent 72%),
     var(--bg);
@@ -561,7 +563,7 @@ a { color: inherit; }
 @media (min-width: 760px) {
   body { font-size: 18px; }
   .duo { grid-template-columns: 1fr 1fr; gap: var(--s4); align-items: start; }
-  .window { height: 330px; }
+  .window { height: 290px; }
 }
 
 /* ---------- desktop ----------
@@ -580,7 +582,7 @@ a { color: inherit; }
     justify-items: start;
     text-align: left;
     gap: var(--s3);
-    padding: var(--s5) var(--s3) var(--s7);
+    padding: var(--s3) var(--s3) var(--s6);
   }
 
   .hero h1 { font-size: clamp(3rem, 4.1vw, 3.8rem); }
@@ -593,7 +595,7 @@ a { color: inherit; }
   /* Held at a slight angle rather than lying flat on the page. Kept shallow
      so the UI inside stays legible — the point is depth, not spectacle. */
   .device-hero {
-    width: 336px;
+    width: 300px;
     transform: rotateY(-13deg) rotateX(3deg) rotate(-1.5deg);
     transition: transform .6s var(--ease);
   }
@@ -610,21 +612,23 @@ a { color: inherit; }
 
   .halo { inset: -16% -32% -16% -58%; filter: blur(50px); }
 
-  .proof-head { max-width: 32rem; margin-bottom: var(--s5); }
-  .proof-head h2 { font-size: 3rem; }
+  .proof-head { max-width: 32rem; margin-bottom: var(--s4); }
+  .proof-head h2 { font-size: 2.6rem; }
 
-  /* Staggered rather than aligned: two devices sitting at the same height
-     reads as a spec sheet. */
-  .duo { gap: var(--s5); }
-  .duo-item-lifted { margin-top: calc(var(--s5) * -1); }
-  .window { height: 380px; }
-  .device-sm { width: 244px; }
-  .device-sm .device-body { transform: rotate(-2deg); }
-  .duo-item-lifted .device-sm .device-body { transform: rotate(2deg); }
+  /* Aligned, not staggered. Offsetting one column looked considered in a
+     mockup, but it left a column of dead space under the shorter one and
+     pushed the closing section down the page for no benefit. */
+  .duo { gap: var(--s4); }
+  .window { height: 320px; }
+  .device-sm { width: 232px; }
+  /* A slight tilt toward each other, so the pair still reads as two objects
+     placed on the page rather than two rows of a table. */
+  .duo-item:first-child .device-sm .device-body { transform: rotate(-2deg); }
+  .duo-item:last-child .device-sm .device-body { transform: rotate(2deg); }
 }
 
 @media (min-width: 1240px) {
-  .device-hero { width: 360px; }
+  .device-hero { width: 324px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
