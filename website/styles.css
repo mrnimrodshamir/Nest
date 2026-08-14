@@ -174,6 +174,11 @@ a { color: inherit; }
   text-align: center;
 }
 
+/* The halo deliberately bleeds left across this column, so the type needs its
+   own stacking context to sit above it. Without this the blurred colour field
+   paints over the end of the headline and washes the letters out. */
+.hero-type { position: relative; z-index: 2; }
+
 .hero h1 { font-size: clamp(2.5rem, 9.6vw, 3.4rem); }
 
 .lede {
@@ -186,6 +191,10 @@ a { color: inherit; }
 }
 
 .join-fine { margin-top: var(--s2); }
+
+/* A plain hyphen is a legal break point, so "Tel Aviv-Yafo" splits across
+   lines without this. */
+.nb { white-space: nowrap; }
 
 /* The stage is the art direction: a soft brand field the device sits in front
    of, rather than a phone parked beside a column of text. */
@@ -294,7 +303,10 @@ a { color: inherit; }
   padding: 0 var(--s3) var(--s6);
 }
 
-.proof-head { max-width: 26ch; margin-bottom: var(--s4); }
+/* Sized in rem, not ch: this element's own font is the 18px sans, so a ch
+   measure here would constrain the display serif inside it to roughly half
+   the intended width. */
+.proof-head { max-width: 22rem; margin-bottom: var(--s4); }
 .proof-head h2 { font-size: clamp(2rem, 7.4vw, 2.6rem); }
 
 .kicker {
@@ -561,7 +573,7 @@ a { color: inherit; }
 
   .halo { inset: -16% -32% -16% -58%; filter: blur(50px); }
 
-  .proof-head { margin-bottom: var(--s5); }
+  .proof-head { max-width: 32rem; margin-bottom: var(--s5); }
   .proof-head h2 { font-size: 3rem; }
 
   /* Staggered rather than aligned: two devices sitting at the same height
