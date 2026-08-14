@@ -3,6 +3,22 @@
    and the product are the same brand. Two rules carried over from the app:
    never pure white, never pure black. */
 
+/* Display face only — headlines. Body stays on the system stack, which costs
+   nothing and reads better at small sizes. See build-font.py. */
+@font-face {
+  font-family: "Fraunces Display";
+  src: url("assets/fraunces-display.woff2") format("woff2");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+  /* Pulls the fallback serif's metrics towards Fraunces so the swap does not
+     visibly reflow the headline. */
+  size-adjust: 104%;
+  ascent-override: 92%;
+  descent-override: 24%;
+  line-gap-override: 0%;
+}
+
 :root {
   --rose-700: #A95F70;   /* the only rose that clears AA on the light ground */
   --rose-900: #8B4E5D;
@@ -17,14 +33,16 @@
   --line:    #E3E0D6;
   --text:    #2B2B28;
   --text-2:  #726F65;
+  --danger:  #9E4B4B;
 
-  --bezel:   #16161A;
+  --display: "Fraunces Display", "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+  --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 
-  /* One ratio-based scale, so nothing is an arbitrary number. */
+  /* One ratio-based scale, so no spacing value is arbitrary. */
   --s1: .5rem;  --s2: 1rem;  --s3: 1.5rem;  --s4: 2.5rem;
   --s5: 4rem;   --s6: 6rem;  --s7: 9rem;
 
-  --shell: 1140px;
+  --shell: 1180px;
   --ease: cubic-bezier(.22, 1, .36, 1);
 }
 
@@ -33,11 +51,11 @@
 html {
   -webkit-text-size-adjust: 100%;
   scroll-behavior: smooth;
-  /* The hero halo is deliberately wider than the viewport so the colour
-     bleeds off both edges. Clipping here — on html, not just body — is what
-     stops that bleed from becoming a horizontal scrollbar. `clip` rather than
-     `hidden` so it never creates a scroll container and breaks position:sticky
-     on the header. */
+  /* The hero halo is deliberately wider than the viewport so the colour bleeds
+     off both edges. Clipping here — on html, not only body — is what stops
+     that bleed from becoming a horizontal scrollbar. `clip` rather than
+     `hidden` so it never creates a scroll container and breaks the sticky
+     header. */
   overflow-x: clip;
 }
 
@@ -45,35 +63,56 @@ body {
   margin: 0;
   background: var(--bg);
   color: var(--text);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-family: var(--sans);
   font-size: 17px;
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   overflow-x: clip;
 }
 
+/* A barely-there grain. Flat colour fields read as digital; a little noise
+   reads as printed, which is most of the "premium" impression here. */
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  pointer-events: none;
+  opacity: .035;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
 img { max-width: 100%; height: auto; display: block; }
 
 h1, h2, h3 {
   margin: 0;
-  /* Large display type needs negative tracking to stop looking loose. */
-  letter-spacing: -.03em;
-  line-height: 1.05;
-  font-weight: 640;
+  font-family: var(--display);
+  font-weight: 600;
+  letter-spacing: -.015em;
+  line-height: 1.06;
   text-wrap: balance;
 }
 
 p { margin: 0; }
-
 a { color: inherit; }
+
+.sr-only {
+  position: absolute; width: 1px; height: 1px;
+  padding: 0; margin: -1px; overflow: hidden;
+  clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap;
+}
 
 .skip {
   position: absolute; left: -9999px;
-  background: var(--surface); padding: var(--s2); border-radius: 12px; z-index: 99;
+  background: var(--surface); padding: var(--s2); border-radius: 12px; z-index: 110;
 }
 .skip:focus { left: var(--s2); top: var(--s2); }
 
 :focus-visible { outline: 2px solid var(--rose-700); outline-offset: 3px; border-radius: 6px; }
+
+/* The authored line breaks are a desktop typesetting decision. On narrow
+   screens they fight text-wrap:balance and produce a worse rag. */
+.bp { display: none; }
 
 /* ---------- buttons ---------- */
 
@@ -81,21 +120,25 @@ a { color: inherit; }
   display: inline-flex; align-items: center; justify-content: center;
   background: var(--rose-700);
   color: var(--surface);
+  font-family: var(--sans);
+  font-size: 1rem;
   text-decoration: none;
   font-weight: 620;
   letter-spacing: -.01em;
+  border: 0;
   border-radius: 999px;
-  /* 44px is the iOS minimum touch target; no control here goes under it. */
+  cursor: pointer;
+  /* 44px is the iOS minimum touch target; nothing here goes under it. */
   min-height: 44px;
   padding: 0 var(--s3);
-  box-shadow: 0 1px 2px rgba(43, 43, 40, .12), 0 8px 24px -8px rgba(169, 95, 112, .55);
-  transition: background .18s var(--ease), transform .18s var(--ease), box-shadow .18s var(--ease);
+  box-shadow: 0 1px 2px rgba(43, 43, 40, .12), 0 10px 26px -10px rgba(169, 95, 112, .6);
+  transition: background .18s var(--ease), transform .18s var(--ease);
 }
 .btn:hover { background: var(--rose-900); transform: translateY(-1px); }
 .btn:active { transform: translateY(0); }
 
 .btn-sm { font-size: .95rem; padding: 0 1.15rem; }
-.btn-lg { min-height: 54px; padding: 0 var(--s4); font-size: 1.06rem; }
+.btn-lg { min-height: 56px; padding: 0 var(--s4); font-size: 1.08rem; }
 
 .fine { color: var(--text-2); font-size: .9rem; }
 
@@ -106,126 +149,144 @@ a { color: inherit; }
   display: flex; align-items: center; justify-content: space-between; gap: var(--s2);
   max-width: var(--shell);
   margin: 0 auto;
-  padding: .85rem var(--s3);
-  /* Sticky over a scrolling page: blur keeps the mark legible without a hard
-     bar edge cutting the composition. */
-  background: color-mix(in srgb, var(--bg) 82%, transparent);
-  backdrop-filter: saturate(150%) blur(12px);
+  padding: .8rem var(--s3);
+  background: color-mix(in srgb, var(--bg) 80%, transparent);
+  backdrop-filter: saturate(160%) blur(14px);
 }
 @supports not (backdrop-filter: blur(1px)) { .bar { background: var(--bg); } }
 
 .lockup {
-  display: inline-flex; align-items: center; gap: .6rem;
-  text-decoration: none; font-weight: 660; letter-spacing: -.02em; font-size: 1.1rem;
+  display: inline-flex; align-items: center; gap: .55rem;
   min-height: 44px;
+  text-decoration: none; font-weight: 660; letter-spacing: -.02em; font-size: 1.08rem;
 }
-.lockup img { border-radius: 9px; }
+.lockup img { border-radius: 8px; }
 
 /* ---------- 01 hero ---------- */
 
 .hero {
   max-width: var(--shell);
   margin: 0 auto;
-  padding: var(--s4) var(--s3) var(--s6);
+  padding: var(--s3) var(--s3) var(--s6);
   display: grid;
-  gap: var(--s4);
+  gap: var(--s3);
   justify-items: center;
   text-align: center;
 }
 
-.hero h1 { font-size: clamp(2.2rem, 8.2vw, 3.1rem); }
-
-/* The authored line breaks are a desktop typesetting decision. On narrow
-   screens they fight text-wrap:balance and produce a worse rag, so drop
-   them and let the browser set the lines. */
-.bp { display: none; }
+.hero h1 { font-size: clamp(2.5rem, 9.6vw, 3.4rem); }
 
 .lede {
-  margin-top: var(--s2);
+  margin-top: var(--s3);
   color: var(--text-2);
-  font-size: clamp(1.05rem, 4.2vw, 1.2rem);
+  font-size: clamp(1.05rem, 4.2vw, 1.18rem);
   max-width: 34ch;
+  margin-inline: auto;
   text-wrap: pretty;
 }
 
-.hero-type .btn { margin-top: var(--s3); }
-.hero-type .fine { margin-top: .9rem; }
+.join-fine { margin-top: var(--s2); }
 
 /* The stage is the art direction: a soft brand field the device sits in front
-   of, rather than a phone floating beside a column of text. */
+   of, rather than a phone parked beside a column of text. */
 .stage {
   position: relative;
   margin: 0;
   width: 100%;
   display: flex;
   justify-content: center;
+  /* Distance matters: too little and the 3D tilt looks like a funhouse
+     mirror instead of a phone held at a slight angle. */
+  perspective: 2200px;
 }
 
 .halo {
   position: absolute;
-  inset: 12% -22% 8%;
+  inset: 10% -24% 6%;
   background:
     radial-gradient(60% 50% at 30% 25%, var(--rose-100), transparent 70%),
     radial-gradient(55% 45% at 75% 60%, var(--sky-100), transparent 70%),
     radial-gradient(50% 40% at 50% 95%, var(--sand-100), transparent 72%);
-  filter: blur(28px);
+  filter: blur(30px);
   z-index: 0;
 }
 
-/* ---------- device ---------- */
+/* ---------- device ----------
+   Built to read as a photographed object: a rail that catches light along its
+   edges, real side keys, a clipped screen, one soft glare, and a shadow cast
+   in the direction the tilt implies. */
 
-.phone {
+.device {
   position: relative;
   z-index: 1;
   width: 272px;
   flex: none;
-  /* Titanium-edge feel: a hairline highlight inside the dark bezel. */
-  background: var(--bezel);
-  padding: 9px;
-  border-radius: 50px;
-  box-shadow:
-    inset 0 0 0 1px rgba(255, 255, 255, .16),
-    0 2px 6px rgba(43, 43, 40, .16),
-    0 30px 60px -24px rgba(43, 43, 40, .42);
+  transform-style: preserve-3d;
 }
 
-.phone .screen {
-  width: 100%;
+.device-body {
+  position: relative;
+  padding: 9px;
+  border-radius: 50px;
+  /* The angled gradient is the titanium rail: bright where an edge would
+     catch the light, dark across the flat of the frame. */
+  background: linear-gradient(146deg,
+      #5a5a63 0%, #24242a 9%, #101014 26%,
+      #17171c 52%, #0d0d11 74%, #33333b 92%, #6b6b75 100%);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, .14),
+    inset 0 1px 1px rgba(255, 255, 255, .22),
+    0 2px 6px rgba(43, 43, 40, .18),
+    0 34px 64px -26px rgba(43, 43, 40, .5);
+}
+
+.device-screen {
+  position: relative;
   /* The inner radius must be the outer radius minus the bezel, or the screen
      corners cut through the frame. */
   border-radius: 41px;
+  overflow: hidden;
   background: var(--surface);
+  /* Seats the glass slightly below the rail. */
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .55);
 }
 
-.island {
+.device-shot { width: 100%; }
+
+.device-island {
   position: absolute;
-  z-index: 2;
-  top: 20px; left: 50%;
+  top: 11px; left: 50%;
   transform: translateX(-50%);
   width: 78px; height: 23px;
-  background: var(--bezel);
+  background: #08080a;
   border-radius: 999px;
 }
 
-/* These two screens are content-dense at the top and quiet further down.
-   Showing the whole device would put empty app space on the page, so the
-   window crops to the part that carries the story and fades the device out
-   rather than cutting it with a hard line. */
-.window {
-  width: 100%;
-  height: 300px;
-  display: flex;
-  justify-content: center;
-  overflow: hidden;
-  -webkit-mask-image: linear-gradient(180deg, #000 72%, transparent 100%);
-          mask-image: linear-gradient(180deg, #000 72%, transparent 100%);
+/* A single soft sheen across the glass. More than one reads as decoration. */
+.device-glare {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(104deg,
+      transparent 26%,
+      rgba(255, 255, 255, .10) 38%,
+      rgba(255, 255, 255, .16) 44%,
+      rgba(255, 255, 255, .03) 52%,
+      transparent 66%);
 }
 
-.phone.sm { width: 232px; padding: 8px; border-radius: 44px; align-self: start; }
-.phone.sm .screen { border-radius: 36px; }
-.phone.sm .island { top: 17px; width: 66px; height: 20px; }
+.device-key {
+  position: absolute;
+  width: 2px;
+  border-radius: 2px;
+  background: linear-gradient(180deg, #4a4a53, #1b1b20 40%, #4a4a53);
+}
+.device-key-silent { left: -1px; top: 96px;  height: 26px; }
+.device-key-up     { left: -1px; top: 138px; height: 46px; }
+.device-key-down   { left: -1px; top: 196px; height: 46px; }
+.device-key-power  { right: -1px; top: 164px; height: 70px; }
 
-/* ---------- 02 product proof ---------- */
+/* ---------- 02 proof ---------- */
 
 .proof {
   max-width: var(--shell);
@@ -234,32 +295,47 @@ a { color: inherit; }
 }
 
 .proof-head { max-width: 26ch; margin-bottom: var(--s4); }
-.proof-head h2 { font-size: clamp(1.9rem, 6.6vw, 2.4rem); }
+.proof-head h2 { font-size: clamp(2rem, 7.4vw, 2.6rem); }
 
 .kicker {
+  font-family: var(--sans);
   color: var(--rose-700);
-  font-size: .8rem; font-weight: 680;
-  letter-spacing: .14em; text-transform: uppercase;
-  margin-bottom: .75rem;
+  font-size: .78rem; font-weight: 680;
+  letter-spacing: .16em; text-transform: uppercase;
+  margin-bottom: .8rem;
 }
 
-.pair { display: grid; gap: var(--s5); }
+.duo { display: grid; gap: var(--s5); }
 
-.tile {
-  margin: 0;
-  display: grid;
-  gap: var(--s3);
-  justify-items: center;
-  text-align: center;
-  padding: var(--s4) var(--s3);
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: 28px;
+.duo-item { margin: 0; display: grid; gap: var(--s3); justify-items: center; text-align: center; }
+
+.duo-item h3 { font-size: 1.4rem; margin-bottom: .55rem; }
+.duo-item figcaption { max-width: 32ch; }
+.duo-item figcaption p { color: var(--text-2); text-wrap: pretty; }
+
+/* These two screens are content-dense at the top and quiet further down.
+   Showing the whole device would put empty app space on the page, so the
+   window crops to the part that carries the story and fades the device out
+   rather than cutting it off with a hard line. */
+.window {
+  width: 100%;
+  height: 300px;
+  display: flex;
+  justify-content: center;
+  overflow: hidden;
+  perspective: 2000px;
+  -webkit-mask-image: linear-gradient(180deg, #000 74%, transparent 100%);
+          mask-image: linear-gradient(180deg, #000 74%, transparent 100%);
 }
 
-.tile h3 { font-size: 1.3rem; margin-bottom: .5rem; }
-.tile figcaption { max-width: 30ch; }
-.tile figcaption p { color: var(--text-2); text-wrap: pretty; }
+.device-sm { width: 232px; align-self: start; }
+.device-sm .device-body { padding: 8px; border-radius: 44px; }
+.device-sm .device-screen { border-radius: 36px; }
+.device-sm .device-island { top: 10px; width: 66px; height: 20px; }
+.device-sm .device-key-silent { top: 82px;  height: 22px; }
+.device-sm .device-key-up     { top: 118px; height: 40px; }
+.device-sm .device-key-down   { top: 168px; height: 40px; }
+.device-sm .device-key-power  { top: 140px; height: 60px; }
 
 /* ---------- 03 close ---------- */
 
@@ -270,12 +346,119 @@ a { color: inherit; }
   text-align: center;
   padding: var(--s6) var(--s3) var(--s5);
   background:
-    radial-gradient(70% 100% at 50% 0%, var(--rose-100), transparent 70%),
+    radial-gradient(72% 100% at 50% 0%, var(--rose-100), transparent 72%),
     var(--bg);
   border-top: 1px solid var(--line);
 }
-.close img { border-radius: 16px; }
-.close h2 { font-size: clamp(1.9rem, 7vw, 2.6rem); }
+.close-mark { border-radius: 15px; }
+.close h2 { font-size: clamp(2rem, 8vw, 2.9rem); }
+.close .lede { margin-top: 0; }
+
+/* ---------- join ---------- */
+
+.join { width: 100%; max-width: 26rem; margin-top: var(--s3); }
+.join-wide { max-width: 30rem; }
+
+.join[data-state="done"] .join-form,
+.join[data-state="done"] .join-trigger { display: none; }
+.join[data-state="open"] .join-trigger,
+.join[data-state="sending"] .join-trigger { display: none; }
+
+/* The field and its submit are one object, so the pill reads as a single
+   control rather than an input with a button stuck next to it. */
+/* `display:flex` below would otherwise beat the user-agent rule for [hidden],
+   leaving the form visible next to the trigger before it is opened. */
+.join-form[hidden] { display: none; }
+
+.join-form {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  box-shadow: 0 1px 2px rgba(43, 43, 40, .05), 0 14px 30px -18px rgba(43, 43, 40, .3);
+  transition: border-color .18s var(--ease), box-shadow .18s var(--ease);
+}
+.join-form:focus-within {
+  border-color: var(--rose-200);
+  box-shadow: 0 0 0 4px var(--rose-100), 0 14px 30px -18px rgba(43, 43, 40, .3);
+}
+
+.join-input {
+  flex: 1 1 auto;
+  min-width: 0;               /* lets the field shrink instead of overflowing */
+  min-height: 44px;
+  padding: 0 .5rem 0 1rem;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  /* 16px minimum, or iOS Safari zooms the page on focus. */
+  font-size: max(16px, 1rem);
+  color: var(--text);
+}
+.join-input::placeholder { color: color-mix(in srgb, var(--text-2) 70%, transparent); }
+.join-input:focus { outline: none; }
+.join-input[aria-invalid="true"] { color: var(--danger); }
+
+.join-go {
+  flex: none;
+  display: inline-flex; align-items: center; justify-content: center; gap: .5rem;
+  min-width: 44px; min-height: 44px;
+  padding: 0;
+  border: 0; border-radius: 999px;
+  background: var(--rose-700);
+  color: var(--surface);
+  font: inherit; font-weight: 620;
+  cursor: pointer;
+  transition: background .18s var(--ease);
+}
+.join-go:hover { background: var(--rose-900); }
+.join-go-wide { padding: 0 1.25rem; }
+.join-go-label { display: none; }
+
+.join[data-state="sending"] .join-go { pointer-events: none; opacity: .75; }
+.join[data-state="sending"] .join-go svg { animation: pulse 1s ease-in-out infinite; }
+
+@keyframes pulse { 50% { opacity: .35; } }
+
+/* Off-screen rather than display:none — a bot reading the DOM should still
+   find something to fill in. */
+.join-hp {
+  position: absolute; left: -9999px;
+  width: 1px; height: 1px; overflow: hidden;
+}
+
+/* Collapsed until it has something to say, otherwise the reserved line reads
+   as a spacing mistake under the button. The shift when it appears is
+   user-initiated, so it does not count against CLS. */
+.join-msg:empty { display: none; }
+
+.join-msg {
+  margin-top: .85rem;
+  font-size: .92rem;
+  text-wrap: pretty;
+}
+.join-msg[data-tone="ok"]  { color: var(--rose-900); font-weight: 600; }
+.join-msg[data-tone="bad"] { color: var(--danger); }
+
+/* Resolved state: the pill is replaced by a mark, so success is a visual
+   event rather than a line of text appearing. */
+.join[data-state="done"] .join-msg::before {
+  content: "";
+  display: inline-block;
+  vertical-align: -.28em;
+  width: 1.2em; height: 1.2em;
+  margin-right: .5rem;
+  border-radius: 999px;
+  background: var(--rose-700) no-repeat center / .7em .7em;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23FEFDFB' stroke-width='3.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 12.6l5.2 5.2L20 7'/%3E%3C/svg%3E");
+}
+
+/* Centred layouts need the pill and its message centred too. */
+.hero .join, .close .join { margin-inline: auto; }
+.close .join-msg, .hero .join-msg { text-align: center; }
 
 /* ---------- footer ---------- */
 
@@ -289,26 +472,29 @@ a { color: inherit; }
   font-size: .9rem;
 }
 .foot nav { display: flex; flex-wrap: wrap; gap: var(--s2); }
-/* Inline-sized text links would be ~23px tall. Padding brings every footer
-   target up to the 44px floor without changing how they look. */
-.foot a { text-decoration: none; display: inline-flex; align-items: center; min-height: 44px; padding: 0 .5rem; }
+/* Inline text links would be ~23px tall. Padding brings every target up to
+   the 44px floor without changing how they look. */
+.foot a {
+  text-decoration: none;
+  display: inline-flex; align-items: center;
+  min-height: 44px; padding: 0 .5rem;
+}
 .foot a:hover { color: var(--text); text-decoration: underline; }
 
 /* ---------- motion ----------
-   Entrance only, and only on capable browsers. Nothing here is required to
-   read the page: if the animation never runs, the content is already visible
-   because the end state is the default. */
+   Entrance only, and only where supported. Nothing here is required to read
+   the page: if it never runs, the end state is already the default. */
 
 @media (prefers-reduced-motion: no-preference) {
   @supports (animation-timeline: view()) {
     .reveal {
       animation: rise linear both;
       animation-timeline: view();
-      animation-range: entry 5% cover 34%;
+      animation-range: entry 5% cover 32%;
     }
   }
   @keyframes rise {
-    from { opacity: 0; transform: translateY(26px) scale(.97); }
+    from { opacity: 0; transform: translateY(28px) scale(.975); }
     to   { opacity: 1; transform: none; }
   }
 }
@@ -316,30 +502,31 @@ a { color: inherit; }
 /* ---------- 430px and up ---------- */
 
 @media (min-width: 430px) {
-  .phone { width: 300px; }
-  .phone.sm { width: 252px; }
+  .device { width: 300px; }
+  .device-sm { width: 252px; }
+  .join-go-label { display: inline; }
 }
 
 /* ---------- tablet ---------- */
 
 @media (min-width: 760px) {
   body { font-size: 18px; }
-
-  .pair { grid-template-columns: 1fr 1fr; gap: var(--s3); }
-  .tile { padding: var(--s5) var(--s3); }
+  .duo { grid-template-columns: 1fr 1fr; gap: var(--s4); align-items: start; }
+  .window { height: 330px; }
 }
 
 /* ---------- desktop ----------
-   The hero becomes one overlapping composition: the type block sits on the
-   left of the stage and the halo bleeds past it, so the two read as a single
-   art-directed frame rather than two columns parked side by side. */
+   The hero becomes one overlapping composition: the type sits on the left of
+   the stage and the halo bleeds past it, so the two read as a single frame
+   rather than two columns parked side by side. */
 
 @media (min-width: 1000px) {
+  .bp { display: inline; }
+
   .hero {
     /* The type column has to hold "Your parent community" on one line at the
-       display size, so it gets the larger share; the device only needs its
-       own width plus room for the tilt. */
-    grid-template-columns: 1.25fr .75fr;
+       display size; the device only needs its own width plus room to tilt. */
+    grid-template-columns: 1.2fr .8fr;
     align-items: center;
     justify-items: start;
     text-align: left;
@@ -347,33 +534,48 @@ a { color: inherit; }
     padding: var(--s5) var(--s3) var(--s7);
   }
 
-  .bp { display: inline; }
-  .hero h1 { font-size: clamp(2.9rem, 3.9vw, 3.6rem); }
+  .hero h1 { font-size: clamp(3rem, 4.1vw, 3.8rem); }
+  .hero .lede, .hero .join { margin-inline: 0; }
   .lede { max-width: 32ch; }
+  .hero .join-msg { text-align: left; }
 
   .stage { justify-content: flex-end; }
 
-  /* A restrained tilt — enough to read as a photographed object, not enough
-     to make the UI inside hard to read. */
-  .phone {
-    width: 340px;
-    transform: rotate(-3deg);
-    transition: transform .5s var(--ease);
+  /* Held at a slight angle rather than lying flat on the page. Kept shallow
+     so the UI inside stays legible — the point is depth, not spectacle. */
+  .device-hero {
+    width: 336px;
+    transform: rotateY(-13deg) rotateX(3deg) rotate(-1.5deg);
+    transition: transform .6s var(--ease);
   }
-  .stage:hover .phone { transform: rotate(0deg); }
+  .device-hero .device-body {
+    /* Shadow falls away from the tilt, which is what sells the angle. */
+    box-shadow:
+      inset 0 0 0 1px rgba(255, 255, 255, .14),
+      inset 0 1px 1px rgba(255, 255, 255, .22),
+      0 2px 6px rgba(43, 43, 40, .18),
+      44px 44px 80px -34px rgba(43, 43, 40, .55);
+  }
+  /* Straightens on hover — a small reward, not a requirement. */
+  .stage:hover .device-hero { transform: rotateY(-4deg) rotateX(1deg) rotate(-.5deg); }
 
-  .halo { inset: -14% -30% -14% -55%; filter: blur(46px); }
+  .halo { inset: -16% -32% -16% -58%; filter: blur(50px); }
 
   .proof-head { margin-bottom: var(--s5); }
-  .proof-head h2 { font-size: 2.9rem; }
+  .proof-head h2 { font-size: 3rem; }
 
-  .pair { gap: var(--s4); }
-  /* Fixed first track rather than `auto`: the window is a clipping box, so its
-     intrinsic width would otherwise fight the device inside it. */
-  .tile { grid-template-columns: 248px 1fr; justify-items: start; text-align: left; align-items: center;
-          gap: var(--s4); padding: var(--s4); }
-  .window { height: 340px; }
-  .phone.sm { width: 224px; }
+  /* Staggered rather than aligned: two devices sitting at the same height
+     reads as a spec sheet. */
+  .duo { gap: var(--s5); }
+  .duo-item-lifted { margin-top: calc(var(--s5) * -1); }
+  .window { height: 380px; }
+  .device-sm { width: 244px; }
+  .device-sm .device-body { transform: rotate(-2deg); }
+  .duo-item-lifted .device-sm .device-body { transform: rotate(2deg); }
+}
+
+@media (min-width: 1240px) {
+  .device-hero { width: 360px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -383,5 +585,5 @@ a { color: inherit; }
     animation-iteration-count: 1 !important;
     transition-duration: .001ms !important;
   }
-  .phone { transform: none !important; }
+  .device-hero, .device-sm .device-body { transform: none !important; }
 }

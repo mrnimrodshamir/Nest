@@ -20,8 +20,13 @@
 <link rel="icon" href="assets/favicon-32.png" sizes="32x32">
 <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
 <meta name="theme-color" content="#FAF8F4">
+
+<!-- Both are on the critical path for the first viewport: the display face
+     sets the headline, the place screen is the LCP element. -->
+<link rel="preload" as="font" type="font/woff2" href="assets/fraunces-display.woff2" crossorigin>
 <link rel="preload" as="image" href="assets/screen-place.webp" fetchpriority="high">
 <link rel="stylesheet" href="styles.css">
+<script src="join.js" defer></script>
 
 <script type="application/ld+json">
 {
@@ -43,7 +48,7 @@
 <header class="bar">
   <a class="lockup" href="./" aria-label="NestUp home">
     <img src="assets/mark-56.png" srcset="assets/mark-56.png 1x, assets/mark-112.png 2x"
-         width="34" height="34" alt="" decoding="async">
+         width="32" height="32" alt="" decoding="async">
     <span>NestUp</span>
   </a>
   <a class="btn btn-sm" href="#join">Join NestUp</a>
@@ -51,59 +56,114 @@
 
 <main id="main">
 
-  <!-- 01 — HERO. The device is the hero object; type is set around it rather
-       than beside it, so the first viewport reads as one composition. -->
+  <!-- 01 — HERO ------------------------------------------------------------
+       One composition, not two columns: the colour field bleeds behind and
+       past the type so the headline and the device read as a single frame. -->
   <section class="hero">
     <div class="hero-type">
-      <h1>Your parent community<br class="bp"> is closer than you think.</h1>
+      <h1>Your parent community<br class="bp"> is closer than you&nbsp;think.</h1>
       <p class="lede">Discover parents, activities, places and local events around you.</p>
-      <a class="btn btn-lg" href="#join">Join NestUp</a>
-      <p class="fine">Free · iPhone · Tel&nbsp;Aviv-Yafo</p>
+
+      <div class="join" data-join data-open-on-click>
+        <button class="btn btn-lg join-trigger" type="button">Join NestUp</button>
+
+        <form class="join-form" novalidate hidden>
+          <label class="sr-only" for="email-hero">Your email address</label>
+          <input class="join-input" id="email-hero" type="email" name="email" required
+                 autocomplete="email" inputmode="email" spellcheck="false"
+                 placeholder="you@email.com">
+          <button class="join-go" type="submit">
+            <span class="sr-only">Join the beta</span>
+            <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false">
+              <path d="M4 12h14M13 6l6 6-6 6" fill="none" stroke="currentColor"
+                    stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
+          <!-- Honeypot. Hidden from people, tempting to a form-filling bot. -->
+          <div class="join-hp" aria-hidden="true">
+            <label>Company <input type="text" name="company" tabindex="-1" autocomplete="off"></label>
+          </div>
+        </form>
+
+        <p class="join-msg" role="status" aria-live="polite"></p>
+      </div>
+
+      <p class="fine join-fine">Free · iPhone · Tel&nbsp;Aviv-Yafo</p>
     </div>
 
-    <!-- Deliberately not .reveal: this image is the LCP element, and animating
-         it in would delay the largest paint for no design gain. -->
+    <!-- Deliberately not animated in: this image is the LCP element. -->
     <figure class="stage">
       <div class="halo" aria-hidden="true"></div>
-      <div class="phone">
-        <div class="island" aria-hidden="true"></div>
-        <img class="screen" src="assets/screen-place.webp" width="560" height="1218"
-             alt="The NestUp app showing a family-friendly place in Tel Aviv, with a map, what's there, and an option to create an activity at that spot."
-             fetchpriority="high" decoding="async">
+
+      <div class="device device-hero">
+        <div class="device-body">
+          <span class="device-key device-key-silent" aria-hidden="true"></span>
+          <span class="device-key device-key-up" aria-hidden="true"></span>
+          <span class="device-key device-key-down" aria-hidden="true"></span>
+          <span class="device-key device-key-power" aria-hidden="true"></span>
+          <div class="device-screen">
+            <img class="device-shot" src="assets/screen-place.webp" width="560" height="1218"
+                 alt="The NestUp app showing a family-friendly place in Tel Aviv, with a map, what's there, and an option to create an activity at that spot."
+                 fetchpriority="high" decoding="async">
+            <span class="device-island" aria-hidden="true"></span>
+            <span class="device-glare" aria-hidden="true"></span>
+          </div>
+        </div>
       </div>
     </figure>
   </section>
 
-  <!-- 02 — PRODUCT PROOF. Real screens carry the argument; the copy only names
-       what the screen already shows. -->
+  <!-- 02 — PROOF ------------------------------------------------------------
+       The real screens carry the argument. The copy only names what the
+       screen is already showing. -->
   <section class="proof">
     <div class="proof-head">
       <p class="kicker">The app</p>
-      <h2>Everything happening near you, in one place.</h2>
+      <h2>Everything happening near you, in one&nbsp;place.</h2>
     </div>
 
-    <div class="pair">
-      <figure class="tile reveal">
+    <div class="duo">
+      <figure class="duo-item reveal">
         <div class="window">
-        <div class="phone sm">
-          <div class="island" aria-hidden="true"></div>
-          <img class="screen" src="assets/screen-activities.webp" width="560" height="1218" loading="lazy" decoding="async"
-               alt="The NestUp app showing upcoming activities, including an indoor playground meetup the user is hosting.">
-        </div>
+          <div class="device device-sm">
+            <div class="device-body">
+              <span class="device-key device-key-silent" aria-hidden="true"></span>
+              <span class="device-key device-key-up" aria-hidden="true"></span>
+              <span class="device-key device-key-down" aria-hidden="true"></span>
+              <span class="device-key device-key-power" aria-hidden="true"></span>
+              <div class="device-screen">
+                <img class="device-shot" src="assets/screen-activities.webp" width="560" height="1218"
+                     loading="lazy" decoding="async"
+                     alt="The NestUp app showing upcoming activities, including an indoor playground meetup the user is hosting.">
+                <span class="device-island" aria-hidden="true"></span>
+                <span class="device-glare" aria-hidden="true"></span>
+              </div>
+            </div>
+          </div>
         </div>
         <figcaption>
           <h3>Go together</h3>
-          <p>Something is on nearby. Other parents are going. Join them, or host your own in a minute.</p>
+          <p>Something is on nearby and other parents are going. Join them, or host your own in a minute.</p>
         </figcaption>
       </figure>
 
-      <figure class="tile reveal">
+      <figure class="duo-item duo-item-lifted reveal">
         <div class="window">
-        <div class="phone sm">
-          <div class="island" aria-hidden="true"></div>
-          <img class="screen" src="assets/screen-forums.webp" width="560" height="1218" loading="lazy" decoding="async"
-               alt="The NestUp app showing community forums, including Parents on Parental Leave and Things to Do with Kids in Tel Aviv.">
-        </div>
+          <div class="device device-sm">
+            <div class="device-body">
+              <span class="device-key device-key-silent" aria-hidden="true"></span>
+              <span class="device-key device-key-up" aria-hidden="true"></span>
+              <span class="device-key device-key-down" aria-hidden="true"></span>
+              <span class="device-key device-key-power" aria-hidden="true"></span>
+              <div class="device-screen">
+                <img class="device-shot" src="assets/screen-forums.webp" width="560" height="1218"
+                     loading="lazy" decoding="async"
+                     alt="The NestUp app showing community forums, including Parents on Parental Leave and Things to Do with Kids in Tel Aviv.">
+                <span class="device-island" aria-hidden="true"></span>
+                <span class="device-glare" aria-hidden="true"></span>
+              </div>
+            </div>
+          </div>
         </div>
         <figcaption>
           <h3>Local, not global</h3>
@@ -113,12 +173,36 @@
     </div>
   </section>
 
-  <!-- 03 — CLOSE -->
+  <!-- 03 — CLOSE ------------------------------------------------------------
+       The dedicated conversion moment, so the field is open from the start
+       rather than behind a click. -->
   <section id="join" class="close">
-    <img src="assets/mark-112.png" width="64" height="64" alt="" loading="lazy" decoding="async">
-    <h2>Your parent community<br class="bp"> is already here.</h2>
-    <a class="btn btn-lg" href="mailto:hello@nestup.best?subject=NestUp%20beta">Join NestUp</a>
-    <p class="fine">In beta in Tel&nbsp;Aviv-Yafo. We'll only email you about the beta.</p>
+    <img class="close-mark" src="assets/mark-112.png" width="60" height="60" alt=""
+         loading="lazy" decoding="async">
+    <h2>Your parent community<br class="bp"> is already&nbsp;here.</h2>
+    <p class="lede">We're opening the beta in Tel Aviv-Yafo. Leave your email and we'll let you in.</p>
+
+    <div class="join join-wide" data-join>
+      <form class="join-form" novalidate>
+        <label class="sr-only" for="email-close">Your email address</label>
+        <input class="join-input" id="email-close" type="email" name="email" required
+               autocomplete="email" inputmode="email" spellcheck="false"
+               placeholder="you@email.com">
+        <button class="join-go join-go-wide" type="submit">
+          <span class="join-go-label">Join NestUp</span>
+          <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false">
+            <path d="M4 12h14M13 6l6 6-6 6" fill="none" stroke="currentColor"
+                  stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+        <div class="join-hp" aria-hidden="true">
+          <label>Company <input type="text" name="company" tabindex="-1" autocomplete="off"></label>
+        </div>
+      </form>
+      <p class="join-msg" role="status" aria-live="polite"></p>
+    </div>
+
+    <p class="fine">No spam. Just the invite, when it's your turn.</p>
   </section>
 
 </main>

@@ -1,0 +1,9 @@
+{
+  "name": "nestup-site",
+  "private": true,
+  "type": "module",
+  "description": "Static landing page for nestup.best plus the beta-signup function.",
+  "dependencies": {
+    "@vercel/blob": "2.8.0"
+  }
+}
