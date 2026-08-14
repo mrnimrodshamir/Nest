@@ -20,16 +20,17 @@ export interface GroupedConversations {
   direct: Conversation[];
 }
 
-/** Splits the flat conversation list into Chats' three sections. A
- *  conversation with no `activity` record (deleted/never loaded) falls
- *  through to `direct` rather than crashing on a null check. */
+/** Splits the flat conversation list into Chats' three sections. A stale group
+ * chat whose activity no longer resolves is omitted from presentation; it is
+ * never relabelled as a person-to-person conversation or deleted. */
 export function groupConversations(conversations: Conversation[], now: Date = new Date()): GroupedConversations {
   const upcoming: Conversation[] = [];
   const past: Conversation[] = [];
   const direct: Conversation[] = [];
 
   for (const conversation of conversations) {
-    if (!conversation.activity) direct.push(conversation);
+    if (conversation.kind === 'direct') direct.push(conversation);
+    else if (!conversation.activity) continue;
     else if (isUpcomingActivity(conversation.activity, now)) upcoming.push(conversation);
     else past.push(conversation);
   }

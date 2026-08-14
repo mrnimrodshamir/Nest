@@ -159,7 +159,10 @@ export function useConversations(): UseConversationsResult {
           return {
             chatId: chat.id,
             kind: 'direct' as const,
-            title: profile?.display_name ?? `${APP_NAME} member`,
+            // Missing public-profile data is a real-data fallback, not sample
+            // content. Keep the row understandable without exposing an id or
+            // internal chat type.
+            title: profile?.display_name ?? `${APP_NAME} parent`,
             subtitle: lastMessage?.content ?? 'Say hello 👋',
             avatarUrl: profile?.avatar_url ?? null,
             otherUserId,
@@ -198,8 +201,12 @@ export function useConversations(): UseConversationsResult {
         };
       });
 
-      result.sort((a, b) => (b.lastMessageAt ?? '').localeCompare(a.lastMessageAt ?? ''));
-      setConversations(result);
+      // A direct chat with no other participant is an orphaned relationship,
+      // not a usable conversation. Hiding it avoids presenting stale rows as
+      // mysterious sample content while preserving every real two-party chat.
+      const usable = result.filter((conversation) => conversation.kind !== 'direct' || conversation.otherUserId !== null);
+      usable.sort((a, b) => (b.lastMessageAt ?? '').localeCompare(a.lastMessageAt ?? ''));
+      setConversations(usable);
     } catch (err) {
       console.log('[Conversations] load failed', err instanceof Error ? err.message : err);
       setError("Couldn't load your messages.");

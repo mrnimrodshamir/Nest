@@ -17,6 +17,7 @@ import {
   type AppLocale,
 } from './core.ts';
 import { en } from './en.ts';
+import { he } from './he.ts';
 import { fr } from './fr.ts';
 import { ru } from './ru.ts';
 
@@ -181,6 +182,16 @@ test('a missing key falls back to English rather than a raw key', () => {
     const value = translate(locale, 'nav.chats');
     assert.notEqual(value, 'nav.chats', locale);
     assert.ok(value.length > 0, locale);
+  }
+});
+
+test('chat inbox uses consumer-facing private-message copy in every locale', () => {
+  assert.equal(en['chats.directChat'], 'Private messages');
+  assert.equal(he['chats.directChat'], 'הודעות אישיות');
+  assert.equal(fr['chats.directChat'], 'Messages privés');
+  assert.equal(ru['chats.directChat'], 'Личные сообщения');
+  for (const dictionary of [en, he, fr, ru]) {
+    assert.doesNotMatch(dictionary['chats.directChat'], /direct chat|group chat|chat_type/i);
   }
 });
 

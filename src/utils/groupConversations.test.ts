@@ -94,11 +94,11 @@ test('groupConversations: splits into upcoming/past/direct correctly', () => {
   assert.deepEqual(result.direct.map((c) => c.chatId), ['c']);
 });
 
-test('groupConversations: a conversation with a missing activity record falls through to direct, not a crash', () => {
+test('groupConversations: a stale group with a missing activity is hidden, not presented as a direct chat', () => {
   const now = new Date(2026, 6, 31, 12, 0);
-  const missingActivity = conversation({ chatId: 'x', activity: null, otherUserId: null, activityId: 'gone' });
+  const missingActivity = conversation({ chatId: 'x', kind: 'group', activity: null, otherUserId: null, activityId: 'gone' });
   const result = groupConversations([missingActivity], now);
-  assert.deepEqual(result.direct.map((c) => c.chatId), ['x']);
+  assert.deepEqual(result.direct, []);
   assert.equal(result.upcoming.length, 0);
   assert.equal(result.past.length, 0);
 });
