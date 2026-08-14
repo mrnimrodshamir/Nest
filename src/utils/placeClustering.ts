@@ -9,7 +9,13 @@ export function clusterPlacesForRegion(
   region: { latitudeDelta: number; longitudeDelta: number },
   markerBudget = 45,
 ): PlaceMapItem[] {
-  if (places.length <= markerBudget) return places.map((place) => ({ kind: 'place', place }));
+  // At street-level zoom every result must become a real, selectable marker.
+  // The previous minimum grid size could keep neighbouring venues permanently
+  // clustered after the map reached its minimum cluster-tap zoom.
+  const streetLevel = region.latitudeDelta <= 0.008 && region.longitudeDelta <= 0.008;
+  if (places.length <= markerBudget || streetLevel) {
+    return places.map((place) => ({ kind: 'place', place }));
+  }
   const latSize = Math.max(region.latitudeDelta / 9, 0.0005);
   const lngSize = Math.max(region.longitudeDelta / 9, 0.0005);
   const buckets = new Map<string, FamilyFriendlyPlace[]>();

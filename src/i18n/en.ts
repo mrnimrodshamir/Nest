@@ -123,7 +123,7 @@ export const en = {
   'chats.you': 'You',
   /** Past activity chats read "Aug 7 · 10:00" — the date the activity happened. */
   'chats.happenedOn': '{date} · {time}',
-  'chats.directChat': 'Direct chat',
+  'chats.directChat': 'Private messages',
   /** Spoken label — the visual badge is hidden from assistive tech, since a
    *  bare number read after a title means nothing. */
   'chats.unreadLabel': '{name}, {count} unread',
@@ -170,6 +170,7 @@ export const en = {
   'place.whatsHere': "What's here",
   'place.cost': 'Cost',
   'place.openingHours': 'Opening hours',
+  'place.viewDetails': 'View',
   'place.todayHere': 'Today Here',
   'place.upcomingHere': 'Upcoming Here',
   'place.loadingEvents': 'Loading events here…',

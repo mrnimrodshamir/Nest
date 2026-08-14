@@ -115,7 +115,7 @@ export const he: Dictionary = {
   'chats.noMessagesYet': 'אמרו שלום 👋',
   'chats.you': 'אני',
   'chats.happenedOn': '{date} · {time}',
-  'chats.directChat': 'צ׳אט אישי',
+  'chats.directChat': 'הודעות אישיות',
   'chats.unreadLabel': '{name}, {count} הודעות שלא נקראו',
   'chats.activityChat': 'צ׳אט פעילות',
 
@@ -160,6 +160,7 @@ export const he: Dictionary = {
   'place.whatsHere': 'מה יש כאן',
   'place.cost': 'עלות',
   'place.openingHours': 'שעות פתיחה',
+  'place.viewDetails': 'לפרטים',
   'place.todayHere': 'היום כאן',
   'place.upcomingHere': 'בקרוב כאן',
   'place.loadingEvents': 'טוען אירועים כאן…',

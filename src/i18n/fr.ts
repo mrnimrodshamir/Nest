@@ -123,7 +123,7 @@ export const fr: Dictionary = {
   'chats.noMessagesYet': 'Dites bonjour 👋',
   'chats.you': 'Vous',
   'chats.happenedOn': '{date} · {time}',
-  'chats.directChat': 'Discussion privée',
+  'chats.directChat': 'Messages privés',
   'chats.unreadLabel': '{name}, {count} non lus',
   'chats.activityChat': 'Discussion de l’activité',
 
@@ -168,6 +168,7 @@ export const fr: Dictionary = {
   'place.whatsHere': 'Sur place',
   'place.cost': 'Tarif',
   'place.openingHours': 'Horaires',
+  'place.viewDetails': 'Voir',
   'place.todayHere': 'Aujourd’hui ici',
   'place.upcomingHere': 'À venir ici',
   'place.loadingEvents': 'Chargement des événements ici…',

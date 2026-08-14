@@ -129,7 +129,7 @@ export const ru: Dictionary = {
   'chats.noMessagesYet': 'Поздоровайтесь 👋',
   'chats.you': 'Вы',
   'chats.happenedOn': '{date} · {time}',
-  'chats.directChat': 'Личный чат',
+  'chats.directChat': 'Личные сообщения',
   'chats.unreadLabel': '{name}, непрочитанных: {count}',
   'chats.activityChat': 'Чат встречи',
 
@@ -174,6 +174,7 @@ export const ru: Dictionary = {
   'place.whatsHere': 'Что здесь есть',
   'place.cost': 'Стоимость',
   'place.openingHours': 'Часы работы',
+  'place.viewDetails': 'Открыть',
   'place.todayHere': 'Сегодня здесь',
   'place.upcomingHere': 'Скоро здесь',
   'place.loadingEvents': 'Загрузка событий здесь…',
