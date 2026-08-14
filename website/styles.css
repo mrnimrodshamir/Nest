@@ -370,7 +370,7 @@ a { color: inherit; }
 .close {
   display: grid;
   justify-items: center;
-  gap: var(--s3);
+  gap: var(--s2);
   text-align: center;
   padding: var(--s5) var(--s3) var(--s4);
   background:
@@ -590,7 +590,9 @@ a { color: inherit; }
   .lede { max-width: 32ch; }
   .hero .join-msg { text-align: left; }
 
-  .stage { justify-content: flex-end; }
+  /* Centred in its column rather than pushed to the far edge — hard-right
+     alignment opened a wide dead gap between the headline and the device. */
+  .stage { justify-content: center; }
 
   /* Held at a slight angle rather than lying flat on the page. Kept shallow
      so the UI inside stays legible — the point is depth, not spectacle. */
@@ -612,6 +614,10 @@ a { color: inherit; }
 
   .halo { inset: -16% -32% -16% -58%; filter: blur(50px); }
 
+  /* Narrower than the hero shell. The hero needs width for the two-column
+     composition; this section is a heading and two phones, and at full shell
+     width the pair drifted so far apart they stopped reading as a pair. */
+  .proof { max-width: 940px; }
   .proof-head { max-width: 32rem; margin-bottom: var(--s4); }
   .proof-head h2 { font-size: 2.6rem; }
 
