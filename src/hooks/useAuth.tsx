@@ -285,7 +285,6 @@ function useAuthState(): UseAuthResult {
   const register = useCallback(
     async (input: RegistrationInput, onStage?: (stage: RegistrationStage) => void): Promise<RegisterResult> => {
       track('sign_up_started');
-      track('onboarding_started', { onboarding_method: 'email' });
       onStage?.('creating-account');
 
       // Email confirmation is disabled for this project (a manual
@@ -453,7 +452,6 @@ function useAuthState(): UseAuthResult {
       // screen is reached reactively, not via a passed navigation param).
       console.log('[Auth] Apple sign-in: needs profile completion', { userId });
       track('sign_up_started');
-      track('onboarding_started', { onboarding_method: 'apple' });
       const fullName = credential.fullName
         ? [credential.fullName.givenName, credential.fullName.familyName].filter(Boolean).join(' ')
         : null;

@@ -145,7 +145,7 @@ export function useCreateActivity(): UseCreateActivityResult {
         }
       }
 
-      track('activity_created', { activity_id: activityId, category: input.activityType });
+      track('activity_created', { content_id: activityId, category: input.activityType });
       setIsSubmitting(false);
       setStage(null);
 

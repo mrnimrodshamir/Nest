@@ -13,6 +13,7 @@ import { APP_NAME } from '@/constants/brand';
 import { AvatarPicker } from '@/components/AvatarPicker';
 import { FamilyProfileFields, type FamilyProfileDraft } from '@/components/FamilyProfileFields';
 import { useI18n } from '@/i18n';
+import { track } from '@/lib/analytics';
 
 interface CompleteAppleProfileScreenProps {
   input: AppleProfileInput;
@@ -51,6 +52,10 @@ export function CompleteAppleProfileScreen({ input }: CompleteAppleProfileScreen
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [stage, setStage] = useState<RegistrationStage | null>(null);
   const inFlightRef = useRef(false);
+
+  useEffect(() => {
+    track('onboarding_started', { onboarding_method: 'apple' });
+  }, []);
 
   useEffect(() => {
     if (!initialDraft) return;

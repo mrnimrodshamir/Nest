@@ -25,6 +25,7 @@ import { APP_NAME } from '@/constants/brand';
 import { AvatarPicker } from '@/components/AvatarPicker';
 import { FamilyProfileFields, type FamilyProfileDraft } from '@/components/FamilyProfileFields';
 import { useI18n } from '@/i18n';
+import { track } from '@/lib/analytics';
 
 interface SignUpScreenProps {
   onBack: () => void;
@@ -67,6 +68,10 @@ export function SignUpScreen({ onBack }: SignUpScreenProps) {
   // can fire two onPress handlers before the disabled-button re-render
   // commits, same class of gap as the Apple sign-in double-tap issue.
   const inFlightRef = useRef(false);
+
+  useEffect(() => {
+    track('onboarding_started', { onboarding_method: 'email' });
+  }, []);
 
   // Restore a draft left behind by a closed app or dropped connection.
   useEffect(() => {

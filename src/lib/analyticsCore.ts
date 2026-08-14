@@ -15,12 +15,20 @@ export type AnalyticsEvent =
 
 export type AnalyticsValue = string | number | boolean;
 export type AnalyticsProperties = Record<string, AnalyticsValue | null | undefined>;
+export type AnalyticsContext = AnalyticsProperties;
 export interface AnalyticsPayload { eventName: AnalyticsEvent; properties: Record<string, AnalyticsValue> }
 export interface AnalyticsTransport { send(payload: AnalyticsPayload): Promise<void> }
 
 const PRIVATE_PROPERTY = /(?:email|phone|birth|dob|child(?:ren)?_?name|message(?:_?content)?|bio|latitude|longitude|coordinates?|address|token|secret|password)/i;
 const MAX_PROPERTIES = 20;
 const MAX_STRING_LENGTH = 120;
+
+/** A privacy-safe identifier for one app-process session. It contains no
+ * device, account or installation identifier, but lets anonymous onboarding
+ * events be joined to later authenticated events from the same launch. */
+export function createAnalyticsSessionId(now = Date.now(), random = Math.random()): string {
+  return `session_${now.toString(36)}_${Math.floor(random * 0x100000000).toString(36).padStart(7, '0')}`;
+}
 
 export function sanitizeAnalyticsProperties(input: AnalyticsProperties = {}): Record<string, AnalyticsValue> {
   const output: Record<string, AnalyticsValue> = {};
@@ -35,12 +43,16 @@ export function sanitizeAnalyticsProperties(input: AnalyticsProperties = {}): Re
 }
 
 export function createAnalytics(transport: AnalyticsTransport) {
+  let context: Record<string, AnalyticsValue> = {};
   const trackEvent = (eventName: AnalyticsEvent, properties: AnalyticsProperties = {}): void => {
-    const payload = { eventName, properties: sanitizeAnalyticsProperties(properties) };
+    const payload = { eventName, properties: sanitizeAnalyticsProperties({ ...context, ...properties }) };
     Promise.resolve().then(() => transport.send(payload)).catch(() => undefined);
   };
   return {
     track: trackEvent,
+    setContext(properties: AnalyticsContext = {}): void {
+      context = sanitizeAnalyticsProperties({ ...context, ...properties });
+    },
     identify(properties: AnalyticsProperties = {}): void { trackEvent('user_identified', properties); },
     screen(screenName: string, properties: AnalyticsProperties = {}): void {
       trackEvent('screen_viewed', { ...properties, screen_name: screenName });

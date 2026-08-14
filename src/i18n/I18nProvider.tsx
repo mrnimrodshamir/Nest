@@ -3,7 +3,7 @@ import { I18nManager } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Localization from 'expo-localization';
 import type { TranslationKey } from './en';
-import { identify, track } from '@/lib/analytics';
+import { identify, setAnalyticsContext, track } from '@/lib/analytics';
 import {
   coerceLocalePreference,
   isRtlLocale,
@@ -64,6 +64,11 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
 
   const locale = useMemo(() => resolveLocale(deviceTags, preference), [deviceTags, preference]);
   const isRTL = isRtlLocale(locale);
+
+  // Set this before children render so even their first mount event (including
+  // app_opened) receives the resolved language. This only mutates the local,
+  // in-memory analytics context; it performs no I/O during render.
+  setAnalyticsContext({ language: locale });
 
   // Set synchronously during render, not in an effect: the date formatters are
   // called by children on this same pass, and an effect would leave the first

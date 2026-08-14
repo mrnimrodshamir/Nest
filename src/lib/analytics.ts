@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabase';
-import { createAnalytics, type AnalyticsTransport } from '@/lib/analyticsCore';
+import { createAnalytics, createAnalyticsSessionId, type AnalyticsTransport } from '@/lib/analyticsCore';
 export * from '@/lib/analyticsCore';
 
 const supabaseTransport: AnalyticsTransport = {
@@ -18,6 +18,8 @@ const supabaseTransport: AnalyticsTransport = {
 };
 
 export const analytics = createAnalytics(supabaseTransport);
+analytics.setContext({ session_id: createAnalyticsSessionId() });
 export const track = analytics.track;
+export const setAnalyticsContext = analytics.setContext;
 export const identify = analytics.identify;
 export const screen = analytics.screen;

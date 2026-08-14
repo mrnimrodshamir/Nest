@@ -48,7 +48,7 @@ export function useActivityRsvp(initial: ActivityDetail, onSettled?: () => void)
       );
       return false;
     }
-    track('activity_joined', { activity_id: activity.id });
+    track('activity_joined', { content_id: activity.id });
     onSettled?.();
     return true;
   }, [activity, onSettled]);
@@ -80,7 +80,7 @@ export function useActivityRsvp(initial: ActivityDetail, onSettled?: () => void)
       setActivity(previous);
       setError("Couldn't leave right now — please try again.");
     } else {
-      track('activity_left', { activity_id: activity.id });
+      track('activity_left', { content_id: activity.id });
       onSettled?.();
     }
   }, [activity, onSettled]);

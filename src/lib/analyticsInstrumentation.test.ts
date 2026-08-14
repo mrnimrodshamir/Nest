@@ -7,6 +7,8 @@ const read = (path: string) => readFileSync(new URL(path, import.meta.url), 'utf
 test('critical release funnels are wired through the centralized analytics layer', () => {
   const sources = [
     read('../hooks/useAuth.tsx'),
+    read('../screens/auth/SignUpScreen.tsx'),
+    read('../screens/auth/CompleteAppleProfileScreen.tsx'),
     read('../screens/DiscoverScreen.tsx'),
     read('../hooks/useActivityRsvp.ts'),
     read('../hooks/useCreateActivity.ts'),
@@ -28,6 +30,20 @@ test('critical release funnels are wired through the centralized analytics layer
     'chats_opened', 'forum_opened', 'forum_joined', 'forum_message_sent', 'public_profile_opened',
     'profile_updated', 'share_started', 'share_completed', 'share_cancelled', 'share_failed',
   ]) assert.match(sources, new RegExp(`['\"]${event}['\"]`), `${event} is not instrumented`);
+});
+
+test('onboarding starts on screen entry rather than submit or auth rerenders', () => {
+  const auth = read('../hooks/useAuth.tsx');
+  const email = read('../screens/auth/SignUpScreen.tsx');
+  const apple = read('../screens/auth/CompleteAppleProfileScreen.tsx');
+  assert.doesNotMatch(auth, /track\('onboarding_started'/);
+  assert.match(email, /useEffect\(\(\) => \{\s*track\('onboarding_started', \{ onboarding_method: 'email' \}\);\s*\}, \[\]\)/);
+  assert.match(apple, /useEffect\(\(\) => \{\s*track\('onboarding_started', \{ onboarding_method: 'apple' \}\);\s*\}, \[\]\)/);
+});
+
+test('resolved EN HE FR RU locale is attached to the shared analytics context', () => {
+  const source = read('../i18n/I18nProvider.tsx');
+  assert.match(source, /setAnalyticsContext\(\{ language: locale \}\)/);
 });
 
 test('all content sharing surfaces pass typed analytics context to the hardened helper', () => {

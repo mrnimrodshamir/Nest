@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { createAnalytics, sanitizeAnalyticsProperties, type AnalyticsPayload } from './analyticsCore.ts';
+import { createAnalytics, createAnalyticsSessionId, sanitizeAnalyticsProperties, type AnalyticsPayload } from './analyticsCore.ts';
 
 test('analytics strips private and malformed properties', () => {
   assert.deepEqual(sanitizeAnalyticsProperties({
@@ -31,6 +31,21 @@ test('track, identify and screen use one vendor-neutral transport', async () => 
   await new Promise((resolve) => setTimeout(resolve, 0));
   assert.deepEqual(seen.map((item) => item.eventName), ['event_opened', 'user_identified', 'screen_viewed']);
   assert.equal(seen[2].properties.screen_name, 'Discovery');
+});
+
+test('analytics context enriches every event and event properties can override it', async () => {
+  const seen: AnalyticsPayload[] = [];
+  const client = createAnalytics({ send: async (payload) => { seen.push(payload); } });
+  client.setContext({ language: 'he', acquisition_source: 'testflight' });
+  client.track('discovery_opened');
+  client.track('language_changed', { language: 'fr' });
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  assert.deepEqual(seen[0].properties, { language: 'he', acquisition_source: 'testflight' });
+  assert.deepEqual(seen[1].properties, { language: 'fr', acquisition_source: 'testflight' });
+});
+
+test('session identifiers are stable-shaped and contain no user or device input', () => {
+  assert.equal(createAnalyticsSessionId(1_700_000_000_000, 0.5), 'session_loyw3v28_0zik0zk');
 });
 
 test('transport failures never become unhandled product failures', async () => {
