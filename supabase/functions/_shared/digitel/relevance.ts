@@ -41,6 +41,7 @@ const AUDIENCE_TERMS: readonly string[] = [
 ];
 const AUDIENCE_PREFIXES: readonly string[] = ['ילד', 'תינוק', 'פעוט', 'משפח'];
 const ENGLISH_AUDIENCE_PREFIXES: readonly string[] = ['child', 'kid', 'baby', 'toddler', 'famil', 'parent', 'stroller'];
+const ADDITIONAL_HEBREW_AUDIENCE_TERMS: readonly string[] = ['\u05dc\u05d9\u05d3\u05d4', '\u05d4\u05e8\u05d9\u05d5\u05df'];
 
 const BROAD_ACTIVITY_TERMS: readonly string[] = [
   'סיפור', 'הצגה', 'הצגות', 'סדנה', 'סדנת', 'סדנאות', 'יצירה', 'טיול', 'פסטיבל',
@@ -91,11 +92,12 @@ export function assessFamilyRelevance(input: {
   if (matched.length === 0) return { relevant: false, reason: 'no_family_signal', matched: [] };
 
   const tokens = new Set(haystack.normalize('NFKC').split(/[\s\p{P}\p{S}]+/u).filter(Boolean));
-  const audienceMatched = AUDIENCE_TERMS.some((term) => {
+  const audienceTokens = new Set([...tokens].flatMap(hebrewPrefixVariants));
+  const audienceMatched = [...AUDIENCE_TERMS, ...ADDITIONAL_HEBREW_AUDIENCE_TERMS].some((term) => {
     const normalized = term.toLowerCase().normalize('NFKC');
-    return normalized.includes(' ') ? haystack.includes(normalized) : tokens.has(normalized);
-  }) || [...tokens].some((token) =>
-    AUDIENCE_PREFIXES.some((prefix) => token.startsWith(prefix) || token.startsWith(`ל${prefix}`))
+    return normalized.includes(' ') ? haystack.includes(normalized) : audienceTokens.has(normalized);
+  }) || [...audienceTokens].some((token) =>
+    AUDIENCE_PREFIXES.some((prefix) => token.startsWith(prefix))
     || ENGLISH_AUDIENCE_PREFIXES.some((prefix) => token.startsWith(prefix))
   );
   const specificVenueMatched = ['מוזיאון', 'ספריה', 'ספרייה', 'פארק', 'גינה', 'מגרש משחקים', 'museum', 'library', 'park', 'playground']
@@ -111,6 +113,35 @@ export function assessFamilyRelevance(input: {
   return { relevant: true, matched };
 }
 
+/** Hebrew attaches common conjunctions/prepositions/articles directly to a
+ * word. Keep the original token and safely peel up to two one-letter clitics,
+ * so child/family terms still match with common prefixes. */
+function hebrewPrefixVariants(token: string): string[] {
+  const variants = [token];
+  let current = token;
+  for (let depth = 0; depth < 2 && current.length > 3 && /^[\u05d5\u05d4\u05d1\u05db\u05dc\u05de]/u.test(current); depth += 1) {
+    current = current.slice(1);
+    variants.push(current);
+  }
+  return variants;
+}
+
 export function isFamilyRelevant(input: Parameters<typeof assessFamilyRelevance>[0]): boolean {
   return assessFamilyRelevance(input).relevant;
+}
+
+/** The pre-automation rule retained only for deterministic reconciliation.
+ * It answers whether the exact same provider row would have passed before the
+ * audience guard was introduced; it is never used to publish new content. */
+export function assessLegacyFamilyRelevance(input: Parameters<typeof assessFamilyRelevance>[0]): RelevanceDecision {
+  const haystack = [input.title, input.description, input.sourceType, input.locationName]
+    .filter((part): part is string => typeof part === 'string' && part.length > 0)
+    .join(' ')
+    .toLowerCase();
+  const excluded = EXCLUDE_TERMS.filter((term) => haystack.includes(term.toLowerCase()));
+  if (excluded.length > 0) return { relevant: false, reason: 'excluded_term', matched: excluded };
+  const matched = INCLUDE_TERMS.filter((term) => haystack.includes(term.toLowerCase()));
+  return matched.length > 0
+    ? { relevant: true, matched }
+    : { relevant: false, reason: 'no_family_signal', matched: [] };
 }

@@ -5,6 +5,7 @@ export type DigitelEventCategory =
   | 'library' | 'park' | 'sports' | 'community' | 'animals' | 'other';
 
 export interface DigitelSyncCandidate {
+  eligibleForNestupPublication: boolean;
   providerEventId: string;
   providerTransportId: string;
   sourceGroupId: string | null;
@@ -26,8 +27,9 @@ export interface DigitelSyncCandidate {
 
 const OFFICIAL_SOURCE_URL = 'https://www.tel-aviv.gov.il/Visitors/Events/Pages/Events.aspx';
 
-export function mapDigitelSyncCandidate(candidate: DigitelEventCandidate): DigitelSyncCandidate {
+export function mapDigitelSyncCandidate(candidate: DigitelEventCandidate, eligibleForNestupPublication = true): DigitelSyncCandidate {
   return {
+    eligibleForNestupPublication,
     providerEventId: candidate.occurrenceFingerprint,
     providerTransportId: candidate.providerTransportId,
     sourceGroupId: candidate.sourceGroupId,

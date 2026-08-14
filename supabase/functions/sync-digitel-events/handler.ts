@@ -42,6 +42,8 @@ export interface ApplyCounts {
   archived: number;
   cleaned: number;
   preserved: number;
+  excludedPresent: number;
+  unpublished: number;
 }
 
 export interface SyncResponse extends SyncRunOutcome {
@@ -50,6 +52,10 @@ export interface SyncResponse extends SyncRunOutcome {
   pagesFetched: number;
   relevant: number;
   preserved: number;
+  providerPresent: number;
+  excludedButPresent: number;
+  genuinelyMissing: number;
+  unpublished: number;
 }
 
 interface ConnectorDependencies {
@@ -78,7 +84,7 @@ export async function runDigitelSync(
     if (!metadata.validation.valid) {
       const failed = { ...base, status: 'partial' as const, error: `Source schema validation failed: ${metadata.validation.errors.join(', ')}` };
       await database.finishRun(runId, failed);
-      return { ...failed, dryRun: input.dryRun, runId, pagesFetched: 0, relevant: 0, preserved: 0 };
+      return { ...failed, dryRun: input.dryRun, runId, pagesFetched: 0, relevant: 0, preserved: 0, providerPresent: 0, excludedButPresent: 0, genuinelyMissing: 0, unpublished: 0 };
     }
 
     const fetched = await fetchFeatures();
@@ -90,6 +96,10 @@ export async function runDigitelSync(
     // Transport identity bridges the manually activated historical batch if the
     // provider has corrected identity-bearing fields since that one-off import.
     const relevant = [...plan.inserts, ...plan.updates, ...plan.unchanged];
+    const eligibleFingerprints = new Set(relevant.map((candidate) => candidate.occurrenceFingerprint));
+    const providerSnapshot = deduplicated.uniqueCandidates.map((candidate) =>
+      mapDigitelSyncCandidate(candidate, eligibleFingerprints.has(candidate.occurrenceFingerprint))
+    );
     const planned = plannedCounts(plan);
 
     if (input.dryRun) {
@@ -100,12 +110,17 @@ export async function runDigitelSync(
         ...planned,
       };
       await database.finishRun(runId, success);
-      return { ...success, dryRun: true, runId, pagesFetched: fetched.pages, relevant: relevant.length, preserved: plan.preserveForUserData.length };
+      return {
+        ...success, dryRun: true, runId, pagesFetched: fetched.pages,
+        relevant: relevant.length, preserved: plan.preserveForUserData.length,
+        providerPresent: providerSnapshot.length, excludedButPresent: plan.excludedButPresent.length,
+        genuinelyMissing: plan.newlyMissing.length, unpublished: plan.excludedButPresent.length,
+      };
     }
 
     // The database RPC is the transaction boundary. It receives only records
     // returned by a fully validated, fully paginated source response.
-    const applied = await database.applyCompleteSync({ runId, observedAt, candidates: relevant.map(mapDigitelSyncCandidate) });
+    const applied = await database.applyCompleteSync({ runId, observedAt, candidates: providerSnapshot });
     const success: SyncRunOutcome = {
       ...base, status: 'success', sourceComplete: true,
       fetched: fetched.features.length, normalized: normalized.candidates.length,
@@ -114,7 +129,12 @@ export async function runDigitelSync(
       archived: applied.archived, cleaned: applied.cleaned, missing: applied.missing,
     };
     await database.finishRun(runId, success);
-    return { ...success, dryRun: false, runId, pagesFetched: fetched.pages, relevant: relevant.length, preserved: applied.preserved };
+    return {
+      ...success, dryRun: false, runId, pagesFetched: fetched.pages,
+      relevant: relevant.length, preserved: applied.preserved,
+      providerPresent: providerSnapshot.length, excludedButPresent: applied.excludedPresent,
+      genuinelyMissing: applied.missing, unpublished: applied.unpublished,
+    };
   } catch (error) {
     const failed: SyncRunOutcome = { ...base, status: 'failed', error: safeError(error) };
     await database.finishRun(runId, failed);
