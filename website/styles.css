@@ -390,6 +390,29 @@ a { color: inherit; }
 .join[data-state="open"] .join-trigger,
 .join[data-state="sending"] .join-trigger { display: none; }
 
+/* Signing up a partner or a friend is a normal thing to do, so the resolved
+   state offers a way back to the field instead of being a dead end. Only
+   shown once there is something to add another *to*. */
+.join-again { display: none; }
+.join[data-state="done"] .join-again { display: inline-flex; }
+
+.join-again {
+  align-items: center;
+  min-height: 44px;
+  margin-top: .25rem;
+  padding: 0 .25rem;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: .92rem;
+  font-weight: 600;
+  color: var(--rose-900);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.join-again:hover { color: var(--text); }
+
 /* The field and its submit are one object, so the pill reads as a single
    control rather than an input with a button stuck next to it. */
 /* `display:flex` below would otherwise beat the user-agent rule for [hidden],

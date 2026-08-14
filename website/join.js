@@ -24,17 +24,26 @@
     generic: "Something went wrong. Try again, or email hello@nestup.best.",
   };
 
-  function alreadyJoined() {
+  /* People sign up for a partner or a friend as well as themselves, so this
+     records every address this browser has submitted rather than a single
+     flag. It is used to resolve the UI instantly for an address already sent
+     from here — not to stop anyone adding another. */
+  function submittedHere() {
     try {
-      return localStorage.getItem(STORE_KEY) !== null;
+      const raw = localStorage.getItem(STORE_KEY);
+      if (!raw) return [];
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? parsed : [parsed];
     } catch {
-      return false; // private mode, blocked storage — not worth failing over
-    }
+      return []; // private mode, blocked storage, or the older single-string
+    }                                        // value — neither is worth failing over
   }
 
   function rememberJoined(email) {
     try {
-      localStorage.setItem(STORE_KEY, email);
+      const all = submittedHere();
+      if (!all.includes(email)) all.push(email);
+      localStorage.setItem(STORE_KEY, JSON.stringify(all.slice(-25)));
     } catch { /* non-fatal */ }
   }
 
@@ -47,6 +56,7 @@
     if (!form || !input || !msg) return;
 
     const opensOnClick = root.hasAttribute('data-open-on-click');
+    const again = root.querySelector('.join-again');
     let busy = false;
 
     const setState = (state) => root.setAttribute('data-state', state);
@@ -56,16 +66,35 @@
       msg.dataset.tone = tone || '';
     };
 
-    // Returning visitor: skip straight to the resolved state rather than
-    // inviting a duplicate submission.
-    if (alreadyJoined()) {
-      setState('done');
-      say("You're on the list. We'll be in touch.", 'ok');
-      return;
-    }
+    // Reopens the field for a second person. The whole point is that the
+    // resolved state is not a dead end.
+    const reopen = () => {
+      input.value = '';
+      input.removeAttribute('aria-invalid');
+      say('');
+      setState('open');
+      form.hidden = false;
+      requestAnimationFrame(() => input.focus());
+    };
 
-    setState(opensOnClick ? 'idle' : 'open');
-    if (opensOnClick) form.hidden = true;
+    if (again) again.addEventListener('click', reopen);
+
+    // A returning visitor sees where they left off, but the form is still one
+    // click away — they may be here to add someone else.
+    const previous = submittedHere();
+    if (previous.length) {
+      setState('done');
+      form.hidden = true;
+      say(
+        previous.length === 1
+          ? "You're on the list. We'll be in touch."
+          : `${previous.length} addresses added from this device.`,
+        'ok',
+      );
+    } else {
+      setState(opensOnClick ? 'idle' : 'open');
+      if (opensOnClick) form.hidden = true;
+    }
 
     if (trigger) {
       trigger.addEventListener('click', () => {
@@ -124,10 +153,13 @@
         if (res.ok && data.ok) {
           rememberJoined(email);
           setState('done');
+          form.hidden = true;
           say(
+            // Named rather than "you're", because this may not be their own
+            // address. Neutral phrasing reads correctly either way.
             data.duplicate
-              ? "You're already on the list. We'll be in touch."
-              : "You're on the list. We'll email you when it's your turn.",
+              ? `${email} is already on the list.`
+              : `${email} is on the list — we'll be in touch.`,
             'ok',
           );
           return;

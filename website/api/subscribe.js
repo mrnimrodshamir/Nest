@@ -27,9 +27,13 @@ const MAX_EMAIL = 254; // RFC 5321
 // naive flood against a warm instance and nothing more. It is a courtesy
 // guard, not a security control — the real protections are the honeypot,
 // the timing check, and the fact that a duplicate is a no-op.
+//
+// Sized for the real case behind it: one person adding themselves, a partner
+// and a few friends in one sitting, sometimes from a shared or office IP. A
+// bot worth stopping sends hundreds, not twelve.
 const RATE = new Map();
 const RATE_WINDOW_MS = 60_000;
-const RATE_MAX = 5;
+const RATE_MAX = 12;
 
 function rateLimited(ip) {
   const now = Date.now();
