@@ -60,18 +60,26 @@ warning — nothing is lost.
 
 **Route A — SMTP through the existing Spacemail mailbox (preferred).** No new
 account, and mail leaves from the real domain so the existing SPF and DKIM
-records authenticate it.
+records authenticate it. One command:
 
 ```bash
-vercel env add SMTP_USER production   # nimrodshamir@nestup.best
-vercel env add SMTP_PASS production   # that mailbox's password
-vercel deploy --prod
+node setup-mail.mjs
 ```
 
-`SMTP_HOST` defaults to `mail.spacemail.com` and `SMTP_PORT` to `465`;
-override either if Spaceship reports different settings. Port 587 is
-detected and upgraded via STARTTLS automatically. **This reads the existing
-mail records, it does not change them** — no DNS edit is involved.
+It prompts for the mailbox password with the terminal echo off, proves the
+credential against Spacemail *before* storing anything, writes `SMTP_USER`
+and `SMTP_PASS` to the Vercel production environment, redeploys, and then
+puts a real signup through the live endpoint so delivery is confirmed rather
+than assumed. If the password is wrong it stops at the verification step
+having changed nothing.
+
+The password is never echoed, never written to disk by the script, and never
+passed as a command-line argument — argv is readable by other processes.
+
+`SMTP_HOST` defaults to `mail.spacemail.com` and `SMTP_PORT` to `465` (both
+verified to serve valid TLS); export either to override. **This authenticates
+against the existing mail records, it does not change them** — no DNS edit is
+involved.
 
 **Route B — Resend**, if putting a mailbox password in the environment is not
 wanted:
