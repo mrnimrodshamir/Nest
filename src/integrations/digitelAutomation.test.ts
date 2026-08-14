@@ -29,7 +29,7 @@ class FakeDatabase implements SyncDatabase {
   outcomes: SyncRunOutcome[] = [];
   applyCalls = 0;
   existing: ExistingOccurrence[] = [];
-  applied: ApplyCounts = { inserted: 1, updated: 0, unchanged: 0, missing: 0, archived: 0, cleaned: 0, preserved: 0 };
+  applied: ApplyCounts = { inserted: 1, updated: 0, unchanged: 0, missing: 0, archived: 0, cleaned: 0, preserved: 0, excludedPresent: 0, unpublished: 0 };
   async startRun() { return '11111111-1111-4111-8111-111111111111'; }
   async finishRun(_runId: string, outcome: SyncRunOutcome) { this.outcomes.push(outcome); }
   async listExisting() { return this.existing; }
@@ -94,4 +94,31 @@ test('duplicate source occurrences are reduced deterministically before persiste
   });
   assert.equal(result.duplicates, 1);
   assert.equal(result.relevant, 1);
+});
+
+test('production sends provider-present excluded rows to the atomic executor', async () => {
+  const database = new FakeDatabase();
+  let appliedCandidates: Array<{ eligibleForNestupPublication: boolean }> = [];
+  database.existing = [
+    {
+      occurrenceId: 'occ-existing', eventId: 'event-existing', occurrenceFingerprint: 'digitel-v1-ignored',
+      startsAt: new Date(NOW.getTime() + 86_400_000).toISOString(), endsAt: null,
+      provider: 'tel_aviv_digitel', missingSince: null, archivedAt: null,
+      sourceUpdatedAt: null, sourceGroupId: '77', hasAttendees: false,
+    },
+  ];
+  database.applyCompleteSync = async (input) => {
+    database.applyCalls += 1;
+    appliedCandidates = input.candidates;
+    return { ...database.applied, inserted: 0, excludedPresent: 1, unpublished: 1 };
+  };
+  const result = await runDigitelSync({ dryRun: false }, database, {
+    now: () => NOW,
+    fetchMetadata: async () => validMetadata(),
+    fetchFeatures: async () => fetched([feature({ title: 'Adult concert workshop', description: null })]),
+  });
+  assert.equal(appliedCandidates.length, 1);
+  assert.equal(appliedCandidates[0].eligibleForNestupPublication, false);
+  assert.equal(result.excludedButPresent, 1);
+  assert.equal(result.genuinelyMissing, 0);
 });

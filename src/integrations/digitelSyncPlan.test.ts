@@ -239,6 +239,14 @@ test('clearly irrelevant municipal records are rejected', () => {
   }
 });
 
+test('Hebrew attached prefixes preserve explicit family-audience signals', () => {
+  for (const title of [
+    '\u05e4\u05e2\u05d9\u05dc\u05d5\u05ea \u05dc\u05d4\u05d5\u05e8\u05d9\u05dd \u05d5\u05dc\u05ea\u05d9\u05e0\u05d5\u05e7\u05d5\u05ea',
+    '\u05db\u05dc \u05d4\u05d9\u05dc\u05d3\u05d9\u05dd \u05e8\u05d5\u05e7\u05d3\u05d9\u05dd',
+    '\u05de\u05e4\u05d2\u05e9 \u05dc\u05de\u05e9\u05e4\u05d7\u05d5\u05ea \u05d1\u05d7\u05d5\u05e4\u05e9\u05ea \u05dc\u05d9\u05d3\u05d4',
+  ]) assert.equal(assessFamilyRelevance({ title }).relevant, true, title);
+});
+
 test('an exclusion beats an inclusion in the same record', () => {
   // "A wine workshop for parents" matches both. It is not a family outing.
   const decision = assessFamilyRelevance({ title: 'סדנת יין להורים' });
@@ -270,4 +278,56 @@ test('irrelevant candidates never reach the insert set', () => {
   });
   assert.equal(plan.inserts.length, 0);
   assert.equal(plan.excluded.length, 1);
+});
+
+test('provider-present but newly irrelevant is excluded without becoming missing', () => {
+  const row = existing();
+  const plan = buildSyncPlan({
+    candidates: [candidate({ title: 'Adult concert workshop', description: null, locationName: null })],
+    existing: [row], ...complete,
+  });
+  assert.deepEqual(plan.excludedButPresent, ['occ-1']);
+  assert.deepEqual(plan.seen, ['occ-1']);
+  assert.deepEqual(plan.newlyMissing, []);
+});
+
+test('unique NbrId plus occurrence time bridges fingerprint drift without duplication', () => {
+  const startsAt = new Date(NOW.getTime() + 3 * day).toISOString();
+  const plan = buildSyncPlan({
+    candidates: [candidate({ sourceGroupId: 'stable-group', startTime: startsAt, occurrenceFingerprint: 'new-content-fingerprint', sourceUpdatedAt: NOW.toISOString() })],
+    existing: [existing({ sourceGroupId: 'stable-group', startsAt, occurrenceFingerprint: 'old-content-fingerprint' })],
+    ...complete,
+  });
+  assert.equal(plan.inserts.length, 0);
+  assert.equal(plan.updates.length, 1);
+  assert.deepEqual(plan.seen, ['occ-1']);
+  assert.deepEqual(plan.newlyMissing, []);
+});
+
+test('ambiguous NbrId and occurrence time never guesses an identity match', () => {
+  const startsAt = new Date(NOW.getTime() + 3 * day).toISOString();
+  const rows = [
+    existing({ occurrenceId: 'occ-a', sourceGroupId: 'group', startsAt, occurrenceFingerprint: 'old-a' }),
+    existing({ occurrenceId: 'occ-b', sourceGroupId: 'group', startsAt, occurrenceFingerprint: 'old-b' }),
+  ];
+  const plan = buildSyncPlan({
+    candidates: [candidate({ sourceGroupId: 'group', startTime: startsAt, occurrenceFingerprint: 'new-fp' })],
+    existing: rows, ...complete,
+  });
+  assert.equal(plan.inserts.length, 1);
+  assert.deepEqual(plan.seen, []);
+});
+
+test('duplicate source candidates sharing NbrId and time disable the fallback', () => {
+  const startsAt = new Date(NOW.getTime() + 3 * day).toISOString();
+  const row = existing({ sourceGroupId: 'group', startsAt, occurrenceFingerprint: 'old-fp' });
+  const plan = buildSyncPlan({
+    candidates: [
+      candidate({ providerTransportId: 'one', sourceGroupId: 'group', startTime: startsAt, occurrenceFingerprint: 'new-a' }),
+      candidate({ providerTransportId: 'two', sourceGroupId: 'group', startTime: startsAt, occurrenceFingerprint: 'new-b' }),
+    ],
+    existing: [row], ...complete,
+  });
+  assert.equal(plan.inserts.length, 2);
+  assert.deepEqual(plan.seen, []);
 });

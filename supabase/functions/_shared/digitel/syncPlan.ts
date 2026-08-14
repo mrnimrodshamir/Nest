@@ -35,6 +35,9 @@ export interface ExistingOccurrence {
   missingSince: string | null;
   archivedAt: string | null;
   sourceUpdatedAt: string | null;
+  /** DigiTel NbrId grouping metadata. Combined with startsAt it is the stable
+   * fallback when mutable normalized fields change the fingerprint. */
+  sourceGroupId?: string | null;
   /** Whether any user has RSVP'd. Decided by the caller with a join, because
    *  "does user data exist" is a database question, not a rules question. */
   hasAttendees: boolean;
@@ -45,6 +48,9 @@ export interface SyncPlan {
   updates: DigitelEventCandidate[];
   unchanged: DigitelEventCandidate[];
   excluded: { candidate: DigitelEventCandidate; reason: string }[];
+  /** Provider returned the occurrence, but current NestUp relevance rules do
+   * not permit publication. It is seen, not missing. */
+  excludedButPresent: string[];
   /** Seen this run: refresh last_seen_at and clear any missing state. */
   seen: string[];
   /** Absent from a COMPLETE response and not yet marked: set missing_since. */
@@ -60,6 +66,7 @@ export interface SyncPlan {
 export function emptyPlan(): SyncPlan {
   return {
     inserts: [], updates: [], unchanged: [], excluded: [],
+    excludedButPresent: [],
     seen: [], newlyMissing: [], archive: [], hardDelete: [], preserveForUserData: [],
   };
 }
@@ -75,12 +82,21 @@ export function buildSyncPlan(input: {
   const provider = input.provider ?? 'tel_aviv_digitel';
   const plan = emptyPlan();
   const existingByFingerprint = new Map(input.existing.map((row) => [row.occurrenceFingerprint, row]));
+  const existingByStableKey = uniqueStableOccurrences(input.existing);
+  const uniqueCandidateKeys = uniqueStableCandidateKeys(input.candidates);
 
   // --- Relevance and upsert classification -------------------------------
   // These are safe regardless of completeness: adding or refreshing a record we
   // were just handed cannot destroy anything.
-  const seenFingerprints = new Set<string>();
+  const seenOccurrenceIds = new Set<string>();
   for (const candidate of input.candidates) {
+    const candidateStableKey = stableOccurrenceKey(candidate.sourceGroupId, candidate.startTime);
+    const existing = existingByFingerprint.get(candidate.occurrenceFingerprint)
+      ?? (uniqueCandidateKeys.has(candidateStableKey) ? existingByStableKey.get(candidateStableKey) : undefined);
+    if (existing) {
+      seenOccurrenceIds.add(existing.occurrenceId);
+      plan.seen.push(existing.occurrenceId);
+    }
     const relevance = assessFamilyRelevance({
       title: candidate.title,
       description: candidate.description,
@@ -89,17 +105,15 @@ export function buildSyncPlan(input: {
     });
     if (!relevance.relevant) {
       plan.excluded.push({ candidate, reason: relevance.reason });
+      if (existing) plan.excludedButPresent.push(existing.occurrenceId);
       continue;
     }
 
-    seenFingerprints.add(candidate.occurrenceFingerprint);
-    const existing = existingByFingerprint.get(candidate.occurrenceFingerprint);
     if (!existing) {
       plan.inserts.push(candidate);
       continue;
     }
 
-    plan.seen.push(existing.occurrenceId);
     // The fingerprint already encodes identity and timing, so a match means the
     // occurrence is the same one. Only mutable content can have changed.
     if (hasContentChanged(candidate, existing)) plan.updates.push(candidate);
@@ -114,7 +128,7 @@ export function buildSyncPlan(input: {
     if (row.provider !== provider) continue;      // never touch other providers
     if (row.archivedAt) continue;                 // already archived
 
-    const stillPresent = seenFingerprints.has(row.occurrenceFingerprint);
+    const stillPresent = seenOccurrenceIds.has(row.occurrenceId);
     const endedAt = Date.parse(row.endsAt ?? row.startsAt);
     const finished = Number.isFinite(endedAt) && endedAt < nowMs;
     const pastRetention = Number.isFinite(endedAt)
@@ -145,6 +159,35 @@ export function buildSyncPlan(input: {
   }
 
   return plan;
+}
+
+/** Only unique NbrId + occurrence-time pairs may bridge a fingerprint change.
+ * Ambiguous provider groups intentionally fail closed and remain reviewable. */
+function uniqueStableOccurrences(rows: readonly ExistingOccurrence[]): Map<string, ExistingOccurrence> {
+  const groups = new Map<string, ExistingOccurrence[]>();
+  for (const row of rows) {
+    const key = stableOccurrenceKey(row.sourceGroupId, row.startsAt);
+    if (!key) continue;
+    const group = groups.get(key) ?? [];
+    group.push(row);
+    groups.set(key, group);
+  }
+  return new Map([...groups].flatMap(([key, group]) => group.length === 1 ? [[key, group[0]] as const] : []));
+}
+
+function uniqueStableCandidateKeys(candidates: readonly DigitelEventCandidate[]): Set<string> {
+  const counts = new Map<string, number>();
+  for (const candidate of candidates) {
+    const key = stableOccurrenceKey(candidate.sourceGroupId, candidate.startTime);
+    if (key) counts.set(key, (counts.get(key) ?? 0) + 1);
+  }
+  return new Set([...counts].flatMap(([key, count]) => count === 1 ? [key] : []));
+}
+
+function stableOccurrenceKey(sourceGroupId: string | null | undefined, startsAt: string): string {
+  if (!sourceGroupId?.trim()) return '';
+  const timestamp = Date.parse(startsAt);
+  return Number.isFinite(timestamp) ? `${sourceGroupId.trim()}|${new Date(timestamp).toISOString()}` : '';
 }
 
 /** Content-level change detection. Timing is part of the fingerprint, so a

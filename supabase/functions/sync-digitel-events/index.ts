@@ -46,12 +46,13 @@ function createDatabase(client: any): SyncDatabase {
     async listExisting() {
       const { data, error } = await client.from('event_occurrences').select(`
         id,event_id,occurrence_fingerprint,starts_at,ends_at,missing_since,archived_at,source_updated_at,
-        events!inner(provider),event_attendees(id)
+        events!inner(provider,source_group_id),event_attendees(id)
       `).eq('events.provider', 'tel_aviv_digitel');
       if (error) throw new Error(`Could not load existing occurrences: ${error.message}`);
       return (data ?? []).map((row: any) => ({
         occurrenceId: row.id, eventId: row.event_id, occurrenceFingerprint: row.occurrence_fingerprint,
         startsAt: row.starts_at, endsAt: row.ends_at, provider: row.events.provider,
+        sourceGroupId: row.events.source_group_id,
         missingSince: row.missing_since, archivedAt: row.archived_at, sourceUpdatedAt: row.source_updated_at,
         hasAttendees: Array.isArray(row.event_attendees) && row.event_attendees.length > 0,
       }));
