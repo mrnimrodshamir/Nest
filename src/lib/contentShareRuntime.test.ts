@@ -7,6 +7,7 @@ const source = readFileSync(new URL('./contentShare.ts', import.meta.url), 'utf8
 /** Comments quote the buggy pattern deliberately, so the negative assertions
  *  below must look at code only. */
 const code = source.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+const nativeAdapter = readFileSync(new URL('./contentShareNative.ts', import.meta.url), 'utf8');
 
 // ===========================================================================
 // THE ACTUAL DEVICE CRASH: unbound native methods
@@ -20,8 +21,14 @@ test('ROOT CAUSE: Linking/Share methods are wrapped, never passed by reference',
   assert.ok(!/canOpenURL:\s*Linking\.canOpenURL\s*[,}]/.test(code), 'canOpenURL passed unbound');
   assert.ok(!/openURL:\s*Linking\.openURL\s*[,}]/.test(code), 'openURL passed unbound');
   assert.ok(!/share:\s*Share\.share\s*[,}]/.test(code), 'Share.share passed unbound');
-  assert.match(code, /canOpenURL:\s*\(url\)\s*=>\s*Linking\.canOpenURL\(url\)/);
-  assert.match(code, /share:\s*\(payload\)\s*=>\s*Share\.share\(payload\)/);
+  assert.match(nativeAdapter, /canOpenURL:\s*\(url\)\s*=>\s*Linking\.canOpenURL\(url\)/);
+  assert.match(nativeAdapter, /share:\s*\(payload\)\s*=>\s*Share\.share\(payload\)/);
+});
+
+test('release sharing does not load native dependencies dynamically on tap', () => {
+  assert.doesNotMatch(code, /\bimport\s*\(/);
+  assert.match(nativeAdapter, /import \{ Linking, Share \} from 'react-native'/);
+  assert.doesNotMatch(nativeAdapter, /\bimport\s*\(/);
 });
 
 test('REGRESSION: a receiver-sensitive dependency is actually called correctly', async () => {

@@ -12,18 +12,25 @@ export interface ShareAnalyticsContext {
   contentId: string;
 }
 
+type ShareEvent = 'share_started' | 'share_completed' | 'share_cancelled' | 'share_failed' | 'activity_shared' | 'event_shared' | 'place_shared';
+type ShareTracker = (event: ShareEvent, properties: Record<string, string>) => void;
+
+let nativeDependencies: ShareDependencies | null = null;
+let analyticsTracker: ShareTracker = () => undefined;
+
+/** Configured once from the app's statically imported native adapter. */
+export function configureShareRuntime(dependencies: ShareDependencies, tracker: ShareTracker): void {
+  nativeDependencies = dependencies;
+  analyticsTracker = tracker;
+}
+
 /** Resolves React Native's Linking/Share. The methods must stay wrapped: passing
  * them by reference detaches their native receiver and caused the device crash
  * this helper exists to prevent. */
-async function resolveDependencies(dependencies?: ShareDependencies): Promise<ShareDependencies> {
+function resolveDependencies(dependencies?: ShareDependencies): ShareDependencies {
   if (dependencies) return dependencies;
-  const { Linking, Share } = await import('react-native');
-  return {
-    canOpenURL: (url) => Linking.canOpenURL(url),
-    openURL: (url) => Linking.openURL(url),
-    share: (payload) => Share.share(payload),
-    dismissedAction: Share.dismissedAction,
-  };
+  if (!nativeDependencies) throw new Error('Share runtime unavailable');
+  return nativeDependencies;
 }
 
 /** One process-wide lock covers both WhatsApp and native presentation. A fast
@@ -40,9 +47,10 @@ function shareProperties(context: ShareAnalyticsContext | undefined, channel: 'w
   };
 }
 
-function trackShare(event: 'share_started' | 'share_completed' | 'share_cancelled' | 'share_failed' | 'activity_shared' | 'event_shared' | 'place_shared', properties: Record<string, string>): void {
-  // Lazy so pure Node tests never load the React Native Supabase transport.
-  void import('@/lib/analytics').then(({ track }) => track(event, properties)).catch(() => undefined);
+function trackShare(event: ShareEvent, properties: Record<string, string>): void {
+  // The analytics transport is already fire-and-forget. Keep this guard so a
+  // future instrumentation change still cannot break the product action.
+  try { analyticsTracker(event, properties); } catch { /* fire-and-forget */ }
 }
 
 function trackOutcome(
@@ -91,7 +99,7 @@ export async function openNativeShare(
   try {
     let resolved: ShareDependencies;
     try {
-      resolved = await resolveDependencies(dependencies);
+      resolved = resolveDependencies(dependencies);
     } catch {
       trackOutcome('unavailable', 'native', context);
       return 'unavailable';
@@ -121,7 +129,7 @@ export async function openWhatsAppShare(
   try {
     let resolved: ShareDependencies;
     try {
-      resolved = await resolveDependencies(dependencies);
+      resolved = resolveDependencies(dependencies);
     } catch {
       trackOutcome('unavailable', 'whatsapp', context);
       return 'unavailable';

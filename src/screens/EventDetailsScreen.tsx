@@ -46,6 +46,7 @@ export function EventDetailsScreen({ event, onBack, onOpenProfile }: EventDetail
   const isInterrupted = event.lifecycle === 'cancelled' || event.lifecycle === 'postponed';
   const shareMessage = buildEventShareMessage({ occurrenceId: event.occurrence.id, title: event.title, startsAt: event.occurrence.startsAt, location: event.location.name ?? event.location.formattedAddress, status: event.occurrence.status });
   const calendarEvent = { occurrenceId: event.occurrence.id, title: event.title, description: event.description, startsAt: event.occurrence.startsAt, endsAt: event.occurrence.endsAt, locationName: event.location.name ?? event.location.formattedAddress, sourceUrl: event.source.sourceUrl, status: event.occurrence.status };
+  const eventCoordinate = { latitude: event.location.latitude, longitude: event.location.longitude };
   useEffect(() => {
     track('event_opened', { content_id: event.occurrence.id, source: event.source.provider });
   }, [event.occurrence.id, event.source.provider]);
@@ -83,12 +84,12 @@ export function EventDetailsScreen({ event, onBack, onOpenProfile }: EventDetail
         <Pressable accessibilityRole="button" accessibilityLabel={t('event.addToCalendarLabel', { name: event.title })} style={styles.calendarAction} onPress={() => setShowCalendar(true)}><CalendarPlus size={18} color={theme.brand.primary} /><Text style={styles.link}>{t('common.addToCalendar')}</Text></Pressable>
         <MapView
           style={styles.map}
-          region={{ latitude: event.location.latitude, longitude: event.location.longitude, latitudeDelta: 0.015, longitudeDelta: 0.015 }}
+          initialRegion={{ ...eventCoordinate, latitudeDelta: 0.015, longitudeDelta: 0.015 }}
           scrollEnabled={false}
           zoomEnabled={false}
           pointerEvents="none"
         >
-          <Marker coordinate={event.location} />
+          <Marker coordinate={eventCoordinate} />
         </MapView>
         {/* External event copy — rendered in whatever script it arrives in. */}
         {content.description ? <Text style={[styles.description, textAlignForContent(content.description, locale)]}>{content.description}</Text> : null}

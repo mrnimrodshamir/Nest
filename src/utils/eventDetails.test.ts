@@ -52,3 +52,13 @@ test('Event Details uses the shared root stack and Discovery without a competing
   assert.match(discovery, /EventCard/);
   assert.doesNotMatch(discovery, /EventsDiscoveryScreen|EventsDiscoveryView/);
 });
+
+test('Event Details never mounts a second controlled Apple map over Discovery', async () => {
+  const screen = await readFile(new URL('../screens/EventDetailsScreen.tsx', import.meta.url), 'utf8');
+  const discovery = await readFile(new URL('../screens/DiscoverScreen.tsx', import.meta.url), 'utf8');
+  assert.match(discovery, /useIsFocused\(\)/);
+  assert.match(discovery, /isFocused \? <MapView/);
+  assert.match(screen, /initialRegion=\{\{ \.\.\.eventCoordinate/);
+  assert.match(screen, /<Marker coordinate=\{eventCoordinate\}/);
+  assert.doesNotMatch(screen, /<Marker coordinate=\{event\.location\}/);
+});

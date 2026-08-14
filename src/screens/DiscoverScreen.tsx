@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { FlatList, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useIsFocused } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MapView, { PROVIDER_DEFAULT, type Region } from 'react-native-maps';
 import BottomSheet, { BottomSheetFlatList } from '@gorhom/bottom-sheet';
@@ -130,6 +130,7 @@ interface DiscoverScreenProps {
 }
 
 export function DiscoverScreen({ onOpenActivity, onOpenPlace, onOpenEvent, onHostActivity, mockActivities, mockPlaces, mockEvents }: DiscoverScreenProps) {
+  const isFocused = useIsFocused();
   const previewMode = mockActivities !== undefined || mockPlaces !== undefined || mockEvents !== undefined;
   const initialCoordinate = mockActivities?.[0] ?? mockPlaces?.[0] ?? mockEvents?.[0]?.location ?? FALLBACK_LOCATION;
   const [region, setRegion] = useState<Region>({
@@ -341,7 +342,7 @@ export function DiscoverScreen({ onOpenActivity, onOpenPlace, onOpenEvent, onHos
 
   return (
     <View style={styles.container}>
-      <MapView
+      {isFocused ? <MapView
         ref={mapRef}
         provider={PROVIDER_DEFAULT}
         style={StyleSheet.absoluteFill}
@@ -377,7 +378,7 @@ export function DiscoverScreen({ onOpenActivity, onOpenPlace, onOpenEvent, onHos
           const item: DiscoveryItem = { type: 'event', id: event.occurrence.id, data: event };
           return <EventMapPin key={discoveryItemKey(item)} event={event} selected={discoverySelectionEquals(selectedItem, item)} onPress={() => focusItem(item)} />;
         })}
-      </MapView>
+      </MapView> : <View style={StyleSheet.absoluteFill} />}
 
       <SafeAreaView edges={['top']} style={styles.headerOverlay} pointerEvents="box-none">
         {searchOpen ? (

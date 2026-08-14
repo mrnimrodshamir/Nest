@@ -21,6 +21,7 @@ import {
 } from '@expo-google-fonts/plus-jakarta-sans';
 import { StatusBar } from 'expo-status-bar';
 import * as Location from 'expo-location';
+import '@/lib/contentShareNative';
 
 import { DiscoverScreen } from '@/screens/DiscoverScreen';
 import { ActivityDetailScreen } from '@/screens/ActivityDetailScreen';
