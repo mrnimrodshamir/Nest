@@ -23,6 +23,8 @@ import { rsvpPresentation, attendanceSummaryKey, attendeePreview } from '@/utils
 import { PersonCard } from '@/components/PersonCard';
 import { EventAttendeesSheet } from '@/components/EventAttendeesSheet';
 import { track } from '@/lib/analytics';
+import { RenderGuard } from '@/components/RenderGuard';
+import { isValidCoordinate } from '@/utils/normalizedPlace';
 
 interface EventDetailsScreenProps {
   event: EventDetails;
@@ -35,6 +37,27 @@ interface EventDetailsScreenProps {
 /** Standalone Sprint 6 detail surface. It is intentionally not registered in
  * Discovery or navigation until Events publication is separately approved. */
 export function EventDetailsScreen({ event, onBack, onOpenProfile }: EventDetailsScreenProps) {
+  const { t, isRTL } = useI18n();
+  const fallback = (
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+      <View style={styles.header}>
+        <Pressable onPress={onBack} accessibilityRole="button" accessibilityLabel={t('common.back')} style={styles.back}>
+          <ArrowLeft size={20} color={theme.text.primary} style={isRTL ? styles.flipped : undefined} />
+        </Pressable>
+        <Text style={styles.headerTitle}>{t('event.title')}</Text>
+        <View style={styles.back} />
+      </View>
+      <View style={styles.failSafeContent}>
+        <Text style={styles.title}>{typeof event.title === 'string' && event.title.trim() ? event.title : t('event.title')}</Text>
+      </View>
+    </SafeAreaView>
+  );
+  return <RenderGuard resetKey={event.occurrence?.id ?? event.id} fallback={fallback}>
+    <EventDetailsContent event={event} onBack={onBack} onOpenProfile={onOpenProfile} />
+  </RenderGuard>;
+}
+
+function EventDetailsContent({ event, onBack, onOpenProfile }: EventDetailsScreenProps) {
   const content = useMemo(() => buildEventDetailsPresentation(event), [event]);
   const { t, locale, isRTL } = useI18n();
   const [showCalendar, setShowCalendar] = useState(false);
@@ -61,8 +84,10 @@ export function EventDetailsScreen({ event, onBack, onOpenProfile }: EventDetail
         <View style={styles.back} />
       </View>
       <ScrollView contentContainerStyle={styles.content}>
-        <ContentImage asset={event.images?.cover} legacyUri={event.imageUrl} variant="cover" style={styles.hero} accessibilityLabel={`${event.title} event image`} deferUntilInteraction={false} fallback={<CalendarDots size={52} color={theme.brand.primary} weight="duotone" />} />
-        {event.images?.gallery.length ? <ContentImageGallery images={event.images.gallery} /> : null}
+        <RenderGuard resetKey={`media:${event.occurrence.id}`}>
+          <ContentImage asset={event.images?.cover} legacyUri={event.imageUrl} variant="cover" style={styles.hero} accessibilityLabel={`${event.title} event image`} deferUntilInteraction={false} fallback={<CalendarDots size={52} color={theme.brand.primary} weight="duotone" />} />
+          {Array.isArray(event.images?.gallery) && event.images.gallery.length ? <ContentImageGallery images={event.images.gallery} /> : null}
+        </RenderGuard>
         <View style={styles.labelRow}>
           <Text style={styles.category}>{content.categoryLabel}</Text>
           <View style={[styles.status, isInterrupted && styles.statusInterrupted]}>
@@ -82,15 +107,19 @@ export function EventDetailsScreen({ event, onBack, onOpenProfile }: EventDetail
           <Pressable accessibilityRole="button" accessibilityLabel={t('place.shareWhatsAppLabel', { name: event.title })} style={styles.action} onPress={() => void openWhatsAppShare(shareMessage, undefined, { contentType: 'event', contentId: event.occurrence.id })}><WhatsappLogo size={18} color={theme.text.primary} weight="fill" /><Text style={styles.actionText}>{t('common.whatsapp')}</Text></Pressable>
         </View>
         <Pressable accessibilityRole="button" accessibilityLabel={t('event.addToCalendarLabel', { name: event.title })} style={styles.calendarAction} onPress={() => setShowCalendar(true)}><CalendarPlus size={18} color={theme.brand.primary} /><Text style={styles.link}>{t('common.addToCalendar')}</Text></Pressable>
-        <MapView
-          style={styles.map}
-          initialRegion={{ ...eventCoordinate, latitudeDelta: 0.015, longitudeDelta: 0.015 }}
-          scrollEnabled={false}
-          zoomEnabled={false}
-          pointerEvents="none"
-        >
-          <Marker coordinate={eventCoordinate} />
-        </MapView>
+        {isValidCoordinate(eventCoordinate.latitude, eventCoordinate.longitude) ? (
+          <RenderGuard resetKey={`map:${event.occurrence.id}`}>
+            <MapView
+              style={styles.map}
+              initialRegion={{ ...eventCoordinate, latitudeDelta: 0.015, longitudeDelta: 0.015 }}
+              scrollEnabled={false}
+              zoomEnabled={false}
+              pointerEvents="none"
+            >
+              <Marker coordinate={eventCoordinate} />
+            </MapView>
+          </RenderGuard>
+        ) : null}
         {/* External event copy — rendered in whatever script it arrives in. */}
         {content.description ? <Text style={[styles.description, textAlignForContent(content.description, locale)]}>{content.description}</Text> : null}
         {event.priceNote ? <Section title={t('place.cost')} body={event.priceNote} /> : null}
@@ -99,8 +128,9 @@ export function EventDetailsScreen({ event, onBack, onOpenProfile }: EventDetail
             Deliberately ABOVE external registration and visually separated
             from it. A parent must never confuse "other NestUp parents know
             I'm coming" with "I hold a place with the organizer". */}
-        {attendanceSummary ? (
-          <View style={styles.attendanceBlock}>
+        <RenderGuard resetKey={`attendance:${event.occurrence.id}`}>
+          {attendanceSummary ? (
+            <View style={styles.attendanceBlock}>
             <Text style={styles.sectionTitle}>{t('event.attendance.title')}</Text>
             <Pressable
               onPress={() => setShowAttendees(true)}
@@ -120,29 +150,32 @@ export function EventDetailsScreen({ event, onBack, onOpenProfile }: EventDetail
               ) : null}
             </View>
             </Pressable>
-          </View>
-        ) : null}
+            </View>
+          ) : null}
 
-        <Pressable
-          style={[styles.rsvp, rsvp.selected && styles.rsvpSelected, !rsvp.enabled && styles.rsvpDisabled]}
-          onPress={() => void toggle()}
-          disabled={!rsvp.enabled || isSaving}
-          accessibilityRole="button"
-          accessibilityState={{ selected: rsvp.selected, disabled: !rsvp.enabled || isSaving }}
-          accessibilityLabel={t(rsvp.key)}
-        >
-          {rsvp.selected ? <Check size={18} color={theme.text.inverse} weight="bold" /> : null}
-          <Text style={[styles.rsvpText, rsvp.selected && styles.rsvpTextSelected]}>{t(rsvp.key)}</Text>
-        </Pressable>
-        {/* States plainly that this is not organizer registration. */}
-        {rsvp.enabled ? <Text style={styles.rsvpNote}>{t('event.rsvp.disclaimer')}</Text> : null}
+          <Pressable
+            style={[styles.rsvp, rsvp.selected && styles.rsvpSelected, !rsvp.enabled && styles.rsvpDisabled]}
+            onPress={() => void toggle()}
+            disabled={!rsvp.enabled || isSaving}
+            accessibilityRole="button"
+            accessibilityState={{ selected: rsvp.selected, disabled: !rsvp.enabled || isSaving }}
+            accessibilityLabel={t(rsvp.key)}
+          >
+            {rsvp.selected ? <Check size={18} color={theme.text.inverse} weight="bold" /> : null}
+            <Text style={[styles.rsvpText, rsvp.selected && styles.rsvpTextSelected]}>{t(rsvp.key)}</Text>
+          </Pressable>
+          {/* States plainly that this is not organizer registration. */}
+          {rsvp.enabled ? <Text style={styles.rsvpNote}>{t('event.rsvp.disclaimer')}</Text> : null}
+        </RenderGuard>
 
         {/* --- External registration, a separate action ------------------ */}
         {content.registrationLabel && content.registrationUrl ? <ExternalLink label={content.registrationLabel} url={content.registrationUrl} /> : null}
         {content.sourceLabel ? <View style={styles.source}><Text style={styles.sourceText}>{content.sourceLabel}</Text>{content.sourceUrl ? <ExternalLink label={t('event.viewSource')} url={content.sourceUrl} /> : null}</View> : null}
       </ScrollView>
-      <AddEventToCalendarSheet visible={showCalendar} event={calendarEvent} onDismiss={() => setShowCalendar(false)} />
-      <EventAttendeesSheet visible={showAttendees} attendees={attendees} onDismiss={() => setShowAttendees(false)} onOpenProfile={onOpenProfile} />
+      <RenderGuard resetKey={`sheets:${event.occurrence.id}`}>
+        <AddEventToCalendarSheet visible={showCalendar} event={calendarEvent} onDismiss={() => setShowCalendar(false)} />
+        <EventAttendeesSheet visible={showAttendees} attendees={attendees} onDismiss={() => setShowAttendees(false)} onOpenProfile={onOpenProfile} />
+      </RenderGuard>
     </SafeAreaView>
   );
 }
@@ -156,7 +189,7 @@ function Section({ title, body }: { title: string; body: string }) {
 }
 
 function ExternalLink({ label, url }: { label: string; url: string }) {
-  return <Pressable accessibilityRole="link" style={styles.linkRow} onPress={() => Linking.openURL(url)}><ArrowSquareOut size={18} color={theme.brand.primary} /><Text style={styles.link}>{label}</Text></Pressable>;
+  return <Pressable accessibilityRole="link" style={styles.linkRow} onPress={() => { void Linking.openURL(url).catch(() => undefined); }}><ArrowSquareOut size={18} color={theme.brand.primary} /><Text style={styles.link}>{label}</Text></Pressable>;
 }
 
 const styles = StyleSheet.create({
@@ -191,6 +224,7 @@ const styles = StyleSheet.create({
   rsvpTextSelected: { color: theme.text.inverse },
   rsvpNote: { ...typography.caption, color: theme.text.muted, marginTop: spacing.xs, textAlign: 'center' },
   headerTitle: { ...typography.headline, color: theme.text.primary },
+  failSafeContent: { flex: 1, padding: spacing.lg },
   content: { paddingHorizontal: spacing.lg, paddingBottom: 48, gap: spacing.md },
   // A raw 4:3 with no screen-height cap is 38% of an iPhone SE. maxHeight
   // applies the same ceiling CoverFrame gives the Activity hero, so all three

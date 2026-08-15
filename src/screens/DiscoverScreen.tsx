@@ -40,7 +40,7 @@ import { regionToPlaceViewport } from '@/utils/placeViewport';
 import { distanceMeters } from '@/utils/placeViewport';
 import { ALL_DISCOVERY_CONTENT, discoveryEmptyCopyKey, selectedContentKeys, toggleDiscoveryContent, visibleDiscoveryFailures } from '@/utils/discoveryPresentation';
 import { useI18n, textAlignForContent, type TranslationKey } from '@/i18n';
-import { applyContentSelectionChange } from '@/utils/discoveryScreenState';
+import { applyContentSelectionChange, handleDiscoveryItemIntent } from '@/utils/discoveryScreenState';
 import { track } from '@/lib/analytics';
 import {
   discoveryItemKey,
@@ -274,11 +274,13 @@ export function DiscoverScreen({ onOpenActivity, onOpenPlace, onOpenEvent, onHos
   }, [listItems]);
 
   const openItem = useCallback((item: DiscoveryItem) => {
-    focusItem(item);
-    track('discovery_item_opened', { content_type: item.type, content_id: item.id, discovery_mode: 'mixed' });
-    if (item.type === 'activity') onOpenActivity(item.data);
-    else if (item.type === 'place') onOpenPlace(item.data);
-    else onOpenEvent(item.data);
+    handleDiscoveryItemIntent(item, 'open', {
+      preview: focusItem,
+      trackOpen: (opened) => track('discovery_item_opened', { content_type: opened.type, content_id: opened.id, discovery_mode: 'mixed' }),
+      openActivity: (opened) => onOpenActivity(opened.data),
+      openPlace: (opened) => onOpenPlace(opened.data),
+      openEvent: (opened) => onOpenEvent(opened.data),
+    });
   }, [focusItem, onOpenActivity, onOpenEvent, onOpenPlace]);
 
   const changeContentSelection = useCallback((key: DiscoveryContentKey) => {

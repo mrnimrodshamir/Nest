@@ -1,6 +1,7 @@
 import type {
   DiscoveryContentKey,
   DiscoveryContentSelection,
+  DiscoveryItem,
   DiscoverySelection,
 } from '@/types/discovery';
 import { toggleDiscoveryContent } from '@/utils/discoveryPresentation';
@@ -52,4 +53,36 @@ export function applyContentSelectionChange(
 /** Restores every content type. Always valid, so it can never be prevented. */
 export function resetContentSelection(): DiscoveryContentSelection {
   return { activities: true, places: true, events: true };
+}
+
+/** Keeps map-preview work separate from opening a detail route.
+ *
+ * A preview is allowed to animate/scroll native Discovery surfaces. Opening a
+ * detail route is not: issuing those commands and immediately blurring the
+ * screen races the command against MapView/BottomSheet unmount on iOS Fabric.
+ */
+export type DiscoveryItemIntent = 'preview' | 'open';
+
+export interface DiscoveryItemIntentHandlers {
+  preview: (item: DiscoveryItem) => void;
+  trackOpen: (item: DiscoveryItem) => void;
+  openActivity: (item: Extract<DiscoveryItem, { type: 'activity' }>) => void;
+  openPlace: (item: Extract<DiscoveryItem, { type: 'place' }>) => void;
+  openEvent: (item: Extract<DiscoveryItem, { type: 'event' }>) => void;
+}
+
+export function handleDiscoveryItemIntent(
+  item: DiscoveryItem,
+  intent: DiscoveryItemIntent,
+  handlers: DiscoveryItemIntentHandlers,
+): void {
+  if (intent === 'preview') {
+    handlers.preview(item);
+    return;
+  }
+
+  handlers.trackOpen(item);
+  if (item.type === 'activity') handlers.openActivity(item);
+  else if (item.type === 'place') handlers.openPlace(item);
+  else handlers.openEvent(item);
 }
