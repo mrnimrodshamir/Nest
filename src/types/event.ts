@@ -1,3 +1,6 @@
+import type { CachedEventTranslation } from '../../supabase/functions/_shared/eventTranslation';
+import type { ContentImageSet } from '@/types/contentImage';
+
 export const EVENT_CATEGORIES = [
   'story_time',
   'workshop',
@@ -83,6 +86,9 @@ export interface EventEntity {
   location: EventLocation;
   createdAt: string;
   updatedAt: string;
+  /** Original provider title/description remain on the entity. This optional
+   * cached projection is used only when its source fingerprint still matches. */
+  localizedContent?: CachedEventTranslation;
 }
 
 export interface EventDetails extends EventEntity {
@@ -107,4 +113,3 @@ export const EVENT_CATEGORY_LABELS: Record<EventCategory, string> = {
 export function isEventCategory(value: string): value is EventCategory {
   return (EVENT_CATEGORIES as readonly string[]).includes(value);
 }
-import type { ContentImageSet } from '@/types/contentImage';

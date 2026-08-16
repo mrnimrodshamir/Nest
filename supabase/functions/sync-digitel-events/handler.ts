@@ -16,6 +16,9 @@ export interface SyncDatabase {
   finishRun(runId: string, outcome: SyncRunOutcome): Promise<void>;
   listExisting(): Promise<ExistingOccurrence[]>;
   applyCompleteSync(input: { runId: string; observedAt: string; candidates: DigitelSyncCandidate[] }): Promise<ApplyCounts>;
+  /** Downstream best-effort work. A queue/provider outage must never turn a
+   * complete DigiTel ingestion into a failed source sync. */
+  enqueueTranslations?(): Promise<void>;
 }
 
 export interface SyncRunOutcome {
@@ -121,6 +124,7 @@ export async function runDigitelSync(
     // The database RPC is the transaction boundary. It receives only records
     // returned by a fully validated, fully paginated source response.
     const applied = await database.applyCompleteSync({ runId, observedAt, candidates: providerSnapshot });
+    try { await database.enqueueTranslations?.(); } catch { /* original Events remain immediately usable */ }
     const success: SyncRunOutcome = {
       ...base, status: 'success', sourceComplete: true,
       fetched: fetched.features.length, normalized: normalized.candidates.length,

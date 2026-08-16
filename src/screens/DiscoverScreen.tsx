@@ -42,6 +42,7 @@ import { ALL_DISCOVERY_CONTENT, discoveryEmptyCopyKey, selectedContentKeys, togg
 import { useI18n, textAlignForContent, type TranslationKey } from '@/i18n';
 import { applyContentSelectionChange, handleDiscoveryItemIntent } from '@/utils/discoveryScreenState';
 import { track } from '@/lib/analytics';
+import { displayedEventContent } from '../../supabase/functions/_shared/eventTranslation';
 import {
   discoveryItemKey,
   discoveryItemCoordinate,
@@ -245,7 +246,8 @@ export function DiscoverScreen({ onOpenActivity, onOpenPlace, onOpenEvent, onHos
     if (!discoveryCoordinateInViewport(event.location, viewport)) return false;
     if (selectedEventCategory !== 'all' && event.category !== selectedEventCategory) return false;
     if (!query) return true;
-    return [event.title, event.description, event.location.name, event.location.formattedAddress]
+    const content = displayedEventContent(event);
+    return [content.title, content.description, event.location.name, event.location.formattedAddress]
       .filter((value): value is string => Boolean(value))
       .some((value) => value.toLocaleLowerCase().includes(query));
   }), [eventsQuery.events, query, selectedEventCategory, viewport]);

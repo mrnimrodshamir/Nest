@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { queryDiscoveryEvents, queryEventAttendanceCounts } from '@/lib/events';
+import { localizeEvents, queryDiscoveryEvents, queryEventAttendanceCounts } from '@/lib/events';
 import type { EventDetails } from '@/types/event';
 import type { PlaceViewport } from '@/types/familyFriendlyPlace';
+import { useI18n } from '@/i18n';
 
 export function useDiscoveryEvents(options: { viewport: PlaceViewport; mockEvents?: EventDetails[] }) {
+  const { locale } = useI18n();
   const [events, setEvents] = useState<EventDetails[]>(options.mockEvents ?? []);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -26,6 +28,11 @@ export function useDiscoveryEvents(options: { viewport: PlaceViewport; mockEvent
         setEvents(result);
         setAttendeeCounts({});
       }
+      // Translation is a cached enhancement. Original content paints first;
+      // this secondary read never owns loading/error state.
+      void localizeEvents(result, locale).then((localized) => {
+        if (id === requestId.current) setEvents(localized);
+      });
       // Attendance is a secondary social signal. A transient count-query
       // failure must never hide otherwise valid Events from Discovery.
       try {
@@ -39,7 +46,7 @@ export function useDiscoveryEvents(options: { viewport: PlaceViewport; mockEvent
     } finally {
       if (id === requestId.current) setIsLoading(false);
     }
-  }, [options.mockEvents, options.viewport]);
+  }, [locale, options.mockEvents, options.viewport]);
 
   useEffect(() => {
     const timer = setTimeout(refresh, 250);

@@ -2,6 +2,12 @@ import { supabase } from '@/lib/supabase';
 import type { EventDetails } from '@/types/event';
 import type { PlaceViewport } from '@/types/familyFriendlyPlace';
 import { mapEventDetails, type EventOccurrenceRow, type EventRow } from '@/utils/eventMapping';
+import type { AppLocale } from '@/i18n';
+import {
+  applyCachedEventTranslation,
+  detectEventSourceLanguage,
+  type CachedEventTranslation,
+} from '../../supabase/functions/_shared/eventTranslation';
 
 export const EVENT_COLUMNS = 'id,title,description,category,image_url,age_min_months,age_max_months,price_note,registration_required,registration_url,verification_status,publication_status,event_status,cancellation_reason,provider,provider_event_id,provider_transport_id,source_group_id,source_name,source_url,source_published_at,source_updated_at,provider_metadata,is_recurring,recurrence_rule,recurrence_timezone,recurrence_series_id,place_id,location_name,formatted_address,latitude,longitude,created_at,updated_at';
 export const EVENT_OCCURRENCE_COLUMNS = 'id,event_id,provider_occurrence_id,occurrence_fingerprint,starts_at,ends_at,original_starts_at,occurrence_status,cancellation_reason,source_updated_at,provider_metadata';
@@ -68,6 +74,31 @@ export async function queryEventAttendanceCounts(occurrenceIds: readonly string[
     counts[id] = (counts[id] ?? 0) + 1;
   }
   return counts;
+}
+
+/** Adds only a fingerprint-valid cached translation. Any cache/RLS/network
+ * failure returns the original provider content and never hides an Event. */
+export async function localizeEvents(events: readonly EventDetails[], locale: AppLocale): Promise<EventDetails[]> {
+  const originals = events.map(({ localizedContent: _localizedContent, ...event }) => event as EventDetails);
+  const candidates = originals.filter((event) => detectEventSourceLanguage(event) !== locale);
+  if (candidates.length === 0) return originals;
+  try {
+    const { data, error } = await supabase.from('event_content_translations')
+      .select('event_id,locale,translated_title,translated_description,source_language,source_fingerprint')
+      .eq('locale', locale)
+      .in('event_id', [...new Set(candidates.map((event) => event.id))]);
+    if (error) return originals;
+    const byEvent = new Map<string, CachedEventTranslation>((data ?? []).map((row) => [row.event_id as string, {
+      locale: row.locale as AppLocale,
+      title: row.translated_title as string,
+      description: (row.translated_description as string | null) ?? null,
+      sourceLanguage: row.source_language as CachedEventTranslation['sourceLanguage'],
+      sourceFingerprint: row.source_fingerprint as string,
+    }]));
+    return originals.map((event) => applyCachedEventTranslation(event, byEvent.get(event.id)));
+  } catch {
+    return originals;
+  }
 }
 
 /** Splits a joined view row back into the event and occurrence shapes the

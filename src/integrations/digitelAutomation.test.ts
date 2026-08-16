@@ -60,6 +60,17 @@ test('production mode applies exactly one atomic complete-source call', async ()
   assert.equal(result.dryRun, false);
 });
 
+test('translation queue failure never changes a successful DigiTel sync', async () => {
+  const database = new FakeDatabase();
+  database.enqueueTranslations = async () => { throw new Error('translation provider unavailable'); };
+  const result = await runDigitelSync({ dryRun: false }, database, {
+    now: () => NOW, fetchMetadata: async () => validMetadata(), fetchFeatures: async () => fetched([feature()]),
+  });
+  assert.equal(result.status, 'success');
+  assert.equal(result.sourceComplete, true);
+  assert.equal(database.applyCalls, 1);
+});
+
 test('invalid source metadata fails closed before fetching or applying', async () => {
   const database = new FakeDatabase();
   let fetchedSource = false;

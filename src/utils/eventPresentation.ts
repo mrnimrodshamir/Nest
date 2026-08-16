@@ -1,6 +1,7 @@
 import type { EventDetails } from '@/types/event';
 import { EVENT_CATEGORY_LABELS } from '@/types/event';
 import { EVENT_LIFECYCLE_LABELS } from '@/utils/eventLifecycle';
+import { displayedEventContent } from '../../supabase/functions/_shared/eventTranslation';
 
 export interface EventDetailsPresentation {
   title: string;
@@ -20,6 +21,7 @@ export interface EventDetailsPresentation {
 }
 
 export function buildEventDetailsPresentation(event: EventDetails, locale = 'en-IL'): EventDetailsPresentation {
+  const displayed = displayedEventContent(event);
   const timezone = event.recurrence.timezone;
   const start = new Date(event.occurrence.startsAt);
   if (Number.isNaN(start.getTime())) throw new Error('Invalid event start time');
@@ -37,8 +39,8 @@ export function buildEventDetailsPresentation(event: EventDetails, locale = 'en-
   const cancellationReason = event.occurrence.cancellationReason ?? event.cancellationReason;
   const sourceUrl = safeHttpsUrl(event.source.sourceUrl);
   return {
-    title: event.title,
-    description: event.description,
+    title: displayed.title,
+    description: displayed.description,
     categoryLabel: event.category ? EVENT_CATEGORY_LABELS[event.category] : 'Event',
     lifecycleLabel: EVENT_LIFECYCLE_LABELS[event.lifecycle],
     dateLabel,

@@ -14,7 +14,7 @@ import { resolveHeroMaxHeight } from '@/constants/activityArtFrame';
 // height does not change for the lifetime of the process.
 const HERO_MAX = resolveHeroMaxHeight(Dimensions.get('window').height);
 import { AddEventToCalendarSheet } from '@/components/AddEventToCalendarSheet';
-import { useI18n, textAlignForContent } from '@/i18n';
+import { dateLocaleTag, useI18n, textAlignForContent } from '@/i18n';
 import { useEventRsvp } from '@/hooks/useEventRsvp';
 import { rsvpPresentation, attendanceSummaryKey, attendeePreview } from '@/utils/eventAttendance';
 import { PersonCard } from '@/components/PersonCard';
@@ -54,8 +54,8 @@ export function EventDetailsScreen({ event, onBack, onOpenProfile }: EventDetail
 }
 
 function EventDetailsContent({ event, onBack, onOpenProfile }: EventDetailsScreenProps) {
-  const content = useMemo(() => buildEventDetailsPresentation(event), [event]);
   const { t, locale, isRTL } = useI18n();
+  const content = useMemo(() => buildEventDetailsPresentation(event, dateLocaleTag(locale)), [event, locale]);
   const [showCalendar, setShowCalendar] = useState(false);
   const [showAttendees, setShowAttendees] = useState(false);
   const { isGoing, attendees, attendeeCount, isSaving, toggle } = useEventRsvp(event.occurrence.id);
@@ -63,8 +63,8 @@ function EventDetailsContent({ event, onBack, onOpenProfile }: EventDetailsScree
   const attendanceSummary = attendanceSummaryKey(attendeeCount);
   const preview = attendeePreview(attendees);
   const isInterrupted = event.lifecycle === 'cancelled' || event.lifecycle === 'postponed';
-  const shareMessage = buildEventShareMessage({ occurrenceId: event.occurrence.id, title: event.title, startsAt: event.occurrence.startsAt, location: event.location.name ?? event.location.formattedAddress, status: event.occurrence.status });
-  const calendarEvent = { occurrenceId: event.occurrence.id, title: event.title, description: event.description, startsAt: event.occurrence.startsAt, endsAt: event.occurrence.endsAt, locationName: event.location.name ?? event.location.formattedAddress, sourceUrl: event.source.sourceUrl, status: event.occurrence.status };
+  const shareMessage = buildEventShareMessage({ occurrenceId: event.occurrence.id, title: content.title, startsAt: event.occurrence.startsAt, location: event.location.name ?? event.location.formattedAddress, status: event.occurrence.status });
+  const calendarEvent = { occurrenceId: event.occurrence.id, title: content.title, description: content.description, startsAt: event.occurrence.startsAt, endsAt: event.occurrence.endsAt, locationName: event.location.name ?? event.location.formattedAddress, sourceUrl: event.source.sourceUrl, status: event.occurrence.status };
   useEffect(() => {
     track('event_opened', { content_id: event.occurrence.id, source: event.source.provider });
   }, [event.occurrence.id, event.source.provider]);
@@ -84,7 +84,7 @@ function EventDetailsContent({ event, onBack, onOpenProfile }: EventDetailsScree
             RCTFatal bridge abort, so React error boundaries cannot protect
             these native surfaces. The core Event, RSVP and actions remain
             available while the crash source is fail-closed. */}
-        <View style={styles.hero} accessibilityLabel={`${event.title} event`}>
+        <View style={styles.hero} accessibilityLabel={`${content.title} event`}>
           <CalendarDots size={52} color={theme.brand.primary} weight="duotone" />
         </View>
         <View style={styles.labelRow}>
@@ -93,7 +93,7 @@ function EventDetailsContent({ event, onBack, onOpenProfile }: EventDetailsScree
             <Text style={[styles.statusText, isInterrupted && styles.statusTextInterrupted]}>{content.lifecycleLabel}</Text>
           </View>
         </View>
-        <Text style={styles.title}>{content.title}</Text>
+        <Text style={[styles.title, textAlignForContent(content.title, locale)]}>{content.title}</Text>
         {content.cancellationMessage ? (
           <View style={styles.alert}><WarningCircle size={20} color={theme.semantic.danger} /><Text style={styles.alertText}>{content.cancellationMessage}</Text></View>
         ) : null}
@@ -101,11 +101,10 @@ function EventDetailsContent({ event, onBack, onOpenProfile }: EventDetailsScree
         {content.recurrenceLabel ? <InfoRow icon={Repeat} title={content.recurrenceLabel} /> : null}
         <InfoRow icon={MapPin} title={content.locationName} body={content.addressLabel} />
         <View style={styles.actionRow}>
-          {/* event.title comes from an external source — interpolated only. */}
-          <Pressable accessibilityRole="button" accessibilityLabel={t('place.shareLabel', { name: event.title })} style={styles.action} onPress={() => void openNativeShare(shareMessage, undefined, { contentType: 'event', contentId: event.occurrence.id })}><ShareNetwork size={18} color={theme.text.primary} /><Text style={styles.actionText}>{t('common.share')}</Text></Pressable>
-          <Pressable accessibilityRole="button" accessibilityLabel={t('place.shareWhatsAppLabel', { name: event.title })} style={styles.action} onPress={() => void openWhatsAppShare(shareMessage, undefined, { contentType: 'event', contentId: event.occurrence.id })}><WhatsappLogo size={18} color={theme.text.primary} weight="fill" /><Text style={styles.actionText}>{t('common.whatsapp')}</Text></Pressable>
+          <Pressable accessibilityRole="button" accessibilityLabel={t('place.shareLabel', { name: content.title })} style={styles.action} onPress={() => void openNativeShare(shareMessage, undefined, { contentType: 'event', contentId: event.occurrence.id })}><ShareNetwork size={18} color={theme.text.primary} /><Text style={styles.actionText}>{t('common.share')}</Text></Pressable>
+          <Pressable accessibilityRole="button" accessibilityLabel={t('place.shareWhatsAppLabel', { name: content.title })} style={styles.action} onPress={() => void openWhatsAppShare(shareMessage, undefined, { contentType: 'event', contentId: event.occurrence.id })}><WhatsappLogo size={18} color={theme.text.primary} weight="fill" /><Text style={styles.actionText}>{t('common.whatsapp')}</Text></Pressable>
         </View>
-        <Pressable accessibilityRole="button" accessibilityLabel={t('event.addToCalendarLabel', { name: event.title })} style={styles.calendarAction} onPress={() => setShowCalendar(true)}><CalendarPlus size={18} color={theme.brand.primary} /><Text style={styles.link}>{t('common.addToCalendar')}</Text></Pressable>
+        <Pressable accessibilityRole="button" accessibilityLabel={t('event.addToCalendarLabel', { name: content.title })} style={styles.calendarAction} onPress={() => setShowCalendar(true)}><CalendarPlus size={18} color={theme.brand.primary} /><Text style={styles.link}>{t('common.addToCalendar')}</Text></Pressable>
         {/* External event copy — rendered in whatever script it arrives in. */}
         {content.description ? <Text style={[styles.description, textAlignForContent(content.description, locale)]}>{content.description}</Text> : null}
         {event.priceNote ? <Section title={t('place.cost')} body={event.priceNote} /> : null}

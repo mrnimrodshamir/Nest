@@ -4,10 +4,12 @@ import { Marker } from 'react-native-maps';
 import { CalendarDots } from 'phosphor-react-native';
 import { theme } from '@/theme';
 import type { EventDetails } from '@/types/event';
+import { displayedEventContent } from '../../supabase/functions/_shared/eventTranslation';
 
 /** Events use a diamond marker, distinct from circular Activities and square Places. */
 export function EventMapPin({ event, selected, onPress }: { event: EventDetails; selected: boolean; onPress: (event: EventDetails) => void }) {
-  return <Marker coordinate={event.location} onPress={() => onPress(event)} accessibilityLabel={`Event: ${event.title}`} accessibilityRole="button" tracksViewChanges={selected} anchor={{ x: 0.5, y: 0.5 }}>
+  const content = displayedEventContent(event);
+  return <Marker coordinate={event.location} onPress={() => onPress(event)} accessibilityLabel={`Event: ${content.title}`} accessibilityRole="button" tracksViewChanges={selected} anchor={{ x: 0.5, y: 0.5 }}>
     <View style={[styles.marker, selected && styles.selected]}><View style={styles.icon}><CalendarDots size={selected ? 20 : 17} color={theme.text.inverse} weight="fill" /></View></View>
   </Marker>;
 }

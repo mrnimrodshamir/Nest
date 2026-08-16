@@ -64,6 +64,10 @@ function createDatabase(client: any): SyncDatabase {
       if (error) throw new Error(`Atomic DigiTel sync failed: ${error.message}`);
       return data;
     },
+    async enqueueTranslations() {
+      const { error } = await client.rpc('enqueue_event_translation_jobs', { p_provider: 'tel_aviv_digitel' });
+      if (error) throw new Error('Translation queue unavailable');
+    },
   };
 }
 
