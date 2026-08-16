@@ -5,6 +5,7 @@ import * as Calendar from 'expo-calendar/legacy';
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { activityDeepLink } from '@/utils/buildShareMessage';
+import { currentAppLocale, translate } from '@/i18n';
 
 interface CalendarActivityInfo {
   id: string;
@@ -61,7 +62,7 @@ async function addActivityToAppleCalendarInternal(
 ): Promise<{ success: boolean; error?: string }> {
   try {
     const { status } = await Calendar.requestCalendarPermissionsAsync();
-    if (status !== 'granted') return { success: false, error: 'Calendar access is needed to add this activity.' };
+    if (status !== 'granted') return { success: false, error: translate(currentAppLocale(), 'calendar.error.permission') };
 
     const endDate = new Date(activity.startsAt.getTime() + activity.durationMinutes * 60000);
     const eventDetails = {
@@ -85,7 +86,7 @@ async function addActivityToAppleCalendarInternal(
     }
 
     const calendarId = await getDefaultCalendarId();
-    if (!calendarId) return { success: false, error: 'No writable calendar is available on this device.' };
+    if (!calendarId) return { success: false, error: translate(currentAppLocale(), 'calendar.error.noWritable') };
     const eventId = await Calendar.createEventAsync(calendarId, {
       ...eventDetails,
     });
@@ -96,7 +97,7 @@ async function addActivityToAppleCalendarInternal(
     });
     return { success: true };
   } catch (err) {
-    return { success: false, error: err instanceof Error ? err.message : 'Could not add to calendar' };
+    return { success: false, error: translate(currentAppLocale(), 'calendar.error.add') };
   }
 }
 
@@ -145,7 +146,7 @@ export async function updateCalendarEvent(
     });
     return { success: true };
   } catch (err) {
-    return { success: false, error: err instanceof Error ? err.message : 'Could not update calendar event' };
+    return { success: false, error: translate(currentAppLocale(), 'calendar.error.update') };
   }
 }
 

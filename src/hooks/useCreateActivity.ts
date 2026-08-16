@@ -86,7 +86,7 @@ export function useCreateActivity(): UseCreateActivityResult {
         setError(translate(currentAppLocale(), 'error.notSignedIn'));
         setIsSubmitting(false);
         setStage(null);
-        return { status: 'error', message: 'Not signed in' };
+        return { status: 'error', message: translate(currentAppLocale(), 'error.notSignedIn') };
       }
 
       // cover_image_url starts null — CoverImage's fallbackCategory renders
@@ -118,7 +118,7 @@ export function useCreateActivity(): UseCreateActivityResult {
 
       if (insertError) {
         console.log('[CreateActivity] Activity insert failed', insertError.message);
-        const message = "Couldn't create your activity. Please try again.";
+        const message = translate(currentAppLocale(), 'error.activityCreate');
         setError(message);
         setIsSubmitting(false);
         setStage(null);
@@ -151,8 +151,7 @@ export function useCreateActivity(): UseCreateActivityResult {
       setStage(null);
 
       if (!joined) {
-        const message =
-          "Your activity was created, but we couldn't complete your participation setup. Tap to retry.";
+        const message = translate(currentAppLocale(), 'error.activityCreatedParticipation');
         setError(message);
         return { status: 'partial', activityId, message };
       }

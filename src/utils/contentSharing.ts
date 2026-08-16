@@ -1,4 +1,5 @@
 import { APP_NAME } from '@/constants/brand';
+import { activeDateLocale, currentAppLocale, translate } from '@/i18n/core';
 
 export type ShareContentType = 'activity' | 'place' | 'event';
 
@@ -18,10 +19,11 @@ export function buildPlaceShareMessage(input: {
   name: string;
   location: string | null;
 }): string {
-  const lines = [`Discover ${input.name.trim()}`];
+  const locale = currentAppLocale();
+  const lines = [translate(locale, 'sharing.placeDiscover', { name: input.name.trim() })];
   if (input.location?.trim()) lines.push(input.location.trim());
   const deepLink = contentDeepLink('place', input.id);
-  if (deepLink) lines.push('', `Open in ${APP_NAME}:`, deepLink);
+  if (deepLink) lines.push('', translate(locale, 'sharing.openIn', { appName: APP_NAME }), deepLink);
   return lines.join('\n');
 }
 
@@ -33,14 +35,15 @@ export function buildEventShareMessage(input: {
   status: 'scheduled' | 'cancelled' | 'postponed';
 }): string {
   const date = new Date(input.startsAt);
-  const state = input.status === 'cancelled' ? 'Cancelled: ' : input.status === 'postponed' ? 'Postponed: ' : '';
-  const lines = [`${state}${input.title.trim()}`];
-  if (!Number.isNaN(date.getTime())) lines.push(date.toLocaleString(undefined, {
+  const locale = currentAppLocale();
+  const titleKey = input.status === 'cancelled' ? 'sharing.eventCancelled' : input.status === 'postponed' ? 'sharing.eventPostponed' : 'sharing.eventTitle';
+  const lines = [translate(locale, titleKey, { title: input.title.trim() })];
+  if (!Number.isNaN(date.getTime())) lines.push(date.toLocaleString(activeDateLocale(), {
     weekday: 'long', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZone: 'Asia/Jerusalem',
   }));
   if (input.location?.trim()) lines.push(input.location.trim());
   const deepLink = contentDeepLink('event', input.occurrenceId);
-  if (deepLink) lines.push('', `Open in ${APP_NAME}:`, deepLink);
+  if (deepLink) lines.push('', translate(locale, 'sharing.openIn', { appName: APP_NAME }), deepLink);
   return lines.join('\n');
 }
 

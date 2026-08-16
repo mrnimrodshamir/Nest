@@ -49,11 +49,11 @@ export function formatAgeRange(minMonths: number | null, maxMonths: number | nul
 }
 
 function formatHebrewChildAge(years: number, months: number, sex: ChildSex | null): string {
-  const prefix = sex === 'male' ? 'בן' : sex === 'female' ? 'בת' : 'גיל';
-  const monthLabel = months === 1 ? 'חודש' : months === 2 ? 'חודשיים' : `${months} חודשים`;
-  if (years === 0) return `${prefix} ${monthLabel}`;
-  const yearLabel = years === 1 ? 'שנה' : years === 2 ? 'שנתיים' : String(years);
-  return months === 0 ? `${prefix} ${yearLabel}` : `${prefix} ${yearLabel} ו${monthLabel}`;
+  const prefix = translate('he', sex === 'male' ? 'age.he.prefix.male' : sex === 'female' ? 'age.he.prefix.female' : 'age.he.prefix.neutral');
+  const monthLabel = translate('he', months === 1 ? 'age.he.month.one' : months === 2 ? 'age.he.month.two' : 'age.he.month.other', { count: months });
+  if (years === 0) return translate('he', 'age.he.withPrefix', { prefix, age: monthLabel });
+  const yearLabel = translate('he', years === 1 ? 'age.he.year.one' : years === 2 ? 'age.he.year.two' : 'age.he.year.other', { count: years });
+  return translate('he', months === 0 ? 'age.he.withPrefix' : 'age.he.yearsMonths', { prefix, age: yearLabel, years: yearLabel, months: monthLabel });
 }
 import { currentAppLocale, translate, type AppLocale } from '@/i18n/core';
 import type { ChildSex } from '@/types/child';

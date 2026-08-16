@@ -77,7 +77,7 @@ export function useChildren(profileId: string | null): UseChildrenResult {
 
   const addChild = useCallback(
     async (input: AddChildInput) => {
-      if (!profileId) return 'Not signed in.';
+      if (!profileId) return translate(currentAppLocale(), 'error.notSignedIn');
       const makeDefault = children.length === 0;
       const { error: insertError } = await supabase.from('children').insert({
         profile_id: profileId,
@@ -89,7 +89,7 @@ export function useChildren(profileId: string | null): UseChildrenResult {
       });
       if (insertError) {
         console.log('[Children] add failed', insertError.message);
-        return "Couldn't add your child. Please try again.";
+        return translate(currentAppLocale(), 'error.childAdd');
       }
       await load();
       return null;
@@ -110,7 +110,7 @@ export function useChildren(profileId: string | null): UseChildrenResult {
         .eq('id', id);
       if (updateError) {
         console.log('[Children] update failed', updateError.message);
-        return "Couldn't save your changes. Please try again.";
+        return translate(currentAppLocale(), 'error.childUpdate');
       }
       await load();
       return null;
@@ -124,7 +124,7 @@ export function useChildren(profileId: string | null): UseChildrenResult {
       const { error: deleteError } = await supabase.from('children').delete().eq('id', id);
       if (deleteError) {
         console.log('[Children] remove failed', deleteError.message);
-        return "Couldn't remove this child. Please try again.";
+        return translate(currentAppLocale(), 'error.childRemove');
       }
       // Keep exactly one default whenever possible — promote the oldest
       // remaining child rather than leaving the parent with none set.
@@ -142,7 +142,7 @@ export function useChildren(profileId: string | null): UseChildrenResult {
 
   const setDefaultChild = useCallback(
     async (id: string) => {
-      if (!profileId) return 'Not signed in.';
+      if (!profileId) return translate(currentAppLocale(), 'error.notSignedIn');
       // Two-step clear-then-set avoids tripping the one-default partial
       // unique index while the update is in flight.
       const { error: clearError } = await supabase
@@ -151,12 +151,12 @@ export function useChildren(profileId: string | null): UseChildrenResult {
         .eq('profile_id', profileId);
       if (clearError) {
         console.log('[Children] set default failed', clearError.message);
-        return "Couldn't update your default child. Please try again.";
+        return translate(currentAppLocale(), 'error.childDefault');
       }
       const { error: setError2 } = await supabase.from('children').update({ is_default: true }).eq('id', id);
       if (setError2) {
         console.log('[Children] set default failed', setError2.message);
-        return "Couldn't update your default child. Please try again.";
+        return translate(currentAppLocale(), 'error.childDefault');
       }
       await load();
       return null;

@@ -1,3 +1,5 @@
+import { currentAppLocale, translate } from '@/i18n/core';
+
 export type ActivityFormMode = 'create' | 'edit' | 'again';
 
 export interface ActivityFormModeBehavior {
@@ -38,6 +40,6 @@ export function startTimeValidationMessage(
   hasSelectedStartTime: boolean,
 ): string | null {
   return resolveActivityFormMode(mode).requiresExplicitStartTime && !hasSelectedStartTime
-    ? 'Choose a new date and time'
+    ? translate(currentAppLocale(), 'activityForm.newDateTimeRequired')
     : null;
 }

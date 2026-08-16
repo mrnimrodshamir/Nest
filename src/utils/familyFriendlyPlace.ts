@@ -7,6 +7,7 @@ import {
 import type { PlaceFilters } from '@/types/familyFriendlyPlace';
 import type { Translator } from '@/i18n/taxonomy';
 import { placeCategoryLabel } from '@/i18n/taxonomy';
+import { currentAppLocale, translate, type AppLocale } from '@/i18n/core';
 
 export function mapFamilyFriendlyPlaceRow(row: FamilyFriendlyPlaceRow): FamilyFriendlyPlace {
   if (!isPlaceCategory(row.category)) throw new Error(`Unsupported place category: ${row.category}`);
@@ -58,7 +59,7 @@ export function placeSummaryFeatures(place: FamilyFriendlyPlace, limit = 3, t?: 
 }
 
 /** Caregiver-facing, known-values-only facts for Place Details. */
-export function placeWhatIsHere(place: FamilyFriendlyPlace, t?: Translator): string[] {
+export function placeWhatIsHere(place: FamilyFriendlyPlace, t?: Translator, locale: AppLocale = currentAppLocale()): string[] {
   const facts: string[] = [];
   const categoryLabels: Partial<Record<FamilyFriendlyPlace['category'], string>> = {
     playground: 'Playground', park: 'Park', indoor_playground: 'Indoor play area',
@@ -79,7 +80,12 @@ export function placeWhatIsHere(place: FamilyFriendlyPlace, t?: Translator): str
   if (place.changingTable === true) facts.push(label('place.fact.changingTable', 'Changing table'));
   if (place.strollerFriendly === true) facts.push(label('place.fact.stroller', 'Stroller friendly'));
   if (place.accessible === true) facts.push(label('place.fact.accessible', 'Accessible'));
-  if (place.minAgeMonths != null || place.maxAgeMonths != null) facts.push(`Best for ${formatPlaceAgeRange(place.minAgeMonths, place.maxAgeMonths)}`);
+  if (place.minAgeMonths != null || place.maxAgeMonths != null) {
+    const text: Translator = t ?? ((key, params) => translate('en', key, params));
+    facts.push(text('place.fact.bestFor', {
+      age: formatPlaceAgeRange(place.minAgeMonths, place.maxAgeMonths, locale),
+    }));
+  }
   return facts;
 }
 
@@ -104,12 +110,22 @@ export function placeMatchesFilters(place: FamilyFriendlyPlace, filters: PlaceFi
   return true;
 }
 
-export function formatPlaceAgeRange(min: number | null, max: number | null): string {
-  if (min == null && max == null) return 'All ages';
-  const label = (months: number) => months < 24 ? `${months} months` : `${Math.floor(months / 12)} years`;
-  if (min == null) return `Up to ${label(max!)}`;
-  if (max == null) return `${label(min)} and up`;
-  return `${label(min)} – ${label(max)}`;
+export function formatPlaceAgeRange(min: number | null, max: number | null, locale: AppLocale = currentAppLocale()): string {
+  if (min == null && max == null) return translate(locale, 'place.age.any');
+  const label = (months: number) => {
+    if (months < 24) {
+      if (locale === 'he' && months === 1) return 'חודש';
+      if (locale === 'he' && months === 2) return 'חודשיים';
+      return translate(locale, 'place.age.months', { count: months });
+    }
+    const years = Math.floor(months / 12);
+    if (locale === 'he' && years === 1) return 'שנה';
+    if (locale === 'he' && years === 2) return 'שנתיים';
+    return translate(locale, 'place.age.years', { count: years });
+  };
+  if (min == null) return translate(locale, 'place.age.upTo', { age: label(max!) });
+  if (max == null) return translate(locale, 'place.age.andUp', { age: label(min) });
+  return translate(locale, 'place.age.range', { min: label(min), max: label(max) });
 }
 
 export function formatOpeningHours(value: Record<string, unknown> | null): string | null {

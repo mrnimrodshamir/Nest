@@ -13,6 +13,20 @@ import { hasDisplayableAge } from '@/utils/parentAge';
 import { normalizeOptionalProfileText, normalizeProfileBio } from '@/utils/publicFamilyProfile';
 import { hasUsableDisplayName, safeDisplayName } from '@/utils/profileIdentity';
 import { needsAppleProfileSetup } from '@/utils/profileCompleteness';
+import { currentAppLocale, translate, type TranslationKey } from '@/i18n';
+
+const ONBOARDING_ERROR_KEYS: Readonly<Record<string, TranslationKey>> = {
+  "Couldn't load your profile. Please try again.": 'onboarding.error.profileLoad',
+  "Couldn't save your profile. Please try again.": 'onboarding.error.profileSave',
+  "Couldn't save your child's information. Please try again.": 'onboarding.error.childSave',
+  'Add at least one child to finish setting up your account.': 'onboarding.error.childRequired',
+  "Couldn't confirm your child was saved. Please try again.": 'onboarding.error.childVerify',
+  "Couldn't finish setting up your account. Please try again.": 'onboarding.error.finish',
+};
+
+function localizedOnboardingError(message: string): string {
+  return translate(currentAppLocale(), ONBOARDING_ERROR_KEYS[message] ?? 'auth.error.generic');
+}
 
 /** Guards against ASAuthorizationController being presented twice at once
  *  (a real crash on-device: "already presenting a view controller"). React
@@ -209,7 +223,7 @@ function useAuthState(): UseAuthResult {
         (message, meta) => console.log(message, meta ?? ''),
       );
 
-      if (result.status === 'error') return result.message;
+      if (result.status === 'error') return localizedOnboardingError(result.message);
       if (result.status === 'already-complete') {
         // Idempotent: re-entering this form after a completed signup
         // (e.g. a retried tap whose first attempt actually succeeded)
@@ -310,7 +324,7 @@ function useAuthState(): UseAuthResult {
       }
 
       const userId = data.user?.id;
-      if (!userId) return { status: 'error', message: 'Something went wrong. Please try again.' };
+      if (!userId) return { status: 'error', message: translate(currentAppLocale(), 'auth.error.generic') };
 
       // Supabase's anti-enumeration behavior: signUp() with an email that
       // already has an account never returns an error — it returns
@@ -322,7 +336,7 @@ function useAuthState(): UseAuthResult {
         console.log('[Auth] Registration attempted for an existing email', { userId });
         return {
           status: 'error',
-          message: 'An account already exists with this email. Try logging in instead.',
+          message: translate(currentAppLocale(), 'auth.error.accountExists'),
         };
       }
 
@@ -336,7 +350,7 @@ function useAuthState(): UseAuthResult {
         console.log('[Auth] Registration: signUp returned no session unexpectedly', { userId });
         return {
           status: 'error',
-          message: "Your account was created, but we couldn't sign you in automatically. Please log in.",
+          message: translate(currentAppLocale(), 'auth.error.createdNeedsLogin'),
         };
       }
 
@@ -392,10 +406,10 @@ function useAuthState(): UseAuthResult {
         if (err?.code === 'ERR_REQUEST_NOT_HANDLED' || err?.code === 'ERR_REQUEST_NOT_INTERACTIVE') {
           return {
             status: 'error' as const,
-            message: 'Sign in with Apple is not available on this device right now.',
+            message: translate(currentAppLocale(), 'auth.error.appleUnavailable'),
           };
         }
-        return { status: 'error' as const, message: 'Sign in with Apple failed. Please try again.' };
+        return { status: 'error' as const, message: translate(currentAppLocale(), 'auth.error.appleFailed') };
       }
 
       console.log('[Auth] Apple sign-in: credential received', {
@@ -407,7 +421,7 @@ function useAuthState(): UseAuthResult {
       if (!credential.identityToken) {
         return {
           status: 'error' as const,
-          message: 'Apple did not return a valid credential. Please try again.',
+          message: translate(currentAppLocale(), 'auth.error.appleCredential'),
         };
       }
 
@@ -421,7 +435,7 @@ function useAuthState(): UseAuthResult {
       }
 
       const userId = data.user?.id;
-      if (!userId) return { status: 'error' as const, message: 'Sign in with Apple failed. Please try again.' };
+      if (!userId) return { status: 'error' as const, message: translate(currentAppLocale(), 'auth.error.appleFailed') };
       track('login_completed', { login_method: 'apple' });
       console.log('[Auth] Apple sign-in: Supabase session established', { userId, hasSession: Boolean(data.session) });
 
@@ -498,7 +512,7 @@ function useAuthState(): UseAuthResult {
       // guarantee means even an unexpected exception here must resolve to
       // a value, never propagate.
       console.log('[Auth] Apple sign-in: unexpected exception', err?.message ?? err);
-      return { status: 'error' as const, message: 'Sign in with Apple failed. Please try again.' };
+      return { status: 'error' as const, message: translate(currentAppLocale(), 'auth.error.appleFailed') };
     } finally {
       appleSignInInFlight = false;
     }
@@ -508,7 +522,7 @@ function useAuthState(): UseAuthResult {
     async (input: AppleProfileInput, onStage?: (stage: RegistrationStage) => void) => {
       const { data: userData } = await supabase.auth.getUser();
       const userId = userData.user?.id;
-      if (!userId) return 'Not signed in.';
+      if (!userId) return translate(currentAppLocale(), 'auth.error.notSignedIn');
 
       // Apple only sends fullName/email on the very first authorization —
       // a retry after an interrupted signup won't have them again, so
@@ -558,12 +572,12 @@ function useAuthState(): UseAuthResult {
   }, [session]);
 
   const deleteAccount = useCallback(async () => {
-    if (!session) return 'Not signed in.';
+    if (!session) return translate(currentAppLocale(), 'auth.error.notSignedIn');
     track('account_deleted');
     const { data, error } = await supabase.functions.invoke('delete-account', { method: 'POST' });
     if (error) {
       console.log('[Auth] Account deletion failed', error.message);
-      return 'Could not delete your account. Please try again.';
+      return translate(currentAppLocale(), 'profile.deleteError');
     }
     if (data?.error) return data.error as string;
     await supabase.auth.signOut();
@@ -589,14 +603,14 @@ function useAuthState(): UseAuthResult {
       occupation?: string | null;
       bio?: string | null;
     }) => {
-      if (!session) return 'Not signed in';
+      if (!session) return translate(currentAppLocale(), 'auth.error.notSignedIn');
       let avatarUrl: string | undefined;
       if (details.photoUri) {
         try {
           avatarUrl = await uploadAvatar(session.user.id, details.photoUri);
         } catch (err) {
           console.log('[Auth] Avatar upload failed', err instanceof Error ? err.message : err);
-          return "Couldn't upload your photo — please try again.";
+          return translate(currentAppLocale(), 'profile.photoUploadError');
         }
       }
       const { error } = await supabase
@@ -625,7 +639,7 @@ function useAuthState(): UseAuthResult {
         .eq('id', session.user.id);
       if (error) {
         console.log('[Auth] Profile update failed', error.message);
-        return "Couldn't save your changes. Please try again.";
+        return translate(currentAppLocale(), 'error.activitySave');
       }
       await loadProfile(session.user.id);
       track('profile_updated');
@@ -636,14 +650,14 @@ function useAuthState(): UseAuthResult {
 
   const updateNotificationPreferences = useCallback(
     async (prefs: NotificationPreferences) => {
-      if (!session) return 'Not signed in';
+      if (!session) return translate(currentAppLocale(), 'auth.error.notSignedIn');
       const { error } = await supabase
         .from('profiles')
         .update({ notification_preferences: prefs })
         .eq('id', session.user.id);
       if (error) {
         console.log('[Auth] Notification preferences update failed', error.message);
-        return "Couldn't save your changes. Please try again.";
+        return translate(currentAppLocale(), 'error.activitySave');
       }
       await loadProfile(session.user.id);
       return null;

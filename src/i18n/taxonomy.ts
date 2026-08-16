@@ -59,6 +59,7 @@ const HEBREW_PLACE_NAMES: Readonly<Record<string, string>> = {
 };
 
 const HEBREW_PLACE_NAMES_BY_ENGLISH: Readonly<Record<string, string>> = {
+  'meeting point': 'נקודת המפגש',
   'independence park': 'פארק העצמאות',
   'gordon swimming pool': 'בריכת גורדון',
   'gordon pool': 'בריכת גורדון',

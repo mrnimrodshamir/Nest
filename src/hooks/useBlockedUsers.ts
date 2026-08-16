@@ -69,12 +69,12 @@ export function useBlockedUsers(): UseBlockedUsersResult {
     async (userId: string) => {
       const { data: userData } = await supabase.auth.getUser();
       const blockerId = userData.user?.id;
-      if (!blockerId) return 'Not signed in.';
+      if (!blockerId) return translate(currentAppLocale(), 'error.notSignedIn');
       const { error: deleteError } = await supabase
         .from('blocks')
         .delete()
         .match({ blocker_id: blockerId, blocked_id: userId });
-      if (deleteError) return deleteError.message;
+      if (deleteError) return translate(currentAppLocale(), 'blocked.errorTitle');
       await load();
       return null;
     },

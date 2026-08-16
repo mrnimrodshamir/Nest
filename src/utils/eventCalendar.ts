@@ -1,4 +1,5 @@
 import { contentDeepLink } from '@/utils/contentSharing';
+import { currentAppLocale, translate } from '@/i18n/core';
 
 export interface CalendarEventInfo {
   occurrenceId: string;
@@ -12,12 +13,13 @@ export interface CalendarEventInfo {
 }
 
 export function validateCalendarEvent(event: CalendarEventInfo): string | null {
-  if (event.status === 'cancelled') return 'Cancelled events cannot be added to a calendar.';
-  if (event.status === 'postponed') return 'Wait for a confirmed new time before adding this event.';
+  const locale = currentAppLocale();
+  if (event.status === 'cancelled') return translate(locale, 'calendar.error.cancelled');
+  if (event.status === 'postponed') return translate(locale, 'calendar.error.postponed');
   const start = new Date(event.startsAt);
   const end = event.endsAt ? new Date(event.endsAt) : null;
-  if (Number.isNaN(start.getTime())) return 'This event has an invalid start time.';
-  if (!end || Number.isNaN(end.getTime()) || end <= start) return 'This event does not have a confirmed end time yet.';
+  if (Number.isNaN(start.getTime())) return translate(locale, 'calendar.error.invalidStart');
+  if (!end || Number.isNaN(end.getTime()) || end <= start) return translate(locale, 'calendar.error.missingEnd');
   return null;
 }
 

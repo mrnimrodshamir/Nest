@@ -1,4 +1,4 @@
-import { activeDateLocale } from '@/i18n/core';
+import { activeDateLocale, currentAppLocale, translate } from '@/i18n/core';
 
 /**
  * Formats an activity start time the way a person would say it out loud —
@@ -7,22 +7,23 @@ import { activeDateLocale } from '@/i18n/core';
  */
 export function formatStartTime(iso: string, now: Date = new Date()): string {
   const start = new Date(iso);
+  const locale = currentAppLocale();
   const diffMs = start.getTime() - now.getTime();
   const diffMinutes = Math.round(diffMs / 60000);
 
-  if (diffMinutes < 0) return 'Started';
-  if (diffMinutes < 60) return `In ${diffMinutes} min`;
+  if (diffMinutes < 0) return translate(locale, 'time.started');
+  if (diffMinutes < 60) return translate(locale, 'time.inMinutes', { count: diffMinutes });
 
   const diffHours = Math.round(diffMinutes / 60);
   const isSameDay = start.toDateString() === now.toDateString();
 
-  if (isSameDay && diffHours < 12) return `In ${diffHours} ${diffHours === 1 ? 'hour' : 'hours'}`;
+  if (isSameDay && diffHours < 12) return translate(locale, diffHours === 1 ? 'time.inHours.one' : 'time.inHours.other', { count: diffHours });
 
   const dayLabel = isSameDay
-    ? 'Today'
+    ? translate(locale, 'time.today')
     : start.toDateString() ===
         new Date(now.getTime() + 86400000).toDateString()
-      ? 'Tomorrow'
+      ? translate(locale, 'time.tomorrow')
       : start.toLocaleDateString(activeDateLocale(), { weekday: 'short' });
 
   const timeLabel = start
@@ -30,5 +31,5 @@ export function formatStartTime(iso: string, now: Date = new Date()): string {
     .toLowerCase()
     .replace(' ', '');
 
-  return `${dayLabel} ${timeLabel}`;
+  return translate(locale, 'time.dayTime', { day: dayLabel, time: timeLabel });
 }

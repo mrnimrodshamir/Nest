@@ -1,6 +1,7 @@
 import { relativeDayWord } from './generateActivityTitle';
 import type { ActivityCategory, ActivityStatus } from '../types/activity';
 import { APP_NAME } from '../constants/brand';
+import { activeDateLocale, currentAppLocale, translate } from '@/i18n/core';
 
 export interface ShareableActivity {
   id: string;
@@ -32,26 +33,27 @@ export function activityDeepLink(activityId: string): string {
  *  activity on NestUp." A missing location or category never breaks the
  *  message; a cancelled activity is never invited to as if still live. */
 export function buildShareMessage(activity: ShareableActivity): string {
+  const locale = currentAppLocale();
   const deepLink = activityDeepLink(activity.id);
   if (activity.status === 'cancelled') {
     return [
-      `${activity.title} has been cancelled.`,
-      ...(deepLink ? ['', `Open in ${APP_NAME}:`, deepLink] : []),
+      translate(locale, 'sharing.activityCancelled', { title: activity.title }),
+      ...(deepLink ? ['', translate(locale, 'sharing.openIn', { appName: APP_NAME }), deepLink] : []),
     ].join('\n');
   }
 
   const day = relativeDayWord(activity.startsAt);
   const timeLabel = activity.startsAt
-    .toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })
+    .toLocaleTimeString(activeDateLocale(), { hour: 'numeric', minute: '2-digit' })
     .replace(' ', '');
   const location = activity.locationName.trim();
   const invitation = location && !['selected meeting point', 'meeting point'].includes(location.toLocaleLowerCase())
-    ? `Join us at ${location}`
-    : `Join us for ${activity.title.trim()}`;
+    ? translate(locale, 'sharing.joinAt', { location })
+    : translate(locale, 'sharing.joinFor', { title: activity.title.trim() });
 
   return [
     invitation,
-    `${day} at ${timeLabel}`,
-    ...(deepLink ? ['', `Open in ${APP_NAME}:`, deepLink] : []),
+    translate(locale, 'sharing.dayAt', { day, time: timeLabel }),
+    ...(deepLink ? ['', translate(locale, 'sharing.openIn', { appName: APP_NAME }), deepLink] : []),
   ].join('\n');
 }

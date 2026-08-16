@@ -5,6 +5,7 @@ import type {
   PlaceSearchResult,
   PlaceSuggestion,
 } from '@/lib/placeSearchClient';
+import { currentAppLocale, translate } from '@/i18n/core';
 
 export type PlaceSearchStatus =
   | 'idle'
@@ -178,12 +179,13 @@ export function dedupePlaceSearchResults(response: PlaceSearchResult): PlaceSear
 }
 
 export function statusForPlaceSearchError(code: PlaceSearchErrorCode | null): { status: PlaceSearchStatus; message: string } {
+  const locale = currentAppLocale();
   switch (code) {
-    case 'TIMEOUT': return { status: 'timeout', message: 'Search timed out. You can retry or drag the map.' };
-    case 'RATE_LIMITED': return { status: 'rate_limited', message: 'Too many searches. Please wait a moment and retry.' };
-    case 'CONFIGURATION_MISSING': return { status: 'configuration_missing', message: 'Place search is not available yet. You can still drag the map.' };
-    case 'UNAUTHORIZED': return { status: 'unauthorized', message: 'Sign in again to search places. Manual map selection still works.' };
-    default: return { status: 'unavailable', message: 'Place search is unavailable. You can retry or drag the map.' };
+    case 'TIMEOUT': return { status: 'timeout', message: translate(locale, 'locationPicker.error.timeout') };
+    case 'RATE_LIMITED': return { status: 'rate_limited', message: translate(locale, 'locationPicker.error.rateLimited') };
+    case 'CONFIGURATION_MISSING': return { status: 'configuration_missing', message: translate(locale, 'locationPicker.error.configuration') };
+    case 'UNAUTHORIZED': return { status: 'unauthorized', message: translate(locale, 'locationPicker.error.unauthorized') };
+    default: return { status: 'unavailable', message: translate(locale, 'locationPicker.error.unavailable') };
   }
 }
 

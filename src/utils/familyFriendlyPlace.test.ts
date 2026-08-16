@@ -5,6 +5,7 @@ import { PLACE_CATEGORIES, isPlaceCategory, type FamilyFriendlyPlaceRow } from '
 import { buildAppleMapsPlaceUrl, formatOpeningHours, formatPlaceAgeRange, formatPlaceDistance, mapFamilyFriendlyPlaceRow, placeMatchesFilters, placeSummaryFeatures, placeWhatIsHere } from '@/utils/familyFriendlyPlace';
 import { regionToPlaceViewport, validatePlaceQueryInput } from '@/utils/placeViewport';
 import { MOCK_FAMILY_FRIENDLY_PLACES } from '@/mocks/mockFamilyFriendlyPlaces';
+import { translate } from '@/i18n/core';
 
 const row: FamilyFriendlyPlaceRow = {
   id: '1', name: 'Fixture Park', slug: 'fixture-park', category: 'park', short_description: 'Test', full_description: null,
@@ -24,6 +25,11 @@ test('active/verified, category, environment, cost and age filters compose', () 
 test('family amenity and distance filters compose', () => { const place = { ...mapFamilyFriendlyPlaceRow(row), distanceMeters: 900 }; assert.equal(placeMatchesFilters(place, { toilets: true, shade: true, waterFountain: true, accessible: true, maxDistanceMeters: 1000 }), true); assert.equal(placeMatchesFilters(place, { highChairs: true }), false); assert.equal(placeMatchesFilters(place, { maxDistanceMeters: 500 }), false); });
 test('distance and card features stay compact', () => { const place = mapFamilyFriendlyPlaceRow({ ...row, distance_meters: 1230 }); assert.equal(formatPlaceDistance(place.distanceMeters), '1.2 km away'); assert.deepEqual(placeSummaryFeatures(place), ['Shade','Toilets','Stroller friendly']); });
 test('details age helper handles bounded and open ranges', () => { assert.equal(formatPlaceAgeRange(6, 36), '6 months – 3 years'); assert.equal(formatPlaceAgeRange(null, 24), 'Up to 2 years'); });
+test('place age facts are localized in Hebrew', () => {
+  const t = (key: Parameters<typeof translate>[1], params?: Parameters<typeof translate>[2]) => translate('he', key, params);
+  assert.equal(formatPlaceAgeRange(6, 36, 'he'), 'מ־6 חודשים עד 3 שנים');
+  assert.equal(placeWhatIsHere(mapFamilyFriendlyPlaceRow(row), t, 'he').at(-1), 'מתאים לגיל מ־6 חודשים עד 5 שנים');
+});
 test('details opening-hours helper renders supported schedules and ignores malformed data', () => { assert.equal(formatOpeningHours({ Monday: '09:00–17:00', Tuesday: ['09:00–12:00','14:00–17:00'] }), 'Monday: 09:00–17:00\nTuesday: 09:00–12:00, 14:00–17:00'); assert.equal(formatOpeningHours({ raw: { unsafe: true } }), null); });
 test('Apple Maps link targets the exact place point without exposing provider metadata', () => {
   assert.equal(buildAppleMapsPlaceUrl({ name: 'MUZA & Park', latitude: 32.10288, longitude: 34.79635 }), 'https://maps.apple.com/?ll=32.10288,34.79635&q=MUZA%20%26%20Park');

@@ -1,5 +1,6 @@
 import { useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
+import { currentAppLocale, translate } from '@/i18n';
 
 interface ReportInput {
   reportedUserId: string;
@@ -22,7 +23,7 @@ export function useReportAndBlock(): UseReportAndBlockResult {
   const submitReport = useCallback(async (input: ReportInput) => {
     const { data: userData } = await supabase.auth.getUser();
     const reporterId = userData.user?.id;
-    if (!reporterId) return 'Not signed in.';
+    if (!reporterId) return translate(currentAppLocale(), 'error.notSignedIn');
     const { error } = await supabase.from('reports').insert({
       reporter_id: reporterId,
       reported_user_id: input.reportedUserId,
@@ -30,25 +31,25 @@ export function useReportAndBlock(): UseReportAndBlockResult {
       reason: input.reason,
     });
     if (error) console.log('[ReportAndBlock] report failed', error.message);
-    return error ? "Couldn't send your report. Please try again." : null;
+    return error ? translate(currentAppLocale(), 'activity.reportError') : null;
   }, []);
 
   const blockUser = useCallback(async (userId: string) => {
     const { data: userData } = await supabase.auth.getUser();
     const blockerId = userData.user?.id;
-    if (!blockerId) return 'Not signed in.';
+    if (!blockerId) return translate(currentAppLocale(), 'error.notSignedIn');
     const { error } = await supabase.from('blocks').insert({ blocker_id: blockerId, blocked_id: userId });
     if (error) console.log('[ReportAndBlock] block failed', error.message);
-    return error ? "Couldn't block this person. Please try again." : null;
+    return error ? translate(currentAppLocale(), 'activity.blockError') : null;
   }, []);
 
   const unblockUser = useCallback(async (userId: string) => {
     const { data: userData } = await supabase.auth.getUser();
     const blockerId = userData.user?.id;
-    if (!blockerId) return 'Not signed in.';
+    if (!blockerId) return translate(currentAppLocale(), 'error.notSignedIn');
     const { error } = await supabase.from('blocks').delete().match({ blocker_id: blockerId, blocked_id: userId });
     if (error) console.log('[ReportAndBlock] unblock failed', error.message);
-    return error ? "Couldn't unblock this person. Please try again." : null;
+    return error ? translate(currentAppLocale(), 'blocked.errorTitle') : null;
   }, []);
 
   const isBlocked = useCallback(async (userId: string) => {

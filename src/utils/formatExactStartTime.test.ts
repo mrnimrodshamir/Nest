@@ -30,7 +30,7 @@ test('formatExactStartTime: a further-out future date shows weekday, month and d
   const now = new Date(2026, 6, 27, 8, 0); // Monday
   const start = new Date(2026, 6, 31, 21, 0); // Friday
   const result = formatExactStartTime(start.toISOString(), now);
-  assert.match(result, /^Fri, Jul 31 at/);
+  assert.match(result, /^Friday, July 31 at/);
 });
 
 test('formatExactStartTime: a past activity earlier today reads "Today at <time>", never a negative "In" value', () => {
@@ -45,8 +45,8 @@ test('formatExactStartTime: a past activity on an earlier date shows its exact d
   const now = new Date(2026, 6, 31, 12, 0);
   const start = new Date(2026, 6, 20, 9, 0);
   const result = formatExactStartTime(start.toISOString(), now);
-  const expectedWeekday = start.toLocaleDateString(undefined, { weekday: 'short' });
-  assert.match(result, new RegExp(`^${expectedWeekday}, Jul 20 at`));
+  const expectedWeekday = start.toLocaleDateString('en-US', { weekday: 'long' });
+  assert.match(result, new RegExp(`^${expectedWeekday}, July 20 at`));
 });
 
 test('formatExactStartTime: midnight boundary -- an activity one minute past midnight tonight is Tomorrow, not Today', () => {

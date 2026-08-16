@@ -12,6 +12,7 @@ import {
   validateCalendarEvent,
   type CalendarEventInfo,
 } from '@/utils/eventCalendar';
+import { currentAppLocale, translate } from '@/i18n';
 
 const STORAGE_PREFIX = 'nestup.calendarEvent.event.';
 const inFlight = new Map<string, Promise<{ success: boolean; error?: string }>>();
@@ -41,12 +42,12 @@ async function add(event: CalendarEventInfo): Promise<{ success: boolean; error?
   const existing = await AsyncStorage.getItem(`${STORAGE_PREFIX}${event.occurrenceId}`);
   if (existing) return { success: true };
   const { status } = await Calendar.requestCalendarPermissionsAsync();
-  if (status !== 'granted') return { success: false, error: 'Calendar permission denied' };
+  if (status !== 'granted') return { success: false, error: translate(currentAppLocale(), 'calendar.error.permission') };
   try {
     // Inside the try: enumerating calendars can itself fail, and a rejection
     // escaping here would bypass the {success:false} contract callers rely on.
     const calendarId = await writableCalendarId();
-    if (!calendarId) return { success: false, error: 'No writable calendar found' };
+    if (!calendarId) return { success: false, error: translate(currentAppLocale(), 'calendar.error.noWritable') };
     const eventId = await Calendar.createEventAsync(calendarId, {
       title: event.title,
       startDate: new Date(event.startsAt),
@@ -58,7 +59,7 @@ async function add(event: CalendarEventInfo): Promise<{ success: boolean; error?
     await AsyncStorage.setItem(`${STORAGE_PREFIX}${event.occurrenceId}`, eventId);
     return { success: true };
   } catch (error) {
-    return { success: false, error: error instanceof Error ? error.message : 'Could not add to calendar' };
+    return { success: false, error: translate(currentAppLocale(), 'calendar.error.add') };
   }
 }
 

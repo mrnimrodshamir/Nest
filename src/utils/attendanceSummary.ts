@@ -92,12 +92,15 @@ function buildSummary(
   childNames: string[],
   ageMonths: number | null,
 ): string {
-  if (comingAlone || childNames.length === 0) return 'coming alone';
+  const locale = currentAppLocale();
+  if (comingAlone || childNames.length === 0) return translate(locale, 'activity.attendance.summaryAlone');
   if (childNames.length === 1) {
     const age = formatAttendanceAge(ageMonths);
-    return age ? `coming with ${childNames[0]}, ${age}` : `coming with ${childNames[0]}`;
+    return age
+      ? translate(locale, 'activity.attendance.summaryWithAge', { name: childNames[0], age })
+      : translate(locale, 'activity.attendance.summaryWithOne', { name: childNames[0] });
   }
-  return `coming with ${childNames.length} children`;
+  return translate(locale, 'activity.attendance.summaryWithCount', { count: childNames.length });
 }
 
 /** Attendance exposes only the precision rendered here. Under two years

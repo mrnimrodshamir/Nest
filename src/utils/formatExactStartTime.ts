@@ -19,7 +19,10 @@ export function formatExactStartTime(iso: string, now: Date = new Date()): strin
       diffMinutes < 60
         ? translate(locale, 'time.inMinutes', { count: diffMinutes })
         : translate(locale, Math.round(diffMinutes / 60) === 1 ? 'time.inHours.one' : 'time.inHours.other', { count: Math.round(diffMinutes / 60) });
-    return `${translate(locale, 'time.todayAt', { time: timeLabel })} · ${relative}`;
+    return translate(locale, 'time.withRelative', {
+      exact: translate(locale, 'time.todayAt', { time: timeLabel }),
+      relative,
+    });
   }
 
   const tomorrow = new Date(now.getTime() + 86_400_000);
@@ -27,6 +30,6 @@ export function formatExactStartTime(iso: string, now: Date = new Date()): strin
     return translate(locale, 'time.tomorrowAt', { time: timeLabel });
   }
 
-  const dateLabel = start.toLocaleDateString(activeDateLocale(), { weekday: 'short', month: 'short', day: 'numeric' });
+  const dateLabel = start.toLocaleDateString(activeDateLocale(), { weekday: 'long', month: 'long', day: 'numeric' });
   return translate(locale, 'time.dateAt', { date: dateLabel, time: timeLabel });
 }
