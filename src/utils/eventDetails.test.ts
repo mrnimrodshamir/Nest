@@ -53,12 +53,21 @@ test('Event Details uses the shared root stack and Discovery without a competing
   assert.doesNotMatch(discovery, /EventsDiscoveryScreen|EventsDiscoveryView/);
 });
 
-test('Event Details never mounts a second controlled Apple map over Discovery', async () => {
+test('Event Details opening is fail-closed against native map and provider-image crashes', async () => {
   const screen = await readFile(new URL('../screens/EventDetailsScreen.tsx', import.meta.url), 'utf8');
   const discovery = await readFile(new URL('../screens/DiscoverScreen.tsx', import.meta.url), 'utf8');
   assert.match(discovery, /useIsFocused\(\)/);
   assert.match(discovery, /isFocused \? <MapView/);
-  assert.match(screen, /initialRegion=\{\{ \.\.\.eventCoordinate/);
-  assert.match(screen, /<Marker coordinate=\{eventCoordinate\}/);
-  assert.doesNotMatch(screen, /<Marker coordinate=\{event\.location\}/);
+  assert.doesNotMatch(screen, /react-native-maps|<MapView|<Marker/);
+  assert.doesNotMatch(screen, /<ContentImage|<ContentImageGallery/);
+  assert.match(screen, /<InfoRow icon=\{MapPin\}/);
+  assert.match(screen, /Build 36 P0/);
+});
+
+test('Event Details mounts native sheets only after the user requests them', async () => {
+  const screen = await readFile(new URL('../screens/EventDetailsScreen.tsx', import.meta.url), 'utf8');
+  assert.match(screen, /showCalendar \? \([\s\S]*<AddEventToCalendarSheet visible/);
+  assert.match(screen, /showAttendees \? \([\s\S]*<EventAttendeesSheet visible/);
+  assert.doesNotMatch(screen, /<AddEventToCalendarSheet visible=\{showCalendar\}/);
+  assert.doesNotMatch(screen, /<EventAttendeesSheet visible=\{showAttendees\}/);
 });

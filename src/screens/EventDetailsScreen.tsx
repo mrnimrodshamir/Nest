@@ -1,10 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import MapView, { Marker } from 'react-native-maps';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ArrowLeft, ArrowSquareOut, CalendarDots, CalendarPlus, Check, MapPin, Repeat, ShareNetwork, WarningCircle, WhatsappLogo } from 'phosphor-react-native';
-import { ContentImage } from '@/components/ContentImage';
-import { ContentImageGallery } from '@/components/ContentImageGallery';
 import { radius, spacing, theme, typography } from '@/theme';
 import type { EventDetails } from '@/types/event';
 import { buildEventDetailsPresentation } from '@/utils/eventPresentation';
@@ -24,7 +21,6 @@ import { PersonCard } from '@/components/PersonCard';
 import { EventAttendeesSheet } from '@/components/EventAttendeesSheet';
 import { track } from '@/lib/analytics';
 import { RenderGuard } from '@/components/RenderGuard';
-import { isValidCoordinate } from '@/utils/normalizedPlace';
 
 interface EventDetailsScreenProps {
   event: EventDetails;
@@ -69,7 +65,6 @@ function EventDetailsContent({ event, onBack, onOpenProfile }: EventDetailsScree
   const isInterrupted = event.lifecycle === 'cancelled' || event.lifecycle === 'postponed';
   const shareMessage = buildEventShareMessage({ occurrenceId: event.occurrence.id, title: event.title, startsAt: event.occurrence.startsAt, location: event.location.name ?? event.location.formattedAddress, status: event.occurrence.status });
   const calendarEvent = { occurrenceId: event.occurrence.id, title: event.title, description: event.description, startsAt: event.occurrence.startsAt, endsAt: event.occurrence.endsAt, locationName: event.location.name ?? event.location.formattedAddress, sourceUrl: event.source.sourceUrl, status: event.occurrence.status };
-  const eventCoordinate = { latitude: event.location.latitude, longitude: event.location.longitude };
   useEffect(() => {
     track('event_opened', { content_id: event.occurrence.id, source: event.source.provider });
   }, [event.occurrence.id, event.source.provider]);
@@ -84,10 +79,14 @@ function EventDetailsContent({ event, onBack, onOpenProfile }: EventDetailsScree
         <View style={styles.back} />
       </View>
       <ScrollView contentContainerStyle={styles.content}>
-        <RenderGuard resetKey={`media:${event.occurrence.id}`}>
-          <ContentImage asset={event.images?.cover} legacyUri={event.imageUrl} variant="cover" style={styles.hero} accessibilityLabel={`${event.title} event image`} deferUntilInteraction={false} fallback={<CalendarDots size={52} color={theme.brand.primary} weight="duotone" />} />
-          {Array.isArray(event.images?.gallery) && event.images.gallery.length ? <ContentImageGallery images={event.images.gallery} /> : null}
-        </RenderGuard>
+        {/* Build 36 P0: keep Event opening independent of provider-controlled
+            media and native detail-map mounts. TestFlight reports only an
+            RCTFatal bridge abort, so React error boundaries cannot protect
+            these native surfaces. The core Event, RSVP and actions remain
+            available while the crash source is fail-closed. */}
+        <View style={styles.hero} accessibilityLabel={`${event.title} event`}>
+          <CalendarDots size={52} color={theme.brand.primary} weight="duotone" />
+        </View>
         <View style={styles.labelRow}>
           <Text style={styles.category}>{content.categoryLabel}</Text>
           <View style={[styles.status, isInterrupted && styles.statusInterrupted]}>
@@ -107,19 +106,6 @@ function EventDetailsContent({ event, onBack, onOpenProfile }: EventDetailsScree
           <Pressable accessibilityRole="button" accessibilityLabel={t('place.shareWhatsAppLabel', { name: event.title })} style={styles.action} onPress={() => void openWhatsAppShare(shareMessage, undefined, { contentType: 'event', contentId: event.occurrence.id })}><WhatsappLogo size={18} color={theme.text.primary} weight="fill" /><Text style={styles.actionText}>{t('common.whatsapp')}</Text></Pressable>
         </View>
         <Pressable accessibilityRole="button" accessibilityLabel={t('event.addToCalendarLabel', { name: event.title })} style={styles.calendarAction} onPress={() => setShowCalendar(true)}><CalendarPlus size={18} color={theme.brand.primary} /><Text style={styles.link}>{t('common.addToCalendar')}</Text></Pressable>
-        {isValidCoordinate(eventCoordinate.latitude, eventCoordinate.longitude) ? (
-          <RenderGuard resetKey={`map:${event.occurrence.id}`}>
-            <MapView
-              style={styles.map}
-              initialRegion={{ ...eventCoordinate, latitudeDelta: 0.015, longitudeDelta: 0.015 }}
-              scrollEnabled={false}
-              zoomEnabled={false}
-              pointerEvents="none"
-            >
-              <Marker coordinate={eventCoordinate} />
-            </MapView>
-          </RenderGuard>
-        ) : null}
         {/* External event copy — rendered in whatever script it arrives in. */}
         {content.description ? <Text style={[styles.description, textAlignForContent(content.description, locale)]}>{content.description}</Text> : null}
         {event.priceNote ? <Section title={t('place.cost')} body={event.priceNote} /> : null}
@@ -172,10 +158,16 @@ function EventDetailsContent({ event, onBack, onOpenProfile }: EventDetailsScree
         {content.registrationLabel && content.registrationUrl ? <ExternalLink label={content.registrationLabel} url={content.registrationUrl} /> : null}
         {content.sourceLabel ? <View style={styles.source}><Text style={styles.sourceText}>{content.sourceLabel}</Text>{content.sourceUrl ? <ExternalLink label={t('event.viewSource')} url={content.sourceUrl} /> : null}</View> : null}
       </ScrollView>
-      <RenderGuard resetKey={`sheets:${event.occurrence.id}`}>
-        <AddEventToCalendarSheet visible={showCalendar} event={calendarEvent} onDismiss={() => setShowCalendar(false)} />
-        <EventAttendeesSheet visible={showAttendees} attendees={attendees} onDismiss={() => setShowAttendees(false)} onOpenProfile={onOpenProfile} />
-      </RenderGuard>
+      {showCalendar ? (
+        <RenderGuard resetKey={`calendar:${event.occurrence.id}`}>
+          <AddEventToCalendarSheet visible event={calendarEvent} onDismiss={() => setShowCalendar(false)} />
+        </RenderGuard>
+      ) : null}
+      {showAttendees ? (
+        <RenderGuard resetKey={`attendees:${event.occurrence.id}`}>
+          <EventAttendeesSheet visible attendees={attendees} onDismiss={() => setShowAttendees(false)} onOpenProfile={onOpenProfile} />
+        </RenderGuard>
+      ) : null}
     </SafeAreaView>
   );
 }
@@ -235,6 +227,8 @@ const styles = StyleSheet.create({
     maxHeight: HERO_MAX,
     borderRadius: radius.lg,
     backgroundColor: theme.background.surfaceAlt,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   labelRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm },
   category: { ...typography.footnote, color: theme.text.accent, textTransform: 'uppercase' },
@@ -249,7 +243,6 @@ const styles = StyleSheet.create({
   infoText: { flex: 1 },
   infoTitle: { ...typography.bodyMedium, color: theme.text.primary },
   infoBody: { ...typography.subhead, color: theme.text.secondary, marginTop: 2 },
-  map: { height: 180, borderRadius: radius.lg },
   description: { ...typography.body, color: theme.text.secondary, lineHeight: 23 },
   section: { paddingVertical: spacing.xs },
   sectionTitle: { ...typography.headline, color: theme.text.primary, marginBottom: spacing.xs },
