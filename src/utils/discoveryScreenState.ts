@@ -27,6 +27,14 @@ export interface DiscoverySelectionChange extends DiscoverySelectionState {
 
 const NO_REFETCH: readonly DiscoveryContentKey[] = Object.freeze([]);
 
+/** During a detail transition, a plain React Native wrapper owns touch
+ * suppression. Never put this transient prop on the native MapView itself:
+ * under iOS Fabric a MapView kept alive for delayed teardown can retain the
+ * disabled native responder after the screen becomes focused again. */
+export function discoveryMapPointerEvents(isFocused: boolean): 'auto' | 'none' {
+  return isFocused ? 'auto' : 'none';
+}
+
 /** Applies a content-type toggle.
  *
  *  Two rules are enforced here rather than in the component:

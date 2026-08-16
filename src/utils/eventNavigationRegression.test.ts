@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 import type { DiscoveryItem } from '@/types/discovery';
-import { handleDiscoveryItemIntent } from '@/utils/discoveryScreenState';
+import { discoveryMapPointerEvents, handleDiscoveryItemIntent } from '@/utils/discoveryScreenState';
 
 function eventItem(): Extract<DiscoveryItem, { type: 'event' }> {
   return {
@@ -70,5 +70,18 @@ test('BUILD 37 REGRESSION: Discovery delays MapKit teardown until navigation set
   assert.match(discovery, /MAP_BLUR_UNMOUNT_DELAY_MS = 700/);
   assert.match(discovery, /setTimeout\(\(\) => setMapMounted\(false\), MAP_BLUR_UNMOUNT_DELAY_MS\)/);
   assert.match(discovery, /mapMounted \? <MapView/);
-  assert.match(discovery, /pointerEvents=\{isFocused \? 'auto' : 'none'\}/);
+  assert.match(discovery, /pointerEvents=\{discoveryMapPointerEvents\(isFocused\)\}/);
+  const mapTag = discovery.slice(discovery.indexOf('{mapMounted ? <MapView'), discovery.indexOf('</MapView>'));
+  assert.doesNotMatch(mapTag, /pointerEvents=/, 'the native MapView must never own the transient navigation lock');
+  for (const prop of ['scrollEnabled', 'zoomEnabled', 'rotateEnabled', 'pitchEnabled']) {
+    assert.match(mapTag, new RegExp(`\\b${prop}\\b`), `${prop} must remain enabled`);
+  }
+});
+
+test('BUILD 38 P0: returning from every detail type restores map touches on focus', () => {
+  for (const type of ['event', 'activity', 'place'] as const) {
+    assert.equal(discoveryMapPointerEvents(true), 'auto', `${type}: map starts interactive`);
+    assert.equal(discoveryMapPointerEvents(false), 'none', `${type}: background map is safely suppressed`);
+    assert.equal(discoveryMapPointerEvents(true), 'auto', `${type}: back navigation deterministically releases the lock`);
+  }
 });

@@ -40,7 +40,7 @@ import { regionToPlaceViewport } from '@/utils/placeViewport';
 import { distanceMeters } from '@/utils/placeViewport';
 import { ALL_DISCOVERY_CONTENT, discoveryEmptyCopyKey, selectedContentKeys, toggleDiscoveryContent, visibleDiscoveryFailures } from '@/utils/discoveryPresentation';
 import { useI18n, textAlignForContent, type TranslationKey } from '@/i18n';
-import { applyContentSelectionChange, handleDiscoveryItemIntent } from '@/utils/discoveryScreenState';
+import { applyContentSelectionChange, discoveryMapPointerEvents, handleDiscoveryItemIntent } from '@/utils/discoveryScreenState';
 import { track } from '@/lib/analytics';
 import { displayedEventContent } from '../../supabase/functions/_shared/eventTranslation';
 import {
@@ -361,6 +361,13 @@ export function DiscoverScreen({ onOpenActivity, onOpenPlace, onOpenEvent, onHos
 
   return (
     <View style={styles.container}>
+      {/* Transition touch suppression belongs to this ordinary RN view, not
+          the native MapView. Build 38 put pointerEvents directly on MapView;
+          a MapKit view retained through the delayed blur teardown could return
+          visibly but keep its native responder disabled. The wrapper resets
+          synchronously to `auto` on focus while MapView gesture props remain
+          permanently enabled. */}
+      <View style={StyleSheet.absoluteFill} pointerEvents={discoveryMapPointerEvents(isFocused)}>
       {mapMounted ? <MapView
         ref={mapRef}
         provider={PROVIDER_DEFAULT}
@@ -370,7 +377,10 @@ export function DiscoverScreen({ onOpenActivity, onOpenPlace, onOpenEvent, onHos
         onRegionChangeComplete={setRegion}
         showsUserLocation
         showsMyLocationButton={false}
-        pointerEvents={isFocused ? 'auto' : 'none'}
+        scrollEnabled
+        zoomEnabled
+        rotateEnabled
+        pitchEnabled
       >
         {visibleActivities.map((activity) => {
           const item: DiscoveryItem = { type: 'activity', id: activity.id, data: activity };
@@ -398,7 +408,8 @@ export function DiscoverScreen({ onOpenActivity, onOpenPlace, onOpenEvent, onHos
           const item: DiscoveryItem = { type: 'event', id: event.occurrence.id, data: event };
           return <EventMapPin key={discoveryItemKey(item)} event={event} selected={discoverySelectionEquals(selectedItem, item)} onPress={() => openMarkerItem(item)} />;
         })}
-      </MapView> : <View style={StyleSheet.absoluteFill} />}
+      </MapView> : null}
+      </View>
 
       <SafeAreaView edges={['top']} style={styles.headerOverlay} pointerEvents="box-none">
         {searchOpen ? (
