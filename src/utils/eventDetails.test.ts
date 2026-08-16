@@ -57,7 +57,8 @@ test('Event Details opening is fail-closed against native map and provider-image
   const screen = await readFile(new URL('../screens/EventDetailsScreen.tsx', import.meta.url), 'utf8');
   const discovery = await readFile(new URL('../screens/DiscoverScreen.tsx', import.meta.url), 'utf8');
   assert.match(discovery, /useIsFocused\(\)/);
-  assert.match(discovery, /isFocused \? <MapView/);
+  assert.match(discovery, /mapMounted \? <MapView/);
+  assert.match(discovery, /MAP_BLUR_UNMOUNT_DELAY_MS = 700/);
   assert.doesNotMatch(screen, /react-native-maps|<MapView|<Marker/);
   assert.doesNotMatch(screen, /<ContentImage|<ContentImageGallery/);
   assert.match(screen, /<InfoRow icon=\{MapPin\}/);

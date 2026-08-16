@@ -76,19 +76,23 @@ export function ActivityMapPin({ activity, selected, onPress }: ActivityMapPinPr
       onPress={() => onPress(activity)}
       accessibilityLabel={`Activity: ${activity.title}`}
       accessibilityRole="button"
-      // tracksViewChanges only while selected — leaving this permanently
-      // true tanks map performance with many pins.
-      tracksViewChanges={selected}
+      // Keep the custom annotation snapshot immutable. Selection is announced
+      // accessibly while the detail route opens; it never resizes MapKit UI.
+      accessibilityState={{ selected }}
+      tracksViewChanges={false}
       anchor={{ x: 0.5, y: 0.5 }}
     >
-      <View style={[styles.pin, { backgroundColor: color }, selected && styles.pinSelected]}>
-        <Icon size={selected ? 22 : 18} color={theme.text.inverse} weight="fill" />
+      <View style={styles.hitTarget}>
+        <View style={[styles.pin, { backgroundColor: color }]}>
+          <Icon size={18} color={theme.text.inverse} weight="fill" />
+        </View>
       </View>
     </Marker>
   );
 }
 
 const styles = StyleSheet.create({
+  hitTarget: { width: 52, height: 52, alignItems: 'center', justifyContent: 'center' },
   pin: {
     // Bigger and higher-contrast than Apple Maps' own default markers —
     // a plain 30px dot read as "just another map element" rather than a
@@ -105,12 +109,6 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     shadowOffset: { width: 0, height: 2 },
     elevation: 4,
-  },
-  pinSelected: {
-    width: 46,
-    height: 46,
-    borderRadius: 23,
-    borderWidth: 4,
   },
 });
 

@@ -45,7 +45,6 @@ import { track } from '@/lib/analytics';
 import { displayedEventContent } from '../../supabase/functions/_shared/eventTranslation';
 import {
   discoveryItemKey,
-  discoveryItemCoordinate,
   discoveryCoordinateInViewport,
   discoverySelectionEquals,
   filterDiscoveryItems,
@@ -117,8 +116,11 @@ const PLACE_QUICK_FILTERS: Array<{ key: PlaceQuickFilter; label: string }> = [
 
 const SNAP_POINTS = ['22%', '50%', '92%'];
 const SHEET_PEEK_INDEX = 0;
-const SHEET_HALF_INDEX = 1;
-const SHEET_FULL_INDEX = 2;
+// Let the iOS marker press and navigation transition finish before MapKit
+// receives a full annotation teardown. Immediate teardown is the common edge
+// in the Build 37 RCTFatal reports.
+const MAP_BLUR_UNMOUNT_DELAY_MS = 700;
+const MARKER_OPEN_DELAY_MS = 120;
 
 interface DiscoverScreenProps {
   onOpenActivity: (activity: Activity) => void;
@@ -132,6 +134,7 @@ interface DiscoverScreenProps {
 
 export function DiscoverScreen({ onOpenActivity, onOpenPlace, onOpenEvent, onHostActivity, mockActivities, mockPlaces, mockEvents }: DiscoverScreenProps) {
   const isFocused = useIsFocused();
+  const [mapMounted, setMapMounted] = useState(true);
   const previewMode = mockActivities !== undefined || mockPlaces !== undefined || mockEvents !== undefined;
   const initialCoordinate = mockActivities?.[0] ?? mockPlaces?.[0] ?? mockEvents?.[0]?.location ?? FALLBACK_LOCATION;
   const [region, setRegion] = useState<Region>({
@@ -161,10 +164,23 @@ export function DiscoverScreen({ onOpenActivity, onOpenPlace, onOpenEvent, onHos
   const mapRef = useRef<MapView>(null);
   const sheetRef = useRef<BottomSheet>(null);
   const listRef = useRef<React.ElementRef<typeof BottomSheetFlatList>>(null);
-  const sheetIndex = useRef(SHEET_PEEK_INDEX);
   const userMovedMap = useRef(false);
   const centeredOnUser = useRef(false);
   const hasFocusedOnce = useRef(false);
+  const markerOpenTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (isFocused) {
+      setMapMounted(true);
+      return undefined;
+    }
+    const timer = setTimeout(() => setMapMounted(false), MAP_BLUR_UNMOUNT_DELAY_MS);
+    return () => clearTimeout(timer);
+  }, [isFocused]);
+
+  useEffect(() => () => {
+    if (markerOpenTimer.current) clearTimeout(markerOpenTimer.current);
+  }, []);
 
   useEffect(() => {
     track('discovery_opened', { discovery_mode: 'mixed' });
@@ -221,7 +237,6 @@ export function DiscoverScreen({ onOpenActivity, onOpenPlace, onOpenEvent, onHos
       hasFocusedOnce.current = true;
     }
     sheetRef.current?.snapToIndex(SHEET_PEEK_INDEX);
-    sheetIndex.current = SHEET_PEEK_INDEX;
     // Query refresh callbacks intentionally follow the current shared region.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []));
@@ -263,27 +278,27 @@ export function DiscoverScreen({ onOpenActivity, onOpenPlace, onOpenEvent, onHos
   const visibleEvents = useMemo(() => visibleItems.flatMap((item) => item.type === 'event' ? [item.data] : []), [visibleItems]);
   const placeMapItems = useMemo(() => clusterPlacesForRegion(visiblePlaces, region), [region, visiblePlaces]);
 
-  const focusItem = useCallback((item: DiscoveryItem) => {
-    setSelectedItem({ type: item.type, id: item.id });
-    mapRef.current?.animateToRegion({
-      ...discoveryItemCoordinate(item),
-      latitudeDelta: 0.018,
-      longitudeDelta: 0.018,
-    }, 350);
-    if (sheetIndex.current === SHEET_PEEK_INDEX) sheetRef.current?.snapToIndex(SHEET_HALF_INDEX);
-    const index = listItems.findIndex((candidate) => discoveryItemKey(candidate) === discoveryItemKey(item));
-    if (index >= 0) listRef.current?.scrollToIndex({ index, animated: true, viewPosition: 0.2 });
-  }, [listItems]);
-
   const openItem = useCallback((item: DiscoveryItem) => {
     handleDiscoveryItemIntent(item, 'open', {
-      preview: focusItem,
+      preview: (previewed) => setSelectedItem({ type: previewed.type, id: previewed.id }),
       trackOpen: (opened) => track('discovery_item_opened', { content_type: opened.type, content_id: opened.id, discovery_mode: 'mixed' }),
       openActivity: (opened) => onOpenActivity(opened.data),
       openPlace: (opened) => onOpenPlace(opened.data),
       openEvent: (opened) => onOpenEvent(opened.data),
     });
-  }, [focusItem, onOpenActivity, onOpenEvent, onOpenPlace]);
+  }, [onOpenActivity, onOpenEvent, onOpenPlace]);
+
+  const openMarkerItem = useCallback((item: DiscoveryItem) => {
+    // Do not issue native preview commands from a MapKit marker callback.
+    // Make the target visible immediately, then open it after the native press
+    // dispatch has left the annotation view.
+    setSelectedItem({ type: item.type, id: item.id });
+    if (markerOpenTimer.current) clearTimeout(markerOpenTimer.current);
+    markerOpenTimer.current = setTimeout(() => {
+      markerOpenTimer.current = null;
+      openItem(item);
+    }, MARKER_OPEN_DELAY_MS);
+  }, [openItem]);
 
   const changeContentSelection = useCallback((key: DiscoveryContentKey) => {
     // The rules (keep one type selected; drop a now-hidden selected marker)
@@ -346,7 +361,7 @@ export function DiscoverScreen({ onOpenActivity, onOpenPlace, onOpenEvent, onHos
 
   return (
     <View style={styles.container}>
-      {isFocused ? <MapView
+      {mapMounted ? <MapView
         ref={mapRef}
         provider={PROVIDER_DEFAULT}
         style={StyleSheet.absoluteFill}
@@ -355,14 +370,15 @@ export function DiscoverScreen({ onOpenActivity, onOpenPlace, onOpenEvent, onHos
         onRegionChangeComplete={setRegion}
         showsUserLocation
         showsMyLocationButton={false}
+        pointerEvents={isFocused ? 'auto' : 'none'}
       >
         {visibleActivities.map((activity) => {
           const item: DiscoveryItem = { type: 'activity', id: activity.id, data: activity };
-          return <ActivityMapPin key={discoveryItemKey(item)} activity={activity} selected={discoverySelectionEquals(selectedItem, item)} onPress={() => focusItem(item)} />;
+          return <ActivityMapPin key={discoveryItemKey(item)} activity={activity} selected={discoverySelectionEquals(selectedItem, item)} onPress={() => openMarkerItem(item)} />;
         })}
         {placeMapItems.map((mapItem) => mapItem.kind === 'place' ? (() => {
           const item: DiscoveryItem = { type: 'place', id: mapItem.place.id, data: mapItem.place };
-          return <PlaceMapPin key={discoveryItemKey(item)} place={mapItem.place} selected={discoverySelectionEquals(selectedItem, item)} onPress={() => focusItem(item)} />;
+          return <PlaceMapPin key={discoveryItemKey(item)} place={mapItem.place} selected={discoverySelectionEquals(selectedItem, item)} onPress={() => openMarkerItem(item)} />;
         })() : (
           <PlaceClusterMarker
             key={`place-cluster:${mapItem.id}`}
@@ -380,7 +396,7 @@ export function DiscoverScreen({ onOpenActivity, onOpenPlace, onOpenEvent, onHos
         ))}
         {visibleEvents.map((event) => {
           const item: DiscoveryItem = { type: 'event', id: event.occurrence.id, data: event };
-          return <EventMapPin key={discoveryItemKey(item)} event={event} selected={discoverySelectionEquals(selectedItem, item)} onPress={() => focusItem(item)} />;
+          return <EventMapPin key={discoveryItemKey(item)} event={event} selected={discoverySelectionEquals(selectedItem, item)} onPress={() => openMarkerItem(item)} />;
         })}
       </MapView> : <View style={StyleSheet.absoluteFill} />}
 
@@ -446,7 +462,7 @@ export function DiscoverScreen({ onOpenActivity, onOpenPlace, onOpenEvent, onHos
         <Plus size={24} color={theme.text.inverse} weight="bold" />
       </Pressable>
 
-      <BottomSheet ref={sheetRef} index={SHEET_PEEK_INDEX} snapPoints={SNAP_POINTS} enableDynamicSizing={false} onChange={(index) => { sheetIndex.current = index; }} backgroundStyle={styles.sheetBackground} handleIndicatorStyle={styles.sheetHandle}>
+      <BottomSheet ref={sheetRef} index={SHEET_PEEK_INDEX} snapPoints={SNAP_POINTS} enableDynamicSizing={false} backgroundStyle={styles.sheetBackground} handleIndicatorStyle={styles.sheetHandle}>
         {/* ONE CHILD ONLY.
             @gorhom/bottom-sheet renders `children` into a single container of
             height `sheetHeight - handleHeight` with `overflow: hidden`, and its
