@@ -35,6 +35,21 @@ export function discoveryMapPointerEvents(isFocused: boolean): 'auto' | 'none' {
   return isFocused ? 'auto' : 'none';
 }
 
+/** A focused Discovery screen receives a fresh native MapKit responder after
+ * every completed away-and-back navigation cycle. The old delayed teardown
+ * was intentionally removed: it could be cancelled by a fast return and keep
+ * the exact stale native view that Build 39 showed as frozen. */
+export function nextDiscoveryMapGeneration(
+  generation: number,
+  hasBlurredSinceLastFocus: boolean,
+): number {
+  return hasBlurredSinceLastFocus ? generation + 1 : generation;
+}
+
+export function shouldRefreshDiscoveryMapForAppState(previous: string, next: string): boolean {
+  return previous !== 'active' && next === 'active';
+}
+
 /** Applies a content-type toggle.
  *
  *  Two rules are enforced here rather than in the component:

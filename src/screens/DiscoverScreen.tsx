@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { FlatList, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { AppState, FlatList, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useFocusEffect, useIsFocused } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MapView, { PROVIDER_DEFAULT, type Region } from 'react-native-maps';
@@ -29,18 +29,15 @@ import { useFamilyFriendlyPlaces } from '@/hooks/useFamilyFriendlyPlaces';
 import { useNearbyActivities } from '@/hooks/useNearbyActivities';
 import { radius, spacing, theme, typography, iconDefaults } from '@/theme';
 import type { Activity, ActivityCategory } from '@/types/activity';
-import { CATEGORY_LABELS } from '@/types/activity';
 import type { DiscoveryContentKey, DiscoveryContentSelection, DiscoveryItem, DiscoverySelection, DiscoverySort } from '@/types/discovery';
 import type { EventCategory, EventDetails } from '@/types/event';
-import { EVENT_CATEGORY_LABELS } from '@/types/event';
 import type { FamilyFriendlyPlace, PlaceCategory, PlaceFilters } from '@/types/familyFriendlyPlace';
-import { PLACE_CATEGORY_LABELS } from '@/types/familyFriendlyPlace';
 import { clusterPlacesForRegion } from '@/utils/placeClustering';
 import { regionToPlaceViewport } from '@/utils/placeViewport';
 import { distanceMeters } from '@/utils/placeViewport';
 import { ALL_DISCOVERY_CONTENT, discoveryEmptyCopyKey, selectedContentKeys, toggleDiscoveryContent, visibleDiscoveryFailures } from '@/utils/discoveryPresentation';
 import { useI18n, textAlignForContent, type TranslationKey } from '@/i18n';
-import { applyContentSelectionChange, discoveryMapPointerEvents, handleDiscoveryItemIntent } from '@/utils/discoveryScreenState';
+import { applyContentSelectionChange, discoveryMapPointerEvents, handleDiscoveryItemIntent, nextDiscoveryMapGeneration, shouldRefreshDiscoveryMapForAppState } from '@/utils/discoveryScreenState';
 import { track } from '@/lib/analytics';
 import { displayedEventContent } from '../../supabase/functions/_shared/eventTranslation';
 import {
@@ -52,25 +49,25 @@ import {
   sortDiscoveryItems,
 } from '@/utils/unifiedDiscovery';
 
-const ACTIVITY_CATEGORIES: Array<{ key: ActivityCategory | 'all'; label: string }> = [
-  { key: 'all', label: 'All activities' },
-  { key: 'stroller_walk', label: CATEGORY_LABELS.stroller_walk },
-  { key: 'coffee_meetup', label: CATEGORY_LABELS.coffee_meetup },
-  { key: 'baby_playtime', label: CATEGORY_LABELS.baby_playtime },
-  { key: 'picnic', label: CATEGORY_LABELS.picnic },
-  { key: 'fitness', label: CATEGORY_LABELS.fitness },
-  { key: 'yoga', label: CATEGORY_LABELS.yoga },
-  { key: 'workshop', label: CATEGORY_LABELS.workshop },
+const ACTIVITY_CATEGORIES: Array<{ key: ActivityCategory | 'all'; labelKey: TranslationKey }> = [
+  { key: 'all', labelKey: 'filters.allActivities' },
+  { key: 'stroller_walk', labelKey: 'activity.category.stroller_walk' },
+  { key: 'coffee_meetup', labelKey: 'activity.category.coffee_meetup' },
+  { key: 'baby_playtime', labelKey: 'activity.category.baby_playtime' },
+  { key: 'picnic', labelKey: 'activity.category.picnic' },
+  { key: 'fitness', labelKey: 'activity.category.fitness' },
+  { key: 'yoga', labelKey: 'activity.category.yoga' },
+  { key: 'workshop', labelKey: 'activity.category.workshop' },
 ];
 
-const PLACE_CATEGORIES: Array<{ key: PlaceCategory | 'all'; label: string }> = [
-  { key: 'all', label: 'All places' },
-  { key: 'playground', label: 'Playgrounds' },
-  { key: 'park', label: 'Parks' },
-  { key: 'indoor_playground', label: 'Indoor play' },
-  { key: 'museum', label: 'Museums' },
-  { key: 'beach', label: 'Beaches' },
-  { key: 'pool', label: 'Pools' },
+const PLACE_CATEGORIES: Array<{ key: PlaceCategory | 'all'; labelKey: TranslationKey }> = [
+  { key: 'all', labelKey: 'filters.allPlaces' },
+  { key: 'playground', labelKey: 'place.category.playground' },
+  { key: 'park', labelKey: 'place.category.park' },
+  { key: 'indoor_playground', labelKey: 'place.category.indoor_playground' },
+  { key: 'museum', labelKey: 'place.category.museum' },
+  { key: 'beach', labelKey: 'place.category.beach' },
+  { key: 'pool', labelKey: 'place.category.pool' },
 ];
 
 // Both tables carry translation KEYS, resolved at render time. Holding
@@ -89,15 +86,15 @@ const SORT_OPTIONS: Array<{ key: DiscoverySort; labelKey: TranslationKey }> = [
   { key: 'alphabetical', labelKey: 'sort.alphabetical' },
 ];
 
-const EVENT_CATEGORIES: Array<{ key: EventCategory | 'all'; label: string }> = [
-  { key: 'all', label: 'All events' },
-  { key: 'story_time', label: EVENT_CATEGORY_LABELS.story_time },
-  { key: 'workshop', label: EVENT_CATEGORY_LABELS.workshop },
-  { key: 'performance', label: EVENT_CATEGORY_LABELS.performance },
-  { key: 'festival', label: EVENT_CATEGORY_LABELS.festival },
-  { key: 'museum', label: EVENT_CATEGORY_LABELS.museum },
-  { key: 'library', label: EVENT_CATEGORY_LABELS.library },
-  { key: 'park', label: EVENT_CATEGORY_LABELS.park },
+const EVENT_CATEGORIES: Array<{ key: EventCategory | 'all'; labelKey: TranslationKey }> = [
+  { key: 'all', labelKey: 'filters.allEvents' },
+  { key: 'story_time', labelKey: 'event.category.story_time' },
+  { key: 'workshop', labelKey: 'event.category.workshop' },
+  { key: 'performance', labelKey: 'event.category.performance' },
+  { key: 'festival', labelKey: 'event.category.festival' },
+  { key: 'museum', labelKey: 'event.category.museum' },
+  { key: 'library', labelKey: 'event.category.library' },
+  { key: 'park', labelKey: 'event.category.park' },
 ];
 
 type PlaceQuickFilter =
@@ -105,21 +102,17 @@ type PlaceQuickFilter =
   | 'indoor' | 'outdoor' | 'free' | 'paid'
   | 'changingTable' | 'toilets' | 'highChairs' | 'shade' | 'waterFountain' | 'accessible';
 
-const PLACE_QUICK_FILTERS: Array<{ key: PlaceQuickFilter; label: string }> = [
-  { key: 'babies', label: 'Babies' }, { key: 'toddlers', label: 'Toddlers' }, { key: 'kids', label: 'Kids' },
-  { key: 'indoor', label: 'Indoor' }, { key: 'outdoor', label: 'Outdoor' },
-  { key: 'free', label: 'Free' }, { key: 'paid', label: 'Paid' },
-  { key: 'changingTable', label: 'Changing table' }, { key: 'toilets', label: 'Toilets' },
-  { key: 'highChairs', label: 'High chairs' }, { key: 'shade', label: 'Shade' },
-  { key: 'waterFountain', label: 'Water' }, { key: 'accessible', label: 'Accessible' },
+const PLACE_QUICK_FILTERS: Array<{ key: PlaceQuickFilter; labelKey: TranslationKey }> = [
+  { key: 'babies', labelKey: 'filters.babies' }, { key: 'toddlers', labelKey: 'filters.toddlers' }, { key: 'kids', labelKey: 'filters.kids' },
+  { key: 'indoor', labelKey: 'place.fact.indoor' }, { key: 'outdoor', labelKey: 'place.fact.outdoor' },
+  { key: 'free', labelKey: 'place.fact.free' }, { key: 'paid', labelKey: 'place.fact.paid' },
+  { key: 'changingTable', labelKey: 'place.fact.changingTable' }, { key: 'toilets', labelKey: 'place.fact.toilets' },
+  { key: 'highChairs', labelKey: 'place.fact.highChairs' }, { key: 'shade', labelKey: 'place.fact.shade' },
+  { key: 'waterFountain', labelKey: 'place.fact.water' }, { key: 'accessible', labelKey: 'place.fact.accessible' },
 ];
 
 const SNAP_POINTS = ['22%', '50%', '92%'];
 const SHEET_PEEK_INDEX = 0;
-// Let the iOS marker press and navigation transition finish before MapKit
-// receives a full annotation teardown. Immediate teardown is the common edge
-// in the Build 37 RCTFatal reports.
-const MAP_BLUR_UNMOUNT_DELAY_MS = 700;
 const MARKER_OPEN_DELAY_MS = 120;
 
 interface DiscoverScreenProps {
@@ -134,7 +127,7 @@ interface DiscoverScreenProps {
 
 export function DiscoverScreen({ onOpenActivity, onOpenPlace, onOpenEvent, onHostActivity, mockActivities, mockPlaces, mockEvents }: DiscoverScreenProps) {
   const isFocused = useIsFocused();
-  const [mapMounted, setMapMounted] = useState(true);
+  const [mapGeneration, setMapGeneration] = useState(0);
   const previewMode = mockActivities !== undefined || mockPlaces !== undefined || mockEvents !== undefined;
   const initialCoordinate = mockActivities?.[0] ?? mockPlaces?.[0] ?? mockEvents?.[0]?.location ?? FALLBACK_LOCATION;
   const [region, setRegion] = useState<Region>({
@@ -167,20 +160,33 @@ export function DiscoverScreen({ onOpenActivity, onOpenPlace, onOpenEvent, onHos
   const userMovedMap = useRef(false);
   const centeredOnUser = useRef(false);
   const hasFocusedOnce = useRef(false);
+  const mapBlurredSinceLastFocus = useRef(false);
   const markerOpenTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const appState = useRef(AppState.currentState);
 
   useEffect(() => {
     if (isFocused) {
-      setMapMounted(true);
+      setMapGeneration((current) => nextDiscoveryMapGeneration(current, mapBlurredSinceLastFocus.current));
+      mapBlurredSinceLastFocus.current = false;
       return undefined;
     }
-    const timer = setTimeout(() => setMapMounted(false), MAP_BLUR_UNMOUNT_DELAY_MS);
-    return () => clearTimeout(timer);
+    mapBlurredSinceLastFocus.current = true;
+    return undefined;
   }, [isFocused]);
 
   useEffect(() => () => {
     if (markerOpenTimer.current) clearTimeout(markerOpenTimer.current);
   }, []);
+
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', (nextState) => {
+      if (isFocused && shouldRefreshDiscoveryMapForAppState(appState.current, nextState)) {
+        setMapGeneration((current) => current + 1);
+      }
+      appState.current = nextState;
+    });
+    return () => subscription.remove();
+  }, [isFocused]);
 
   useEffect(() => {
     track('discovery_opened', { discovery_mode: 'mixed' });
@@ -361,14 +367,14 @@ export function DiscoverScreen({ onOpenActivity, onOpenPlace, onOpenEvent, onHos
 
   return (
     <View style={styles.container}>
-      {/* Transition touch suppression belongs to this ordinary RN view, not
-          the native MapView. Build 38 put pointerEvents directly on MapView;
-          a MapKit view retained through the delayed blur teardown could return
-          visibly but keep its native responder disabled. The wrapper resets
-          synchronously to `auto` on focus while MapView gesture props remain
-          permanently enabled. */}
+      {/* Never tear MapKit down during the navigation transition. Opening a
+          marker performs no map/list/sheet native command; on refocus the key
+          changes and React creates a fresh native responder before the parent
+          can interact. The ordinary wrapper suppresses touches only while the
+          screen is covered. */}
       <View style={StyleSheet.absoluteFill} pointerEvents={discoveryMapPointerEvents(isFocused)}>
-      {mapMounted ? <MapView
+      <MapView
+        key={`discovery-map-${mapGeneration}`}
         ref={mapRef}
         provider={PROVIDER_DEFAULT}
         style={StyleSheet.absoluteFill}
@@ -408,7 +414,7 @@ export function DiscoverScreen({ onOpenActivity, onOpenPlace, onOpenEvent, onHos
           const item: DiscoveryItem = { type: 'event', id: event.occurrence.id, data: event };
           return <EventMapPin key={discoveryItemKey(item)} event={event} selected={discoverySelectionEquals(selectedItem, item)} onPress={() => openMarkerItem(item)} />;
         })}
-      </MapView> : null}
+      </MapView>
       </View>
 
       <SafeAreaView edges={['top']} style={styles.headerOverlay} pointerEvents="box-none">
@@ -453,7 +459,7 @@ export function DiscoverScreen({ onOpenActivity, onOpenPlace, onOpenEvent, onHos
         {contentSelection.places ? (
           <>
             <FilterRow label={t('discovery.places')} items={PLACE_CATEGORIES} selected={selectedPlaceCategory} onSelect={(value) => { setSelectedPlaceCategory(value); track('discovery_filter_changed', { filter_type: 'place_category', filter_value: value }); }} />
-            <View style={styles.wrapChips}>{PLACE_QUICK_FILTERS.map((item) => <CategoryChip key={item.key} label={item.label} selected={placeQuickFilters.has(item.key)} onPress={() => { setPlaceQuickFilters((current) => togglePlaceQuickFilter(current, item.key)); track('discovery_filter_changed', { filter_type: 'place_quick_filter', filter_value: item.key }); }} />)}</View>
+            <View style={styles.wrapChips}>{PLACE_QUICK_FILTERS.map((item) => <CategoryChip key={item.key} label={t(item.labelKey)} selected={placeQuickFilters.has(item.key)} onPress={() => { setPlaceQuickFilters((current) => togglePlaceQuickFilter(current, item.key)); track('discovery_filter_changed', { filter_type: 'place_quick_filter', filter_value: item.key }); }} />)}</View>
           </>
         ) : null}
         {contentSelection.events ? <FilterRow label={t('discovery.events')} items={EVENT_CATEGORIES} selected={selectedEventCategory} onSelect={(value) => { setSelectedEventCategory(value); track('discovery_filter_changed', { filter_type: 'event_category', filter_value: value }); }} /> : null}
@@ -523,8 +529,9 @@ export function DiscoverScreen({ onOpenActivity, onOpenPlace, onOpenEvent, onHos
   );
 }
 
-function FilterRow<TKey extends string>({ label, items, selected, onSelect }: { label?: string; items: Array<{ key: TKey; label: string }>; selected: TKey; onSelect: (key: TKey) => void }) {
-  return <View>{label ? <Text style={styles.filterLabel}>{label}</Text> : null}<FlatList horizontal showsHorizontalScrollIndicator={false} data={items} keyExtractor={(item) => item.key} contentContainerStyle={styles.chipRow} renderItem={({ item }) => <CategoryChip label={item.label} selected={selected === item.key} onPress={() => onSelect(item.key)} />} /></View>;
+function FilterRow<TKey extends string>({ label, items, selected, onSelect }: { label?: string; items: Array<{ key: TKey; labelKey: TranslationKey }>; selected: TKey; onSelect: (key: TKey) => void }) {
+  const { t } = useI18n();
+  return <View>{label ? <Text style={styles.filterLabel}>{label}</Text> : null}<FlatList horizontal showsHorizontalScrollIndicator={false} data={items} keyExtractor={(item) => item.key} contentContainerStyle={styles.chipRow} renderItem={({ item }) => <CategoryChip label={t(item.labelKey)} selected={selected === item.key} onPress={() => onSelect(item.key)} />} /></View>;
 }
 
 function ToolbarButton({ icon: Icon, label, onPress, active = false }: { icon: React.ComponentType<{ size: number; color: string }>; label: string; onPress: () => void; active?: boolean }) {

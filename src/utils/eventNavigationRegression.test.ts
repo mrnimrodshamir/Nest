@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 import type { DiscoveryItem } from '@/types/discovery';
-import { discoveryMapPointerEvents, handleDiscoveryItemIntent } from '@/utils/discoveryScreenState';
+import { discoveryMapPointerEvents, handleDiscoveryItemIntent, nextDiscoveryMapGeneration, shouldRefreshDiscoveryMapForAppState } from '@/utils/discoveryScreenState';
 
 function eventItem(): Extract<DiscoveryItem, { type: 'event' }> {
   return {
@@ -65,13 +65,11 @@ test('BUILD 37 REGRESSION: map markers are static, easy to tap, and open without
   assert.doesNotMatch(markerHandler, /animateToRegion|snapToIndex|scrollToIndex/);
 });
 
-test('BUILD 37 REGRESSION: Discovery delays MapKit teardown until navigation settles', async () => {
+test('BUILD 39 REGRESSION: Discovery never tears MapKit down during navigation', async () => {
   const discovery = await readFile(new URL('../screens/DiscoverScreen.tsx', import.meta.url), 'utf8');
-  assert.match(discovery, /MAP_BLUR_UNMOUNT_DELAY_MS = 700/);
-  assert.match(discovery, /setTimeout\(\(\) => setMapMounted\(false\), MAP_BLUR_UNMOUNT_DELAY_MS\)/);
-  assert.match(discovery, /mapMounted \? <MapView/);
+  assert.doesNotMatch(discovery, /MAP_BLUR_UNMOUNT_DELAY_MS|setMapMounted|mapMounted/);
   assert.match(discovery, /pointerEvents=\{discoveryMapPointerEvents\(isFocused\)\}/);
-  const mapTag = discovery.slice(discovery.indexOf('{mapMounted ? <MapView'), discovery.indexOf('</MapView>'));
+  const mapTag = discovery.slice(discovery.indexOf('\n      <MapView'), discovery.indexOf('</MapView>'));
   assert.doesNotMatch(mapTag, /pointerEvents=/, 'the native MapView must never own the transient navigation lock');
   for (const prop of ['scrollEnabled', 'zoomEnabled', 'rotateEnabled', 'pitchEnabled']) {
     assert.match(mapTag, new RegExp(`\\b${prop}\\b`), `${prop} must remain enabled`);
@@ -84,4 +82,25 @@ test('BUILD 38 P0: returning from every detail type restores map touches on focu
     assert.equal(discoveryMapPointerEvents(false), 'none', `${type}: background map is safely suppressed`);
     assert.equal(discoveryMapPointerEvents(true), 'auto', `${type}: back navigation deterministically releases the lock`);
   }
+});
+
+test('BUILD 39 P0: every away-and-back cycle replaces the native map responder', async () => {
+  let generation = 0;
+  assert.equal(nextDiscoveryMapGeneration(generation, false), 0, 'first focus keeps the initial map');
+  for (let cycle = 1; cycle <= 10; cycle += 1) {
+    generation = nextDiscoveryMapGeneration(generation, true);
+    assert.equal(generation, cycle);
+  }
+
+  const discovery = await readFile(new URL('../screens/DiscoverScreen.tsx', import.meta.url), 'utf8');
+  assert.match(discovery, /key=\{`discovery-map-\$\{mapGeneration\}`\}/);
+  assert.match(discovery, /mapBlurredSinceLastFocus\.current = true/);
+  assert.match(discovery, /nextDiscoveryMapGeneration\(current, mapBlurredSinceLastFocus\.current\)/);
+});
+
+test('BUILD 39 P0: foregrounding refreshes a stale native map responder', () => {
+  assert.equal(shouldRefreshDiscoveryMapForAppState('background', 'active'), true);
+  assert.equal(shouldRefreshDiscoveryMapForAppState('inactive', 'active'), true);
+  assert.equal(shouldRefreshDiscoveryMapForAppState('active', 'active'), false);
+  assert.equal(shouldRefreshDiscoveryMapForAppState('active', 'background'), false);
 });
