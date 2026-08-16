@@ -44,13 +44,19 @@ export function dateLocaleTag(locale: AppLocale): string {
  *  passing `undefined` (which asks the DEVICE, not the app, and so would show
  *  Hebrew dates to someone who chose French). */
 let activeDateLocaleTag: string = DATE_LOCALE_TAG[DEFAULT_LOCALE];
+let activeAppLocale: AppLocale = DEFAULT_LOCALE;
 
 export function setActiveDateLocale(locale: AppLocale): void {
+  activeAppLocale = locale;
   activeDateLocaleTag = dateLocaleTag(locale);
 }
 
 export function activeDateLocale(): string {
   return activeDateLocaleTag;
+}
+
+export function currentAppLocale(): AppLocale {
+  return activeAppLocale;
 }
 
 export function isRtlLocale(locale: AppLocale): boolean {

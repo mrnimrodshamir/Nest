@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, Image, Pressable, StyleSheet } from 'react-native';
 import { theme, typography, spacing, radius } from '@/theme';
+import { textAlignForContent, useI18n } from '@/i18n';
 
 export type PersonCardSize = 'compact' | 'row' | 'hero';
 
@@ -36,6 +37,7 @@ export function PersonCard({
   accessoryRight,
   accessibilityLabel,
 }: PersonCardProps) {
+  const { locale } = useI18n();
   const initial = name[0]?.toUpperCase() ?? '?';
 
   if (size === 'compact') {
@@ -74,10 +76,10 @@ export function PersonCard({
           )}
         </View>
         <View style={styles.heroNameRow}>
-          <Text style={styles.heroName}>{name}</Text>
+          <Text style={[styles.heroName, textAlignForContent(name, locale)]}>{name}</Text>
           {badge}
         </View>
-        {subtitle ? <Text style={styles.heroSubtitle}>{subtitle}</Text> : null}
+        {subtitle ? <Text style={[styles.heroSubtitle, textAlignForContent(subtitle, locale)]}>{subtitle}</Text> : null}
       </Pressable>
     );
   }
@@ -99,13 +101,13 @@ export function PersonCard({
       </View>
       <View style={styles.rowBody}>
         <View style={styles.rowNameLine}>
-          <Text style={styles.rowName} numberOfLines={1}>
+          <Text style={[styles.rowName, textAlignForContent(name, locale)]} numberOfLines={1}>
             {name}
           </Text>
           {badge}
         </View>
         {subtitle ? (
-          <Text style={styles.rowSubtitle} numberOfLines={1}>
+          <Text style={[styles.rowSubtitle, textAlignForContent(subtitle, locale)]} numberOfLines={1}>
             {subtitle}
           </Text>
         ) : null}

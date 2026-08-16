@@ -6,6 +6,7 @@ import { theme, typography, spacing, radius } from '@/theme';
 import { NestUpLogo } from '@/components/NestUpLogo';
 import { StaticPrimaryButton } from '@/components/StaticPrimaryButton';
 import { APP_NAME } from '@/constants/brand';
+import { useI18n } from '@/i18n';
 
 interface WelcomeScreenProps {
   onContinueWithApple: () => void;
@@ -20,6 +21,7 @@ export function WelcomeScreen({
   onLogIn,
   appleLoading = false,
 }: WelcomeScreenProps) {
+  const { t, isRTL } = useI18n();
   return (
     <View style={styles.container}>
       <View style={styles.blobTop} />
@@ -27,13 +29,11 @@ export function WelcomeScreen({
       <View style={styles.blobBottom} />
 
       <SafeAreaView style={styles.content} edges={['top', 'bottom']}>
-        <View style={styles.hero}>
+        <View style={[styles.hero, isRTL && styles.heroRtl]}>
           <NestUpLogo size={128} />
           <Text style={styles.wordmark}>{APP_NAME}</Text>
-          <Text style={styles.tagline}>Parenting is better together.</Text>
-          <Text style={styles.subtagline}>
-            Meet nearby parents, join activities, and build real friendships.
-          </Text>
+          <Text style={[styles.tagline, isRTL && styles.rtlText]}>{t('auth.tagline')}</Text>
+          <Text style={[styles.subtagline, isRTL && styles.rtlText]}>{t('auth.subtitle')}</Text>
         </View>
 
         <View style={styles.actions}>
@@ -41,18 +41,18 @@ export function WelcomeScreen({
             style={[styles.appleButton, appleLoading && styles.buttonDisabled]}
             onPress={onContinueWithApple}
             disabled={appleLoading}
-            accessibilityLabel="Continue with Apple"
+            accessibilityLabel={t('auth.continueApple')}
             accessibilityRole="button"
           >
             <AppleLogo size={18} color={theme.text.inverse} weight="fill" />
-            <Text style={styles.appleButtonLabel}>Continue with Apple</Text>
+            <Text style={styles.appleButtonLabel}>{t('auth.continueApple')}</Text>
           </Pressable>
 
-          <StaticPrimaryButton label="Sign up with email" onPress={onSignUpWithEmail} />
+          <StaticPrimaryButton label={t('auth.signUpEmail')} onPress={onSignUpWithEmail} />
 
           <Pressable style={styles.loginLink} onPress={onLogIn} hitSlop={8}>
             <Text style={styles.loginLinkLabel}>
-              Already on {APP_NAME}? <Text style={styles.loginLinkAccent}>Log in</Text>
+              {t('auth.alreadyHere', { appName: APP_NAME })} <Text style={styles.loginLinkAccent}>{t('auth.logIn')}</Text>
             </Text>
           </Pressable>
         </View>
@@ -94,6 +94,8 @@ const styles = StyleSheet.create({
   },
   content: { flex: 1, justifyContent: 'space-between', paddingHorizontal: spacing['2xl'] },
   hero: { flex: 1, justifyContent: 'center', alignItems: 'flex-start' },
+  heroRtl: { alignItems: 'flex-end' },
+  rtlText: { textAlign: 'right', writingDirection: 'rtl' },
   wordmark: {
     ...typography.display,
     fontSize: 44,

@@ -17,7 +17,7 @@ import { CoverFrame } from '@/components/CoverFrame';
 import { ComingWithSelector } from '@/components/ComingWithSelector';
 import { useAuth } from '@/hooks/useAuth';
 import { useChildren } from '@/hooks/useChildren';
-import { CATEGORY_LABELS, DURATION_OPTIONS_MINUTES } from '@/types/activity';
+import { DURATION_OPTIONS_MINUTES } from '@/types/activity';
 import type { ActivityCategory } from '@/types/activity';
 import type { SelectedActivityLocation } from '@/types/place';
 import {
@@ -37,6 +37,7 @@ import {
   resolveActivityFormMode,
   startTimeValidationMessage,
 } from '@/utils/activityFormMode';
+import { activityCategoryLabel, useI18n } from '@/i18n';
 
 const STAGE_LABELS: Record<CreateActivityStage, string> = {
   saving: 'Saving…',
@@ -92,6 +93,7 @@ export function ActivityForm({
   onSubmit,
   footer,
 }: ActivityFormProps) {
+  const { t } = useI18n();
   const behavior = resolveActivityFormMode(mode);
   const editValues = mode === 'edit' ? initialValues : null;
   const [reviewMode, setReviewMode] = useState(false);
@@ -261,13 +263,13 @@ export function ActivityForm({
 
   const reviewChildSummary =
     hostChildIds.length === 0
-      ? 'Coming alone'
+      ? t('activityForm.comingAlone')
       : children
           .filter((c) => hostChildIds.includes(c.id))
           .map((c) => c.name)
-          .join(', ') || 'Coming alone';
+          .join(', ') || t('activityForm.comingAlone');
 
-  const primaryLabel = isSubmitting && stage ? STAGE_LABELS[stage] : behavior.showsReview && !reviewMode ? 'Review' : submitLabel;
+  const primaryLabel = isSubmitting && stage ? STAGE_LABELS[stage] : behavior.showsReview && !reviewMode ? t('activityForm.review') : submitLabel;
 
   return (
     <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
@@ -278,12 +280,12 @@ export function ActivityForm({
           </CoverFrame>
           <Text style={styles.generatedTitle}>{title}</Text>
 
-          <ReviewRow label="Category" value={CATEGORY_LABELS[activityType] ?? CATEGORY_LABELS.other} />
-          <ReviewRow label="When" value={reviewDateTimeSummary} />
-          <ReviewRow label="Duration" value={formatDuration(durationMinutes)} />
-          <ReviewRow label="Location" value={locationPresentation.title} />
+          <ReviewRow label={t('activityForm.category')} value={activityCategoryLabel(activityType, t)} />
+          <ReviewRow label={t('activityForm.when')} value={reviewDateTimeSummary} />
+          <ReviewRow label={t('activityForm.duration')} value={formatDuration(durationMinutes)} />
+          <ReviewRow label={t('activityForm.location')} value={locationPresentation.title} />
           {locationPresentation.address ? (
-            <ReviewRow label="Address" value={locationPresentation.address} />
+            <ReviewRow label={t('activityForm.address')} value={locationPresentation.address} />
           ) : null}
           <View style={styles.reviewMapWrapper}>
             <MapView
@@ -299,17 +301,17 @@ export function ActivityForm({
               <MapPin size={28} color={theme.brand.primary} weight="fill" />
             </View>
           </View>
-          <ReviewRow label="Capacity" value={noLimit ? 'No limit' : `${maxParticipants} people`} />
-          <ReviewRow label="Coming with" value={reviewChildSummary} />
-          {description.trim() ? <ReviewRow label="Details" value={description.trim()} /> : null}
+          <ReviewRow label={t('activityForm.capacity')} value={noLimit ? t('activityForm.noLimit') : t('activityForm.people', { count: maxParticipants })} />
+          <ReviewRow label={t('activityForm.comingWith')} value={reviewChildSummary} />
+          {description.trim() ? <ReviewRow label={t('activityForm.details')} value={description.trim()} /> : null}
 
           <Pressable onPress={() => setReviewMode(false)} style={styles.editDetailsLink} hitSlop={8}>
-            <Text style={styles.customizeLink}>Edit details</Text>
+            <Text style={styles.customizeLink}>{t('activityForm.editDetails')}</Text>
           </Pressable>
         </View>
       ) : (
         <>
-          <Text style={styles.sectionLabel}>Activity type</Text>
+          <Text style={styles.sectionLabel}>{t('activityForm.activityType')}</Text>
           <CategoryPicker selected={activityType} onSelect={setActivityType} />
 
           <CoverFrame variant="hero" radius={radius.lg} style={styles.coverPreview}>
@@ -324,15 +326,15 @@ export function ActivityForm({
           <Pressable style={styles.uploadCoverButton} onPress={handlePickCoverPhoto}>
             <Camera size={16} color={theme.text.primary} />
             <Text style={styles.uploadCoverLabel}>
-              {coverUri ? 'Change activity cover photo' : 'Upload an activity cover photo'}
+              {coverUri ? t('activityForm.changeCover') : t('activityForm.uploadCover')}
             </Text>
           </Pressable>
 
           {titleCustomized ? (
-            <Field label="Title">
+            <Field label={t('activityForm.title')}>
               <TextInput
                 style={styles.input}
-                placeholder="Stroller walk along the park"
+                placeholder={t('activityForm.titlePlaceholder')}
                 placeholderTextColor={theme.text.muted}
                 value={title}
                 onChangeText={setTitle}
@@ -343,7 +345,7 @@ export function ActivityForm({
                   hitSlop={8}
                   style={styles.revertTitleLink}
                 >
-                  <Text style={styles.customizeLink}>Use automatic title</Text>
+                  <Text style={styles.customizeLink}>{t('activityForm.useAutomaticTitle')}</Text>
                 </Pressable>
               )}
             </Field>
@@ -353,13 +355,13 @@ export function ActivityForm({
                 {title}
               </Text>
               <Pressable onPress={() => setTitleCustomized(true)} hitSlop={8}>
-                <Text style={styles.customizeLink}>Customize title</Text>
+                <Text style={styles.customizeLink}>{t('activityForm.customizeTitle')}</Text>
               </Pressable>
             </View>
           )}
 
           <DateTimeField
-            label="Date and start time"
+            label={t('activityForm.dateTime')}
             value={startsAt}
             onChange={(date) => {
               setStartsAt(date);
@@ -369,7 +371,7 @@ export function ActivityForm({
             hasValue={hasSelectedStartTime}
           />
 
-          <Text style={styles.sectionLabel}>Duration</Text>
+          <Text style={styles.sectionLabel}>{t('activityForm.duration')}</Text>
           <View style={styles.chipWrap}>
             {DURATION_OPTIONS_MINUTES.map((minutes) => (
               <CategoryChip
@@ -388,7 +390,7 @@ export function ActivityForm({
             <NumberStepper value={durationMinutes} min={15} max={480} onChange={setDurationMinutes} />
           )}
 
-          <Text style={styles.sectionLabel}>Location</Text>
+          <Text style={styles.sectionLabel}>{t('activityForm.location')}</Text>
           <LocationPicker
             latitude={latitude}
             longitude={longitude}
@@ -402,10 +404,10 @@ export function ActivityForm({
             selectedLocation={selectedLocation}
             autoCenterOnMount={mode === 'create'}
           />
-          <Field label="Location name">
+          <Field label={t('locationPicker.name')}>
             <TextInput
               style={styles.input}
-              placeholder="e.g. HaYarkon Park, main entrance"
+              placeholder={t('locationPicker.namePlaceholder')}
               placeholderTextColor={theme.text.muted}
               value={locationName}
               onChangeText={(name) => {
@@ -416,28 +418,28 @@ export function ActivityForm({
 
           <ComingWithSelector children={children} selectedChildIds={hostChildIds} onChange={setHostChildIds} />
 
-          <Text style={styles.sectionLabel}>Capacity, age range & details</Text>
+          <Text style={styles.sectionLabel}>{t('activityForm.more')}</Text>
           <View style={styles.moreSection}>
-            <Text style={styles.sectionLabel}>Max participants</Text>
+            <Text style={styles.sectionLabel}>{t('activityForm.maxParticipants')}</Text>
             <View style={styles.row}>
               {!noLimit && (
                 <NumberStepper value={maxParticipants} min={2} max={100} onChange={setMaxParticipants} />
               )}
               <View style={styles.inlineCheckbox}>
                 <Checkbox checked={noLimit} onToggle={() => setNoLimit((v) => !v)}>
-                  No limit
+                  {t('activityForm.noLimit')}
                 </Checkbox>
               </View>
             </View>
 
-            <Text style={styles.sectionLabel}>Baby age range</Text>
+            <Text style={styles.sectionLabel}>{t('activityForm.ageRange')}</Text>
             <Checkbox checked={anyAge} onToggle={() => setAnyAge((v) => !v)}>
-              Any age welcome
+              {t('activityForm.anyAge')}
             </Checkbox>
             {!anyAge && (
               <View style={styles.ageRangeGroup}>
                 <View>
-                  <Text style={styles.ageRangeLabel}>Minimum age</Text>
+                  <Text style={styles.ageRangeLabel}>{t('activityForm.minimumAge')}</Text>
                   <YearsMonthsPicker
                     years={minYears}
                     months={minMonths}
@@ -448,7 +450,7 @@ export function ActivityForm({
                   />
                 </View>
                 <View>
-                  <Text style={styles.ageRangeLabel}>Maximum age</Text>
+                  <Text style={styles.ageRangeLabel}>{t('activityForm.maximumAge')}</Text>
                   <YearsMonthsPicker
                     years={maxYears}
                     months={maxMonths}
@@ -461,10 +463,10 @@ export function ActivityForm({
               </View>
             )}
 
-            <Field label="Details (optional)">
+            <Field label={t('activityForm.detailsOptional')}>
               <TextInput
                 style={[styles.input, styles.textArea]}
-                placeholder="Example: Bring water and a mat. We'll meet near the main entrance."
+                placeholder={t('activityForm.detailsPlaceholder')}
                 placeholderTextColor={theme.text.muted}
                 value={description}
                 onChangeText={setDescription}

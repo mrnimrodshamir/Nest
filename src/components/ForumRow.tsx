@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { ChatsCircle } from 'phosphor-react-native';
 import { theme, typography, spacing, radius } from '@/theme';
-import { useI18n, textAlignForContent } from '@/i18n';
+import { isolateText, useI18n, textAlignForContent } from '@/i18n';
 import { unreadBadgeLabel } from '@/utils/chatSections';
 import { formatRelativeTime } from '@/utils/formatRelativeTime';
 import type { ForumSummary } from '@/hooks/useForums';
@@ -20,13 +20,13 @@ export function ForumRow({ forum, onPress }: { forum: ForumSummary; onPress: () 
 
   const preview = forum.lastMessagePreview
     ? forum.lastMessageSenderName
-      ? `${forum.lastMessageSenderName}: ${forum.lastMessagePreview}`
+      ? `${isolateText(forum.lastMessageSenderName)}: ${isolateText(forum.lastMessagePreview)}`
       : forum.lastMessagePreview
     : null;
 
   // The preview is user-written and may be in either language regardless of
   // the UI locale, so it follows its own script rather than the interface's.
-  const previewDirection = textAlignForContent(preview, locale);
+  const previewDirection = textAlignForContent(forum.lastMessagePreview ?? preview, locale);
   const badge = unreadBadgeLabel(forum.unreadCount);
 
   return (

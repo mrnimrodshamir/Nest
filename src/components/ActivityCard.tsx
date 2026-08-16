@@ -2,13 +2,12 @@ import React from 'react';
 import { View, Text, Image, Pressable, StyleSheet } from 'react-native';
 import { theme, typography, spacing, radius } from '@/theme';
 import type { Activity } from '@/types/activity';
-import { CATEGORY_LABELS } from '@/types/activity';
 import { CoverImage } from '@/components/CoverImage';
 import { CoverFrame } from '@/components/CoverFrame';
 import { formatExactStartTime } from '@/utils/formatExactStartTime';
 import { resolveBadges, type ActivityRelationship } from '@/utils/activityLifecycle';
 import { activityCapacityPresentation } from '@/utils/activityCapacity';
-import { useI18n } from '@/i18n';
+import { activityCategoryLabel, textAlignForContent, useI18n } from '@/i18n';
 
 interface ActivityCardProps {
   activity: Activity;
@@ -39,7 +38,7 @@ export function ActivityCard({
   relationship = 'none',
 }: ActivityCardProps) {
   const isRail = variant === 'rail';
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   // Relationship is the viewer's own state, which outranks the raw count.
   const capacity = activityCapacityPresentation({
     capacity: activity.capacity,
@@ -76,7 +75,7 @@ export function ActivityCard({
             <View style={styles.pillRow}>
               <View style={styles.categoryPill}>
                 <Text style={styles.categoryPillText} numberOfLines={1}>
-                  {CATEGORY_LABELS[activity.category] ?? CATEGORY_LABELS.other}
+                  {activityCategoryLabel(activity.category, t)}
                 </Text>
               </View>
               {badges.lifecycle && (
@@ -95,7 +94,7 @@ export function ActivityCard({
       </CoverFrame>
 
       <View style={styles.body}>
-        <Text style={isRail ? styles.titleRail : styles.titleFeed} numberOfLines={isRail ? 2 : 1}>
+        <Text style={[isRail ? styles.titleRail : styles.titleFeed, textAlignForContent(activity.title, locale)]} numberOfLines={isRail ? 2 : 1}>
           {activity.title}
         </Text>
 

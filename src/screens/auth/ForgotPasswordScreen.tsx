@@ -7,6 +7,7 @@ import { FormField } from '@/components/FormField';
 import { StaticPrimaryButton } from '@/components/StaticPrimaryButton';
 import { isValidEmail } from '@/utils/validation';
 import { useAuth } from '@/hooks/useAuth';
+import { isolateText, useI18n } from '@/i18n';
 
 interface ForgotPasswordScreenProps {
   onBack: () => void;
@@ -14,6 +15,7 @@ interface ForgotPasswordScreenProps {
 
 export function ForgotPasswordScreen({ onBack }: ForgotPasswordScreenProps) {
   const { resetPassword } = useAuth();
+  const { t, isRTL } = useI18n();
   const [email, setEmail] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -26,7 +28,7 @@ export function ForgotPasswordScreen({ onBack }: ForgotPasswordScreenProps) {
   const handleSubmit = async () => {
     if (inFlightRef.current) return;
     if (!isValidEmail(email)) {
-      setError('Enter a valid email address');
+      setError(t('onboarding.emailInvalid'));
       return;
     }
     inFlightRef.current = true;
@@ -42,24 +44,20 @@ export function ForgotPasswordScreen({ onBack }: ForgotPasswordScreenProps) {
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <View style={styles.content}>
-        <Pressable onPress={onBack} style={styles.backButton} accessibilityLabel="Back">
-          <ArrowLeft size={20} color={theme.text.primary} />
+        <Pressable onPress={onBack} style={styles.backButton} accessibilityLabel={t('common.back')}>
+          <ArrowLeft size={20} color={theme.text.primary} style={isRTL ? styles.flipped : undefined} />
         </Pressable>
 
-        <Text style={styles.title}>Reset password</Text>
+        <Text style={[styles.title, isRTL && styles.rtlText]}>{t('auth.resetTitle')}</Text>
 
         {sent ? (
-          <Text style={styles.subtitle}>
-            If an account exists for {email.trim()}, we've sent a password reset link.
-          </Text>
+          <Text style={[styles.subtitle, isRTL && styles.rtlText]}>{t('auth.resetSent', { email: isolateText(email.trim()) })}</Text>
         ) : (
           <>
-            <Text style={styles.subtitle}>
-              Enter your email and we'll send you a link to reset your password.
-            </Text>
+            <Text style={[styles.subtitle, isRTL && styles.rtlText]}>{t('auth.resetInstructions')}</Text>
             <View style={styles.form}>
               <FormField
-                label="Email"
+                label={t('onboarding.email')}
                 placeholder="you@example.com"
                 value={email}
                 onChangeText={setEmail}
@@ -67,8 +65,9 @@ export function ForgotPasswordScreen({ onBack }: ForgotPasswordScreenProps) {
                 autoCorrect={false}
                 keyboardType="email-address"
                 error={error}
+                forceLTR
               />
-              <StaticPrimaryButton label="Send reset link" onPress={handleSubmit} loading={isSubmitting} />
+              <StaticPrimaryButton label={t('auth.sendReset')} onPress={handleSubmit} loading={isSubmitting} />
             </View>
           </>
         )}
@@ -92,4 +91,6 @@ const styles = StyleSheet.create({
   title: { ...typography.title1, color: theme.text.primary, marginBottom: spacing.sm },
   subtitle: { ...typography.body, color: theme.text.secondary, marginBottom: spacing['2xl'] },
   form: { gap: spacing.lg },
+  flipped: { transform: [{ scaleX: -1 }] },
+  rtlText: { textAlign: 'right', writingDirection: 'rtl' },
 });

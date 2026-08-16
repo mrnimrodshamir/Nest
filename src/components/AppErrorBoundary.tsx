@@ -4,7 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '@/lib/supabase';
 import { PrimaryButton } from '@/components/PrimaryButton';
 import { theme, typography, spacing } from '@/theme';
-import { APP_NAME } from '@/constants/brand';
+import { currentAppLocale, translate } from '@/i18n/core';
 
 interface Props {
   children: React.ReactNode;
@@ -50,15 +50,13 @@ export class AppErrorBoundary extends React.Component<Props, State> {
 
   render() {
     if (this.state.hasError) {
+      const locale = currentAppLocale();
       return (
         <View style={styles.container}>
-          <Text style={styles.title}>We hit a snag</Text>
-          <Text style={styles.body}>
-            {APP_NAME} needs to reset your session to keep going. Your account is safe — you'll
-            just need to sign in again.
-          </Text>
+          <Text style={styles.title}>{translate(locale, 'appError.title')}</Text>
+          <Text style={styles.body}>{translate(locale, 'appError.body')}</Text>
           <PrimaryButton
-            label="Reset and continue"
+            label={translate(locale, 'appError.reset')}
             onPress={this.handleRecover}
             loading={this.state.isRecovering}
           />

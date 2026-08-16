@@ -345,7 +345,7 @@ function ChildrenEditor({ children, onAdd, onUpdate, onRemove, onSetDefault }: C
           {error && <Text style={styles.formError}>{error}</Text>}
           <View style={styles.childEditorActions}>
             <Pressable style={styles.childCancel} onPress={() => setEditingId(null)}>
-              <Text style={styles.childCancelLabel}>Cancel</Text>
+              <Text style={styles.childCancelLabel}>{t('common.cancel')}</Text>
             </Pressable>
             <View style={styles.childSaveButton}>
               <PrimaryButton label="Save" onPress={handleSave} loading={isSaving} />

@@ -6,6 +6,7 @@ import { CategoryArtwork } from '@/components/CategoryArtwork';
 import { CoverFrame } from '@/components/CoverFrame';
 import { CATEGORY_LABELS } from '@/types/activity';
 import type { ActivityCategory } from '@/types/activity';
+import { activityCategoryLabel, useI18n } from '@/i18n';
 
 const ACTIVITY_TYPES = Object.keys(CATEGORY_LABELS) as ActivityCategory[];
 
@@ -20,6 +21,7 @@ interface CategoryPickerProps {
  *  Activity Detail, Chats, this preview), so a category's visual identity
  *  is consistent everywhere the moment it's chosen. */
 export function CategoryPicker({ selected, onSelect }: CategoryPickerProps) {
+  const { t } = useI18n();
   return (
     <ScrollView
       horizontal
@@ -35,7 +37,7 @@ export function CategoryPicker({ selected, onSelect }: CategoryPickerProps) {
             style={styles.item}
             accessibilityRole="button"
             accessibilityState={{ selected: isSelected }}
-            accessibilityLabel={CATEGORY_LABELS[category]}
+            accessibilityLabel={activityCategoryLabel(category, t)}
           >
             <CoverFrame
               variant="thumb"
@@ -50,7 +52,7 @@ export function CategoryPicker({ selected, onSelect }: CategoryPickerProps) {
               )}
             </CoverFrame>
             <Text style={[styles.label, isSelected && styles.labelSelected]} numberOfLines={2}>
-              {CATEGORY_LABELS[category]}
+              {activityCategoryLabel(category, t)}
             </Text>
           </Pressable>
         );

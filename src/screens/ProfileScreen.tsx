@@ -35,10 +35,10 @@ interface ProfileScreenProps {
   onOpenBlockedUsers: () => void;
 }
 
-const NOTIFICATION_LABELS: Record<keyof NotificationPreferences, string> = {
-  activity_changes: 'Activity updates',
-  chat_messages: 'New messages',
-  reminders: 'Reminders before activities',
+const NOTIFICATION_LABEL_KEYS: Record<keyof NotificationPreferences, 'profile.notification.activityChanges' | 'profile.notification.chatMessages' | 'profile.notification.reminders'> = {
+  activity_changes: 'profile.notification.activityChanges',
+  chat_messages: 'profile.notification.chatMessages',
+  reminders: 'profile.notification.reminders',
 };
 
 /** The Profile tab -- the permanent home for every personal and account
@@ -58,7 +58,7 @@ export function ProfileScreen({ onEditProfile, onOpenMyActivities, onOpenBlocked
   const [showNotificationSheet, setShowNotificationSheet] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  const { t } = useI18n();
+  const { t, isRTL } = useI18n();
 
   const handleSignOut = () => {
     Alert.alert(t('profile.signOutConfirm'), undefined, [
@@ -69,18 +69,18 @@ export function ProfileScreen({ onEditProfile, onOpenMyActivities, onOpenBlocked
 
   const handleDeleteAccount = () => {
     Alert.alert(
-      'Delete your account?',
-      'This permanently removes your profile, children, activities, and messages. This cannot be undone.',
+      t('profile.deleteConfirmTitle'),
+      t('profile.deleteConfirmBody'),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Delete account',
+          text: t('profile.deleteAccount'),
           style: 'destructive',
           onPress: async () => {
             setIsDeleting(true);
             const err = await deleteAccount();
             setIsDeleting(false);
-            if (err) Alert.alert("Couldn't delete your account", err);
+            if (err) Alert.alert(t('profile.deleteError'), err);
           },
         },
       ],
@@ -89,7 +89,7 @@ export function ProfileScreen({ onEditProfile, onOpenMyActivities, onOpenBlocked
 
   // Built from the FULL children list, never children[0] or the default
   // child — see utils/formatParentSubtitle.ts for the documented rule.
-  const childSummary = formatParentSubtitle(children, profile?.parentRole ?? null);
+  const childSummary = formatParentSubtitle(children, profile?.parentRole ?? null, t);
 
   // Read from the installed binary, so this line identifies the build a tester
   // is actually running rather than what the repo says it should be.
@@ -102,7 +102,7 @@ export function ProfileScreen({ onEditProfile, onOpenMyActivities, onOpenBlocked
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <ScrollView contentContainerStyle={styles.content}>
-        <PersonCard size="hero" name={profile?.displayName ?? `${APP_NAME} member`} avatarUrl={profile?.avatarUrl ?? null} subtitle={childSummary} />
+        <PersonCard size="hero" name={profile?.displayName ?? t('profile.memberFallback', { appName: APP_NAME })} avatarUrl={profile?.avatarUrl ?? null} subtitle={childSummary} />
         <Text style={styles.email}>{profile?.email}</Text>
 
         <Pressable style={styles.editLink} onPress={onEditProfile}>
@@ -121,9 +121,9 @@ export function ProfileScreen({ onEditProfile, onOpenMyActivities, onOpenBlocked
         </View>
         {profile && (
           <View style={styles.notificationCard}>
-            {(Object.keys(NOTIFICATION_LABELS) as Array<keyof NotificationPreferences>).map((key) => (
+            {(Object.keys(NOTIFICATION_LABEL_KEYS) as Array<keyof NotificationPreferences>).map((key) => (
               <View key={key} style={styles.notificationRow}>
-                <Text style={styles.notificationLabel}>{NOTIFICATION_LABELS[key]}</Text>
+                <Text style={[styles.notificationLabel, isRTL && styles.rtlText]}>{t(NOTIFICATION_LABEL_KEYS[key])}</Text>
                 <Switch
                   value={profile.notificationPreferences[key]}
                   onValueChange={async (value) => {
@@ -166,7 +166,7 @@ export function ProfileScreen({ onEditProfile, onOpenMyActivities, onOpenBlocked
 
         <Pressable style={styles.deleteButton} onPress={handleDeleteAccount} disabled={isDeleting}>
           <Trash size={14} color={theme.text.muted} />
-          <Text style={styles.deleteButtonLabel}>{isDeleting ? 'Deleting…' : 'Delete account'}</Text>
+          <Text style={styles.deleteButtonLabel}>{isDeleting ? t('profile.deletingAccount') : t('profile.deleteAccount')}</Text>
         </Pressable>
 
         {/* Footer metadata: quiet, read-only, and selectable so a tester can
@@ -207,6 +207,7 @@ function MenuRow({
   isLast?: boolean;
   disabled?: boolean;
 }) {
+  const { isRTL } = useI18n();
   return (
     <Pressable
       style={[styles.menuRow, !isLast && styles.menuRowDivider]}
@@ -217,7 +218,7 @@ function MenuRow({
     >
       <Icon size={18} color={theme.text.secondary} />
       <Text style={styles.menuRowLabel}>{label}</Text>
-      {!disabled && <CaretRight size={14} color={theme.text.muted} />}
+      {!disabled && <CaretRight size={14} color={theme.text.muted} style={isRTL ? styles.flipped : undefined} />}
     </Pressable>
   );
 }
@@ -265,6 +266,8 @@ const styles = StyleSheet.create({
   },
   notificationRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   notificationLabel: { ...typography.subhead, color: theme.text.secondary },
+  rtlText: { textAlign: 'right', writingDirection: 'rtl' },
+  flipped: { transform: [{ scaleX: -1 }] },
   signOutButton: {
     flexDirection: 'row',
     alignItems: 'center',

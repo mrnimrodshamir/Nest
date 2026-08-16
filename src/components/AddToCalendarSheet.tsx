@@ -3,6 +3,7 @@ import { View, Text, Pressable, Modal, StyleSheet, Linking } from 'react-native'
 import { CalendarPlus, GoogleLogo, X } from 'phosphor-react-native';
 import { theme, typography, spacing, radius } from '@/theme';
 import { addActivityToAppleCalendar, buildGoogleCalendarUrl } from '@/lib/activityCalendar';
+import { useI18n } from '@/i18n';
 
 export interface CalendarActivityInfo {
   id: string;
@@ -20,6 +21,7 @@ interface AddToCalendarSheetProps {
 }
 
 export function AddToCalendarSheet({ visible, activity, onDismiss }: AddToCalendarSheetProps) {
+  const { t, isRTL } = useI18n();
   const [status, setStatus] = useState<string | null>(null);
   const [isAdding, setIsAdding] = useState(false);
 
@@ -29,7 +31,7 @@ export function AddToCalendarSheet({ visible, activity, onDismiss }: AddToCalend
     setStatus(null);
     try {
       const result = await addActivityToAppleCalendar(activity);
-      setStatus(result.success ? 'Added to your calendar' : result.error ?? 'Could not add to calendar');
+      setStatus(result.success ? t('calendar.added') : result.error ?? t('calendar.addError'));
       if (result.success) setTimeout(onDismiss, 900);
     } finally {
       setIsAdding(false);
@@ -46,8 +48,8 @@ export function AddToCalendarSheet({ visible, activity, onDismiss }: AddToCalend
       <View style={styles.overlay}>
         <View style={styles.sheet}>
           <View style={styles.header}>
-            <Text style={styles.title}>Add to your calendar?</Text>
-            <Pressable onPress={onDismiss} style={styles.closeButton} hitSlop={8} accessibilityLabel="Close">
+            <Text style={[styles.title, isRTL && styles.rtlText]}>{t('calendar.title')}</Text>
+            <Pressable onPress={onDismiss} style={styles.closeButton} hitSlop={8} accessibilityLabel={t('common.close', { what: t('calendar.title') })}>
               <X size={16} color={theme.text.secondary} />
             </Pressable>
           </View>
@@ -56,16 +58,16 @@ export function AddToCalendarSheet({ visible, activity, onDismiss }: AddToCalend
 
           <Pressable style={[styles.option, isAdding && styles.optionDisabled]} onPress={handleApple} disabled={isAdding} accessibilityState={{ disabled: isAdding }}>
             <CalendarPlus size={20} color={theme.brand.primary} weight="fill" />
-            <Text style={styles.optionLabel}>{isAdding ? 'Adding…' : 'Add to Apple Calendar'}</Text>
+            <Text style={styles.optionLabel}>{isAdding ? t('calendar.adding') : t('calendar.addApple')}</Text>
           </Pressable>
 
           <Pressable style={styles.option} onPress={handleGoogle}>
             <GoogleLogo size={20} color={theme.brand.accent} weight="fill" />
-            <Text style={styles.optionLabel}>Add to Google Calendar</Text>
+            <Text style={styles.optionLabel}>{t('calendar.addGoogle')}</Text>
           </Pressable>
 
           <Pressable style={styles.notNow} onPress={onDismiss}>
-            <Text style={styles.notNowLabel}>Not now</Text>
+            <Text style={styles.notNowLabel}>{t('calendar.notNow')}</Text>
           </Pressable>
         </View>
       </View>
@@ -107,4 +109,5 @@ const styles = StyleSheet.create({
   optionDisabled: { opacity: 0.6 },
   notNow: { alignItems: 'center', paddingVertical: spacing.md, marginTop: spacing.xs },
   notNowLabel: { ...typography.bodyMedium, color: theme.text.secondary },
+  rtlText: { textAlign: 'right', writingDirection: 'rtl' },
 });

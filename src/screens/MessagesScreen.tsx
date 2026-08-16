@@ -11,13 +11,12 @@ import { CoverFrame } from '@/components/CoverFrame';
 import { useConversations, type Conversation } from '@/hooks/useConversations';
 import { formatRelativeTime } from '@/utils/formatRelativeTime';
 import { formatExactStartTime } from '@/utils/formatExactStartTime';
-import { CATEGORY_LABELS } from '@/types/activity';
 import { groupConversations } from '@/utils/groupConversations';
 import { resolveChatsUpcomingState } from '@/utils/resolveChatsUpcomingState';
 import { chatSections, filterForums, partitionForums, type ChatSectionKey } from '@/utils/chatSections';
 import { useForums, type ForumSummary } from '@/hooks/useForums';
 import { ForumRow } from '@/components/ForumRow';
-import { useI18n, textAlignForContent } from '@/i18n';
+import { activityCategoryLabel, isolateText, useI18n, textAlignForContent } from '@/i18n';
 import { track } from '@/lib/analytics';
 
 interface MessagesScreenProps {
@@ -250,19 +249,20 @@ function SegmentedTabs({
 }
 
 function UpcomingEmptyState({ onCreateActivity }: { onCreateActivity: () => void }) {
+  const { t } = useI18n();
   return (
     <View style={styles.upcomingEmptyWrap}>
-      <Text style={styles.sectionTitle}>Upcoming activities</Text>
+      <Text style={styles.sectionTitle}>{t('chats.upcomingTitle')}</Text>
       <View style={styles.upcomingEmptyCard}>
         <View style={styles.upcomingEmptyText}>
-          <Text style={styles.upcomingEmptyTitle}>No upcoming activities yet</Text>
-          <Text style={styles.upcomingEmptyBody}>Be the first to create one.</Text>
+          <Text style={styles.upcomingEmptyTitle}>{t('chats.upcomingEmptyTitle')}</Text>
+          <Text style={styles.upcomingEmptyBody}>{t('chats.upcomingEmptyBody')}</Text>
         </View>
         <Pressable
           style={styles.upcomingEmptyCta}
           onPress={onCreateActivity}
           accessibilityRole="button"
-          accessibilityLabel="Create an activity"
+          accessibilityLabel={t('chats.createActivity')}
         >
           <Plus size={22} color={theme.text.inverse} weight="bold" />
         </Pressable>
@@ -282,13 +282,14 @@ function ActivityConversationRow({
    *  live plan. It stays fully readable and openable. */
   past?: boolean;
 }) {
+  const { t, locale, isRTL } = useI18n();
   const activity = conversation.activity!;
   const timingLabel = formatExactStartTime(activity.startTime);
   const previewText = conversation.lastMessagePreview
     ? conversation.lastMessageSenderName
-      ? `${conversation.lastMessageSenderName}: ${conversation.lastMessagePreview}`
+      ? `${isolateText(conversation.lastMessageSenderName)}: ${isolateText(conversation.lastMessagePreview)}`
       : conversation.lastMessagePreview
-    : 'Say hello 👋';
+    : t('chats.sayHello');
 
   return (
     <Pressable
@@ -307,7 +308,7 @@ function ActivityConversationRow({
       </CoverFrame>
       <View style={styles.activityBody}>
         <View style={styles.activityTitleLine}>
-          <Text style={[styles.activityTitle, conversation.hasUnread && styles.unreadText]} numberOfLines={1}>
+          <Text style={[styles.activityTitle, textAlignForContent(conversation.title, locale), conversation.hasUnread && styles.unreadText]} numberOfLines={1}>
             {conversation.title}
           </Text>
           {conversation.hasUnread && <View style={styles.unreadDot} />}
@@ -315,12 +316,12 @@ function ActivityConversationRow({
         {/* The activity's own scheduled time is the main time context for
             an activity chat — not when the last message happened to be
             sent, which competes with it and reads as "when this is". */}
-        <Text style={styles.activityMeta} numberOfLines={1}>
-          {CATEGORY_LABELS[activity.category] ?? CATEGORY_LABELS.other} · {timingLabel} · {activity.locationLabel}
+        <Text style={[styles.activityMeta, isRTL && styles.rtlText]} numberOfLines={1}>
+          {activityCategoryLabel(activity.category, t)} · {timingLabel} · {isolateText(activity.locationLabel)}
         </Text>
         <View style={styles.activityFooterLine}>
           <Text
-            style={[styles.activityPreview, conversation.hasUnread && styles.unreadText]}
+            style={[styles.activityPreview, textAlignForContent(conversation.lastMessagePreview ?? previewText, locale), conversation.hasUnread && styles.unreadText]}
             numberOfLines={1}
           >
             {previewText}
@@ -478,6 +479,7 @@ const styles = StyleSheet.create({
   activityTitle: { ...typography.bodyMedium, color: theme.text.primary, flexShrink: 1 },
   unreadText: { fontFamily: typography.bodyMedium.fontFamily, color: theme.text.primary },
   activityMeta: { ...typography.footnote, color: theme.text.secondary },
+  rtlText: { textAlign: 'right', writingDirection: 'rtl' },
   activityFooterLine: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 2 },
   activityPreview: { ...typography.footnote, color: theme.text.muted, flex: 1, marginRight: spacing.sm },
   activityFooterRight: { flexDirection: 'row', alignItems: 'center', gap: 4 },

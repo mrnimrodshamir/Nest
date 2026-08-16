@@ -17,6 +17,7 @@ import { StaticPrimaryButton } from '@/components/StaticPrimaryButton';
 import { isValidEmail, isNonEmpty } from '@/utils/validation';
 import { useAuth } from '@/hooks/useAuth';
 import { APP_NAME } from '@/constants/brand';
+import { useI18n } from '@/i18n';
 
 interface SignInScreenProps {
   onBack: () => void;
@@ -32,6 +33,7 @@ export function SignInScreen({
   onContinueWithApple,
 }: SignInScreenProps) {
   const { signIn } = useAuth();
+  const { t, isRTL } = useI18n();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fieldErrors, setFieldErrors] = useState<{ email?: string; password?: string }>({});
@@ -43,8 +45,8 @@ export function SignInScreen({
   const handleSubmit = async () => {
     if (inFlightRef.current) return; // synchronous — checked before any state/render
     const errors: typeof fieldErrors = {};
-    if (!isValidEmail(email)) errors.email = 'Enter a valid email address';
-    if (!isNonEmpty(password)) errors.password = 'Enter your password';
+    if (!isValidEmail(email)) errors.email = t('onboarding.emailInvalid');
+    if (!isNonEmpty(password)) errors.password = t('auth.passwordRequired');
     setFieldErrors(errors);
     if (Object.keys(errors).length > 0) return;
 
@@ -64,16 +66,16 @@ export function SignInScreen({
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-          <Pressable onPress={onBack} style={styles.backButton} accessibilityLabel="Back">
-            <ArrowLeft size={20} color={theme.text.primary} />
+          <Pressable onPress={onBack} style={styles.backButton} accessibilityLabel={t('common.back')}>
+            <ArrowLeft size={20} color={theme.text.primary} style={isRTL ? styles.flipped : undefined} />
           </Pressable>
 
-          <Text style={styles.title}>Log in</Text>
-          <Text style={styles.subtitle}>Welcome back to {APP_NAME}</Text>
+          <Text style={[styles.title, isRTL && styles.rtlText]}>{t('auth.logIn')}</Text>
+          <Text style={[styles.subtitle, isRTL && styles.rtlText]}>{t('auth.welcomeBack', { appName: APP_NAME })}</Text>
 
           <View style={styles.form}>
             <FormField
-              label="Email"
+              label={t('onboarding.email')}
               placeholder="you@example.com"
               value={email}
               onChangeText={setEmail}
@@ -85,11 +87,12 @@ export function SignInScreen({
               returnKeyType="next"
               onSubmitEditing={() => passwordRef.current?.focus()}
               error={fieldErrors.email}
+              forceLTR
             />
             <FormField
               ref={passwordRef}
-              label="Password"
-              placeholder="Your password"
+              label={t('onboarding.password')}
+              placeholder={t('auth.passwordPlaceholder')}
               value={password}
               onChangeText={setPassword}
               isPassword
@@ -101,18 +104,18 @@ export function SignInScreen({
             />
 
             <Pressable onPress={onForgotPassword} style={styles.forgotLink} hitSlop={8}>
-              <Text style={styles.forgotLinkLabel}>Forgot password?</Text>
+              <Text style={styles.forgotLinkLabel}>{t('auth.forgotPassword')}</Text>
             </Pressable>
 
             {formError && <Text style={styles.formError}>{formError}</Text>}
 
-            <StaticPrimaryButton label="Log in" onPress={handleSubmit} loading={isSubmitting} />
+            <StaticPrimaryButton label={t('auth.logIn')} onPress={handleSubmit} loading={isSubmitting} />
 
             {onContinueWithApple && (
               <>
                 <View style={styles.dividerRow}>
                   <View style={styles.dividerLine} />
-                  <Text style={styles.dividerLabel}>or</Text>
+                  <Text style={styles.dividerLabel}>{t('auth.or')}</Text>
                   <View style={styles.dividerLine} />
                 </View>
 
@@ -120,11 +123,11 @@ export function SignInScreen({
                   style={[styles.appleButton, appleLoading && styles.appleButtonDisabled]}
                   onPress={onContinueWithApple}
                   disabled={appleLoading}
-                  accessibilityLabel="Continue with Apple"
+                  accessibilityLabel={t('auth.continueApple')}
                   accessibilityRole="button"
                 >
                   <AppleLogo size={18} color={theme.text.inverse} weight="fill" />
-                  <Text style={styles.appleButtonLabel}>Continue with Apple</Text>
+                  <Text style={styles.appleButtonLabel}>{t('auth.continueApple')}</Text>
                 </Pressable>
               </>
             )}
@@ -169,4 +172,6 @@ const styles = StyleSheet.create({
   },
   appleButtonLabel: { ...typography.bodyMedium, color: theme.text.inverse },
   appleButtonDisabled: { opacity: 0.6 },
+  flipped: { transform: [{ scaleX: -1 }] },
+  rtlText: { textAlign: 'right', writingDirection: 'rtl' },
 });

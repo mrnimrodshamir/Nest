@@ -37,10 +37,18 @@ test('resolveBubbleRow: takes no locale input, so a Hebrew device cannot mirror 
   assert.equal(resolveBubbleRow(true).side, 'left');
 });
 
-test('resolveBubbleTextDirection: message text is always left-aligned LTR', () => {
-  const dir = resolveBubbleTextDirection();
-  assert.equal(dir.textAlign, 'left');
-  assert.equal(dir.writingDirection, 'ltr');
+test('resolveBubbleTextDirection: English user content stays LTR inside Hebrew UI', () => {
+  assert.deepEqual(resolveBubbleTextDirection('Hello from Tel Aviv', 'he'), {
+    textAlign: 'left',
+    writingDirection: 'ltr',
+  });
+});
+
+test('resolveBubbleTextDirection: Hebrew user content stays RTL', () => {
+  assert.deepEqual(resolveBubbleTextDirection('ניפגש בפארק', 'he'), {
+    textAlign: 'right',
+    writingDirection: 'rtl',
+  });
 });
 
 test('resolveSenderNameAlignment: the "You" label aligns left, exactly like an incoming sender name', () => {

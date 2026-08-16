@@ -15,7 +15,7 @@ import * as Haptics from 'expo-haptics';
 import { ArrowLeft, PaperPlaneTilt, WarningCircle } from 'phosphor-react-native';
 import { theme, typography, spacing, radius } from '@/theme';
 import { useChatMessages, type ChatMessage } from '@/hooks/useChatMessages';
-import { resolveBubbleRow, resolveSenderNameAlignment } from '@/utils/chatBubbleLayout';
+import { resolveBubbleRow, resolveBubbleTextDirection, resolveSenderNameAlignment } from '@/utils/chatBubbleLayout';
 import { useI18n } from '@/i18n';
 
 interface ChatScreenProps {
@@ -30,7 +30,7 @@ interface ChatScreenProps {
 
 export function ChatScreen({ chatId, resolveError, title, onBack, analyticsEvent }: ChatScreenProps) {
   const { messages, isLoading, error, send, retry } = useChatMessages(chatId, analyticsEvent);
-  const { t } = useI18n();
+  const { t, locale, isRTL } = useI18n();
   const [draft, setDraft] = useState('');
   const listRef = useRef<FlatList<ChatMessage>>(null);
 
@@ -42,17 +42,10 @@ export function ChatScreen({ chatId, resolveError, title, onBack, analyticsEvent
   };
 
   return (
-    // Chats are English-only content and must read LTR on any device
-    // locale. This subtree-level `direction: 'ltr'` is a defence-in-depth
-    // layer only — it is NOT what positions the bubbles, because a style
-    // on this third-party native view did not reliably reach the
-    // descendant Yoga nodes on a real Hebrew-locale device. The bubble
-    // side is decided structurally by a flexible spacer in MessageBubble
-    // (see utils/chatBubbleLayout.ts), which cannot be mirrored.
-    <SafeAreaView style={[styles.container, styles.forceLtr]} edges={['top', 'bottom']}>
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <View style={styles.header}>
         <Pressable onPress={onBack} style={styles.backButton} accessibilityRole="button" accessibilityLabel={t('common.back')}>
-          <ArrowLeft size={20} color={theme.text.primary} />
+          <ArrowLeft size={20} color={theme.text.primary} style={isRTL ? styles.flipped : undefined} />
         </Pressable>
         <Text style={styles.headerTitle} numberOfLines={1}>{title}</Text>
         <View style={styles.backButton} />
@@ -83,7 +76,7 @@ export function ChatScreen({ chatId, resolveError, title, onBack, analyticsEvent
               data={messages}
               keyExtractor={(item) => item.id}
               contentContainerStyle={styles.messageList}
-              renderItem={({ item }) => <MessageBubble message={item} onRetry={() => retry(item.id)} />}
+              renderItem={({ item }) => <MessageBubble message={item} locale={locale} onRetry={() => retry(item.id)} />}
               onContentSizeChange={() => listRef.current?.scrollToEnd({ animated: true })}
               ListEmptyComponent={
                 <View style={styles.emptyState}>
@@ -98,7 +91,7 @@ export function ChatScreen({ chatId, resolveError, title, onBack, analyticsEvent
 
           <View style={styles.inputRow}>
             <TextInput
-              style={styles.input}
+              style={[styles.input, resolveBubbleTextDirection(draft, locale)]}
               placeholder={t('chat.messagePlaceholder')}
               placeholderTextColor={theme.text.muted}
               value={draft}
@@ -115,7 +108,7 @@ export function ChatScreen({ chatId, resolveError, title, onBack, analyticsEvent
   );
 }
 
-function MessageBubble({ message, onRetry }: { message: ChatMessage; onRetry: () => void }) {
+function MessageBubble({ message, locale, onRetry }: { message: ChatMessage; locale: import('@/i18n').AppLocale; onRetry: () => void }) {
   const { t } = useI18n();
   const row = resolveBubbleRow(message.isMine);
   const nameAlign = resolveSenderNameAlignment(message.isMine);
@@ -131,7 +124,7 @@ function MessageBubble({ message, onRetry }: { message: ChatMessage; onRetry: ()
       <View style={styles.bubbleColumn}>
         <Text style={[styles.senderName, nameAlign]}>{message.senderName}</Text>
         <View style={[styles.bubble, message.isMine ? styles.bubbleMine : styles.bubbleTheirs]}>
-          <Text style={[styles.bubbleText, message.isMine && styles.bubbleTextMine]}>
+          <Text style={[styles.bubbleText, resolveBubbleTextDirection(message.content, locale), message.isMine && styles.bubbleTextMine]}>
             {message.content}
           </Text>
         </View>
@@ -149,7 +142,7 @@ function MessageBubble({ message, onRetry }: { message: ChatMessage; onRetry: ()
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: theme.background.app },
-  forceLtr: { direction: 'ltr' },
+  flipped: { transform: [{ scaleX: -1 }] },
   flex: { flex: 1 },
   header: {
     flexDirection: 'row',
@@ -201,7 +194,7 @@ const styles = StyleSheet.create({
   // so both use the same left-anchored tail corner.
   bubbleTheirs: { backgroundColor: theme.background.surface, borderBottomLeftRadius: radius.sm },
   bubbleMine: { backgroundColor: theme.brand.primary, borderBottomLeftRadius: radius.sm },
-  bubbleText: { ...typography.body, color: theme.text.primary, textAlign: 'left', writingDirection: 'ltr' },
+  bubbleText: { ...typography.body, color: theme.text.primary },
   bubbleTextMine: { color: theme.text.inverse },
   retryRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 },
   retryLabel: { ...typography.caption, color: theme.semantic.danger },

@@ -72,29 +72,13 @@ import type { EventDetails } from '@/types/event';
 import { buildActivitySeedFromPlace } from '@/utils/placeActivityPrefill';
 import { parseSharedContentUrl, type SharedContentRoute } from '@/utils/contentSharing';
 
-// This release is English/LTR only (see theme docs) — but React Native
-// mirrors flexDirection: 'row' layouts automatically based on the
-// device's OS language, not the app's displayed text language. A tester
-// with their iPhone system language set to a RTL language (Hebrew,
-// Arabic, etc.) would see every row-based layout — chat rows, button
-// rows, meta lines — flip direction even though all the text stays
-// English. Forcing LTR here fixes that regardless of device locale.
-// Note: RN only applies a forceRTL change starting the *next* app
-// launch, not retroactively mid-session — this takes effect after the
-// app is fully closed and reopened once.
-// Called UNCONDITIONALLY, not gated behind `if (I18nManager.isRTL)`. The
-// gated version only ran on a device that was already RTL, which meant the
-// flags were never asserted on a device whose locale changed later, and it
-// left `swapLeftAndRightInRTL` at its default (true) so explicit
-// marginLeft/marginRight were still being mirrored. Layout that must not
-// flip (chat bubbles) additionally pins `direction: 'ltr'` on its own node
-// rather than trusting these process-wide flags, because a forceRTL change
-// only takes effect on the NEXT launch — never in the session that sets it.
-I18nManager.allowRTL(false);
+// RTL is controlled by the selected app language in I18nProvider. Enable it
+// before the first React tree mounts so a Hebrew relaunch can use native RTL
+// layout. Keep physical left/right properties physical: intentional geometry
+// such as maps, image crops and crash-contained marker hit areas must not be
+// mirrored by React Native behind the component's back.
+I18nManager.allowRTL(true);
 I18nManager.swapLeftAndRightInRTL(false);
-if (I18nManager.isRTL) {
-  I18nManager.forceRTL(false);
-}
 
 /** UI-preview escape hatch: renders the real production screens/components
  *  with mock data, skipping login and every backend call. Set only via

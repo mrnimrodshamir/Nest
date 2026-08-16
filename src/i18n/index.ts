@@ -11,6 +11,7 @@ export {
   translate,
   interpolate,
   dateLocaleTag,
+  currentAppLocale,
   missingKeys,
   type AppLocale,
   type LocalePreference,
@@ -26,3 +27,4 @@ export {
   type TextDirection,
 } from './rtl';
 export { I18nProvider, useI18n, useTranslation, LOCALE_STORAGE_KEY } from './I18nProvider';
+export { activityCategoryLabel, placeCategoryLabel, localizedPlaceArea, type Translator } from './taxonomy';

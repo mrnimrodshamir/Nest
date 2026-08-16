@@ -3,6 +3,7 @@ import { View, Text, Pressable, Modal, StyleSheet } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { Camera } from 'phosphor-react-native';
 import { theme, typography, spacing, radius } from '@/theme';
+import { useI18n } from '@/i18n';
 
 interface PhotoNudgeSheetProps {
   visible: boolean;
@@ -14,6 +15,7 @@ interface PhotoNudgeSheetProps {
  *  joining, chatting, or anything else. Purely a nudge: skip is always one
  *  tap away and just as final as adding a photo. */
 export function PhotoNudgeSheet({ visible, onAddPhoto, onDismiss }: PhotoNudgeSheetProps) {
+  const { t } = useI18n();
   const [isPicking, setIsPicking] = useState(false);
 
   const handleAddPhoto = async () => {
@@ -39,14 +41,14 @@ export function PhotoNudgeSheet({ visible, onAddPhoto, onDismiss }: PhotoNudgeSh
           <View style={styles.iconCircle}>
             <Camera size={26} color={theme.brand.primary} weight="fill" />
           </View>
-          <Text style={styles.title}>Put a face to your name</Text>
-          <Text style={styles.body}>Add a photo so other parents can recognize you at the meetup.</Text>
+          <Text style={styles.title}>{t('photoNudge.title')}</Text>
+          <Text style={styles.body}>{t('photoNudge.body')}</Text>
 
           <Pressable style={styles.addButton} onPress={handleAddPhoto} disabled={isPicking}>
-            <Text style={styles.addLabel}>{isPicking ? 'Choosing…' : 'Add a photo'}</Text>
+            <Text style={styles.addLabel}>{isPicking ? t('photoNudge.choosing') : t('photoNudge.add')}</Text>
           </Pressable>
           <Pressable style={styles.notNow} onPress={onDismiss}>
-            <Text style={styles.notNowLabel}>Not now</Text>
+            <Text style={styles.notNowLabel}>{t('common.notNow')}</Text>
           </Pressable>
         </View>
       </View>

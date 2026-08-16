@@ -8,13 +8,12 @@ import { ArrowLeft, ArrowClockwise, DotsThree, NavigationArrow, ChatCircleDots, 
 import { theme, typography, spacing, radius } from '@/theme';
 import { PersonCard } from '@/components/PersonCard';
 import type { ActivityDetail } from '@/types/activity';
-import { CATEGORY_LABELS } from '@/types/activity';
 import { formatExactStartTime } from '@/utils/formatExactStartTime';
 import { formatDuration } from '@/utils/formatDuration';
 import { resolveParticipantCounts } from '@/utils/attendanceSummary';
 import { resolveBadges, resolveLifecycle } from '@/utils/activityLifecycle';
 import { canCreateAgain } from '@/utils/createAgain';
-import { useI18n } from '@/i18n';
+import { activityCategoryLabel, textAlignForContent, useI18n } from '@/i18n';
 import { openNativeShare } from '@/lib/contentShare';
 import { formatAgeRange } from '@/utils/babyAge';
 import { buildShareMessage } from '@/utils/buildShareMessage';
@@ -79,7 +78,7 @@ export function ActivityDetailScreen({
   const [showPhotoNudge, setShowPhotoNudge] = useState(false);
   const [calendarNotice, setCalendarNotice] = useState<'changed' | 'cancelled' | null>(null);
 
-  const { t, isRTL } = useI18n();
+  const { t, isRTL, locale } = useI18n();
   const relationship = isHost ? 'hosting' : activity.viewerStatus === 'going' ? 'joined' : 'none';
   const lifecycle = resolveLifecycle(activity);
   const badges = resolveBadges(activity, relationship);
@@ -308,7 +307,7 @@ export function ActivityDetailScreen({
           <View style={styles.pillRow}>
             <View style={styles.categoryPill}>
               <Text style={styles.categoryPillText}>
-                {CATEGORY_LABELS[activity.category] ?? CATEGORY_LABELS.other}
+                {activityCategoryLabel(activity.category, t)}
               </Text>
             </View>
             {badges.lifecycle && (
@@ -324,7 +323,7 @@ export function ActivityDetailScreen({
               </View>
             )}
           </View>
-          <Text style={styles.title}>{activity.title}</Text>
+          <Text style={[styles.title, textAlignForContent(activity.title, locale)]}>{activity.title}</Text>
           <Text style={styles.meta}>
             {formatExactStartTime(activity.startTime)} · {formatDuration(activity.durationMinutes)} ·{' '}
             {activity.distanceKm.toFixed(1)}km away

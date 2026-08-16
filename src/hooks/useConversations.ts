@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import type { ActivityCategory, ActivityStatus } from '@/types/activity';
 import { APP_NAME } from '@/constants/brand';
+import { useI18n } from '@/i18n';
 
 export interface Conversation {
   chatId: string;
@@ -44,6 +45,7 @@ interface UseConversationsResult {
 /** Every chat the current user participates in — group (per-activity) and
  *  direct — as one unified, most-recent-first list for the Messages inbox. */
 export function useConversations(): UseConversationsResult {
+  const { t } = useI18n();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -149,7 +151,7 @@ export function useConversations(): UseConversationsResult {
         );
         const lastMessageSenderName = lastMessage
           ? lastMessage.sender_id === userId
-            ? 'You'
+            ? t('chats.you')
             : (profileById.get(lastMessage.sender_id)?.display_name ?? null)
           : null;
 
@@ -162,8 +164,8 @@ export function useConversations(): UseConversationsResult {
             // Missing public-profile data is a real-data fallback, not sample
             // content. Keep the row understandable without exposing an id or
             // internal chat type.
-            title: profile?.display_name ?? `${APP_NAME} parent`,
-            subtitle: lastMessage?.content ?? 'Say hello 👋',
+            title: profile?.display_name ?? t('profile.memberFallback', { appName: APP_NAME }),
+            subtitle: lastMessage?.content ?? t('chats.noMessagesYet'),
             avatarUrl: profile?.avatar_url ?? null,
             otherUserId,
             activityId: null,
@@ -179,8 +181,8 @@ export function useConversations(): UseConversationsResult {
         return {
           chatId: chat.id,
           kind: 'group' as const,
-          title: activityRow?.title ?? 'Activity chat',
-          subtitle: lastMessage?.content ?? 'Say hello 👋',
+          title: activityRow?.title ?? t('chats.activityChat'),
+          subtitle: lastMessage?.content ?? t('chats.noMessagesYet'),
           avatarUrl: activityRow?.cover_image_url ?? null,
           otherUserId: null,
           activityId: chat.activity_id,
@@ -209,11 +211,11 @@ export function useConversations(): UseConversationsResult {
       setConversations(usable);
     } catch (err) {
       console.log('[Conversations] load failed', err instanceof Error ? err.message : err);
-      setError("Couldn't load your messages.");
+      setError(t('chats.error.load'));
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     load();

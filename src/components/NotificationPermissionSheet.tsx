@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, Pressable, Modal, StyleSheet } from 'react-native';
 import { BellRinging } from 'phosphor-react-native';
 import { theme, typography, spacing, radius } from '@/theme';
+import { useI18n } from '@/i18n';
 
 interface NotificationPermissionSheetProps {
   visible: boolean;
@@ -13,6 +14,7 @@ interface NotificationPermissionSheetProps {
  *  prompt — never the prompt itself as a surprise. Only ever triggered by
  *  a first join or turning on reminders in settings. */
 export function NotificationPermissionSheet({ visible, onEnable, onDismiss }: NotificationPermissionSheetProps) {
+  const { t } = useI18n();
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onDismiss}>
       <View style={styles.overlay}>
@@ -20,17 +22,14 @@ export function NotificationPermissionSheet({ visible, onEnable, onDismiss }: No
           <View style={styles.iconCircle}>
             <BellRinging size={26} color={theme.brand.primary} weight="fill" />
           </View>
-          <Text style={styles.title}>Never miss a moment</Text>
-          <Text style={styles.body}>
-            We'll remind you before activities start, and let you know if a host changes the time,
-            location, or cancels. You're always in control in Profile → Notifications.
-          </Text>
+          <Text style={styles.title}>{t('notifications.title')}</Text>
+          <Text style={styles.body}>{t('notifications.body')}</Text>
 
           <Pressable style={styles.enableButton} onPress={onEnable}>
-            <Text style={styles.enableLabel}>Enable notifications</Text>
+            <Text style={styles.enableLabel}>{t('notifications.enable')}</Text>
           </Pressable>
           <Pressable style={styles.notNow} onPress={onDismiss}>
-            <Text style={styles.notNowLabel}>Not now</Text>
+            <Text style={styles.notNowLabel}>{t('common.notNow')}</Text>
           </Pressable>
         </View>
       </View>

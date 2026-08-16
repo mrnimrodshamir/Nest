@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { View, Text, Pressable, StyleSheet, Platform } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { theme, typography, spacing, radius } from '@/theme';
+import { activeDateLocale } from '@/i18n/core';
+import { useI18n } from '@/i18n';
 
 interface DateTimeFieldProps {
   label: string;
@@ -13,11 +15,12 @@ interface DateTimeFieldProps {
 }
 
 export function DateTimeField({ label, value, onChange, minimumDate, hasValue = true, placeholder = 'Choose date and time' }: DateTimeFieldProps) {
+  const { t } = useI18n();
   const [showPicker, setShowPicker] = useState(false);
   const [androidStep, setAndroidStep] = useState<'date' | 'time'>('date');
   const [pendingAndroidDate, setPendingAndroidDate] = useState<Date | null>(null);
 
-  const formatted = value.toLocaleString(undefined, {
+  const formatted = value.toLocaleString(activeDateLocale(), {
     weekday: 'short',
     month: 'short',
     day: 'numeric',
@@ -75,7 +78,7 @@ export function DateTimeField({ label, value, onChange, minimumDate, hasValue = 
 
       {showPicker && Platform.OS === 'ios' && (
         <Pressable style={styles.doneButton} onPress={() => setShowPicker(false)}>
-          <Text style={styles.doneLabel}>Done</Text>
+          <Text style={styles.doneLabel}>{t('common.done')}</Text>
         </Pressable>
       )}
     </View>

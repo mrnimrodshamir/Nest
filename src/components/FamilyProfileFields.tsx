@@ -25,7 +25,7 @@ interface FamilyProfileFieldsProps {
 /** Shared profile setup used by email signup, Apple completion and compatible
  * profile forms. Role is always a caregiver's explicit selection. */
 export function FamilyProfileFields({ value, onChange, errors = {} }: FamilyProfileFieldsProps) {
-  const { t, isRTL } = useI18n();
+  const { t } = useI18n();
   const set = <K extends keyof FamilyProfileDraft>(key: K, next: FamilyProfileDraft[K]) =>
     onChange({ ...value, [key]: next });
 
@@ -39,7 +39,6 @@ export function FamilyProfileFields({ value, onChange, errors = {} }: FamilyProf
         textContentType="name"
         autoComplete="name"
         error={errors.displayName}
-        textAlign={isRTL ? 'right' : 'left'}
       />
 
       <View style={styles.fieldGroup}>
@@ -76,7 +75,6 @@ export function FamilyProfileFields({ value, onChange, errors = {} }: FamilyProf
         onChangeText={(text) => set('neighborhood', text)}
         autoCapitalize="words"
         error={errors.neighborhood}
-        textAlign={isRTL ? 'right' : 'left'}
       />
 
       <Text style={styles.optionalHeading}>{t('onboarding.optionalDetails')}</Text>
@@ -85,7 +83,6 @@ export function FamilyProfileFields({ value, onChange, errors = {} }: FamilyProf
         value={value.occupation}
         onChangeText={(text) => set('occupation', text)}
         autoCapitalize="sentences"
-        textAlign={isRTL ? 'right' : 'left'}
       />
       <FormField
         label={t('profile.bio')}
@@ -95,7 +92,6 @@ export function FamilyProfileFields({ value, onChange, errors = {} }: FamilyProf
         maxLength={PROFILE_BIO_MAX_LENGTH}
         style={styles.bioInput}
         textAlignVertical="top"
-        textAlign={isRTL ? 'right' : 'left'}
       />
       <View style={styles.bioMeta}>
         <Text style={styles.hint}>{t('profile.bioHint')}</Text>

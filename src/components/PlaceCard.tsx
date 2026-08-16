@@ -4,23 +4,23 @@ import { CaretRight } from 'phosphor-react-native';
 import { PlaceImage } from '@/components/PlaceImage';
 import { radius, spacing, theme, typography } from '@/theme';
 import type { FamilyFriendlyPlace } from '@/types/familyFriendlyPlace';
-import { PLACE_CATEGORY_LABELS } from '@/types/familyFriendlyPlace';
 import { formatPlaceDistance, placeSummaryFeatures } from '@/utils/familyFriendlyPlace';
-import { useI18n } from '@/i18n';
+import { localizedPlaceArea, placeCategoryLabel, textAlignForContent, useI18n } from '@/i18n';
 
 export function PlaceCard({ place, highlighted, onPress }: { place: FamilyFriendlyPlace; highlighted?: boolean; onPress: (place: FamilyFriendlyPlace) => void }) {
-  const { t, isRTL } = useI18n();
-  const distance = formatPlaceDistance(place.distanceMeters);
-  const features = placeSummaryFeatures(place);
-  const setting = [place.isIndoor ? 'Indoor' : null, place.isOutdoor ? 'Outdoor' : null, place.isFree === true ? 'Free' : place.isFree === false ? 'Paid' : null].filter(Boolean).join(' · ');
-  return <Pressable accessibilityRole="button" accessibilityLabel={`${place.name}, ${PLACE_CATEGORY_LABELS[place.category]}`} onPress={() => onPress(place)} style={({ pressed }) => [styles.card, highlighted && styles.highlighted, pressed && styles.pressed]}>
+  const { t, isRTL, locale } = useI18n();
+  const category = placeCategoryLabel(place.category, t);
+  const distance = formatPlaceDistance(place.distanceMeters, t);
+  const features = placeSummaryFeatures(place, 3, t);
+  const setting = [place.isIndoor ? t('place.fact.indoor') : null, place.isOutdoor ? t('place.fact.outdoor') : null, place.isFree === true ? t('place.fact.free') : place.isFree === false ? t('place.fact.paid') : null].filter(Boolean).join(' · ');
+  return <Pressable accessibilityRole="button" accessibilityLabel={`${place.name}, ${category}`} onPress={() => onPress(place)} style={({ pressed }) => [styles.card, highlighted && styles.highlighted, pressed && styles.pressed]}>
     <PlaceImage uri={place.coverImageUrl} asset={place.images?.card ?? place.images?.cover} category={place.category} variant="card" name={place.name} />
     <View style={styles.body}>
-      <Text style={styles.title} numberOfLines={1}>{place.name}</Text>
-      <Text style={styles.meta} numberOfLines={1}>{[PLACE_CATEGORY_LABELS[place.category], place.neighborhood].filter(Boolean).join(' · ')}</Text>
-      {distance ? <Text style={styles.distance}>{distance}</Text> : null}
-      {setting ? <Text style={styles.setting}>{setting}</Text> : null}
-      {features.length ? <Text style={styles.features} numberOfLines={1}>{features.join(' · ')}</Text> : null}
+      <Text style={[styles.title, textAlignForContent(place.name, locale)]} numberOfLines={1}>{place.name}</Text>
+      <Text style={[styles.meta, isRTL && styles.rtlText]} numberOfLines={1}>{[category, localizedPlaceArea(place.neighborhood, t)].filter(Boolean).join(' · ')}</Text>
+      {distance ? <Text style={[styles.distance, isRTL && styles.rtlText]}>{distance}</Text> : null}
+      {setting ? <Text style={[styles.setting, isRTL && styles.rtlText]}>{setting}</Text> : null}
+      {features.length ? <Text style={[styles.features, isRTL && styles.rtlText]} numberOfLines={1}>{features.join(' · ')}</Text> : null}
     </View>
     <View style={styles.openIndicator} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
       <CaretRight size={18} color={theme.text.muted} style={isRTL ? styles.flipped : undefined} />
@@ -44,4 +44,5 @@ const styles = StyleSheet.create({
   openIndicator: { width: 54, alignItems: 'center', justifyContent: 'center', gap: 3, paddingEnd: spacing.xs },
   openLabel: { ...typography.caption, color: theme.text.accent, textAlign: 'center' },
   flipped: { transform: [{ scaleX: -1 }] },
+  rtlText: { textAlign: 'right', writingDirection: 'rtl' },
 });

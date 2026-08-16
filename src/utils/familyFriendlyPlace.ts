@@ -5,6 +5,8 @@ import {
   type PlaceVerificationStatus,
 } from '@/types/familyFriendlyPlace';
 import type { PlaceFilters } from '@/types/familyFriendlyPlace';
+import type { Translator } from '@/i18n/taxonomy';
+import { placeCategoryLabel } from '@/i18n/taxonomy';
 
 export function mapFamilyFriendlyPlaceRow(row: FamilyFriendlyPlaceRow): FamilyFriendlyPlace {
   if (!isPlaceCategory(row.category)) throw new Error(`Unsupported place category: ${row.category}`);
@@ -32,26 +34,31 @@ export function mapFamilyFriendlyPlaceRow(row: FamilyFriendlyPlaceRow): FamilyFr
   };
 }
 
-export function formatPlaceDistance(distanceMeters: number | null): string | null {
+export function formatPlaceDistance(distanceMeters: number | null, t?: Translator): string | null {
   if (distanceMeters === null || !Number.isFinite(distanceMeters) || distanceMeters < 0) return null;
-  if (distanceMeters < 1000) return `${Math.round(distanceMeters / 10) * 10} m away`;
-  return `${(distanceMeters / 1000).toFixed(1)} km away`;
+  if (distanceMeters < 1000) {
+    const count = Math.round(distanceMeters / 10) * 10;
+    return t ? t('place.distance.meters', { count }) : `${count} m away`;
+  }
+  const count = (distanceMeters / 1000).toFixed(1);
+  return t ? t('place.distance.kilometers', { count }) : `${count} km away`;
 }
 
-export function placeSummaryFeatures(place: FamilyFriendlyPlace, limit = 3): string[] {
+export function placeSummaryFeatures(place: FamilyFriendlyPlace, limit = 3, t?: Translator): string[] {
   const features: string[] = [];
-  if (place.shade) features.push('Shade');
-  if (place.toilets) features.push('Toilets');
-  if (place.strollerFriendly) features.push('Stroller friendly');
-  if (place.changingTable) features.push('Changing table');
-  if (place.highChairs) features.push('High chairs');
-  if (place.accessible) features.push('Accessible');
-  if (place.waterFountain) features.push('Water fountain');
+  const label = (key: Parameters<Translator>[0], fallback: string) => t ? t(key) : fallback;
+  if (place.shade) features.push(label('place.fact.shade', 'Shade'));
+  if (place.toilets) features.push(label('place.fact.toilets', 'Toilets'));
+  if (place.strollerFriendly) features.push(label('place.fact.stroller', 'Stroller friendly'));
+  if (place.changingTable) features.push(label('place.fact.changingTable', 'Changing table'));
+  if (place.highChairs) features.push(label('place.fact.highChairs', 'High chairs'));
+  if (place.accessible) features.push(label('place.fact.accessible', 'Accessible'));
+  if (place.waterFountain) features.push(label('place.fact.water', 'Water fountain'));
   return features.slice(0, limit);
 }
 
 /** Caregiver-facing, known-values-only facts for Place Details. */
-export function placeWhatIsHere(place: FamilyFriendlyPlace): string[] {
+export function placeWhatIsHere(place: FamilyFriendlyPlace, t?: Translator): string[] {
   const facts: string[] = [];
   const categoryLabels: Partial<Record<FamilyFriendlyPlace['category'], string>> = {
     playground: 'Playground', park: 'Park', indoor_playground: 'Indoor play area',
@@ -59,18 +66,19 @@ export function placeWhatIsHere(place: FamilyFriendlyPlace): string[] {
     beach: 'Beach access', pool: 'Pool', community_center: 'Community center',
     attraction: 'Attraction', picnic_area: 'Picnic area',
   };
-  const category = categoryLabels[place.category];
+  const category = t ? placeCategoryLabel(place.category, t) : categoryLabels[place.category];
   if (category) facts.push(category);
-  if (place.isIndoor === true) facts.push('Indoor');
-  if (place.isOutdoor === true) facts.push('Outdoor');
-  if (place.isFree === true) facts.push('Free');
-  if (place.isFree === false) facts.push('Paid');
-  if (place.toilets === true) facts.push('Toilets');
-  if (place.shade === true) facts.push('Shade');
-  if (place.waterFountain === true) facts.push('Water fountain');
-  if (place.changingTable === true) facts.push('Changing table');
-  if (place.strollerFriendly === true) facts.push('Stroller friendly');
-  if (place.accessible === true) facts.push('Accessible');
+  const label = (key: Parameters<Translator>[0], fallback: string) => t ? t(key) : fallback;
+  if (place.isIndoor === true) facts.push(label('place.fact.indoor', 'Indoor'));
+  if (place.isOutdoor === true) facts.push(label('place.fact.outdoor', 'Outdoor'));
+  if (place.isFree === true) facts.push(label('place.fact.free', 'Free'));
+  if (place.isFree === false) facts.push(label('place.fact.paid', 'Paid'));
+  if (place.toilets === true) facts.push(label('place.fact.toilets', 'Toilets'));
+  if (place.shade === true) facts.push(label('place.fact.shade', 'Shade'));
+  if (place.waterFountain === true) facts.push(label('place.fact.water', 'Water fountain'));
+  if (place.changingTable === true) facts.push(label('place.fact.changingTable', 'Changing table'));
+  if (place.strollerFriendly === true) facts.push(label('place.fact.stroller', 'Stroller friendly'));
+  if (place.accessible === true) facts.push(label('place.fact.accessible', 'Accessible'));
   if (place.minAgeMonths != null || place.maxAgeMonths != null) facts.push(`Best for ${formatPlaceAgeRange(place.minAgeMonths, place.maxAgeMonths)}`);
   return facts;
 }

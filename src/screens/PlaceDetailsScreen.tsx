@@ -13,12 +13,11 @@ import { usePlaceEvents } from '@/hooks/usePlaceEvents';
 import { radius, spacing, theme, typography } from '@/theme';
 import type { FamilyFriendlyPlace } from '@/types/familyFriendlyPlace';
 import type { EventDetails } from '@/types/event';
-import { PLACE_CATEGORY_LABELS } from '@/types/familyFriendlyPlace';
 import { buildAppleMapsPlaceUrl, formatOpeningHours, placeWhatIsHere } from '@/utils/familyFriendlyPlace';
 import { groupPlaceEvents } from '@/utils/placeEvents';
 import { buildPlaceShareMessage } from '@/utils/contentSharing';
 import { openNativeShare, openWhatsAppShare } from '@/lib/contentShare';
-import { useI18n, textAlignForContent } from '@/i18n';
+import { localizedPlaceArea, placeCategoryLabel, useI18n, textAlignForContent } from '@/i18n';
 import { Dimensions } from 'react-native';
 import { resolveHeroMaxHeight } from '@/constants/activityArtFrame';
 import { track } from '@/lib/analytics';
@@ -41,12 +40,12 @@ export function PlaceDetailsScreen({ placeId, onBack, onCreateActivity, onOpenEv
   useEffect(() => {
     track('place_opened', { content_id: placeId, source: 'curated' });
   }, [placeId]);
-  const facts = useMemo(() => place ? placeWhatIsHere(place) : [], [place]);
+  const facts = useMemo(() => place ? placeWhatIsHere(place, t) : [], [place, t]);
   const eventGroups = useMemo(() => groupPlaceEvents(placeEvents.events), [placeEvents.events]);
 
   if (!place) return <SafeAreaView style={styles.container}><Header onBack={onBack} />{error ? <StateCard icon={WarningCircle} title={t('place.loadError')} body={error} ctaLabel={t('common.retry')} onCtaPress={() => setReload((value) => value + 1)} tone="warning" /> : <Text style={styles.loading}>{t('place.loading')}</Text>}</SafeAreaView>;
 
-  const address = place.formattedAddress ?? place.neighborhood ?? place.city;
+  const address = place.formattedAddress ?? localizedPlaceArea(place.neighborhood, t) ?? place.city;
   const mapsUrl = buildAppleMapsPlaceUrl(place);
   const openingHours = formatOpeningHours(place.openingHours);
   const description = place.fullDescription ?? place.shortDescription;
@@ -54,9 +53,9 @@ export function PlaceDetailsScreen({ placeId, onBack, onCreateActivity, onOpenEv
   return <SafeAreaView style={styles.container} edges={['top', 'bottom']}><Header onBack={onBack} /><ScrollView contentContainerStyle={styles.content}>
     <PlaceImage uri={place.coverImageUrl} asset={place.images?.cover} category={place.category} variant="cover" style={styles.hero} name={place.name} />
     {place.images?.gallery.length ? <ContentImageGallery images={place.images.gallery} /> : null}
-    <Text style={styles.category}>{PLACE_CATEGORY_LABELS[place.category]}</Text>
-    <Text style={styles.title}>{place.name}</Text>
-    <Text style={styles.address}>{address}</Text>
+    <Text style={styles.category}>{placeCategoryLabel(place.category, t)}</Text>
+    <Text style={[styles.title, textAlignForContent(place.name, locale)]}>{place.name}</Text>
+    <Text style={[styles.address, textAlignForContent(address, locale)]}>{address}</Text>
     <MapView style={styles.map} region={{ latitude: place.latitude, longitude: place.longitude, latitudeDelta: 0.015, longitudeDelta: 0.015 }} scrollEnabled={false} zoomEnabled={false} pointerEvents="none"><Marker coordinate={place} /></MapView>
     <Pressable style={styles.linkRow} onPress={() => Linking.openURL(mapsUrl)}><ArrowSquareOut size={18} color={theme.brand.primary} /><Text style={styles.link}>{t('place.openInAppleMaps')}</Text></Pressable>
     <View style={styles.shareRow}>

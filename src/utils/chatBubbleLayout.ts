@@ -39,13 +39,13 @@ export function resolveBubbleRow(_isMine: boolean): BubbleRowLayout {
   return { side: 'left', spacerBefore: false, spacerAfter: true };
 }
 
-/** Text inside a bubble is English content: always left-aligned and LTR,
- *  for the current user's messages just as much as for incoming ones. */
-export function resolveBubbleTextDirection(): {
-  textAlign: 'left';
-  writingDirection: 'ltr';
-} {
-  return { textAlign: 'left', writingDirection: 'ltr' };
+/** Message text follows its own first strong script, independently of both
+ * the app locale and the bubble's deliberately stable physical side. */
+export function resolveBubbleTextDirection(
+  content: string,
+  locale: AppLocale,
+): { textAlign: 'left' | 'right'; writingDirection: 'ltr' | 'rtl' } {
+  return textAlignForContent(content, locale);
 }
 
 /** The sender name (including the "You" label) sits above the bubble on the
@@ -56,3 +56,5 @@ export function resolveSenderNameAlignment(_isMine: boolean): {
 } {
   return { alignSelf: 'flex-start', textAlign: 'left' };
 }
+import type { AppLocale } from '../i18n/core.ts';
+import { textAlignForContent } from '../i18n/rtl.ts';

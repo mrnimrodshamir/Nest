@@ -8,6 +8,7 @@ import { usePlaceSearch, type PlaceSearchItem } from '@/hooks/usePlaceSearch';
 import type { NormalizedPlace, SelectedActivityLocation } from '@/types/place';
 import { presentSelectedLocation } from '@/utils/locationPresentation';
 import { LOCATION_PICKER_DELTA, selectProviderPlace } from '@/utils/placeSelection';
+import { textAlignForContent, useI18n } from '@/i18n';
 
 interface LocationPickerProps {
   latitude: number;
@@ -47,6 +48,7 @@ export function LocationPicker({
   selectedLocation,
   autoCenterOnMount = false,
 }: LocationPickerProps) {
+  const { t, locale } = useI18n();
   const [isResolving, setIsResolving] = useState(false);
   const [isResolvingSelection, setIsResolvingSelection] = useState(false);
   const mapRef = useRef<MapView>(null);
@@ -133,7 +135,7 @@ export function LocationPicker({
         <MagnifyingGlass size={16} color={theme.text.muted} style={styles.searchIcon} />
         <TextInput
           style={styles.searchInput}
-          placeholder="Search cafés, parks or places"
+          placeholder={t('locationPicker.search')}
           placeholderTextColor={theme.text.muted}
           value={search.query}
           onChangeText={search.setQuery}
@@ -174,22 +176,22 @@ export function LocationPicker({
         </ScrollView>
       )}
       {search.status === 'empty' && (
-        <Text style={styles.searchStatusText}>No matching places found — try a more specific search</Text>
+        <Text style={styles.searchStatusText}>{t('locationPicker.noResults')}</Text>
       )}
       {(['timeout', 'rate_limited', 'configuration_missing', 'unauthorized', 'unavailable'] as const).includes(search.status as any) && search.errorMessage && (
         <View style={styles.searchErrorRow}>
           <Text style={[styles.searchStatusText, styles.searchErrorText]}>{search.errorMessage}</Text>
-          {search.status !== 'configuration_missing' && <Pressable onPress={search.retry} hitSlop={8}><Text style={styles.retryText}>Retry</Text></Pressable>}
+          {search.status !== 'configuration_missing' && <Pressable onPress={search.retry} hitSlop={8}><Text style={styles.retryText}>{t('common.retry')}</Text></Pressable>}
         </View>
       )}
 
       {selectedLocation && selectedPresentation ? (
         <View style={styles.selectedPreview}>
-          <Text style={styles.selectedName}>{selectedPresentation.title}</Text>
+          <Text style={[styles.selectedName, textAlignForContent(selectedPresentation.title, locale)]}>{selectedPresentation.title}</Text>
           {selectedPresentation.address ? (
             <Text style={styles.selectedAddress}>{selectedPresentation.address}</Text>
           ) : null}
-          {selectedPresentation.isManuallyAdjusted ? <Text style={styles.adjustedLabel}>Manually adjusted</Text> : null}
+          {selectedPresentation.isManuallyAdjusted ? <Text style={styles.adjustedLabel}>{t('locationPicker.adjusted')}</Text> : null}
         </View>
       ) : null}
 
@@ -215,7 +217,7 @@ export function LocationPicker({
           </View>
         )}
       </View>
-      <Text style={styles.hint}>Drag the map to set the spot. Choose a public place, not a home address.</Text>
+      <Text style={styles.hint}>{t('locationPicker.hint')}</Text>
     </View>
   );
 }
