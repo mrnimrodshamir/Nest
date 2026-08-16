@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import * as Location from 'expo-location';
 import { supabase } from '@/lib/supabase';
+import { safeCaregiverDisplayName } from '@/utils/profileIdentity';
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 import { FALLBACK_LOCATION } from '@/constants/location';
 import type { Activity, ActivityCategory, ActivityStatus, Attendee } from '@/types/activity';
+import { currentAppLocale, translate } from '@/i18n';
 
 const KM_PER_MILE = 1.60934;
 const BASE_RADIUS_KM = 3;
@@ -100,11 +102,7 @@ export function useNearbyActivities(options?: UseNearbyActivitiesOptions): UseNe
       setRadiusExpanded(expanded);
     } catch (err) {
       if (id !== requestId.current) return;
-      setError(
-        err instanceof Error
-          ? "Couldn't load nearby activities. Please try again."
-          : 'Something went wrong loading activities.',
-      );
+      setError(translate(currentAppLocale(), 'error.nearbyActivitiesLoad'));
     } finally {
       if (id === requestId.current) setIsRefreshing(false);
     }
@@ -192,7 +190,7 @@ async function fetchNearby(
     const list = attendeesByActivity.get(row.activity_id) ?? [];
     list.push({
       id: profile.id,
-      displayName: profile.display_name,
+      displayName: safeCaregiverDisplayName(profile.display_name),
       avatarUrl: profile.avatar_url,
       avatarColor: colorForId(profile.id),
     });

@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
+import { safeCaregiverDisplayName } from '@/utils/profileIdentity';
+import { currentAppLocale, translate } from '@/i18n';
 
 export interface BlockedUser {
   id: string;
@@ -50,10 +52,10 @@ export function useBlockedUsers(): UseBlockedUsersResult {
         .in('id', blockedIds);
       if (profileError) throw profileError;
 
-      setBlockedUsers((profileRows ?? []).map((p) => ({ id: p.id, displayName: p.display_name, avatarUrl: p.avatar_url })));
+      setBlockedUsers((profileRows ?? []).map((p) => ({ id: p.id, displayName: safeCaregiverDisplayName(p.display_name), avatarUrl: p.avatar_url })));
     } catch (err) {
       console.log('[BlockedUsers] load failed', err instanceof Error ? err.message : err);
-      setError("Couldn't load blocked members.");
+      setError(translate(currentAppLocale(), 'error.blockedLoad'));
     } finally {
       setIsLoading(false);
     }

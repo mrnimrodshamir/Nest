@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
+import { safeCaregiverDisplayName } from '@/utils/profileIdentity';
 import { coerceParentRole, type ParentRole } from '@/utils/parentRole';
+import { currentAppLocale, translate } from '@/i18n';
 
 export interface PublicProfileData {
   id: string;
@@ -68,7 +70,7 @@ export function usePublicProfile(userId: string | null): UsePublicProfileResult 
           .maybeSingle();
         if (profileError) throw profileError;
         if (!row) {
-          if (!cancelled) setError('This member could not be found.');
+          if (!cancelled) setError(translate(currentAppLocale(), 'profile.notFound'));
           return;
         }
 
@@ -110,7 +112,7 @@ export function usePublicProfile(userId: string | null): UsePublicProfileResult 
         if (!cancelled) {
           setProfile({
             id: row.id,
-            displayName: row.display_name,
+            displayName: safeCaregiverDisplayName(row.display_name),
             avatarUrl: row.avatar_url,
             childNames: (row.child_names ?? []) as string[],
             childCount: row.child_count ?? 0,
@@ -128,7 +130,7 @@ export function usePublicProfile(userId: string | null): UsePublicProfileResult 
         }
       } catch (err) {
         console.log('[PublicProfile] load failed', err instanceof Error ? err.message : err);
-        if (!cancelled) setError("Couldn't load this profile.");
+        if (!cancelled) setError(translate(currentAppLocale(), 'error.profileLoad'));
       } finally {
         if (!cancelled) setIsLoading(false);
       }

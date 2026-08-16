@@ -28,6 +28,7 @@ import { LEGAL_URLS } from '@/constants/legal';
 import type { NotificationPreferences } from '@/types/profile';
 import { APP_NAME } from '@/constants/brand';
 import { formatAppVersion } from '@/utils/appVersion';
+import { safeCaregiverDisplayName } from '@/utils/profileIdentity';
 
 interface ProfileScreenProps {
   onEditProfile: () => void;
@@ -102,7 +103,7 @@ export function ProfileScreen({ onEditProfile, onOpenMyActivities, onOpenBlocked
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <ScrollView contentContainerStyle={styles.content}>
-        <PersonCard size="hero" name={profile?.displayName ?? t('profile.memberFallback', { appName: APP_NAME })} avatarUrl={profile?.avatarUrl ?? null} subtitle={childSummary} />
+        <PersonCard size="hero" name={safeCaregiverDisplayName(profile?.displayName)} avatarUrl={profile?.avatarUrl ?? null} subtitle={childSummary} />
         <Text style={styles.email}>{profile?.email}</Text>
 
         <Pressable style={styles.editLink} onPress={onEditProfile}>

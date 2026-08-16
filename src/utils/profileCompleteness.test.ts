@@ -18,6 +18,12 @@ test('new or interrupted accounts require initial setup', () => {
   assert.equal(profileCompleteness({ ...base, onboardingCompleted: false }), 'requires-initial-setup');
 });
 
+test('legacy product-name placeholders are incomplete even when the old flag is true', () => {
+  for (const displayName of ['Momzi member', 'MOMZY MEMBER', ' NestUp   member ']) {
+    assert.equal(profileCompleteness({ ...base, displayName }), 'requires-initial-setup');
+  }
+});
+
 test('established accounts are never locked out for optional gaps', () => {
   assert.equal(profileCompleteness(base), 'established-with-optional-gaps');
 });

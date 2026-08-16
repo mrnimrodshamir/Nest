@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import type { ActivityCategory, ActivityStatus } from '@/types/activity';
-import { APP_NAME } from '@/constants/brand';
 import { useI18n } from '@/i18n';
+import { safeCaregiverDisplayName } from '@/utils/profileIdentity';
 
 export interface Conversation {
   chatId: string;
@@ -152,7 +152,7 @@ export function useConversations(): UseConversationsResult {
         const lastMessageSenderName = lastMessage
           ? lastMessage.sender_id === userId
             ? t('chats.you')
-            : (profileById.get(lastMessage.sender_id)?.display_name ?? null)
+            : safeCaregiverDisplayName(profileById.get(lastMessage.sender_id)?.display_name)
           : null;
 
         if (chat.type === 'direct') {
@@ -164,7 +164,7 @@ export function useConversations(): UseConversationsResult {
             // Missing public-profile data is a real-data fallback, not sample
             // content. Keep the row understandable without exposing an id or
             // internal chat type.
-            title: profile?.display_name ?? t('profile.memberFallback', { appName: APP_NAME }),
+            title: safeCaregiverDisplayName(profile?.display_name),
             subtitle: lastMessage?.content ?? t('chats.noMessagesYet'),
             avatarUrl: profile?.avatar_url ?? null,
             otherUserId,

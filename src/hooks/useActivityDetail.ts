@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import * as Location from 'expo-location';
 import { supabase } from '@/lib/supabase';
+import { safeCaregiverDisplayName } from '@/utils/profileIdentity';
 import { createRequestGuard } from '@/utils/staleRequestGuard';
 import type { ActivityCategory, ActivityDetail, ActivityStatus, Attendee } from '@/types/activity';
 import type { ActivityPlaceColumns } from '@/utils/activityPlaceMapping';
 import { activityColumnsToSelectedLocation } from '@/utils/activityPlaceMapping';
+import { currentAppLocale, translate } from '@/i18n';
 
 interface UseActivityDetailResult {
   detail: ActivityDetail | null;
@@ -49,7 +51,7 @@ export function useActivityDetail(activityId: string): UseActivityDetailResult {
 
     if (!guard.isCurrent(token)) return;
     if (activityError || !activityRow) {
-      setError(activityError?.message ?? 'Activity not found');
+      setError(activityError?.message ?? translate(currentAppLocale(), 'error.activityNotFound'));
       setIsLoading(false);
       return;
     }
@@ -85,7 +87,7 @@ export function useActivityDetail(activityId: string): UseActivityDetailResult {
         return [
           {
             id: profile.id,
-            displayName: profile.display_name,
+            displayName: safeCaregiverDisplayName(profile.display_name),
             avatarUrl: profile.avatar_url,
             avatarColor: colorForId(profile.id),
           },
@@ -141,7 +143,7 @@ export function useActivityDetail(activityId: string): UseActivityDetailResult {
       },
       host: {
         id: activityRow.host_id,
-        displayName: hostRow?.display_name ?? 'Host',
+        displayName: safeCaregiverDisplayName(hostRow?.display_name),
         avatarUrl: hostRow?.avatar_url ?? null,
         avatarColor: '#8FB4C9',
         verified: Boolean(hostRow?.verified_at),

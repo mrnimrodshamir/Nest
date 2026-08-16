@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
+import { safeCaregiverDisplayName } from '@/utils/profileIdentity';
 import { coerceParentRole, type ParentRole } from '@/utils/parentRole';
 import { track } from '@/lib/analytics';
+import { currentAppLocale, translate } from '@/i18n';
 
 export interface EventAttendee {
   userId: string;
@@ -81,7 +83,7 @@ export function useEventRsvp(occurrenceId: string | null): UseEventRsvpResult {
       setAttendees(
         (profiles ?? []).map((p) => ({
           userId: p.id as string,
-          displayName: p.display_name as string,
+          displayName: safeCaregiverDisplayName(p.display_name as string),
           avatarUrl: (p.avatar_url as string | null) ?? null,
           ageYears: typeof p.age_years === 'number' ? p.age_years : null,
           parentRole: coerceParentRole(p.parent_role),
@@ -91,7 +93,7 @@ export function useEventRsvp(occurrenceId: string | null): UseEventRsvpResult {
       );
     } catch (err) {
       console.log('[EventRsvp] load failed', err instanceof Error ? err.message : err);
-      setError("Couldn't load who's going.");
+      setError(translate(currentAppLocale(), 'error.attendeesLoad'));
     } finally {
       setIsLoading(false);
     }
@@ -138,7 +140,7 @@ export function useEventRsvp(occurrenceId: string | null): UseEventRsvpResult {
     } catch (err) {
       console.log('[EventRsvp] toggle failed', err instanceof Error ? err.message : err);
       setIsGoing(wasGoing);
-      setError("Couldn't update your RSVP.");
+      setError(translate(currentAppLocale(), 'error.rsvpUpdate'));
     } finally {
       setIsSaving(false);
     }

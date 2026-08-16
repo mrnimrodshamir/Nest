@@ -14,6 +14,7 @@ import { AvatarPicker } from '@/components/AvatarPicker';
 import { FamilyProfileFields, type FamilyProfileDraft } from '@/components/FamilyProfileFields';
 import { useI18n } from '@/i18n';
 import { track } from '@/lib/analytics';
+import { useChildren } from '@/hooks/useChildren';
 
 interface CompleteAppleProfileScreenProps {
   input: AppleProfileInput;
@@ -30,17 +31,18 @@ const EMPTY_CHILD: OnboardingChild = { name: '', birthdate: null };
  * family profile as email signup; Apple-supplied name/email are initial values,
  * never permanent truth. */
 export function CompleteAppleProfileScreen({ input }: CompleteAppleProfileScreenProps) {
-  const { completeAppleProfile, profile } = useAuth();
+  const { completeAppleProfile, profile, session } = useAuth();
+  const { children: savedChildren } = useChildren(session?.user.id ?? null);
   const { initialDraft, save, clear } = useFormDraft<DraftFields>('apple-profile');
   const { t } = useI18n();
 
   const [familyProfile, setFamilyProfile] = useState<FamilyProfileDraft>({
     displayName: input.displayName ?? input.fallbackFullName ?? profile?.displayName ?? '',
-    parentRole: input.parentRole ?? null,
-    birthdate: input.birthdate ?? null,
-    neighborhood: input.neighborhood ?? '',
-    occupation: input.occupation ?? '',
-    bio: input.bio ?? '',
+    parentRole: input.parentRole ?? profile?.parentRole ?? null,
+    birthdate: input.birthdate ?? profile?.birthdate ?? null,
+    neighborhood: input.neighborhood ?? profile?.neighborhood ?? '',
+    occupation: input.occupation ?? profile?.occupation ?? '',
+    bio: input.bio ?? profile?.bio ?? '',
   });
   const [children, setChildren] = useState<OnboardingChild[]>([EMPTY_CHILD]);
   const [photoUri, setPhotoUri] = useState<string | null>(null);
@@ -62,6 +64,15 @@ export function CompleteAppleProfileScreen({ input }: CompleteAppleProfileScreen
     if (initialDraft.familyProfile) setFamilyProfile(initialDraft.familyProfile);
     if (initialDraft.children?.length) setChildren(initialDraft.children);
   }, [initialDraft]);
+
+  useEffect(() => {
+    if (initialDraft?.children?.length || savedChildren.length === 0) return;
+    setChildren((current) => {
+      const isBlankInitialRow = current.length === 1 && !current[0].name && !current[0].birthdate;
+      if (!isBlankInitialRow) return current;
+      return savedChildren.map((child) => ({ name: child.name, birthdate: child.birthdate }));
+    });
+  }, [initialDraft, savedChildren]);
 
   useEffect(() => {
     save({ familyProfile, children });

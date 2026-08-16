@@ -1,3 +1,5 @@
+import { needsAppleProfileSetup, needsInitialProfileSetup } from '@/utils/profileCompleteness';
+
 export type RouteDecision = 'auth-navigator' | 'complete-profile' | 'main-navigator';
 
 /** The exact routing rule App.tsx uses to switch between the Auth
@@ -7,10 +9,17 @@ export type RouteDecision = 'auth-navigator' | 'complete-profile' | 'main-naviga
  *  reimplementation of it — the same way App.tsx does. */
 export function computeRouteDecision(
   session: unknown,
-  profile: { onboardingCompleted: boolean } | null,
+  profile: { onboardingCompleted: boolean; displayName?: string | null; parentRole?: 'mom' | 'dad' | 'parent' | null; birthdate?: string | null; neighborhood?: string | null } | null,
 ): RouteDecision {
   if (!session) return 'auth-navigator';
-  if (needsInitialProfileSetup(profile)) return 'complete-profile';
+  if (isAppleSession(session) ? needsAppleProfileSetup(profile) : needsInitialProfileSetup(profile)) return 'complete-profile';
   return 'main-navigator';
 }
-import { needsInitialProfileSetup } from '@/utils/profileCompleteness';
+
+function isAppleSession(session: unknown): boolean {
+  if (!session || typeof session !== 'object') return false;
+  const user = (session as { user?: { app_metadata?: { provider?: unknown; providers?: unknown } } }).user;
+  const provider = user?.app_metadata?.provider;
+  const providers = user?.app_metadata?.providers;
+  return provider === 'apple' || (Array.isArray(providers) && providers.includes('apple'));
+}

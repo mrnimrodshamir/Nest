@@ -11,6 +11,8 @@ import type { NotificationPreferences, Profile } from '@/types/profile';
 import { coerceParentRole, type ParentRole } from '@/utils/parentRole';
 import { hasDisplayableAge } from '@/utils/parentAge';
 import { normalizeOptionalProfileText, normalizeProfileBio } from '@/utils/publicFamilyProfile';
+import { hasUsableDisplayName, safeDisplayName } from '@/utils/profileIdentity';
+import { needsAppleProfileSetup } from '@/utils/profileCompleteness';
 
 /** Guards against ASAuthorizationController being presented twice at once
  *  (a real crash on-device: "already presenting a view controller"). React
@@ -80,6 +82,7 @@ export interface OnboardingCompletionInput {
   neighborhood?: string | null;
   occupation?: string | null;
   bio?: string | null;
+  repairCompletedProfile?: boolean;
 }
 
 interface UseAuthResult {
@@ -201,6 +204,7 @@ function useAuthState(): UseAuthResult {
           neighborhood: input.neighborhood !== undefined ? normalizeOptionalProfileText(input.neighborhood) : undefined,
           occupation: input.occupation !== undefined ? normalizeOptionalProfileText(input.occupation) : undefined,
           bio: input.bio !== undefined ? normalizeProfileBio(input.bio) : undefined,
+          repairCompletedProfile: input.repairCompletedProfile,
         },
         (message, meta) => console.log(message, meta ?? ''),
       );
@@ -427,7 +431,7 @@ function useAuthState(): UseAuthResult {
       // signed in". `onboarding_completed` is the real signal.
       const { data: existingProfile } = await supabase
         .from('profiles')
-        .select('id, onboarding_completed')
+        .select('id, onboarding_completed, display_name, parent_role, birthdate, neighborhood_label')
         .eq('id', userId)
         .maybeSingle();
       console.log('[Auth] Apple sign-in: profile lookup complete', {
@@ -436,7 +440,15 @@ function useAuthState(): UseAuthResult {
         onboardingCompleted: existingProfile?.onboarding_completed ?? null,
       });
 
-      if (existingProfile?.onboarding_completed) {
+      const appleProfileNeedsSetup = needsAppleProfileSetup(existingProfile ? {
+        onboardingCompleted: existingProfile.onboarding_completed,
+        displayName: existingProfile.display_name,
+        parentRole: coerceParentRole(existingProfile.parent_role),
+        birthdate: existingProfile.birthdate,
+        neighborhood: existingProfile.neighborhood_label,
+      } : null);
+
+      if (!appleProfileNeedsSetup) {
         console.log('[Auth] Apple sign-in: returning user, loading profile', { userId });
         await loadProfile(userId);
         console.log('[Auth] Apple sign-in: returning user, profile loaded — signed-in');
@@ -514,6 +526,7 @@ function useAuthState(): UseAuthResult {
           neighborhood: input.neighborhood,
           occupation: input.occupation,
           bio: input.bio,
+          repairCompletedProfile: true,
         },
         onStage,
       );
@@ -689,7 +702,7 @@ function mapProfile(row: {
 }): Profile {
   return {
     id: row.id,
-    displayName: row.display_name,
+    displayName: safeDisplayName(row.display_name, ''),
     email: row.email,
     phone: row.phone,
     avatarUrl: row.avatar_url,

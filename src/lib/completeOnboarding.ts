@@ -1,4 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { hasUsableDisplayName } from '@/utils/profileIdentity';
 
 /** Framework-independent core of "finish setting up the account" — no
  *  React, no hooks, no upload/analytics side effects. Pulled out of
@@ -29,6 +30,9 @@ export interface OnboardingCoreInput {
   neighborhood?: string | null;
   occupation?: string | null;
   bio?: string | null;
+  /** Apple accounts that were incorrectly marked complete by an old build
+   * may re-enter setup to repair required profile fields. */
+  repairCompletedProfile?: boolean;
 }
 
 export type OnboardingCoreResult =
@@ -56,14 +60,18 @@ export async function completeOnboardingCore(
 
   const { data: existingProfile, error: fetchError } = await supabase
     .from('profiles')
-    .select('id, onboarding_completed')
+    .select('id, onboarding_completed, display_name')
     .eq('id', userId)
     .maybeSingle();
   if (fetchError) {
     log('[ONBOARDING ERROR]', { stage: 1, category: 'profile-fetch' });
     return { status: 'error', message: "Couldn't load your profile. Please try again." };
   }
-  if (existingProfile?.onboarding_completed) {
+  if (
+    existingProfile?.onboarding_completed
+    && hasUsableDisplayName(existingProfile.display_name)
+    && !input.repairCompletedProfile
+  ) {
     log('[ONBOARDING 00] already complete — no writes');
     return { status: 'already-complete' };
   }

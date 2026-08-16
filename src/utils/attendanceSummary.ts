@@ -1,3 +1,6 @@
+import { currentAppLocale, translate } from '@/i18n/core';
+import { safeCaregiverDisplayName } from '@/utils/profileIdentity';
+
 /** One row as returned by get_activity_attendance(). There is deliberately
  *  NO birthdate field — the RPC returns a pre-coarsened age in months
  *  (exact under 2 years, floored to whole years above) so another user's
@@ -61,7 +64,7 @@ export function groupAttendance(rows: AttendanceRow[]): PersonAttendance[] {
 
     people.push({
       userId,
-      displayName: first?.display_name ?? '',
+      displayName: safeCaregiverDisplayName(first?.display_name),
       avatarUrl: first?.avatar_url ?? null,
       isHost,
       comingAlone,
@@ -77,10 +80,11 @@ export function groupAttendance(rows: AttendanceRow[]): PersonAttendance[] {
 
 /** "With Go" / "With Go and Yo" / "With Go, Yo and Zo" / "Coming alone". */
 export function buildWithLabel(comingAlone: boolean, childNames: string[]): string {
-  if (comingAlone || childNames.length === 0) return 'Coming alone';
-  if (childNames.length === 1) return `With ${childNames[0]}`;
-  if (childNames.length === 2) return `With ${childNames[0]} and ${childNames[1]}`;
-  return `With ${childNames.slice(0, -1).join(', ')} and ${childNames[childNames.length - 1]}`;
+  const locale = currentAppLocale();
+  if (comingAlone || childNames.length === 0) return translate(locale, 'activity.attendance.comingAlone');
+  if (childNames.length === 1) return translate(locale, 'activity.attendance.withOne', { first: childNames[0] });
+  if (childNames.length === 2) return translate(locale, 'activity.attendance.withTwo', { first: childNames[0], second: childNames[1] });
+  return translate(locale, 'activity.attendance.withMore', { names: childNames.slice(0, -1).join(', '), last: childNames[childNames.length - 1] });
 }
 
 function buildSummary(
@@ -101,9 +105,10 @@ function buildSummary(
  * value to a whole-year multiple of 12. */
 export function formatAttendanceAge(months: number | null): string | null {
   if (months === null) return null;
-  if (months < 1) return 'Newborn';
-  if (months < 24) return `${months}mo`;
-  return `${Math.floor(months / 12)}y`;
+  const locale = currentAppLocale();
+  if (months < 1) return translate(locale, 'age.newborn');
+  if (months < 24) return translate(locale, 'age.months', { count: months });
+  return translate(locale, 'age.years', { count: Math.floor(months / 12) });
 }
 
 /** Participant counting for the "Participants · 4/8" header. The host is

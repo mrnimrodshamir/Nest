@@ -428,7 +428,7 @@ test('submit triggered twice in a row (post-success retry) does not remount Main
   db.seedProfile(USER_ID);
   const sim = bootSimAt(db, db.profiles.get(USER_ID));
   const client = createMockClient(db);
-  const input = { children: [{ name: 'Kid', birthdate: '2023-01-01' }] };
+  const input = { children: [{ name: 'Kid', birthdate: '2023-01-01' }], displayName: 'Retry Parent' };
 
   const first = await completeOnboardingCore(client, USER_ID, input);
   assert.equal(first.status, 'completed');
@@ -439,5 +439,24 @@ test('submit triggered twice in a row (post-success retry) does not remount Main
   assert.equal(second.status, 'already-complete');
   sim.setProfile({ onboardingCompleted: true }); // refresh again, same value
   assert.equal(sim.mainMountCount, 1, 'Main does not remount on a route that has not changed');
+  assert.equal((db.children.get(USER_ID) ?? []).length, 1);
+});
+
+test('legacy Apple profile marked complete can be repaired without duplicating its child', async () => {
+  const db = new MockDb();
+  db.seedProfile(USER_ID, { onboarding_completed: true, display_name: 'Momzy member' });
+  db.seedChild(USER_ID, { name: 'Existing child' });
+
+  const result = await completeOnboardingCore(createMockClient(db), USER_ID, {
+    children: [],
+    displayName: 'Real Parent',
+    parentRole: 'parent',
+    birthdate: '1990-01-01',
+    neighborhood: 'Florentin',
+    repairCompletedProfile: true,
+  });
+
+  assert.equal(result.status, 'completed');
+  assert.equal(db.profiles.get(USER_ID)?.display_name, 'Real Parent');
   assert.equal((db.children.get(USER_ID) ?? []).length, 1);
 });

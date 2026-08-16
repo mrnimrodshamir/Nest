@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { track } from '@/lib/analytics';
+import { safeCaregiverDisplayName } from '@/utils/profileIdentity';
+import { currentAppLocale, translate } from '@/i18n';
 
 export interface ChatMessage {
   id: string;
@@ -48,7 +50,8 @@ export function useChatMessages(chatId: string | null, analyticsEvent: 'chat_mes
       .select('id, display_name, avatar_url')
       .eq('id', senderId)
       .single();
-    const profile: ProfileLite = data ?? { id: senderId, display_name: 'Member', avatar_url: null };
+    const rawProfile: ProfileLite = data ?? { id: senderId, display_name: '', avatar_url: null };
+    const profile: ProfileLite = { ...rawProfile, display_name: safeCaregiverDisplayName(rawProfile.display_name) };
     profileCacheRef.current.set(senderId, profile);
     return profile;
   }, []);
@@ -79,7 +82,7 @@ export function useChatMessages(chatId: string | null, analyticsEvent: 'chat_mes
 
       if (cancelled) return;
       if (messagesError) {
-        setError("Couldn't load messages.");
+        setError(translate(currentAppLocale(), 'chats.error.load'));
         setIsLoading(false);
         return;
       }

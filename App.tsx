@@ -262,7 +262,7 @@ function AppInner() {
     <AppErrorBoundary>
       <GestureHandlerRootView style={{ flex: 1 }}>
         <SafeAreaProvider>
-          <NavigationContainer ref={navigationRef} onReady={navigatePendingSharedRoute} linking={session && profile?.onboardingCompleted && !PREVIEW_MODE ? linking : undefined}>
+          <NavigationContainer ref={navigationRef} onReady={navigatePendingSharedRoute} linking={routeDecision === 'main-navigator' && !PREVIEW_MODE ? linking : undefined}>
             {PREVIEW_MODE ? (
               <MainNavigator />
             ) : !session ? (
