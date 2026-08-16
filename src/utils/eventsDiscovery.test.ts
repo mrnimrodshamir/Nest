@@ -51,7 +51,7 @@ test('Event marker, card, details route, and place integration are present witho
   const placeDetails = await readFile(new URL('../screens/PlaceDetailsScreen.tsx', import.meta.url), 'utf8');
   const app = await readFile(new URL('../../App.tsx', import.meta.url), 'utf8');
   assert.match(marker, /rotate: '45deg'/);
-  assert.match(marker, /accessibilityLabel={`Event:/);
+  assert.match(marker, /accessibilityLabel=\{t\('map\.eventMarker'/);
   assert.match(card, /EventCard/);
   assert.match(app, /EventDetails: \{ occurrenceId: string \}/);
   assert.match(app, /event\/:occurrenceId/);
