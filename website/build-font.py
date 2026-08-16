@@ -90,45 +90,40 @@ def build(name: str, css_url: str, instance: dict, glyphs: str, out_name: str) -
     print(f"{name:22s} {len(raw)/1024:6.1f}KB -> {out.stat().st_size/1024:5.1f}KB  {out_name}")
 
 
+GLYPHS = HEBREW + LATIN + DIGITS + PUNCT
+
+
 def main() -> None:
     OUT.mkdir(parents=True, exist_ok=True)
 
-    # English display. opsz high = the display cut; SOFT rounds the terminals,
-    # which is what keeps it friendly; WONK off, too much personality.
+    # Display, both languages. Rubik covers Latin and Hebrew in one family,
+    # so the Hebrew and English pages share a single voice instead of pairing
+    # two unrelated faces and hoping they look related. Rounded terminals and
+    # geometric forms — young and warm rather than literary, which is what a
+    # consumer app for parents wants and what a book serif is not.
     build(
-        "Fraunces (en display)",
-        "https://fonts.googleapis.com/css2"
-        "?family=Fraunces:opsz,SOFT,WONK,wght@9..144,0..100,0..1,100..900",
-        {"opsz": 144, "wght": 600, "SOFT": 40, "WONK": 0},
-        LATIN + DIGITS + PUNCT,
-        "fraunces-display.woff2",
-    )
-
-    # Hebrew display. Frank Ruhl Libre is a variable font on the weight axis
-    # only; 600 matches Fraunces' weight so the two pages feel equally solid.
-    build(
-        "Frank Ruhl (he display)",
-        "https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@300..900",
+        "Rubik (display, he+en)",
+        "https://fonts.googleapis.com/css2?family=Rubik:wght@300..900",
         {"wght": 600},
-        HEBREW + LATIN + DIGITS + PUNCT,
-        "frankruhl-display.woff2",
+        GLYPHS,
+        "rubik-display.woff2",
     )
 
-    # Hebrew body, two weights baked into one file is not possible for a
-    # static instance, so regular only — the UI uses weight sparingly and the
-    # system stack covers the rest.
+    # Body, both languages. Assistant carries Latin as well as Hebrew, so the
+    # two pages share this too. Two weights means two static instances — a
+    # single file cannot hold both once the variable axis is pinned.
     build(
-        "Assistant (he body)",
+        "Assistant Regular",
         "https://fonts.googleapis.com/css2?family=Assistant:wght@200..800",
         {"wght": 400},
-        HEBREW + LATIN + DIGITS + PUNCT,
+        GLYPHS,
         "assistant-body.woff2",
     )
     build(
         "Assistant SemiBold",
         "https://fonts.googleapis.com/css2?family=Assistant:wght@200..800",
         {"wght": 600},
-        HEBREW + LATIN + DIGITS + PUNCT,
+        GLYPHS,
         "assistant-bold.woff2",
     )
 

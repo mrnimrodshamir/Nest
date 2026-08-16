@@ -11,37 +11,21 @@
    Paths are relative to this stylesheet, not to the page, so /en/ resolves
    them correctly without a second copy of the file. */
 
+/* Display, both languages. Rubik carries Latin and Hebrew in one family, so
+   the two pages speak with a single voice instead of pairing two unrelated
+   faces. Rounded and geometric — young and warm, which is the register a
+   consumer app for parents wants. */
 @font-face {
-  font-family: "Fraunces Display";
-  src: url("assets/fraunces-display.woff2") format("woff2");
+  font-family: "Rubik Display";
+  src: url("assets/rubik-display.woff2") format("woff2");
   font-weight: 600;
   font-style: normal;
   font-display: swap;
-  /* Pulls the fallback serif's metrics towards Fraunces so the swap does not
-     visibly reflow the headline. */
-  size-adjust: 104%;
-  ascent-override: 92%;
-  descent-override: 24%;
-  line-gap-override: 0%;
 }
 
-/* Hebrew display. Frank Ruhl Libre is the classic Hebrew book serif, so the
-   Hebrew page reads as the same brand as the English one rather than as a
-   translation bolted onto a different design. */
-@font-face {
-  font-family: "Frank Ruhl Display";
-  src: url("assets/frankruhl-display.woff2") format("woff2");
-  font-weight: 600;
-  font-style: normal;
-  font-display: swap;
-  /* Hebrew has no ascenders or descenders, so at an identical font-size it
-     reads noticeably smaller than the Latin serif. Correcting it here keeps
-     every heading rule in this file language-agnostic. */
-  size-adjust: 106%;
-}
-
-/* Hebrew body. The system Hebrew fallback varies wildly across devices and
-   is the difference between "designed" and "typed into a box". */
+/* Body, both languages. Assistant carries Latin too, and the system Hebrew
+   fallback varies wildly across devices — the difference between "designed"
+   and "typed into a box". */
 @font-face {
   font-family: "Assistant";
   src: url("assets/assistant-body.woff2") format("woff2");
@@ -73,8 +57,8 @@
   --text-2:  #726F65;
   --danger:  #9E4B4B;
 
-  --display: "Fraunces Display", "Iowan Old Style", "Palatino Linotype", Georgia, serif;
-  --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --display: "Rubik Display", "Rubik", -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+  --sans: "Assistant", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 
   /* One ratio-based scale, so no spacing value is arbitrary. The top of the
      scale is deliberately restrained: this is a three-section landing page,
@@ -86,18 +70,15 @@
   --ease: cubic-bezier(.22, 1, .36, 1);
 }
 
-/* The Hebrew page swaps both families. Everything else — colour, spacing,
-   composition — is shared, which is the point: one product, two languages. */
-:root:lang(he) {
-  --display: "Frank Ruhl Display", "Frank Ruhl Libre", "Narkisim", "Times New Roman", serif;
-  --sans: "Assistant", "Heebo", -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
-}
+/* Both languages now share both families, so there is nothing to swap —
+   which is the point: one product, two languages, one voice.
 
-/* Hebrew display type wants slightly looser lines and no negative tracking —
-   letterspacing a Hebrew serif tightens the counters and hurts legibility. */
+   Hebrew still wants its own line settings. It has no ascenders or
+   descenders, so the same line-height reads tighter, and negative tracking
+   closes counters that are already narrow. */
 :lang(he) h1, :lang(he) h2, :lang(he) h3 {
   letter-spacing: 0;
-  line-height: 1.18;
+  line-height: 1.2;
 }
 
 *, *::before, *::after { box-sizing: border-box; }
@@ -249,10 +230,11 @@ a { color: inherit; }
 
 /* Names the pilot city without dressing it up as a badge of endorsement. */
 .pill {
-  /* No flex `gap` here: the label contains a nowrap span, and a gap would be
-     applied between it and the preceding text as if they were separate items,
-     splitting the sentence mid-word. The dot carries its own margin instead. */
-  display: inline-flex; align-items: baseline;
+  /* Deliberately not a flex container. The label mixes text with a nowrap
+     span, and flex makes each an anonymous item, trimming the whitespace
+     between them — "Starting inTel Aviv-Yafo". Normal inline flow keeps the
+     sentence a sentence. */
+  display: inline-block;
   margin-bottom: var(--s2);
   padding: .3rem .8rem;
   border: 1px solid color-mix(in srgb, var(--rose-200) 70%, transparent);
@@ -264,13 +246,12 @@ a { color: inherit; }
 }
 .pill::before {
   content: "";
-  flex: none;
+  display: inline-block;
   width: 6px; height: 6px;
   margin-inline-end: .45rem;
   border-radius: 999px;
   background: var(--rose-700);
-  /* Baseline-aligned text would drop the dot to the descender line. */
-  align-self: center;
+  vertical-align: middle;
 }
 
 /* ---------- 01 hero ---------- */
@@ -290,7 +271,10 @@ a { color: inherit; }
    paints over the end of the headline and washes the letters out. */
 .hero-type { position: relative; z-index: 2; }
 
-.hero h1 { font-size: clamp(2.5rem, 9.6vw, 3.4rem); }
+/* Rubik sets wider than a serif at the same size, so the mobile step is a
+   little smaller than it was — enough to keep the headline tight and leave
+   the device visible in the first viewport. */
+.hero h1 { font-size: clamp(2.15rem, 8.4vw, 3.1rem); }
 
 .lede {
   margin-top: var(--s2);
