@@ -10,19 +10,50 @@
 (() => {
   'use strict';
 
+  // Root-absolute: this file is loaded from both / and /en/, and a relative
+  // path would resolve to /en/api/subscribe on the English page.
   const ENDPOINT = '/api/subscribe';
   const STORE_KEY = 'nestup:joined';
+  const LANG_KEY = 'nestup:lang';
+
+  const HE = document.documentElement.lang === 'he';
 
   // Used by the server's timing check. Bots tend to submit instantly.
   const loadedAt = Date.now();
 
-  const MESSAGES = {
+  /* Written, not translated. The Hebrew is plural-imperative throughout,
+     which is how Israeli consumer copy addresses people. */
+  const COPY = HE ? {
+    invalid_email: 'הכתובת לא נראית תקינה. אפשר לבדוק אותה?',
+    rate_limited: 'הרבה ניסיונות ברצף. נסו שוב עוד רגע.',
+    storage_failed: 'משהו נתקע אצלנו. תנסו שוב בעוד רגע?',
+    offline: 'נראה שאין חיבור לאינטרנט. נסו שוב אחרי שתתחברו.',
+    generic: 'משהו השתבש. נסו שוב, או כתבו לנו ל-hello@nestup.best.',
+    added: (e) => `${e} ברשימה — נהיה בקשר.`,
+    duplicate: (e) => `${e} כבר ברשימה.`,
+    one: 'אתם ברשימה. נהיה בקשר.',
+    many: (n) => `${n} כתובות נוספו מהמכשיר הזה.`,
+  } : {
     invalid_email: "That address doesn't look right. Mind checking it?",
     rate_limited: 'That was a lot of tries. Give it a minute and try again.',
-    storage_failed: "Something broke on our side. Try again in a moment?",
+    storage_failed: 'Something broke on our side. Try again in a moment?',
     offline: 'You appear to be offline. Try again once you reconnect.',
-    generic: "Something went wrong. Try again, or email hello@nestup.best.",
+    generic: 'Something went wrong. Try again, or email hello@nestup.best.',
+    added: (e) => `${e} is on the list — we'll be in touch.`,
+    duplicate: (e) => `${e} is already on the list.`,
+    one: "You're on the list. We'll be in touch.",
+    many: (n) => `${n} addresses added from this device.`,
   };
+
+  /* A language picked by hand outranks any detection, on this visit and every
+     later one. Recorded on the way out so the destination page sees it. */
+  document.querySelectorAll('[data-lang-pick]').forEach((link) => {
+    link.addEventListener('click', () => {
+      try {
+        localStorage.setItem(LANG_KEY, link.getAttribute('data-lang-pick'));
+      } catch { /* storage blocked — the link still navigates */ }
+    });
+  });
 
   /* People sign up for a partner or a friend as well as themselves, so this
      records every address this browser has submitted rather than a single
@@ -87,8 +118,8 @@
       form.hidden = true;
       say(
         previous.length === 1
-          ? "You're on the list. We'll be in touch."
-          : `${previous.length} addresses added from this device.`,
+          ? COPY.one
+          : COPY.many(previous.length),
         'ok',
       );
     } else {
@@ -120,13 +151,13 @@
       // Cheap client check purely for feedback speed. The server revalidates.
       if (!/^[^\s@]+@[^\s@.]+(\.[^\s@.]+)+$/.test(email)) {
         input.setAttribute('aria-invalid', 'true');
-        say(MESSAGES.invalid_email, 'bad');
+        say(COPY.invalid_email, 'bad');
         input.focus();
         return;
       }
 
       if (!navigator.onLine) {
-        say(MESSAGES.offline, 'bad');
+        say(COPY.offline, 'bad');
         return;
       }
 
@@ -142,6 +173,9 @@
             email,
             company: honeypot ? honeypot.value : '',
             elapsed: Date.now() - loadedAt,
+            // Which page they signed up from. Useful for the pilot, and
+            // ignored by older deployments of the endpoint.
+            locale: HE ? 'he' : 'en',
           }),
         });
 
@@ -157,20 +191,18 @@
           say(
             // Named rather than "you're", because this may not be their own
             // address. Neutral phrasing reads correctly either way.
-            data.duplicate
-              ? `${email} is already on the list.`
-              : `${email} is on the list — we'll be in touch.`,
+            data.duplicate ? COPY.duplicate(email) : COPY.added(email),
             'ok',
           );
           return;
         }
 
         setState('open');
-        say(MESSAGES[data.error] || MESSAGES.generic, 'bad');
+        say(COPY[data.error] || COPY.generic, 'bad');
         input.focus();
       } catch {
         setState('open');
-        say(MESSAGES.generic, 'bad');
+        say(COPY.generic, 'bad');
       } finally {
         busy = false;
       }

@@ -25,10 +25,22 @@ MARKS = [
 ]
 
 # Real iPhone 16 Pro captures (1206x2622) from the device.
+#
+# The Tel Aviv pilot page is Hebrew, so these are the Hebrew-locale captures.
+# Screens showing an email address or another person's name and messages are
+# deliberately not used — this page is public.
 SOURCE_DIR = Path(r"C:\Users\Administrator\Downloads")
 SCREENS = {
+    # Discovery: map with pins, the search/filter/sort toolbar, and the bottom
+    # sheet of real nearby results. The single strongest screen in the app.
+    "screen-discovery.webp": "B9F2DC27-9A58-4EF2-8A23-98AD7D3952AB.png",
+    # Discovery again but denser (221 nearby) and a different mix — library,
+    # museum, cinema, park — which is what makes the breadth argument.
+    "screen-nearby.webp": "1FC61EDB-184D-4526-B1C0-FA4A65FB59FC.png",
+    # Forums, in Hebrew: the people side of the product.
+    "screen-forums.webp": "9B223863-BED5-4031-9CDC-3C16F7418D0A.png",
+    # Kept so the English page shows screens in its own language.
     "screen-place.webp": "79A320F2-4087-415A-8BA9-5E4E2068FC0B.png",
-    "screen-forums.webp": "95E498CE-356B-4526-8DED-295264C9D893.png",
     "screen-activities.webp": "24180641-C74E-469E-88E5-39F55DB602B9.png",
 }
 # 560px wide is twice the largest rendered size (280px), so it stays crisp on

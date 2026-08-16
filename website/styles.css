@@ -3,8 +3,14 @@
    and the product are the same brand. Two rules carried over from the app:
    never pure white, never pure black. */
 
-/* Display face only — headlines. Body stays on the system stack, which costs
-   nothing and reads better at small sizes. See build-font.py. */
+/* Type. See build-font.py — every face is subset to the glyphs actually used.
+   A browser only fetches a face it needs to render, so the Hebrew page never
+   downloads Fraunces and the English page never downloads the Hebrew faces,
+   even though all of them are declared here.
+
+   Paths are relative to this stylesheet, not to the page, so /en/ resolves
+   them correctly without a second copy of the file. */
+
 @font-face {
   font-family: "Fraunces Display";
   src: url("assets/fraunces-display.woff2") format("woff2");
@@ -17,6 +23,38 @@
   ascent-override: 92%;
   descent-override: 24%;
   line-gap-override: 0%;
+}
+
+/* Hebrew display. Frank Ruhl Libre is the classic Hebrew book serif, so the
+   Hebrew page reads as the same brand as the English one rather than as a
+   translation bolted onto a different design. */
+@font-face {
+  font-family: "Frank Ruhl Display";
+  src: url("assets/frankruhl-display.woff2") format("woff2");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+  /* Hebrew has no ascenders or descenders, so at an identical font-size it
+     reads noticeably smaller than the Latin serif. Correcting it here keeps
+     every heading rule in this file language-agnostic. */
+  size-adjust: 106%;
+}
+
+/* Hebrew body. The system Hebrew fallback varies wildly across devices and
+   is the difference between "designed" and "typed into a box". */
+@font-face {
+  font-family: "Assistant";
+  src: url("assets/assistant-body.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Assistant";
+  src: url("assets/assistant-bold.woff2") format("woff2");
+  font-weight: 600 700;
+  font-style: normal;
+  font-display: swap;
 }
 
 :root {
@@ -46,6 +84,20 @@
 
   --shell: 1180px;
   --ease: cubic-bezier(.22, 1, .36, 1);
+}
+
+/* The Hebrew page swaps both families. Everything else — colour, spacing,
+   composition — is shared, which is the point: one product, two languages. */
+:root:lang(he) {
+  --display: "Frank Ruhl Display", "Frank Ruhl Libre", "Narkisim", "Times New Roman", serif;
+  --sans: "Assistant", "Heebo", -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+}
+
+/* Hebrew display type wants slightly looser lines and no negative tracking —
+   letterspacing a Hebrew serif tightens the counters and hurts legibility. */
+:lang(he) h1, :lang(he) h2, :lang(he) h3 {
+  letter-spacing: 0;
+  line-height: 1.18;
 }
 
 *, *::before, *::after { box-sizing: border-box; }
@@ -104,11 +156,27 @@ a { color: inherit; }
   clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap;
 }
 
+/* Clipped rather than parked at left:-9999px. Off-canvas negative offsets
+   extend the scrollable area on an RTL page, where the inline origin is the
+   right edge — which is a 10,000px horizontal scroll, not a hidden element. */
 .skip {
-  position: absolute; left: -9999px;
-  background: var(--surface); padding: var(--s2); border-radius: 12px; z-index: 110;
+  position: absolute;
+  width: 1px; height: 1px;
+  margin: -1px; overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  z-index: 110;
 }
-.skip:focus { left: var(--s2); top: var(--s2); }
+.skip:focus {
+  width: auto; height: auto;
+  margin: 0; overflow: visible;
+  clip-path: none;
+  inset-block-start: var(--s2);
+  inset-inline-start: var(--s2);
+  background: var(--surface);
+  padding: var(--s2);
+  border-radius: 12px;
+}
 
 :focus-visible { outline: 2px solid var(--rose-700); outline-offset: 3px; border-radius: 6px; }
 
@@ -163,6 +231,47 @@ a { color: inherit; }
   text-decoration: none; font-weight: 660; letter-spacing: -.02em; font-size: 1.08rem;
 }
 .lockup img { border-radius: 8px; }
+/* The wordmark is a Latin logotype in both languages, so it keeps its own
+   direction even on the RTL page. */
+.lockup span { direction: ltr; unicode-bidi: isolate; }
+
+.bar-end { display: flex; align-items: center; gap: .35rem; }
+
+.lang {
+  display: inline-flex; align-items: center;
+  min-height: 44px; padding: 0 .7rem;
+  border-radius: 999px;
+  text-decoration: none;
+  font-size: .92rem; font-weight: 600;
+  color: var(--text-2);
+}
+.lang:hover { color: var(--text); background: color-mix(in srgb, var(--line) 45%, transparent); }
+
+/* Names the pilot city without dressing it up as a badge of endorsement. */
+.pill {
+  /* No flex `gap` here: the label contains a nowrap span, and a gap would be
+     applied between it and the preceding text as if they were separate items,
+     splitting the sentence mid-word. The dot carries its own margin instead. */
+  display: inline-flex; align-items: baseline;
+  margin-bottom: var(--s2);
+  padding: .3rem .8rem;
+  border: 1px solid color-mix(in srgb, var(--rose-200) 70%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--rose-100) 45%, transparent);
+  color: var(--rose-900);
+  font-size: .82rem; font-weight: 600;
+  letter-spacing: .01em;
+}
+.pill::before {
+  content: "";
+  flex: none;
+  width: 6px; height: 6px;
+  margin-inline-end: .45rem;
+  border-radius: 999px;
+  background: var(--rose-700);
+  /* Baseline-aligned text would drop the dot to the descender line. */
+  align-self: center;
+}
 
 /* ---------- 01 hero ---------- */
 
@@ -441,7 +550,8 @@ a { color: inherit; }
   flex: 1 1 auto;
   min-width: 0;               /* lets the field shrink instead of overflowing */
   min-height: 44px;
-  padding: 0 .5rem 0 1rem;
+  /* Logical, so the field's inner padding mirrors correctly in RTL. */
+  padding-inline: 1rem .5rem;
   border: 0;
   background: transparent;
   font: inherit;
@@ -450,6 +560,10 @@ a { color: inherit; }
   color: var(--text);
 }
 .join-input::placeholder { color: color-mix(in srgb, var(--text-2) 70%, transparent); }
+/* The field stays dir="ltr" because an email address is LTR text, but on the
+   RTL page it is aligned to the reading edge so the address starts where the
+   eye does instead of pressed up against the submit button. */
+[dir="rtl"] .join-input { text-align: right; }
 .join-input:focus { outline: none; }
 .join-input[aria-invalid="true"] { color: var(--danger); }
 
@@ -466,6 +580,8 @@ a { color: inherit; }
   transition: background .18s var(--ease);
 }
 .join-go:hover { background: var(--rose-900); }
+/* The arrow means "forward", which is leftward in Hebrew. */
+[dir="rtl"] .join-arrow { transform: scaleX(-1); }
 .join-go-wide { padding: 0 1.25rem; }
 .join-go-label { display: none; }
 
@@ -474,11 +590,15 @@ a { color: inherit; }
 
 @keyframes pulse { 50% { opacity: .35; } }
 
-/* Off-screen rather than display:none — a bot reading the DOM should still
-   find something to fill in. */
+/* Clipped rather than display:none — a bot reading the DOM should still find
+   something to fill in. Not parked off-canvas either: a negative offset would
+   extend the scrollable area on the RTL page. */
 .join-hp {
-  position: absolute; left: -9999px;
-  width: 1px; height: 1px; overflow: hidden;
+  position: absolute;
+  width: 1px; height: 1px;
+  margin: -1px; overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 
 /* Collapsed until it has something to say, otherwise the reserved line reads
@@ -580,7 +700,7 @@ a { color: inherit; }
     grid-template-columns: 1.2fr .8fr;
     align-items: center;
     justify-items: start;
-    text-align: left;
+    text-align: start;
     gap: var(--s3);
     padding: var(--s3) var(--s3) var(--s6);
   }
@@ -588,7 +708,7 @@ a { color: inherit; }
   .hero h1 { font-size: clamp(3rem, 4.1vw, 3.8rem); }
   .hero .lede, .hero .join { margin-inline: 0; }
   .lede { max-width: 32ch; }
-  .hero .join-msg { text-align: left; }
+  .hero .join-msg { text-align: start; }
 
   /* Centred in its column rather than pushed to the far edge — hard-right
      alignment opened a wide dead gap between the headline and the device. */
@@ -612,7 +732,14 @@ a { color: inherit; }
   /* Straightens on hover — a small reward, not a requirement. */
   .stage:hover .device-hero { transform: rotateY(-4deg) rotateX(1deg) rotate(-.5deg); }
 
-  .halo { inset: -16% -32% -16% -58%; filter: blur(50px); }
+  /* Bleeds far past the type side so the colour field unifies the headline
+     and the device. Logical insets, so it mirrors with the layout in RTL
+     instead of bleeding off the wrong edge. */
+  .halo {
+    inset-block: -16%;
+    inset-inline: -58% -32%;
+    filter: blur(50px);
+  }
 
   /* Narrower than the hero shell. The hero needs width for the two-column
      composition; this section is a heading and two phones, and at full shell

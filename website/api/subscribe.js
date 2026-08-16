@@ -219,6 +219,10 @@ export default async function handler(req, res) {
           email,
           at,
           source: SOURCE,
+          // Which language page the signup came from. Whitelisted rather
+          // than stored as sent, so this cannot become a way to write
+          // arbitrary strings into the record.
+          locale: payload.locale === 'he' ? 'he' : 'en',
           ip,
           userAgent: req.headers['user-agent'] ?? null,
           referer: req.headers.referer ?? null,

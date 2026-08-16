@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+
+<title>NestUp — Your parent community is closer than you think</title>
+<meta name="description" content="NestUp shows parents the activities, places and local events for families already around them, and the parents who are going. Starting in Tel Aviv-Yafo.">
+<link rel="canonical" href="https://nestup.best/en/">
+<link rel="alternate" hreflang="he" href="https://nestup.best/">
+<link rel="alternate" hreflang="en" href="https://nestup.best/en/">
+<link rel="alternate" hreflang="x-default" href="https://nestup.best/">
+
+<meta property="og:type" content="website">
+<meta property="og:locale" content="en_US">
+<meta property="og:locale:alternate" content="he_IL">
+<meta property="og:url" content="https://nestup.best/en/">
+<meta property="og:site_name" content="NestUp">
+<meta property="og:title" content="NestUp — Your parent community is closer than you think">
+<meta property="og:description" content="Activities, places and local events for families near home. Starting in Tel Aviv-Yafo.">
+<meta property="og:image" content="https://nestup.best/assets/og-card.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+
+<link rel="icon" href="../assets/favicon-32.png" sizes="32x32">
+<link rel="apple-touch-icon" href="../assets/apple-touch-icon.png">
+<meta name="theme-color" content="#FAF8F4">
+
+<!-- Only honours a stored choice. There is deliberately no automatic redirect
+     back to Hebrew: the Hebrew page may send visitors here, and a rule in
+     both directions is how you build a redirect loop. -->
+<script>
+(function () {
+  try {
+    if (localStorage.getItem('nestup:lang') === 'he') location.replace('../');
+  } catch (e) { /* storage blocked — just serve English */ }
+})();
+</script>
+
+<link rel="preload" as="font" type="font/woff2" href="../assets/fraunces-display.woff2" crossorigin>
+<link rel="preload" as="image" href="../assets/screen-place.webp" fetchpriority="high">
+<link rel="stylesheet" href="../styles.css">
+<script src="../join.js" defer></script>
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "MobileApplication",
+  "name": "NestUp",
+  "applicationCategory": "SocialNetworkingApplication",
+  "operatingSystem": "iOS",
+  "inLanguage": ["he", "en", "fr", "ru"],
+  "url": "https://nestup.best/en/",
+  "description": "NestUp shows parents the activities, places and local events for families already around them.",
+  "areaServed": { "@type": "City", "name": "Tel Aviv-Yafo" }
+}
+</script>
+</head>
+
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="bar">
+  <a class="lockup" href="./" aria-label="NestUp home">
+    <img src="../assets/mark-56.png" srcset="../assets/mark-56.png 1x, ../assets/mark-112.png 2x"
+         width="32" height="32" alt="" decoding="async">
+    <span>NestUp</span>
+  </a>
+  <div class="bar-end">
+    <a class="lang" href="../" data-lang-pick="he" lang="he" hreflang="he">עברית</a>
+    <a class="btn btn-sm" href="#join">Join the pilot</a>
+  </div>
+</header>
+
+<main id="main">
+
+  <!-- 01 — HERO -->
+  <section class="hero">
+    <div class="hero-type">
+      <p class="pill">Starting in <span class="nb">Tel Aviv-Yafo</span></p>
+      <h1>Your parent community<br class="bp"> is closer than you&nbsp;think.</h1>
+      <p class="lede">Parents, activities, places and local events, right around the corner.</p>
+
+      <div class="join" data-join data-open-on-click>
+        <button class="btn btn-lg join-trigger" type="button">Join the pilot</button>
+
+        <form class="join-form" novalidate hidden>
+          <label class="sr-only" for="email-hero">Your email address</label>
+          <input class="join-input" id="email-hero" type="email" name="email" required
+                 dir="ltr" autocomplete="email" inputmode="email" spellcheck="false"
+                 placeholder="name@email.com">
+          <button class="join-go" type="submit">
+            <span class="sr-only">Join the pilot</span>
+            <svg class="join-arrow" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false">
+              <path d="M4 12h14M13 6l6 6-6 6" fill="none" stroke="currentColor"
+                    stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
+          <!-- Honeypot. Hidden from people, tempting to a form-filling bot. -->
+          <div class="join-hp" aria-hidden="true">
+            <label>Company <input type="text" name="company" tabindex="-1" autocomplete="off"></label>
+          </div>
+        </form>
+
+        <p class="join-msg" role="status" aria-live="polite"></p>
+        <button class="join-again" type="button">Add another email</button>
+      </div>
+
+      <p class="fine join-fine">Free · iPhone</p>
+    </div>
+
+    <figure class="stage">
+      <div class="halo" aria-hidden="true"></div>
+      <div class="device device-hero">
+        <div class="device-body">
+          <span class="device-key device-key-silent" aria-hidden="true"></span>
+          <span class="device-key device-key-up" aria-hidden="true"></span>
+          <span class="device-key device-key-down" aria-hidden="true"></span>
+          <span class="device-key device-key-power" aria-hidden="true"></span>
+          <div class="device-screen">
+            <img class="device-shot" src="../assets/screen-place.webp" width="560" height="1218"
+                 alt="The NestUp app showing a family-friendly place in Tel Aviv, with a map, what's there, and an option to create an activity at that spot."
+                 fetchpriority="high" decoding="async">
+            <span class="device-island" aria-hidden="true"></span>
+            <span class="device-glare" aria-hidden="true"></span>
+          </div>
+        </div>
+      </div>
+    </figure>
+  </section>
+
+  <!-- 02 — PROOF -->
+  <section class="proof">
+    <div class="proof-head">
+      <p class="kicker">The app</p>
+      <h2>What's on near you, and who's already&nbsp;going.</h2>
+    </div>
+
+    <div class="duo">
+      <figure class="duo-item reveal">
+        <div class="window">
+          <div class="device device-sm">
+            <div class="device-body">
+              <span class="device-key device-key-silent" aria-hidden="true"></span>
+              <span class="device-key device-key-up" aria-hidden="true"></span>
+              <span class="device-key device-key-down" aria-hidden="true"></span>
+              <span class="device-key device-key-power" aria-hidden="true"></span>
+              <div class="device-screen">
+                <img class="device-shot" src="../assets/screen-activities.webp" width="560" height="1218"
+                     loading="lazy" decoding="async"
+                     alt="The NestUp app showing upcoming activities, including an indoor playground meetup the user is hosting.">
+                <span class="device-island" aria-hidden="true"></span>
+                <span class="device-glare" aria-hidden="true"></span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <figcaption>
+          <h3>Go together</h3>
+          <p>Something is on nearby and other parents are going. Join them, or host your own in a minute.</p>
+        </figcaption>
+      </figure>
+
+      <figure class="duo-item reveal">
+        <div class="window">
+          <div class="device device-sm">
+            <div class="device-body">
+              <span class="device-key device-key-silent" aria-hidden="true"></span>
+              <span class="device-key device-key-up" aria-hidden="true"></span>
+              <span class="device-key device-key-down" aria-hidden="true"></span>
+              <span class="device-key device-key-power" aria-hidden="true"></span>
+              <div class="device-screen">
+                <img class="device-shot" src="../assets/screen-forums.webp" width="560" height="1218"
+                     loading="lazy" decoding="async"
+                     alt="The NestUp app showing community forums for parents in Tel Aviv.">
+                <span class="device-island" aria-hidden="true"></span>
+                <span class="device-glare" aria-hidden="true"></span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <figcaption>
+          <h3>Local, not global</h3>
+          <p>Forums for the questions you'd rather ask a neighbour than a search engine.</p>
+        </figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <!-- 03 — CLOSE -->
+  <section id="join" class="close">
+    <img class="close-mark" src="../assets/mark-112.png" width="60" height="60" alt=""
+         loading="lazy" decoding="async">
+    <h2>Your parent community<br class="bp"> is already&nbsp;here.</h2>
+    <p class="lede">We're opening the pilot in <span class="nb">Tel Aviv-Yafo</span>. Leave your email and we'll let you in.</p>
+
+    <div class="join join-wide" data-join>
+      <form class="join-form" novalidate>
+        <label class="sr-only" for="email-close">Your email address</label>
+        <input class="join-input" id="email-close" type="email" name="email" required
+               dir="ltr" autocomplete="email" inputmode="email" spellcheck="false"
+               placeholder="name@email.com">
+        <button class="join-go join-go-wide" type="submit">
+          <span class="join-go-label">Join the pilot</span>
+          <svg class="join-arrow" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false">
+            <path d="M4 12h14M13 6l6 6-6 6" fill="none" stroke="currentColor"
+                  stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+        <div class="join-hp" aria-hidden="true">
+          <label>Company <input type="text" name="company" tabindex="-1" autocomplete="off"></label>
+        </div>
+      </form>
+      <p class="join-msg" role="status" aria-live="polite"></p>
+      <button class="join-again" type="button">Add another email</button>
+    </div>
+
+    <p class="fine">No spam. Just the invite, when it's your turn.</p>
+  </section>
+
+</main>
+
+<footer class="foot">
+  <span>NestUp</span>
+  <nav aria-label="Footer">
+    <a href="https://ghzpzimcxvccbmjsttlf.supabase.co/storage/v1/object/public/legal/privacy.html">Privacy</a>
+    <a href="https://ghzpzimcxvccbmjsttlf.supabase.co/storage/v1/object/public/legal/terms.html">Terms</a>
+    <a href="mailto:hello@nestup.best">Contact</a>
+    <a href="../" data-lang-pick="he" lang="he" hreflang="he">עברית</a>
+  </nav>
+</footer>
+
+</body>
+</html>
