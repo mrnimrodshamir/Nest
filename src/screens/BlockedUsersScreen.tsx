@@ -16,13 +16,13 @@ export function BlockedUsersScreen({ onBack }: BlockedUsersScreenProps) {
   const { blockedUsers, isLoading, error, refresh, unblock } = useBlockedUsers();
 
   const confirmUnblock = (user: BlockedUser) => {
-    Alert.alert(`Unblock ${user.displayName}?`, "You'll see their activities and messages again.", [
-      { text: 'Cancel', style: 'cancel' },
+    Alert.alert(t('blocked.confirmTitle', { name: user.displayName }), t('blocked.confirmBody'), [
+      { text: t('common.cancel'), style: 'cancel' },
       {
-        text: 'Unblock',
+        text: t('profile.unblock'),
         onPress: async () => {
           const err = await unblock(user.id);
-          if (err) Alert.alert("Couldn't unblock", err);
+          if (err) Alert.alert(t('blocked.errorTitle'), err);
         },
       },
     ]);
@@ -61,9 +61,9 @@ export function BlockedUsersScreen({ onBack }: BlockedUsersScreenProps) {
           !isLoading ? (
             <StateCard
               icon={ProhibitInset}
-              title={error ?? "You haven't blocked anyone"}
-              body={error ? 'Pull to try again.' : "Members you block won't be able to reach you, and you won't see their activities."}
-              ctaLabel={error ? 'Try again' : undefined}
+              title={error ?? t('blocked.emptyTitle')}
+              body={error ? t('myActivities.errorBody') : t('blocked.emptyBody')}
+              ctaLabel={error ? t('common.retry') : undefined}
               onCtaPress={error ? refresh : undefined}
               tone={error ? 'warning' : 'default'}
             />

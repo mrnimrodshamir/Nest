@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { track } from '@/lib/analytics';
 import type { ActivityDetail } from '@/types/activity';
+import { currentAppLocale, translate } from '@/i18n';
 
 export function useActivityRsvp(initial: ActivityDetail, onSettled?: () => void) {
   const [activity, setActivity] = useState(initial);
@@ -43,8 +44,8 @@ export function useActivityRsvp(initial: ActivityDetail, onSettled?: () => void)
       setActivity(previous);
       setError(
         rpcError.message.includes('full')
-          ? "This activity just filled up — you're a little late!"
-          : "Couldn't join right now — please try again.",
+          ? translate(currentAppLocale(), 'error.activityFull')
+          : translate(currentAppLocale(), 'error.activityJoin'),
       );
       return false;
     }
@@ -78,7 +79,7 @@ export function useActivityRsvp(initial: ActivityDetail, onSettled?: () => void)
     setIsSubmitting(false);
     if (deleteError) {
       setActivity(previous);
-      setError("Couldn't leave right now — please try again.");
+      setError(translate(currentAppLocale(), 'error.activityLeave'));
     } else {
       track('activity_left', { content_id: activity.id });
       onSettled?.();

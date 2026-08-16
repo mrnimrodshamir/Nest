@@ -6,6 +6,7 @@ import { PrimaryButton } from '@/components/PrimaryButton';
 import { ComingWithSelector } from '@/components/ComingWithSelector';
 import { pickDefaultChild } from '@/utils/pickDefaultChild';
 import type { Child } from '@/types/child';
+import { useI18n } from '@/i18n';
 
 interface JoinActivitySheetProps {
   visible: boolean;
@@ -29,6 +30,7 @@ export function JoinActivitySheet({
   onConfirm,
   onDismiss,
 }: JoinActivitySheetProps) {
+  const { t } = useI18n();
   const [selectedChildIds, setSelectedChildIds] = useState<string[]>([]);
   // Auto-select the default (or only) child each time the sheet opens —
   // never default to "coming alone" when a default child exists. Guarded
@@ -54,7 +56,7 @@ export function JoinActivitySheet({
         <View style={styles.sheet}>
           <View style={styles.header}>
             <Text style={styles.title} numberOfLines={1}>{activityTitle}</Text>
-            <Pressable onPress={onDismiss} style={styles.closeButton} hitSlop={8} accessibilityLabel="Close">
+            <Pressable onPress={onDismiss} style={styles.closeButton} hitSlop={8} accessibilityLabel={t('common.close', { what: activityTitle })}>
               <X size={16} color={theme.text.secondary} />
             </Pressable>
           </View>
@@ -64,7 +66,7 @@ export function JoinActivitySheet({
 
           <View style={styles.actions}>
             <PrimaryButton
-              label="Join activity"
+              label={t('activity.joinAction')}
               onPress={() => onConfirm(selectedChildIds)}
               loading={isSubmitting}
             />

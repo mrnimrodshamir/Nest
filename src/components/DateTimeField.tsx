@@ -14,7 +14,7 @@ interface DateTimeFieldProps {
   placeholder?: string;
 }
 
-export function DateTimeField({ label, value, onChange, minimumDate, hasValue = true, placeholder = 'Choose date and time' }: DateTimeFieldProps) {
+export function DateTimeField({ label, value, onChange, minimumDate, hasValue = true, placeholder }: DateTimeFieldProps) {
   const { t } = useI18n();
   const [showPicker, setShowPicker] = useState(false);
   const [androidStep, setAndroidStep] = useState<'date' | 'time'>('date');
@@ -40,7 +40,7 @@ export function DateTimeField({ label, value, onChange, minimumDate, hasValue = 
         }}
       >
         <Text style={[styles.value, !hasValue && styles.placeholder]}>
-          {hasValue ? formatted : placeholder}
+          {hasValue ? formatted : (placeholder ?? t('activityForm.chooseDateTime'))}
         </Text>
       </Pressable>
 

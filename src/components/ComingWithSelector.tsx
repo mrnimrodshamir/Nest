@@ -4,6 +4,7 @@ import { Check } from 'phosphor-react-native';
 import { theme, typography, spacing, radius } from '@/theme';
 import { formatBabyAge, birthdateToMonths } from '@/utils/babyAge';
 import type { Child } from '@/types/child';
+import { useI18n } from '@/i18n';
 
 interface ComingWithSelectorProps {
   label?: string;
@@ -16,7 +17,8 @@ interface ComingWithSelectorProps {
 /** "Who are you coming with?" — shared by activity creation (the host's
  *  own attendance) and joining (a participant's attendance). Alone is
  *  always an explicit, single-tap choice, never just "nothing selected". */
-export function ComingWithSelector({ label = 'Who are you coming with?', children, selectedChildIds, onChange }: ComingWithSelectorProps) {
+export function ComingWithSelector({ label, children, selectedChildIds, onChange }: ComingWithSelectorProps) {
+  const { t, locale } = useI18n();
   const comingAlone = selectedChildIds.length === 0;
 
   const toggleChild = (childId: string) => {
@@ -36,14 +38,14 @@ export function ComingWithSelector({ label = 'Who are you coming with?', childre
 
   return (
     <View style={styles.container}>
-      <Text style={styles.label}>{label}</Text>
+      <Text style={styles.label}>{label ?? t('activityForm.comingWith')}</Text>
       <View style={styles.options}>
         {/* Children first — attending with a child is the app's default,
             expected use case, not an equal-weight alternative to going
             alone. */}
         {children.map((child) => {
           const selected = selectedChildIds.includes(child.id);
-          const age = child.birthdate ? formatBabyAge(birthdateToMonths(child.birthdate)) : null;
+          const age = child.birthdate ? formatBabyAge(birthdateToMonths(child.birthdate), locale, child.sex) : null;
           return (
             <Pressable
               key={child.id}
@@ -71,13 +73,13 @@ export function ComingWithSelector({ label = 'Who are you coming with?', childre
           onPress={() => onChange([])}
           accessibilityRole="radio"
           accessibilityState={{ checked: comingAlone }}
-          accessibilityLabel="Coming alone"
+          accessibilityLabel={t('activityForm.comingAlone')}
         >
           <View style={[styles.checkbox, comingAlone && styles.checkboxSelected]}>
             {comingAlone && <Check size={12} color={theme.text.inverse} weight="bold" />}
           </View>
           <Text style={[styles.optionLabel, styles.aloneLabel, comingAlone && styles.optionLabelSelected]}>
-            Coming alone
+            {t('activityForm.comingAlone')}
           </Text>
         </Pressable>
       </View>

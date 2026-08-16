@@ -44,7 +44,8 @@ test('no Hebrew value is left as an untranslated English string', () => {
   const allowed = new Set([
     'language.english', 'language.hebrew', 'language.french', 'language.russian',
     // Pure format patterns with no words to translate.
-    'chats.happenedOn', 'event.attendance.overflow',
+    'chats.happenedOn', 'event.attendance.overflow', 'age.range',
+    'activity.title.withoutLocation',
   ]);
   const untranslated = (Object.keys(he) as Array<keyof typeof en>).filter(
     (key) => !allowed.has(key) && he[key] === en[key],

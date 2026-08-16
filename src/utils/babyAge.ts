@@ -23,21 +23,37 @@ export function birthdateToMonths(isoDate: string, now: Date = new Date()): numb
   return Math.max(0, months);
 }
 
-export function formatBabyAge(months: number | null): string {
+export function formatBabyAge(
+  months: number | null,
+  locale: AppLocale = currentAppLocale(),
+  sex: ChildSex | null = null,
+): string {
   if (months === null) return '';
-  if (months < 1) return 'Newborn';
+  if (months < 1) return translate(locale, 'age.newborn');
   const years = Math.floor(months / 12);
   const remMonths = months % 12;
-  if (years === 0) return `${remMonths}mo`;
-  if (remMonths === 0) return `${years}y`;
-  return `${years}y ${remMonths}mo`;
+  if (locale === 'he') return formatHebrewChildAge(years, remMonths, sex);
+  if (years === 0) return translate(locale, 'age.months', { count: remMonths });
+  if (remMonths === 0) return translate(locale, 'age.years', { count: years });
+  return translate(locale, 'age.yearsMonths', { years, months: remMonths });
 }
 
 export function formatAgeRange(minMonths: number | null, maxMonths: number | null): string {
-  if (minMonths === null && maxMonths === null) return 'Any age';
+  const locale = currentAppLocale();
+  if (minMonths === null && maxMonths === null) return translate(locale, 'age.any');
   if (minMonths !== null && maxMonths !== null) {
-    return `${formatBabyAge(minMonths)}–${formatBabyAge(maxMonths)}`;
+    return translate(locale, 'age.range', { min: formatBabyAge(minMonths, locale), max: formatBabyAge(maxMonths, locale) });
   }
-  if (minMonths !== null) return `${formatBabyAge(minMonths)}+`;
-  return `Up to ${formatBabyAge(maxMonths)}`;
+  if (minMonths !== null) return translate(locale, 'age.andUp', { age: formatBabyAge(minMonths, locale) });
+  return translate(locale, 'age.upTo', { age: formatBabyAge(maxMonths, locale) });
 }
+
+function formatHebrewChildAge(years: number, months: number, sex: ChildSex | null): string {
+  const prefix = sex === 'male' ? 'בן' : sex === 'female' ? 'בת' : 'גיל';
+  const monthLabel = months === 1 ? 'חודש' : months === 2 ? 'חודשיים' : `${months} חודשים`;
+  if (years === 0) return `${prefix} ${monthLabel}`;
+  const yearLabel = years === 1 ? 'שנה' : years === 2 ? 'שנתיים' : String(years);
+  return months === 0 ? `${prefix} ${yearLabel}` : `${prefix} ${yearLabel} ו${monthLabel}`;
+}
+import { currentAppLocale, translate, type AppLocale } from '@/i18n/core';
+import type { ChildSex } from '@/types/child';

@@ -249,7 +249,7 @@ function ChildrenEditor({ children, onAdd, onUpdate, onRemove, onSetDefault }: C
   const handleSave = async () => {
     if (inFlightRef.current) return;
     if (!isNonEmpty(name)) return setError(t('profile.enterChildName'));
-    if (!birthdate) return setError("Select the child's date of birth");
+    if (!birthdate) return setError(t('profile.selectChildBirthdate'));
     inFlightRef.current = true;
     setIsSaving(true);
     const result =
@@ -270,9 +270,9 @@ function ChildrenEditor({ children, onAdd, onUpdate, onRemove, onSetDefault }: C
   };
 
   const confirmRemove = (child: Child) => {
-    Alert.alert(`Remove ${child.name}?`, undefined, [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Remove', style: 'destructive', onPress: () => onRemove(child.id) },
+    Alert.alert(t('profile.removeChildConfirm', { name: child.name }), undefined, [
+      { text: t('common.cancel'), style: 'cancel' },
+      { text: t('activity.removeCalendar'), style: 'destructive', onPress: () => onRemove(child.id) },
     ]);
   };
 
@@ -282,7 +282,7 @@ function ChildrenEditor({ children, onAdd, onUpdate, onRemove, onSetDefault }: C
         <View key={child.id} style={styles.childRow}>
           <Pressable
             onPress={() => onSetDefault(child.id)}
-            accessibilityLabel={child.isDefault ? `${child.name} is the default child` : `Set ${child.name} as default`}
+            accessibilityLabel={t(child.isDefault ? 'profile.defaultChildLabel' : 'profile.setDefaultChildLabel', { name: child.name })}
             hitSlop={13}
           >
             <Star size={18} color={child.isDefault ? theme.brand.secondary : theme.border.strong} weight={child.isDefault ? 'fill' : 'regular'} />
@@ -290,7 +290,7 @@ function ChildrenEditor({ children, onAdd, onUpdate, onRemove, onSetDefault }: C
           <View style={styles.childInfo}>
             <Text style={styles.childName}>
               {child.name}
-              {child.sex ? ` · ${child.sex === 'male' ? 'Boy' : 'Girl'}` : ''}
+              {child.sex ? ` · ${t(child.sex === 'male' ? 'profile.boy' : 'profile.girl')}` : ''}
             </Text>
             <Text style={styles.childAge}>{child.birthdate ? formatBabyAge(birthdateToMonths(child.birthdate)) : ''}</Text>
           </View>
@@ -299,11 +299,11 @@ function ChildrenEditor({ children, onAdd, onUpdate, onRemove, onSetDefault }: C
               <Text style={styles.defaultPillLabel}>{t('profile.defaultForMatching')}</Text>
             </View>
           )}
-          <Pressable onPress={() => startEdit(child)} accessibilityLabel={`Edit ${child.name}`} hitSlop={14}>
+          <Pressable onPress={() => startEdit(child)} accessibilityLabel={t('profile.editChildLabel', { name: child.name })} hitSlop={14}>
             <PencilSimple size={16} color={theme.text.secondary} />
           </Pressable>
           {children.length > 1 && (
-            <Pressable onPress={() => confirmRemove(child)} accessibilityLabel={`Remove ${child.name}`} hitSlop={14}>
+            <Pressable onPress={() => confirmRemove(child)} accessibilityLabel={t('profile.removeChildLabel', { name: child.name })} hitSlop={14}>
               <Trash size={16} color={theme.semantic.danger} />
             </Pressable>
           )}
@@ -348,7 +348,7 @@ function ChildrenEditor({ children, onAdd, onUpdate, onRemove, onSetDefault }: C
               <Text style={styles.childCancelLabel}>{t('common.cancel')}</Text>
             </Pressable>
             <View style={styles.childSaveButton}>
-              <PrimaryButton label="Save" onPress={handleSave} loading={isSaving} />
+              <PrimaryButton label={t('common.save')} onPress={handleSave} loading={isSaving} />
             </View>
           </View>
         </View>

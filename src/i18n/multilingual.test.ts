@@ -127,13 +127,19 @@ for (const locale of NEW_LOCALES) {
       // Every dictionary names each language in its OWN script.
       'language.english', 'language.hebrew', 'language.french', 'language.russian',
       // Pure format patterns — no words to translate.
-      'chats.happenedOn', 'event.attendance.overflow',
+      'chats.happenedOn', 'event.attendance.overflow', 'age.range',
+      'activity.title.withoutLocation', 'duration.minutes', 'activity.participantsCount',
       // A brand name.
       'common.whatsapp',
       // Correct French that happens to be spelled like the English. Listing
       // them beats mistranslating a word to satisfy a test.
       'sort.distance', 'chats.section.forums', 'activity.message',
-      'chat.messagePlaceholder', 'profile.role.parent',
+      'chat.messagePlaceholder', 'profile.role.parent', 'profile.memberFallback',
+      // Proper Tel Aviv area names remain proper nouns in French.
+      'place.area.jaffa', 'place.area.neveTzedek', 'place.area.ramatAviv',
+      'place.area.ramatAvivGimel', 'place.area.hadarYosef', 'place.area.hatikva',
+      'place.area.neotAfeka', 'place.area.neveEliezer', 'place.area.neveSharet',
+      'place.area.zahala', 'event.category.festival',
     ]);
     const untranslated = (Object.keys(dictionary) as Array<keyof typeof en>).filter(
       (key) => !allowed.has(key) && dictionary[key] === en[key],

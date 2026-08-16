@@ -2,6 +2,7 @@ import type { EventDetails } from '@/types/event';
 import { EVENT_CATEGORY_LABELS } from '@/types/event';
 import { EVENT_LIFECYCLE_LABELS } from '@/utils/eventLifecycle';
 import { displayedEventContent } from '../../supabase/functions/_shared/eventTranslation';
+import { eventCategoryLabel, type Translator } from '@/i18n/taxonomy';
 
 export interface EventDetailsPresentation {
   title: string;
@@ -20,7 +21,7 @@ export interface EventDetailsPresentation {
   registrationLabel: string | null;
 }
 
-export function buildEventDetailsPresentation(event: EventDetails, locale = 'en-IL'): EventDetailsPresentation {
+export function buildEventDetailsPresentation(event: EventDetails, locale = 'en-IL', t?: Translator): EventDetailsPresentation {
   const displayed = displayedEventContent(event);
   const timezone = event.recurrence.timezone;
   const start = new Date(event.occurrence.startsAt);
@@ -41,22 +42,22 @@ export function buildEventDetailsPresentation(event: EventDetails, locale = 'en-
   return {
     title: displayed.title,
     description: displayed.description,
-    categoryLabel: event.category ? EVENT_CATEGORY_LABELS[event.category] : 'Event',
-    lifecycleLabel: EVENT_LIFECYCLE_LABELS[event.lifecycle],
+    categoryLabel: t ? eventCategoryLabel(event.category, t) : event.category ? EVENT_CATEGORY_LABELS[event.category] : 'Event',
+    lifecycleLabel: t ? t(`event.lifecycle.${event.lifecycle}` as Parameters<Translator>[0]) : EVENT_LIFECYCLE_LABELS[event.lifecycle],
     dateLabel,
     timeLabel: endLabel ? `${startLabel}–${endLabel}` : startLabel,
-    locationName: event.location.name ?? 'Location to be confirmed',
+    locationName: event.location.name ?? (t ? t('event.locationTbc') : 'Location to be confirmed'),
     addressLabel: event.location.formattedAddress,
-    recurrenceLabel: event.recurrence.isRecurring ? 'Part of a recurring series' : null,
+    recurrenceLabel: event.recurrence.isRecurring ? (t ? t('event.recurringSeries') : 'Part of a recurring series') : null,
     cancellationMessage: event.lifecycle === 'cancelled'
-      ? cancellationReason ?? 'The organizer cancelled this event.'
+      ? cancellationReason ?? (t ? t('event.cancelledMessage') : 'The organizer cancelled this event.')
       : event.lifecycle === 'postponed'
-        ? 'The organizer postponed this event. Check the official source for updates.'
+        ? (t ? t('event.postponedMessage') : 'The organizer postponed this event. Check the official source for updates.')
         : null,
-    sourceLabel: event.source.sourceName ? `Source: ${event.source.sourceName}` : sourceUrl ? 'Official source' : null,
+    sourceLabel: event.source.sourceName ? (t ? t('event.sourcePrefix', { name: event.source.sourceName }) : `Source: ${event.source.sourceName}`) : sourceUrl ? (t ? t('event.officialSource') : 'Official source') : null,
     sourceUrl,
     registrationUrl: safeHttpsUrl(event.registrationUrl),
-    registrationLabel: event.registrationRequired === true ? 'Registration required' : event.registrationUrl ? 'Event information' : null,
+    registrationLabel: event.registrationRequired === true ? (t ? t('event.registrationRequired') : 'Registration required') : event.registrationUrl ? (t ? t('event.eventInformation') : 'Event information') : null,
   };
 }
 

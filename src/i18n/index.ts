@@ -27,4 +27,4 @@ export {
   type TextDirection,
 } from './rtl';
 export { I18nProvider, useI18n, useTranslation, LOCALE_STORAGE_KEY } from './I18nProvider';
-export { activityCategoryLabel, placeCategoryLabel, localizedPlaceArea, type Translator } from './taxonomy';
+export { activityCategoryLabel, placeCategoryLabel, eventCategoryLabel, localizedPlaceArea, localizedPlaceName, type Translator } from './taxonomy';

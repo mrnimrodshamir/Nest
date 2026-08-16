@@ -3,6 +3,7 @@ import { View, Text, Pressable, Image, StyleSheet } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { Camera } from 'phosphor-react-native';
 import { theme, typography, spacing, radius } from '@/theme';
+import { useI18n } from '@/i18n';
 
 interface AvatarPickerProps {
   uri: string | null;
@@ -10,6 +11,7 @@ interface AvatarPickerProps {
 }
 
 export function AvatarPicker({ uri, onChange }: AvatarPickerProps) {
+  const { t } = useI18n();
   const handlePick = async () => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) return;
@@ -28,14 +30,14 @@ export function AvatarPicker({ uri, onChange }: AvatarPickerProps) {
 
   return (
     <View style={styles.container}>
-      <Pressable style={styles.circle} onPress={handlePick} accessibilityLabel="Choose profile photo">
+      <Pressable style={styles.circle} onPress={handlePick} accessibilityLabel={t('profile.choosePhoto')}>
         {uri ? (
           <Image source={{ uri }} style={styles.image} />
         ) : (
           <Camera size={26} color={theme.text.secondary} />
         )}
       </Pressable>
-      <Text style={styles.hint}>{uri ? 'Change photo' : 'Add a photo (optional)'}</Text>
+      <Text style={styles.hint}>{uri ? t('profile.changePhoto') : t('profile.addPhotoOptional')}</Text>
     </View>
   );
 }

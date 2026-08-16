@@ -55,7 +55,7 @@ export function EventDetailsScreen({ event, onBack, onOpenProfile }: EventDetail
 
 function EventDetailsContent({ event, onBack, onOpenProfile }: EventDetailsScreenProps) {
   const { t, locale, isRTL } = useI18n();
-  const content = useMemo(() => buildEventDetailsPresentation(event, dateLocaleTag(locale)), [event, locale]);
+  const content = useMemo(() => buildEventDetailsPresentation(event, dateLocaleTag(locale), t), [event, locale, t]);
   const [showCalendar, setShowCalendar] = useState(false);
   const [showAttendees, setShowAttendees] = useState(false);
   const { isGoing, attendees, attendeeCount, isSaving, toggle } = useEventRsvp(event.occurrence.id);
@@ -84,7 +84,7 @@ function EventDetailsContent({ event, onBack, onOpenProfile }: EventDetailsScree
             RCTFatal bridge abort, so React error boundaries cannot protect
             these native surfaces. The core Event, RSVP and actions remain
             available while the crash source is fail-closed. */}
-        <View style={styles.hero} accessibilityLabel={`${content.title} event`}>
+        <View style={styles.hero} accessibilityLabel={t('map.eventMarker', { name: content.title })}>
           <CalendarDots size={52} color={theme.brand.primary} weight="duotone" />
         </View>
         <View style={styles.labelRow}>

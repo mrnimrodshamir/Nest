@@ -37,12 +37,12 @@ import {
   resolveActivityFormMode,
   startTimeValidationMessage,
 } from '@/utils/activityFormMode';
-import { activityCategoryLabel, useI18n } from '@/i18n';
+import { activityCategoryLabel, useI18n, type TranslationKey } from '@/i18n';
 
-const STAGE_LABELS: Record<CreateActivityStage, string> = {
-  saving: 'Saving…',
-  compressing: 'Preparing your photo…',
-  uploading: 'Uploading your photo…',
+const STAGE_LABEL_KEYS: Record<CreateActivityStage, TranslationKey> = {
+  saving: 'activityForm.stage.saving',
+  compressing: 'activityForm.stage.compressing',
+  uploading: 'activityForm.stage.uploading',
 };
 
 export interface ActivityFormSeedValues {
@@ -269,7 +269,7 @@ export function ActivityForm({
           .map((c) => c.name)
           .join(', ') || t('activityForm.comingAlone');
 
-  const primaryLabel = isSubmitting && stage ? STAGE_LABELS[stage] : behavior.showsReview && !reviewMode ? t('activityForm.review') : submitLabel;
+  const primaryLabel = isSubmitting && stage ? t(STAGE_LABEL_KEYS[stage]) : behavior.showsReview && !reviewMode ? t('activityForm.review') : submitLabel;
 
   return (
     <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
@@ -384,7 +384,7 @@ export function ActivityForm({
                 }}
               />
             ))}
-            <CategoryChip label="Custom" selected={customDuration} onPress={() => setCustomDuration(true)} />
+            <CategoryChip label={t('activityForm.customDuration')} selected={customDuration} onPress={() => setCustomDuration(true)} />
           </View>
           {customDuration && (
             <NumberStepper value={durationMinutes} min={15} max={480} onChange={setDurationMinutes} />

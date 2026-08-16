@@ -2,9 +2,11 @@ import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Marker } from 'react-native-maps';
 import { theme, typography } from '@/theme';
+import { useI18n } from '@/i18n';
 
 export function PlaceClusterMarker({ latitude, longitude, count, selected, onPress }: { latitude: number; longitude: number; count: number; selected: boolean; onPress: () => void }) {
-  return <Marker coordinate={{ latitude, longitude }} onPress={onPress} accessibilityLabel={`${count} places`} accessibilityRole="button" accessibilityState={{ selected }} tracksViewChanges={false}>
+  const { t } = useI18n();
+  return <Marker coordinate={{ latitude, longitude }} onPress={onPress} accessibilityLabel={t('map.placeCluster', { count })} accessibilityRole="button" accessibilityState={{ selected }} tracksViewChanges={false}>
     <View style={styles.hitTarget}><View style={styles.cluster}><Text style={styles.count}>{count > 99 ? '99+' : count}</Text></View></View>
   </Marker>;
 }

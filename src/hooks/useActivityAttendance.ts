@@ -5,6 +5,7 @@ import {
   type AttendanceRow,
   type PersonAttendance,
 } from '@/utils/attendanceSummary';
+import { currentAppLocale, translate } from '@/i18n/core';
 
 export type { PersonAttendance } from '@/utils/attendanceSummary';
 
@@ -43,7 +44,7 @@ export function useActivityAttendance(activityId: string, refreshKey = 0): Atten
         if (cancelled) return;
         setIsLoading(false);
         if (rpcError) {
-          setError("Couldn't load participants.");
+          setError(translate(currentAppLocale(), 'activity.participantsLoadError'));
           return;
         }
         setPeople(groupAttendance((data ?? []) as AttendanceRow[]));

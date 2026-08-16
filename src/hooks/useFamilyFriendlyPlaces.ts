@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { FamilyFriendlyPlace, PlaceFilters, PlaceViewport } from '@/types/familyFriendlyPlace';
 import { queryFamilyFriendlyPlaces } from '@/lib/familyFriendlyPlaces';
 import { placeMatchesFilters } from '@/utils/familyFriendlyPlace';
+import { currentAppLocale, translate } from '@/i18n';
 
 const PAGE_SIZE = 80;
 
@@ -41,7 +42,7 @@ export function useFamilyFriendlyPlaces(options: Options) {
       });
       if (id === requestId.current) { pageRef.current = 0; setPlaces(result); setHasMore(result.length === PAGE_SIZE); }
     } catch {
-      if (id === requestId.current) setError("Couldn't load places. Please try again.");
+      if (id === requestId.current) setError(translate(currentAppLocale(), 'error.placesLoad'));
     } finally {
       if (id === requestId.current) setIsLoading(false);
     }
@@ -62,7 +63,7 @@ export function useFamilyFriendlyPlaces(options: Options) {
         setPlaces((current) => [...new Map([...current, ...result].map((place) => [place.id, place])).values()]);
         setHasMore(result.length === PAGE_SIZE);
       }
-    } catch { if (id === requestId.current) setError("Couldn't load more places."); }
+    } catch { if (id === requestId.current) setError(translate(currentAppLocale(), 'error.placesMoreLoad')); }
     finally { if (id === requestId.current) setIsLoading(false); }
   }, [hasMore, isLoading, options.enabled, options.filters, options.mockPlaces, options.userCoordinate, options.viewport]);
 

@@ -4,6 +4,7 @@ import { Marker } from 'react-native-maps';
 import { Baby, Buildings, House, MapPin, Park, SwimmingPool, Umbrella } from 'phosphor-react-native';
 import { theme } from '@/theme';
 import type { FamilyFriendlyPlace, PlaceCategory } from '@/types/familyFriendlyPlace';
+import { localizedPlaceName, useI18n } from '@/i18n';
 
 const ICONS: Partial<Record<PlaceCategory, React.ComponentType<{ size: number; color: string; weight?: 'fill' | 'bold' }>>> = {
   playground: Baby, park: Park, picnic_area: Park, indoor_playground: House,
@@ -17,8 +18,9 @@ const COLORS: Record<PlaceCategory, string> = {
 };
 
 export function PlaceMapPin({ place, selected, onPress }: { place: FamilyFriendlyPlace; selected: boolean; onPress: (place: FamilyFriendlyPlace) => void }) {
+  const { t, locale } = useI18n();
   const Icon = ICONS[place.category] ?? MapPin;
-  return <Marker coordinate={place} onPress={() => onPress(place)} accessibilityLabel={`Place: ${place.name}`} accessibilityRole="button" accessibilityState={{ selected }} tracksViewChanges={false} anchor={{ x: 0.5, y: 0.5 }}>
+  return <Marker coordinate={place} onPress={() => onPress(place)} accessibilityLabel={t('map.placeMarker', { name: localizedPlaceName(place, locale) })} accessibilityRole="button" accessibilityState={{ selected }} tracksViewChanges={false} anchor={{ x: 0.5, y: 0.5 }}>
     <View style={styles.hitTarget}><View style={[styles.marker, { backgroundColor: COLORS[place.category] }]}>
       <Icon size={17} color={theme.text.inverse} weight="fill" />
     </View></View>

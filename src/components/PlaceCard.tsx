@@ -5,18 +5,19 @@ import { PlaceImage } from '@/components/PlaceImage';
 import { radius, spacing, theme, typography } from '@/theme';
 import type { FamilyFriendlyPlace } from '@/types/familyFriendlyPlace';
 import { formatPlaceDistance, placeSummaryFeatures } from '@/utils/familyFriendlyPlace';
-import { localizedPlaceArea, placeCategoryLabel, textAlignForContent, useI18n } from '@/i18n';
+import { localizedPlaceArea, localizedPlaceName, placeCategoryLabel, textAlignForContent, useI18n } from '@/i18n';
 
 export function PlaceCard({ place, highlighted, onPress }: { place: FamilyFriendlyPlace; highlighted?: boolean; onPress: (place: FamilyFriendlyPlace) => void }) {
   const { t, isRTL, locale } = useI18n();
   const category = placeCategoryLabel(place.category, t);
+  const displayName = localizedPlaceName(place, locale);
   const distance = formatPlaceDistance(place.distanceMeters, t);
   const features = placeSummaryFeatures(place, 3, t);
   const setting = [place.isIndoor ? t('place.fact.indoor') : null, place.isOutdoor ? t('place.fact.outdoor') : null, place.isFree === true ? t('place.fact.free') : place.isFree === false ? t('place.fact.paid') : null].filter(Boolean).join(' · ');
-  return <Pressable accessibilityRole="button" accessibilityLabel={`${place.name}, ${category}`} onPress={() => onPress(place)} style={({ pressed }) => [styles.card, highlighted && styles.highlighted, pressed && styles.pressed]}>
-    <PlaceImage uri={place.coverImageUrl} asset={place.images?.card ?? place.images?.cover} category={place.category} variant="card" name={place.name} />
+  return <Pressable accessibilityRole="button" accessibilityLabel={`${displayName}, ${category}`} onPress={() => onPress(place)} style={({ pressed }) => [styles.card, highlighted && styles.highlighted, pressed && styles.pressed]}>
+    <PlaceImage uri={place.coverImageUrl} asset={place.images?.card ?? place.images?.cover} category={place.category} variant="card" name={displayName} />
     <View style={styles.body}>
-      <Text style={[styles.title, textAlignForContent(place.name, locale)]} numberOfLines={1}>{place.name}</Text>
+      <Text style={[styles.title, textAlignForContent(displayName, locale)]} numberOfLines={1}>{displayName}</Text>
       <Text style={[styles.meta, isRTL && styles.rtlText]} numberOfLines={1}>{[category, localizedPlaceArea(place.neighborhood, t)].filter(Boolean).join(' · ')}</Text>
       {distance ? <Text style={[styles.distance, isRTL && styles.rtlText]}>{distance}</Text> : null}
       {setting ? <Text style={[styles.setting, isRTL && styles.rtlText]}>{setting}</Text> : null}

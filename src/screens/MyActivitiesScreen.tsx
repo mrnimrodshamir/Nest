@@ -71,15 +71,15 @@ export function MyActivitiesScreen({ onBack, onOpenActivity }: MyActivitiesScree
           ListEmptyComponent={
             <StateCard
               icon={Compass}
-              title={error ?? (tab === 'upcoming' ? 'Nothing coming up' : 'No past activities yet')}
+              title={error ?? t(tab === 'upcoming' ? 'myActivities.emptyUpcomingTitle' : 'myActivities.emptyPastTitle')}
               body={
                 error
-                  ? 'Pull to refresh and try again.'
+                  ? t('myActivities.errorBody')
                   : tab === 'upcoming'
-                    ? "Once you join or host an activity, it'll show up here."
-                    : "Activities you've joined or hosted will move here once they've happened."
+                    ? t('myActivities.emptyUpcomingBody')
+                    : t('myActivities.emptyPastBody')
               }
-              ctaLabel={error ? 'Try again' : undefined}
+              ctaLabel={error ? t('common.retry') : undefined}
               onCtaPress={error ? refresh : undefined}
               tone={error ? 'warning' : 'default'}
             />

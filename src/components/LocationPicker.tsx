@@ -140,7 +140,7 @@ export function LocationPicker({
           value={search.query}
           onChangeText={search.setQuery}
           returnKeyType="search"
-          accessibilityLabel="Search cafés, parks or places"
+          accessibilityLabel={t('locationPicker.search')}
           autoCapitalize="none"
           autoCorrect={false}
         />

@@ -19,11 +19,11 @@ export function EventCard({ event, highlighted, compact = false, attendeeCount =
   onPress: (event: EventDetails) => void;
 }) {
   const { t, locale } = useI18n();
-  const content = buildEventDetailsPresentation(event, dateLocaleTag(locale));
+  const content = buildEventDetailsPresentation(event, dateLocaleTag(locale), t);
   const attendance = attendanceCardKey(attendeeCount);
   const interrupted = event.lifecycle === 'cancelled' || event.lifecycle === 'postponed';
   return <Pressable accessibilityRole="button" accessibilityLabel={`${content.title}, ${content.lifecycleLabel}`} onPress={() => onPress(event)} style={({ pressed }) => [styles.card, compact && styles.compact, highlighted && styles.highlighted, pressed && styles.pressed]}>
-    <ContentImage asset={event.images?.card ?? event.images?.cover} legacyUri={event.imageUrl} variant="card" style={styles.image} accessibilityLabel={`${content.title} event image`} fallback={<CalendarDots size={28} color={theme.brand.primary} weight="duotone" />} />
+    <ContentImage asset={event.images?.card ?? event.images?.cover} legacyUri={event.imageUrl} variant="card" style={styles.image} accessibilityLabel={t('map.imageLabel', { name: content.title })} fallback={<CalendarDots size={28} color={theme.brand.primary} weight="duotone" />} />
     <View style={styles.body}>
       <View style={styles.topRow}><Text style={styles.category}>{content.categoryLabel}</Text><View style={[styles.badge, interrupted && styles.badgeInterrupted]}><Text style={[styles.badgeText, interrupted && styles.badgeTextInterrupted]}>{content.lifecycleLabel}</Text></View></View>
       <Text style={[styles.title, textAlignForContent(content.title, locale)]} numberOfLines={2}>{content.title}</Text>

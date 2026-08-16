@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { getEventDetails, localizeEvents } from '@/lib/events';
 import type { EventDetails } from '@/types/event';
-import { useI18n } from '@/i18n';
+import { translate, useI18n } from '@/i18n';
 
 export function useEventDetails(occurrenceId: string) {
   const { locale } = useI18n();
@@ -21,7 +21,7 @@ export function useEventDetails(occurrenceId: string) {
         if (id === requestId.current) setEvent(localized);
       });
     }
-    catch { if (id === requestId.current) setError("Couldn't load this event."); }
+    catch { if (id === requestId.current) setError(translate(locale, 'event.loadError')); }
     finally { if (id === requestId.current) setIsLoading(false); }
   }, [locale, occurrenceId]);
   useEffect(() => { refresh(); return () => { requestId.current += 1; }; }, [refresh]);

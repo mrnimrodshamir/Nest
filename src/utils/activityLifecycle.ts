@@ -1,4 +1,5 @@
 import type { ActivityStatus } from '@/types/activity';
+import { currentAppLocale, translate } from '@/i18n/core';
 
 /** The single lifecycle state an activity is in RIGHT NOW, derived from
  *  server data plus the current clock. Never stored — a persisted display
@@ -89,27 +90,31 @@ export function resolveLifecycle(input: LifecycleInput, now: Date = new Date()):
 /** User-facing label. `spots_left` needs the count, so it is passed rather
  *  than baked into the union. */
 export function lifecycleLabel(lifecycle: ActivityLifecycle, spotsLeft: number | null): string {
+  const locale = currentAppLocale();
   switch (lifecycle) {
     case 'cancelled':
-      return 'Cancelled';
+      return translate(locale, 'activity.lifecycle.cancelled');
     case 'completed':
-      return 'Completed';
+      return translate(locale, 'activity.lifecycle.completed');
     case 'in_progress':
-      return 'In progress';
+      return translate(locale, 'activity.lifecycle.inProgress');
     case 'starting_soon':
-      return 'Starting soon';
+      return translate(locale, 'activity.lifecycle.startingSoon');
     case 'full':
-      return 'Full';
+      return translate(locale, 'activity.lifecycle.full');
     case 'spots_left':
-      return spotsLeft === 1 ? '1 spot left' : `${spotsLeft ?? 0} spots left`;
+      return spotsLeft === 1
+        ? translate(locale, 'activity.lifecycle.oneSpot')
+        : translate(locale, 'activity.lifecycle.spots', { count: spotsLeft ?? 0 });
     case 'upcoming':
-      return 'Upcoming';
+      return translate(locale, 'activity.lifecycle.upcoming');
   }
 }
 
 export function relationshipLabel(relationship: ActivityRelationship): string | null {
-  if (relationship === 'hosting') return 'Hosting';
-  if (relationship === 'joined') return 'Joined';
+  const locale = currentAppLocale();
+  if (relationship === 'hosting') return translate(locale, 'activity.relationship.hosting');
+  if (relationship === 'joined') return translate(locale, 'activity.relationship.joined');
   return null;
 }
 

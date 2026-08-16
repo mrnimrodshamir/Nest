@@ -5,6 +5,7 @@ import { track } from '@/lib/analytics';
 import type { ActivityCategory } from '@/types/activity';
 import type { NormalizedPlace } from '@/types/place';
 import { normalizedPlaceToColumns } from '@/utils/activityPlaceMapping';
+import { currentAppLocale, translate } from '@/i18n';
 
 export interface CreateActivityInput {
   activityType: ActivityCategory;
@@ -82,7 +83,7 @@ export function useCreateActivity(): UseCreateActivityResult {
         data: { user },
       } = await supabase.auth.getUser();
       if (!user) {
-        setError('Not signed in');
+        setError(translate(currentAppLocale(), 'error.notSignedIn'));
         setIsSubmitting(false);
         setStage(null);
         return { status: 'error', message: 'Not signed in' };
@@ -168,7 +169,7 @@ export function useCreateActivity(): UseCreateActivityResult {
       const joined = await joinAsHost(activityId, hostChildIds);
       setIsSubmitting(false);
       if (!joined) {
-        setError("Still couldn't complete your participation setup. Please try again.");
+        setError(translate(currentAppLocale(), 'error.participationSetup'));
       }
       return joined;
     },

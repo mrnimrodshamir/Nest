@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import type { Child, ChildSex } from '@/types/child';
+import { currentAppLocale, translate } from '@/i18n';
 
 interface ChildRow {
   id: string;
@@ -63,7 +64,7 @@ export function useChildren(profileId: string | null): UseChildrenResult {
       .eq('profile_id', profileId)
       .order('created_at', { ascending: true });
     if (fetchError) {
-      setError("Couldn't load children.");
+      setError(translate(currentAppLocale(), 'error.childrenLoad'));
     } else {
       setChildren((data ?? []).map(mapChild));
     }

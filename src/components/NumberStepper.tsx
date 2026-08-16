@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { Minus, Plus } from 'phosphor-react-native';
 import { theme, typography, spacing, radius } from '@/theme';
+import { useI18n } from '@/i18n';
 
 interface NumberStepperProps {
   value: number;
@@ -11,13 +12,14 @@ interface NumberStepperProps {
 }
 
 export function NumberStepper({ value, min, max, onChange }: NumberStepperProps) {
+  const { t } = useI18n();
   return (
     <View style={styles.controls}>
       <Pressable
         style={styles.button}
         hitSlop={6}
         onPress={() => onChange(Math.max(min, value - 1))}
-        accessibilityLabel="Decrease"
+        accessibilityLabel={t('common.decrease')}
       >
         <Minus size={16} color={theme.text.primary} weight="bold" />
       </Pressable>
@@ -26,7 +28,7 @@ export function NumberStepper({ value, min, max, onChange }: NumberStepperProps)
         style={styles.button}
         hitSlop={6}
         onPress={() => onChange(Math.min(max, value + 1))}
-        accessibilityLabel="Increase"
+        accessibilityLabel={t('common.increase')}
       >
         <Plus size={16} color={theme.text.primary} weight="bold" />
       </Pressable>

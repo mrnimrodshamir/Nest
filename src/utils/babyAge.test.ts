@@ -104,3 +104,10 @@ test('yearsMonthsToBirthdate normalizes 12 months into 1 year (never emits month
   const oneYearIso = yearsMonthsToBirthdate(1, 0);
   assert.equal(iso, oneYearIso);
 });
+
+test('Hebrew child ages use grammatical relationship and age words', () => {
+  assert.equal(formatBabyAge(36, 'he', 'male'), 'בן 3');
+  assert.equal(formatBabyAge(25, 'he', 'male'), 'בן שנתיים וחודש');
+  assert.equal(formatBabyAge(25, 'he', 'female'), 'בת שנתיים וחודש');
+  assert.equal(formatBabyAge(8, 'he', null), 'גיל 8 חודשים');
+});

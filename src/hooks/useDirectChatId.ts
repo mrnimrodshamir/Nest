@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
+import { currentAppLocale, translate } from '@/i18n';
 
 /** Resolves (creating if needed, deduped server-side) the 1:1 chat with
  *  another user. Fails clearly if there's no shared activity — matches the
@@ -20,8 +21,8 @@ export function useDirectChatId(otherUserId: string): { chatId: string | null; e
         if (rpcError || !data) {
           setError(
             rpcError?.message.includes('do not share')
-              ? "You can message someone once you've joined the same activity."
-              : "Couldn't open this conversation right now.",
+              ? translate(currentAppLocale(), 'error.directChatRequiresActivity')
+              : translate(currentAppLocale(), 'error.directChatOpen'),
           );
           return;
         }

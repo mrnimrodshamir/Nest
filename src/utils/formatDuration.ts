@@ -1,5 +1,8 @@
+import { currentAppLocale, translate } from '@/i18n/core';
+
 export function formatDuration(minutes: number): string {
-  if (minutes < 60) return `${minutes}min`;
+  const locale = currentAppLocale();
+  if (minutes < 60) return translate(locale, 'duration.minutes', { count: minutes });
   const hours = minutes / 60;
-  return Number.isInteger(hours) ? `${hours}h` : `${hours.toFixed(1)}h`;
+  return translate(locale, 'duration.hours', { count: Number.isInteger(hours) ? hours : hours.toFixed(1) });
 }

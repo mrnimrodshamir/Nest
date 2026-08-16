@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { localizeEvents, queryDiscoveryEvents, queryEventAttendanceCounts } from '@/lib/events';
 import type { EventDetails } from '@/types/event';
 import type { PlaceViewport } from '@/types/familyFriendlyPlace';
-import { useI18n } from '@/i18n';
+import { translate, useI18n } from '@/i18n';
 
 export function useDiscoveryEvents(options: { viewport: PlaceViewport; mockEvents?: EventDetails[] }) {
   const { locale } = useI18n();
@@ -42,7 +42,7 @@ export function useDiscoveryEvents(options: { viewport: PlaceViewport; mockEvent
         if (id === requestId.current) setAttendeeCounts({});
       }
     } catch {
-      if (id === requestId.current) setError("Events couldn't refresh.");
+      if (id === requestId.current) setError(translate(locale, 'error.eventsRefresh'));
     } finally {
       if (id === requestId.current) setIsLoading(false);
     }

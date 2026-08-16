@@ -143,8 +143,8 @@ export function ActivityDetailScreen({
 
   const promptReportReason = () => {
     Alert.prompt(
-      'Report this activity',
-      `Tell us what's wrong — this goes to the ${APP_NAME} team, not the host.`,
+      t('activity.reportTitle'),
+      t('activity.reportPrompt', { appName: APP_NAME }),
       async (reason) => {
         if (!reason?.trim()) return;
         const err = await submitReport({
@@ -152,7 +152,7 @@ export function ActivityDetailScreen({
           activityId: activity.id,
           reason: reason.trim(),
         });
-        Alert.alert(err ? "Couldn't send your report" : 'Report sent', err ?? "Thanks — we'll take a look.");
+        Alert.alert(err ? t('activity.reportError') : t('activity.reportSuccess'), err ?? t('activity.reportThanks'));
       },
       'plain-text',
     );
@@ -160,16 +160,16 @@ export function ActivityDetailScreen({
 
   const confirmBlockHost = () => {
     Alert.alert(
-      `Block ${activity.host.displayName}?`,
-      "You won't see their activities or messages anymore. This can be undone from Profile settings.",
+      t('activity.blockTitle', { name: activity.host.displayName }),
+      t('activity.blockBody'),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Block',
+          text: t('activity.blockAction'),
           style: 'destructive',
           onPress: async () => {
             const err = await blockUser(activity.host.id);
-            if (err) Alert.alert("Couldn't block", err);
+            if (err) Alert.alert(t('activity.blockError'), err);
           },
         },
       ],
@@ -195,10 +195,10 @@ export function ActivityDetailScreen({
   };
 
   const handleMorePress = () => {
-    Alert.alert('Activity options', undefined, [
-      { text: 'Report this activity', onPress: promptReportReason },
-      { text: `Block ${activity.host.displayName}`, style: 'destructive', onPress: confirmBlockHost },
-      { text: 'Cancel', style: 'cancel' },
+    Alert.alert(t('activity.options'), undefined, [
+      { text: t('activity.reportTitle'), onPress: promptReportReason },
+      { text: t('activity.blockTitle', { name: activity.host.displayName }), style: 'destructive', onPress: confirmBlockHost },
+      { text: t('common.cancel'), style: 'cancel' },
     ]);
   };
 
@@ -236,10 +236,10 @@ export function ActivityDetailScreen({
       }
       await performJoin([]);
     } else {
-      Alert.alert('Leave this activity?', "You'll lose your spot, and it may fill up.", [
-        { text: 'Cancel', style: 'cancel' },
+      Alert.alert(t('activity.leaveTitle'), t('activity.leaveBody'), [
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Leave',
+          text: t('activity.leaveAction'),
           style: 'destructive',
           onPress: async () => {
             await leave();
@@ -329,7 +329,7 @@ export function ActivityDetailScreen({
             {activity.distanceKm.toFixed(1)}km away
           </Text>
           <Text style={styles.meta}>
-            Baby age: {formatAgeRange(activity.babyMinAgeMonths, activity.babyMaxAgeMonths)}
+            {t('activity.babyAge', { age: formatAgeRange(activity.babyMinAgeMonths, activity.babyMaxAgeMonths) })}
           </Text>
 
           {/* Kept in the existing people card position and visual language;
@@ -337,12 +337,11 @@ export function ActivityDetailScreen({
           <View style={styles.peopleCard}>
             <View style={styles.participantsHeader}>
               <Text style={styles.peopleCardLabel}>
-                Participants · {displayedParticipantCount}
-                {activity.capacity !== null ? `/${activity.capacity}` : ''}
+                {t('activity.participantsCount', { count: `${displayedParticipantCount}${activity.capacity !== null ? `/${activity.capacity}` : ''}` })}
               </Text>
               {displayedSpotsLeft !== null && displayedSpotsLeft > 0 ? (
                 <Text style={styles.spotsLabel}>
-                  {displayedSpotsLeft === 1 ? '1 spot left' : `${displayedSpotsLeft} spots left`}
+                  {displayedSpotsLeft === 1 ? t('activity.lifecycle.oneSpot') : t('activity.lifecycle.spots', { count: displayedSpotsLeft })}
                 </Text>
               ) : null}
             </View>
@@ -352,7 +351,7 @@ export function ActivityDetailScreen({
               size="row"
               name={firstName(hostAttendance?.displayName ?? activity.host.displayName)}
               avatarUrl={hostAttendance?.avatarUrl ?? activity.host.avatarUrl}
-              subtitle={hostAttendance?.withLabel ?? (attendance.isLoading ? 'Loading attendance…' : 'Coming alone')}
+              subtitle={hostAttendance?.withLabel ?? (attendance.isLoading ? t('activity.attendanceLoading') : t('activity.attendance.comingAlone'))}
               onPress={() => onOpenPerson(activity.host.id)}
               accessoryRight={
                 <Pressable onPress={() => onMessageHost(activity.host.id)} hitSlop={12}>
@@ -444,8 +443,8 @@ export function ActivityDetailScreen({
             <View style={styles.calendarNotice}>
               <Text style={styles.calendarNoticeText}>
                 {calendarNotice === 'cancelled'
-                  ? "This activity was cancelled — remove it from your calendar?"
-                  : "This activity's time or location changed — update your calendar event?"}
+                  ? t('activity.calendarCancelled')
+                  : t('activity.calendarChanged')}
               </Text>
               <Pressable
                 style={styles.calendarNoticeButton}
@@ -456,7 +455,7 @@ export function ActivityDetailScreen({
                 }}
               >
                 <Text style={styles.calendarNoticeButtonLabel}>
-                  {calendarNotice === 'cancelled' ? 'Remove' : 'Update'}
+                  {calendarNotice === 'cancelled' ? t('activity.removeCalendar') : t('activity.updateCalendar')}
                 </Text>
               </Pressable>
             </View>
@@ -492,10 +491,10 @@ export function ActivityDetailScreen({
                 activity.viewerStatus === 'going' && styles.ctaLabelGoing,
               ]}
             >
-              {isCancelled && 'This activity was cancelled'}
-              {!isCancelled && isEnded && 'This activity is completed'}
-              {!isCancelled && !isEnded && activity.viewerStatus === 'going' && "You're going"}
-              {!isCancelled && !isEnded && activity.viewerStatus === 'none' && (isFull ? 'Activity full' : 'Join this activity')}
+              {isCancelled && t('activity.cancelledCta')}
+              {!isCancelled && isEnded && t('activity.completedCta')}
+              {!isCancelled && !isEnded && activity.viewerStatus === 'going' && t('activity.capacity.youreGoing')}
+              {!isCancelled && !isEnded && activity.viewerStatus === 'none' && (isFull ? t('activity.fullCta') : t('activity.joinCta'))}
             </Text>
           </Pressable>
         )}
@@ -520,7 +519,7 @@ export function ActivityDetailScreen({
         activityTitle={activity.title}
         ageHint={
           isAgeRelevant
-            ? `${activity.title} is for babies ${formatAgeRange(activity.babyMinAgeMonths, activity.babyMaxAgeMonths)}.`
+            ? t('activity.ageHint', { title: activity.title, age: formatAgeRange(activity.babyMinAgeMonths, activity.babyMaxAgeMonths) })
             : null
         }
         children={children}

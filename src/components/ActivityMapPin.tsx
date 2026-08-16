@@ -27,6 +27,7 @@ import {
 import { theme } from '@/theme';
 import type { Activity, ActivityCategory } from '@/types/activity';
 import { CATEGORY_PIN_COLOR } from '@/types/activity';
+import { useI18n } from '@/i18n';
 
 interface ActivityMapPinProps {
   activity: Activity;
@@ -64,6 +65,7 @@ export const CATEGORY_ICON: Record<ActivityCategory, React.ComponentType<{ size:
  *  native map region/layout change and that's exactly the interaction
  *  class that caused this session's other Reanimated-related crashes. */
 export function ActivityMapPin({ activity, selected, onPress }: ActivityMapPinProps) {
+  const { t } = useI18n();
   // Falls back to 'other' for any category value not in these maps (a
   // future category added to the DB enum before this file catches up) —
   // never renders an undefined icon component, which would crash.
@@ -74,7 +76,7 @@ export function ActivityMapPin({ activity, selected, onPress }: ActivityMapPinPr
     <Marker
       coordinate={{ latitude: activity.latitude, longitude: activity.longitude }}
       onPress={() => onPress(activity)}
-      accessibilityLabel={`Activity: ${activity.title}`}
+      accessibilityLabel={t('map.activityMarker', { name: activity.title })}
       accessibilityRole="button"
       // Keep the custom annotation snapshot immutable. Selection is announced
       // accessibly while the detail route opens; it never resizes MapKit UI.

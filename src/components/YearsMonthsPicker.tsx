@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { Minus, Plus } from 'phosphor-react-native';
 import { theme, typography, spacing, radius } from '@/theme';
+import { useI18n } from '@/i18n';
 
 interface YearsMonthsPickerProps {
   years: number;
@@ -16,17 +17,18 @@ export function YearsMonthsPicker({
   onChange,
   maxYears = 6,
 }: YearsMonthsPickerProps) {
+  const { t } = useI18n();
   return (
     <View style={styles.row}>
       <Stepper
-        label="Years"
+        label={t('activityForm.years')}
         value={years}
         min={0}
         max={maxYears}
         onChange={(next) => onChange(next, months)}
       />
       <Stepper
-        label="Months"
+        label={t('activityForm.months')}
         value={months}
         min={0}
         max={11}
@@ -49,6 +51,7 @@ function Stepper({
   max: number;
   onChange: (next: number) => void;
 }) {
+  const { t } = useI18n();
   return (
     <View style={styles.stepper}>
       <Text style={styles.stepperLabel}>{label}</Text>
@@ -57,7 +60,7 @@ function Stepper({
           style={styles.stepperButton}
           hitSlop={6}
           onPress={() => onChange(Math.max(min, value - 1))}
-          accessibilityLabel={`Decrease ${label.toLowerCase()}`}
+          accessibilityLabel={t('activityForm.decrease', { label })}
         >
           <Minus size={16} color={theme.text.primary} weight="bold" />
         </Pressable>
@@ -66,7 +69,7 @@ function Stepper({
           style={styles.stepperButton}
           hitSlop={6}
           onPress={() => onChange(Math.min(max, value + 1))}
-          accessibilityLabel={`Increase ${label.toLowerCase()}`}
+          accessibilityLabel={t('activityForm.increase', { label })}
         >
           <Plus size={16} color={theme.text.primary} weight="bold" />
         </Pressable>

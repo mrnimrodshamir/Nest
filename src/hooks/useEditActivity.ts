@@ -3,6 +3,7 @@ import { supabase } from '@/lib/supabase';
 import { uploadActivityCover, type CoverUploadStage } from '@/lib/uploadActivityCover';
 import type { CreateActivityInput } from '@/hooks/useCreateActivity';
 import { normalizedPlaceToColumns } from '@/utils/activityPlaceMapping';
+import { currentAppLocale, translate } from '@/i18n';
 
 export function useEditActivity(activityId: string) {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -52,7 +53,7 @@ export function useEditActivity(activityId: string) {
       console.log('[EditActivity] Activity update failed', updateError.message);
       setIsSubmitting(false);
       setStage(null);
-      setError("Couldn't save your changes. Please try again.");
+      setError(translate(currentAppLocale(), 'error.activitySave'));
       return false;
     }
 
@@ -82,7 +83,7 @@ export function useEditActivity(activityId: string) {
     setIsSubmitting(false);
     if (cancelError) {
       console.log('[EditActivity] Cancel failed', cancelError.message);
-      setError("Couldn't cancel this activity. Please try again.");
+      setError(translate(currentAppLocale(), 'error.activityCancel'));
       return false;
     }
     return true;

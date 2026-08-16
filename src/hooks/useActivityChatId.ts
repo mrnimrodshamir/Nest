@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
+import { currentAppLocale, translate } from '@/i18n';
 
 /** Resolves an activity's group chat id. Only meaningful once the viewer
  *  is a participant (host or joined attendee) — otherwise RLS returns
@@ -22,7 +23,7 @@ export function useActivityChatId(activityId: string): { chatId: string | null; 
       .then(({ data, error: fetchError }) => {
         if (cancelled) return;
         if (fetchError || !data) {
-          setError("Couldn't open this chat right now.");
+          setError(translate(currentAppLocale(), 'error.activityChatOpen'));
           return;
         }
         setChatId(data.id);

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { splitMyActivities } from '@/utils/splitMyActivities';
 import type { Activity, ActivityCategory, ActivityStatus } from '@/types/activity';
+import { currentAppLocale, translate } from '@/i18n';
 
 export interface MyActivity extends Activity {
   role: 'hosting' | 'going';
@@ -117,7 +118,7 @@ export function useMyActivities(): UseMyActivitiesResult {
       setActivities(merged);
     } catch (err) {
       console.log('[MyActivities] load failed', err instanceof Error ? err.message : err);
-      setError("Couldn't load your activities.");
+      setError(translate(currentAppLocale(), 'error.activitiesLoad'));
     } finally {
       setIsLoading(false);
     }

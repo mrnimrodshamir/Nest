@@ -6,6 +6,7 @@ import { theme } from '@/theme';
 import type { ActivityCategory } from '@/types/activity';
 import type { ContentImageAsset } from '@/types/contentImage';
 import type { PlaceCategory } from '@/types/familyFriendlyPlace';
+import { useI18n } from '@/i18n';
 
 const CATEGORY_ART: Record<PlaceCategory, ActivityCategory> = {
   playground: 'playground_meetup', park: 'stroller_walk', picnic_area: 'picnic',
@@ -21,12 +22,13 @@ const CATEGORY_COLORS: Record<PlaceCategory, string> = {
 };
 
 export function PlaceImage({ uri, asset, category, variant, style, name }: { uri: string | null; asset?: ContentImageAsset | null; category: PlaceCategory; variant: 'card' | 'cover'; style?: StyleProp<ViewStyle>; name?: string }) {
+  const { t } = useI18n();
   return <ContentImage
     asset={asset}
     legacyUri={uri}
     variant={variant}
     style={[variant === 'card' ? styles.card : styles.cover, style, { backgroundColor: CATEGORY_COLORS[category] }]}
-    accessibilityLabel={name ? `${name} image` : undefined}
+    accessibilityLabel={name ? t('map.imageLabel', { name }) : undefined}
     fallback={<CategoryArtwork category={CATEGORY_ART[category]} variant={variant === 'cover' ? 'hero' : 'card'} surface="PlaceImage" style={styles.artwork} />}
   />;
 }

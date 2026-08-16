@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { forumDefinition, isForumKey, type ForumKey } from '@/constants/forums';
-import type { TranslationKey } from '@/i18n';
+import { currentAppLocale, translate, type TranslationKey } from '@/i18n';
 
 export interface ForumSummary {
   key: ForumKey;
@@ -89,7 +89,7 @@ export function useForums(): UseForumsResult {
       console.log('[Forums] load failed', err instanceof Error ? err.message : err);
       // Deliberately leaves `forums` as-is: a failed refresh keeps whatever
       // was already on screen rather than blanking it.
-      setError("Couldn't load forums.");
+      setError(translate(currentAppLocale(), 'chats.error.forums'));
     } finally {
       setIsLoading(false);
     }

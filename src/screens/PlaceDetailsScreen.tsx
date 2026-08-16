@@ -17,7 +17,7 @@ import { buildAppleMapsPlaceUrl, formatOpeningHours, placeWhatIsHere } from '@/u
 import { groupPlaceEvents } from '@/utils/placeEvents';
 import { buildPlaceShareMessage } from '@/utils/contentSharing';
 import { openNativeShare, openWhatsAppShare } from '@/lib/contentShare';
-import { localizedPlaceArea, placeCategoryLabel, useI18n, textAlignForContent } from '@/i18n';
+import { localizedPlaceArea, localizedPlaceName, placeCategoryLabel, useI18n, textAlignForContent } from '@/i18n';
 import { Dimensions } from 'react-native';
 import { resolveHeroMaxHeight } from '@/constants/activityArtFrame';
 import { track } from '@/lib/analytics';
@@ -34,9 +34,9 @@ export function PlaceDetailsScreen({ placeId, onBack, onCreateActivity, onOpenEv
   useEffect(() => {
     let active = true;
     setError(null);
-    getFamilyFriendlyPlace(placeId).then((value) => active && setPlace(value)).catch(() => active && setError("Couldn't load this place."));
+    getFamilyFriendlyPlace(placeId).then((value) => active && setPlace(value)).catch(() => active && setError(t('place.loadError')));
     return () => { active = false; };
-  }, [placeId, reload]);
+  }, [placeId, reload, t]);
   useEffect(() => {
     track('place_opened', { content_id: placeId, source: 'curated' });
   }, [placeId]);
@@ -46,22 +46,23 @@ export function PlaceDetailsScreen({ placeId, onBack, onCreateActivity, onOpenEv
   if (!place) return <SafeAreaView style={styles.container}><Header onBack={onBack} />{error ? <StateCard icon={WarningCircle} title={t('place.loadError')} body={error} ctaLabel={t('common.retry')} onCtaPress={() => setReload((value) => value + 1)} tone="warning" /> : <Text style={styles.loading}>{t('place.loading')}</Text>}</SafeAreaView>;
 
   const address = place.formattedAddress ?? localizedPlaceArea(place.neighborhood, t) ?? place.city;
+  const displayName = localizedPlaceName(place, locale);
   const mapsUrl = buildAppleMapsPlaceUrl(place);
   const openingHours = formatOpeningHours(place.openingHours);
   const description = place.fullDescription ?? place.shortDescription;
-  const shareMessage = buildPlaceShareMessage({ id: place.id, name: place.name, location: address });
+  const shareMessage = buildPlaceShareMessage({ id: place.id, name: displayName, location: address });
   return <SafeAreaView style={styles.container} edges={['top', 'bottom']}><Header onBack={onBack} /><ScrollView contentContainerStyle={styles.content}>
-    <PlaceImage uri={place.coverImageUrl} asset={place.images?.cover} category={place.category} variant="cover" style={styles.hero} name={place.name} />
+    <PlaceImage uri={place.coverImageUrl} asset={place.images?.cover} category={place.category} variant="cover" style={styles.hero} name={displayName} />
     {place.images?.gallery.length ? <ContentImageGallery images={place.images.gallery} /> : null}
     <Text style={styles.category}>{placeCategoryLabel(place.category, t)}</Text>
-    <Text style={[styles.title, textAlignForContent(place.name, locale)]}>{place.name}</Text>
+    <Text style={[styles.title, textAlignForContent(displayName, locale)]}>{displayName}</Text>
     <Text style={[styles.address, textAlignForContent(address, locale)]}>{address}</Text>
     <MapView style={styles.map} region={{ latitude: place.latitude, longitude: place.longitude, latitudeDelta: 0.015, longitudeDelta: 0.015 }} scrollEnabled={false} zoomEnabled={false} pointerEvents="none"><Marker coordinate={place} /></MapView>
     <Pressable style={styles.linkRow} onPress={() => Linking.openURL(mapsUrl)}><ArrowSquareOut size={18} color={theme.brand.primary} /><Text style={styles.link}>{t('place.openInAppleMaps')}</Text></Pressable>
     <View style={styles.shareRow}>
       {/* place.name is a venue name — interpolated, never translated. */}
-      <Pressable accessibilityRole="button" accessibilityLabel={t('place.shareLabel', { name: place.name })} style={styles.shareButton} onPress={() => void openNativeShare(shareMessage, undefined, { contentType: 'place', contentId: place.id })}><ShareNetwork size={18} color={theme.text.primary} /><Text style={styles.shareText}>{t('common.share')}</Text></Pressable>
-      <Pressable accessibilityRole="button" accessibilityLabel={t('place.shareWhatsAppLabel', { name: place.name })} style={styles.shareButton} onPress={() => void openWhatsAppShare(shareMessage, undefined, { contentType: 'place', contentId: place.id })}><WhatsappLogo size={18} color={theme.text.primary} weight="fill" /><Text style={styles.shareText}>{t('common.whatsapp')}</Text></Pressable>
+      <Pressable accessibilityRole="button" accessibilityLabel={t('place.shareLabel', { name: displayName })} style={styles.shareButton} onPress={() => void openNativeShare(shareMessage, undefined, { contentType: 'place', contentId: place.id })}><ShareNetwork size={18} color={theme.text.primary} /><Text style={styles.shareText}>{t('common.share')}</Text></Pressable>
+      <Pressable accessibilityRole="button" accessibilityLabel={t('place.shareWhatsAppLabel', { name: displayName })} style={styles.shareButton} onPress={() => void openWhatsAppShare(shareMessage, undefined, { contentType: 'place', contentId: place.id })}><WhatsappLogo size={18} color={theme.text.primary} weight="fill" /><Text style={styles.shareText}>{t('common.whatsapp')}</Text></Pressable>
     </View>
     {/* Venue description comes from the provider — rendered in its own script. */}
     {description ? <Text style={[styles.description, textAlignForContent(description, locale)]}>{description}</Text> : null}
