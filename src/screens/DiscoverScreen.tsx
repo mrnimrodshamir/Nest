@@ -592,7 +592,7 @@ const styles = StyleSheet.create({
   chipRow: { paddingHorizontal: spacing.lg, paddingTop: spacing.xs },
   chipRowCompact: { paddingHorizontal: spacing.lg, paddingTop: 2 },
   wrapChips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs, paddingHorizontal: spacing.lg, paddingTop: spacing.xs },
-  contentTypeHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingRight: spacing.lg },
+  contentTypeHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingEnd: spacing.lg },
   selectAll: { ...typography.subhead, color: theme.brand.primary, fontWeight: '700' },
   contentTypeOptions: { paddingHorizontal: spacing.lg, gap: spacing.xs },
   contentTypeOption: { minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: spacing.sm, borderRadius: radius.md, backgroundColor: theme.background.app, paddingHorizontal: spacing.md },

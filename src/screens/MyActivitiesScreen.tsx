@@ -19,7 +19,7 @@ interface MyActivitiesScreenProps {
 type Tab = 'upcoming' | 'past';
 
 export function MyActivitiesScreen({ onBack, onOpenActivity }: MyActivitiesScreenProps) {
-  const { t } = useI18n();
+  const { t, isRTL } = useI18n();
   const [tab, setTab] = useState<Tab>('upcoming');
   const { upcoming, past, isLoading, error, refresh } = useMyActivities();
   const list = tab === 'upcoming' ? upcoming : past;
@@ -38,7 +38,7 @@ export function MyActivitiesScreen({ onBack, onOpenActivity }: MyActivitiesScree
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <View style={styles.header}>
         <Pressable onPress={onBack} style={styles.backButton} accessibilityLabel={t('common.back')}>
-          <ArrowLeft size={20} color={theme.text.primary} />
+          <ArrowLeft size={20} color={theme.text.primary} style={isRTL ? styles.flipped : undefined} />
         </Pressable>
         <Text style={styles.headerTitle}>{t('nav.myActivities')}</Text>
         <View style={styles.backButton} />
@@ -105,6 +105,7 @@ function MyActivityRow({ activity, onPress }: { activity: MyActivity; onPress: (
 }
 
 const styles = StyleSheet.create({
+  flipped: { transform: [{ scaleX: -1 }] },
   container: { flex: 1, backgroundColor: theme.background.app },
   header: {
     flexDirection: 'row',

@@ -62,7 +62,7 @@ export function CategoryPicker({ selected, onSelect }: CategoryPickerProps) {
 }
 
 const styles = StyleSheet.create({
-  row: { gap: spacing.md, paddingRight: spacing.lg },
+  row: { gap: spacing.md, paddingEnd: spacing.lg },
   item: { width: 76, alignItems: 'center', gap: spacing.xs },
   // Fixed width + selection border only; CoverFrame owns the 4:3 height
   // and clipping.
@@ -77,7 +77,7 @@ const styles = StyleSheet.create({
   checkBadge: {
     position: 'absolute',
     top: 4,
-    right: 4,
+    end: 4,
     width: 18,
     height: 18,
     borderRadius: 9,

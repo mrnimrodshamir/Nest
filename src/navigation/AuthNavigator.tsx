@@ -6,6 +6,7 @@ import { SignInScreen } from '@/screens/auth/SignInScreen';
 import { SignUpScreen } from '@/screens/auth/SignUpScreen';
 import { ForgotPasswordScreen } from '@/screens/auth/ForgotPasswordScreen';
 import { useAuth } from '@/hooks/useAuth';
+import { useI18n } from '@/i18n';
 
 export type AuthStackParamList = {
   Welcome: undefined;
@@ -35,6 +36,7 @@ const Stack = createNativeStackNavigator<AuthStackParamList>();
  *  screen — this handler only has to react to a real, final error. */
 function useAppleSignIn() {
   const { signInWithApple } = useAuth();
+  const { t } = useI18n();
   const [appleLoading, setAppleLoading] = useState(false);
   // Belt-and-braces UI-level guard alongside the hook's own re-entrancy
   // lock — a ref (not state) so it's checked synchronously, before the
@@ -49,7 +51,7 @@ function useAppleSignIn() {
       const result = await signInWithApple();
       console.log('[AuthNavigator] signInWithApple resolved', { status: result.status });
       if (result.status === 'error' && result.message) {
-        Alert.alert("Couldn't sign in", result.message);
+        Alert.alert(t('error.signInTitle'), result.message);
       }
       // 'signed-in' / 'needs-profile' -> the shared session/profile state
       // (already updated by signInWithApple itself before it returned)
@@ -59,7 +61,7 @@ function useAppleSignIn() {
       setAppleLoading(false);
       inFlightRef.current = false;
     }
-  }, [signInWithApple]);
+  }, [signInWithApple, t]);
 
   return { appleLoading, onContinueWithApple };
 }

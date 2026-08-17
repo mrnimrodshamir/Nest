@@ -17,7 +17,7 @@ import { buildAppleMapsPlaceUrl, formatOpeningHours, placeWhatIsHere } from '@/u
 import { groupPlaceEvents } from '@/utils/placeEvents';
 import { buildPlaceShareMessage } from '@/utils/contentSharing';
 import { openNativeShare, openWhatsAppShare } from '@/lib/contentShare';
-import { localizedPlaceArea, localizedPlaceName, placeCategoryLabel, useI18n, textAlignForContent } from '@/i18n';
+import { dateLocaleTag, localizedPlaceArea, localizedPlaceName, placeCategoryLabel, useI18n, textAlignForContent } from '@/i18n';
 import { Dimensions } from 'react-native';
 import { resolveHeroMaxHeight } from '@/constants/activityArtFrame';
 import { track } from '@/lib/analytics';
@@ -40,7 +40,7 @@ export function PlaceDetailsScreen({ placeId, onBack, onCreateActivity, onOpenEv
   useEffect(() => {
     track('place_opened', { content_id: placeId, source: 'curated' });
   }, [placeId]);
-  const facts = useMemo(() => place ? placeWhatIsHere(place, t) : [], [place, t]);
+  const facts = useMemo(() => place ? placeWhatIsHere(place, t, locale) : [], [locale, place, t]);
   const eventGroups = useMemo(() => groupPlaceEvents(placeEvents.events), [placeEvents.events]);
 
   if (!place) return <SafeAreaView style={styles.container}><Header onBack={onBack} />{error ? <StateCard icon={WarningCircle} title={t('place.loadError')} body={error} ctaLabel={t('common.retry')} onCtaPress={() => setReload((value) => value + 1)} tone="warning" /> : <Text style={styles.loading}>{t('place.loading')}</Text>}</SafeAreaView>;
@@ -74,7 +74,7 @@ export function PlaceDetailsScreen({ placeId, onBack, onCreateActivity, onOpenEv
     {eventGroups.today.length ? <EventSection title={t('place.todayHere')} events={eventGroups.today} onOpenEvent={onOpenEvent} /> : null}
     {eventGroups.upcoming.length ? <EventSection title={t('place.upcomingHere')} events={eventGroups.upcoming} onOpenEvent={onOpenEvent} /> : null}
     {place.websiteUrl ? <Pressable style={styles.linkRow} onPress={() => Linking.openURL(place.websiteUrl!)}><ArrowSquareOut size={18} color={theme.brand.primary} /><Text style={styles.link}>{t('place.visitWebsite')}</Text></Pressable> : null}
-    {place.lastVerifiedAt ? <Text style={styles.verified}>{t('place.lastVerified', { date: new Date(place.lastVerifiedAt).toLocaleDateString(locale === 'he' ? 'he-IL' : 'en-US') })}</Text> : null}
+    {place.lastVerifiedAt ? <Text style={styles.verified}>{t('place.lastVerified', { date: new Date(place.lastVerifiedAt).toLocaleDateString(dateLocaleTag(locale)) })}</Text> : null}
     <PrimaryButton label={t('place.createActivityHere')} onPress={() => onCreateActivity(place)} />
   </ScrollView></SafeAreaView>;
 }

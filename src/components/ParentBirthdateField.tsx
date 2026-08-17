@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, Pressable, StyleSheet, Platform } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { theme, typography, spacing, radius } from '@/theme';
+import { activeDateLocale } from '@/i18n/core';
 import { useI18n } from '@/i18n';
 import { parentAgeYears } from '@/utils/parentAge';
 
@@ -47,7 +48,7 @@ export function ParentBirthdateField({ value, onChange, optional = true }: Paren
 
   const age = parentAgeYears(value, today);
   const formatted = value
-    ? selectedDate.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })
+    ? selectedDate.toLocaleDateString(activeDateLocale(), { year: 'numeric', month: 'long', day: 'numeric' })
     : t('profile.birthdate.placeholder');
 
   return (

@@ -12,7 +12,7 @@ interface BlockedUsersScreenProps {
 }
 
 export function BlockedUsersScreen({ onBack }: BlockedUsersScreenProps) {
-  const { t } = useI18n();
+  const { t, isRTL } = useI18n();
   const { blockedUsers, isLoading, error, refresh, unblock } = useBlockedUsers();
 
   const confirmUnblock = (user: BlockedUser) => {
@@ -32,7 +32,7 @@ export function BlockedUsersScreen({ onBack }: BlockedUsersScreenProps) {
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <View style={styles.header}>
         <Pressable onPress={onBack} style={styles.backButton} accessibilityLabel={t('common.back')}>
-          <ArrowLeft size={20} color={theme.text.primary} />
+          <ArrowLeft size={20} color={theme.text.primary} style={isRTL ? styles.flipped : undefined} />
         </Pressable>
         <Text style={styles.headerTitle}>{t('profile.blockedMembers')}</Text>
         <View style={styles.backButton} />
@@ -75,6 +75,7 @@ export function BlockedUsersScreen({ onBack }: BlockedUsersScreenProps) {
 }
 
 const styles = StyleSheet.create({
+  flipped: { transform: [{ scaleX: -1 }] },
   container: { flex: 1, backgroundColor: theme.background.app },
   header: {
     flexDirection: 'row',

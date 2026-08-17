@@ -21,8 +21,8 @@ export function DateTimeField({ label, value, onChange, minimumDate, hasValue = 
   const [pendingAndroidDate, setPendingAndroidDate] = useState<Date | null>(null);
 
   const formatted = value.toLocaleString(activeDateLocale(), {
-    weekday: 'short',
-    month: 'short',
+    weekday: 'long',
+    month: 'long',
     day: 'numeric',
     hour: 'numeric',
     minute: '2-digit',

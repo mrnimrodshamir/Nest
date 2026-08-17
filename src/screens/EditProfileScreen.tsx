@@ -25,7 +25,7 @@ export function EditProfileScreen({ onBack }: EditProfileScreenProps) {
   const { profile, session, updateProfileDetails } = useAuth();
   const { children, addChild, updateChild, removeChild, setDefaultChild } = useChildren(session?.user.id ?? null);
 
-  const { t } = useI18n();
+  const { t, isRTL } = useI18n();
   const [displayName, setDisplayName] = useState(profile?.displayName ?? '');
   // Self-selected only. Existing users start at null and simply keep reading
   // "Parent" until they choose — nobody is forced to pick.
@@ -73,7 +73,7 @@ export function EditProfileScreen({ onBack }: EditProfileScreenProps) {
   const handleSave = async () => {
     if (inFlightRef.current) return;
     const errors: Record<string, string> = {};
-    if (!isNonEmpty(displayName)) errors.displayName = 'Enter your name';
+    if (!isNonEmpty(displayName)) errors.displayName = t('onboarding.nameRequired');
     setFieldErrors(errors);
     if (Object.keys(errors).length > 0) return;
 
@@ -104,7 +104,7 @@ export function EditProfileScreen({ onBack }: EditProfileScreenProps) {
       <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <View style={styles.header}>
           <Pressable onPress={onBack} style={styles.backButton} accessibilityRole="button" accessibilityLabel={t('common.back')}>
-            <ArrowLeft size={20} color={theme.text.primary} />
+            <ArrowLeft size={20} color={theme.text.primary} style={isRTL ? styles.flipped : undefined} />
           </Pressable>
           <Text style={styles.headerTitle}>{t('profile.editTitle')}</Text>
           <View style={styles.backButton} />
@@ -363,6 +363,7 @@ function ChildrenEditor({ children, onAdd, onUpdate, onRemove, onSetDefault }: C
 }
 
 const styles = StyleSheet.create({
+  flipped: { transform: [{ scaleX: -1 }] },
   container: { flex: 1, backgroundColor: theme.background.app },
   flex: { flex: 1 },
   header: {

@@ -468,6 +468,7 @@ function Tabs() {
 }
 
 function DiscoverScreenContainer({ navigation }: { navigation: any }) {
+  const { t } = useI18n();
   const handleOpenActivity = useCallback(
     (activity: Activity) => {
       navigation.getParent()?.navigate('ActivityDetail', { activityId: activity.id });
@@ -512,7 +513,7 @@ function DiscoverScreenContainer({ navigation }: { navigation: any }) {
           }}
         >
           <Text style={{ color: theme.text.inverse, fontSize: 12, fontWeight: '700' }}>
-            Preview: {previewShowEmpty ? 'show populated' : 'show empty state'}
+            {t('dev.preview', { state: previewShowEmpty ? t('dev.showPopulated') : t('dev.showEmpty') })}
           </Text>
         </Pressable>
       )}
@@ -529,6 +530,7 @@ function ActivityDetailContainer({
   onBack: () => void;
   navigation: any;
 }) {
+  const { t } = useI18n();
   const { detail, isLoading, error, refresh } = useActivityDetail(activityId);
 
   // Activity Detail stays mounted underneath Edit/Chat in this stack (React
@@ -546,7 +548,7 @@ function ActivityDetailContainer({
     return (
       <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.background.surface }}>
         {isLoading ? <ActivityIndicator color={theme.brand.primary} /> : null}
-        {error ? <><Text style={{ color: theme.text.secondary }}>{error}</Text><Pressable onPress={refresh}><Text style={{ color: theme.brand.primary, fontWeight: '700' }}>Try again</Text></Pressable></> : null}
+        {error ? <><Text style={{ color: theme.text.secondary }}>{error}</Text><Pressable onPress={refresh}><Text style={{ color: theme.brand.primary, fontWeight: '700' }}>{t('common.retry')}</Text></Pressable></> : null}
       </View>
     );
   }
@@ -555,11 +557,12 @@ function ActivityDetailContainer({
 }
 
 function EventDetailsContainer({ occurrenceId, onBack, onOpenProfile }: { occurrenceId: string; onBack: () => void; onOpenProfile?: (userId: string) => void }) {
+  const { t } = useI18n();
   const { event, isLoading, error, refresh } = useEventDetails(occurrenceId);
   if (event) return <EventDetailsScreen event={event} onBack={onBack} onOpenProfile={onOpenProfile} />;
   return <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.md, backgroundColor: theme.background.app }}>
     {isLoading ? <ActivityIndicator color={theme.brand.primary} /> : null}
-    {error ? <><Text style={{ color: theme.text.secondary }}>{error}</Text><Pressable onPress={refresh}><Text style={{ color: theme.brand.primary, fontWeight: '700' }}>Try again</Text></Pressable></> : null}
+    {error ? <><Text style={{ color: theme.text.secondary }}>{error}</Text><Pressable onPress={refresh}><Text style={{ color: theme.brand.primary, fontWeight: '700' }}>{t('common.retry')}</Text></Pressable></> : null}
   </View>;
 }
 
@@ -574,6 +577,7 @@ function ActivityDetailWithRsvp({
   navigation: any;
   refresh: () => Promise<void>;
 }) {
+  const { t } = useI18n();
   const { activity, isSubmitting, join, leave } = useActivityRsvp(detail, refresh);
   const { session } = useAuth();
   const isHost = session?.user.id === activity.hostId;
@@ -637,6 +641,7 @@ function ForumChatContainer({
   title?: string;
   onBack: () => void;
 }) {
+  const { t } = useI18n();
   const [chatId, setChatId] = React.useState<string | null>(null);
   const [resolveError, setResolveError] = React.useState<string | null>(null);
 
@@ -649,12 +654,12 @@ function ForumChatContainer({
         setChatId(id);
         track('forum_joined', { forum_key: forumKey });
       }
-      else setResolveError("Couldn't open this forum.");
+      else setResolveError(t('error.forumOpen'));
     });
     return () => {
       cancelled = true;
     };
-  }, [forumKey]);
+  }, [forumKey, t]);
 
   return <ChatScreen chatId={chatId} resolveError={resolveError} title={title ?? ''} onBack={onBack} analyticsEvent="forum_message_sent" />;
 }

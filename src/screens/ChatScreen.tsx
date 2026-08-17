@@ -110,6 +110,13 @@ export function ChatScreen({ chatId, resolveError, title, onBack, analyticsEvent
 
 function MessageBubble({ message, locale, onRetry }: { message: ChatMessage; locale: import('@/i18n').AppLocale; onRetry: () => void }) {
   const { t } = useI18n();
+  if (message.isSystem) {
+    return (
+      <View style={styles.systemMessageRow}>
+        <Text style={[styles.systemMessageText, resolveBubbleTextDirection(message.content, locale)]}>{message.content}</Text>
+      </View>
+    );
+  }
   const row = resolveBubbleRow(message.isMine);
   const nameAlign = resolveSenderNameAlignment(message.isMine);
 
@@ -122,7 +129,7 @@ function MessageBubble({ message, locale, onRetry }: { message: ChatMessage; loc
     <View style={styles.bubbleRow}>
       {row.spacerBefore && <View style={styles.bubbleSpacer} />}
       <View style={styles.bubbleColumn}>
-        <Text style={[styles.senderName, nameAlign]}>{message.senderName}</Text>
+        <Text style={[styles.senderName, nameAlign, resolveBubbleTextDirection(message.senderName, locale)]}>{message.senderName}</Text>
         <View style={[styles.bubble, message.isMine ? styles.bubbleMine : styles.bubbleTheirs]}>
           <Text style={[styles.bubbleText, resolveBubbleTextDirection(message.content, locale), message.isMine && styles.bubbleTextMine]}>
             {message.content}
@@ -198,6 +205,8 @@ const styles = StyleSheet.create({
   bubbleTextMine: { color: theme.text.inverse },
   retryRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 },
   retryLabel: { ...typography.caption, color: theme.semantic.danger },
+  systemMessageRow: { alignItems: 'center', paddingVertical: spacing.xs, paddingHorizontal: spacing.lg },
+  systemMessageText: { ...typography.caption, color: theme.text.muted, textAlign: 'center' },
   emptyState: { alignItems: 'center', paddingTop: spacing['4xl'], paddingHorizontal: spacing['2xl'] },
   emptyTitle: { ...typography.title3, color: theme.text.primary, marginBottom: spacing.sm },
   emptyBody: { ...typography.subhead, color: theme.text.secondary, textAlign: 'center' },

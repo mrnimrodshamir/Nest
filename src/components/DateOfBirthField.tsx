@@ -4,6 +4,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { theme, typography, spacing, radius } from '@/theme';
 import { birthdateToMonths, formatBabyAge } from '@/utils/babyAge';
 import { useI18n } from '@/i18n';
+import { activeDateLocale } from '@/i18n/core';
 
 interface DateOfBirthFieldProps {
   label?: string;
@@ -35,7 +36,7 @@ export function DateOfBirthField({ label, value, onChange, maxYearsAgo = 6 }: Da
   const selectedDate = value ? new Date(value) : today;
 
   const formatted = value
-    ? selectedDate.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })
+    ? selectedDate.toLocaleDateString(activeDateLocale(), { year: 'numeric', month: 'long', day: 'numeric' })
     : t('onboarding.selectBirthdate');
 
   const ageLabel = value ? formatBabyAge(birthdateToMonths(value)) : null;

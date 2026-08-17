@@ -35,8 +35,8 @@ const DELTA = LOCATION_PICKER_DELTA;
  *  always preserved even if reverse geocoding comes back empty — a name is
  *  a convenience, the pin position is the real data.
  *
- *  Search is a secondary shortcut on top of that, backed by
- *  expo-location's free on-device geocoder — see usePlaceSearch. If
+ *  Search is a secondary shortcut on top of that, backed by the authenticated
+ *  provider-neutral Edge Function — see usePlaceSearch. If
  *  search fails for any reason, dragging the map keeps working exactly
  *  as before; nothing about it depends on search succeeding. */
 export function LocationPicker({
@@ -161,15 +161,15 @@ export function LocationPicker({
             <Pressable key={item.key} style={styles.resultRow} onPress={() => void handleSelectResult(item)} accessibilityRole="button" disabled={isResolvingSelection}>
               <MapPin size={16} color={theme.brand.primary} />
               <View style={styles.resultBody}>
-                <Text style={styles.resultName} numberOfLines={1}>
+                <Text style={[styles.resultName, textAlignForContent(result.name, locale)]} numberOfLines={1}>
                   {result.name}
                 </Text>
                 {result.address ? (
-                  <Text style={styles.resultAddress} numberOfLines={1}>
+                  <Text style={[styles.resultAddress, textAlignForContent(result.address, locale)]} numberOfLines={1}>
                     {result.address}
                   </Text>
                 ) : null}
-                {result.category ? <Text style={styles.resultCategory} numberOfLines={1}>{result.category}</Text> : null}
+                {result.category ? <Text style={[styles.resultCategory, textAlignForContent(result.category, locale)]} numberOfLines={1}>{result.category}</Text> : null}
               </View>
             </Pressable>
           )})}
@@ -189,7 +189,7 @@ export function LocationPicker({
         <View style={styles.selectedPreview}>
           <Text style={[styles.selectedName, textAlignForContent(selectedPresentation.title, locale)]}>{selectedPresentation.title}</Text>
           {selectedPresentation.address ? (
-            <Text style={styles.selectedAddress}>{selectedPresentation.address}</Text>
+            <Text style={[styles.selectedAddress, textAlignForContent(selectedPresentation.address, locale)]}>{selectedPresentation.address}</Text>
           ) : null}
           {selectedPresentation.isManuallyAdjusted ? <Text style={styles.adjustedLabel}>{t('locationPicker.adjusted')}</Text> : null}
         </View>

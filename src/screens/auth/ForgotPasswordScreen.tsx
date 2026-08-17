@@ -58,7 +58,7 @@ export function ForgotPasswordScreen({ onBack }: ForgotPasswordScreenProps) {
             <View style={styles.form}>
               <FormField
                 label={t('onboarding.email')}
-                placeholder="you@example.com"
+            placeholder={t('onboarding.emailPlaceholder')}
                 value={email}
                 onChangeText={setEmail}
                 autoCapitalize="none"

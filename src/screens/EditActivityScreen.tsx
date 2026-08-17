@@ -18,7 +18,7 @@ interface EditActivityScreenProps {
 }
 
 export function EditActivityScreen({ activity, onBack, onSaved, onCancelled }: EditActivityScreenProps) {
-  const { t } = useI18n();
+  const { t, isRTL } = useI18n();
   const { isSubmitting, stage, error, update, cancelActivity } = useEditActivity(activity.id);
   // ActivityForm reads initialValues.hostChildIds into local state once, on
   // mount — so the form must not render until this resolves, or a host
@@ -54,7 +54,7 @@ export function EditActivityScreen({ activity, onBack, onSaved, onCancelled }: E
       <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <View style={styles.header}>
           <Pressable onPress={onBack} style={styles.backButton} accessibilityRole="button" accessibilityLabel={t('common.back')}>
-            <ArrowLeft size={20} color={theme.text.primary} />
+            <ArrowLeft size={20} color={theme.text.primary} style={isRTL ? styles.flipped : undefined} />
           </Pressable>
           <Text style={styles.headerTitle}>{t('activity.editActivity')}</Text>
           <View style={styles.backButton} />
@@ -102,6 +102,7 @@ export function EditActivityScreen({ activity, onBack, onSaved, onCancelled }: E
 }
 
 const styles = StyleSheet.create({
+  flipped: { transform: [{ scaleX: -1 }] },
   container: { flex: 1, backgroundColor: theme.background.app },
   flex: { flex: 1 },
   header: {

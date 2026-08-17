@@ -25,7 +25,7 @@ export function CreateActivityScreen({
   initialValues,
 }: CreateActivityScreenProps) {
   const { isSubmitting, stage, error, submit, retryHostJoin } = useCreateActivity();
-  const { t } = useI18n();
+  const { t, isRTL } = useI18n();
   // Set only when the activity itself was created but the host's own
   // join failed — the activity is real and must never be silently
   // discarded or re-created; the user retries just the join step.
@@ -58,7 +58,7 @@ export function CreateActivityScreen({
       <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <View style={styles.header}>
           <Pressable onPress={onBack} style={styles.backButton} accessibilityRole="button" accessibilityLabel={t('common.back')}>
-            <ArrowLeft size={20} color={theme.text.primary} />
+            <ArrowLeft size={20} color={theme.text.primary} style={isRTL ? styles.flipped : undefined} />
           </Pressable>
           <Text style={styles.headerTitle}>{t('activity.hostActivityTitle')}</Text>
           <View style={styles.backButton} />
@@ -100,6 +100,7 @@ export function CreateActivityScreen({
 }
 
 const styles = StyleSheet.create({
+  flipped: { transform: [{ scaleX: -1 }] },
   container: { flex: 1, backgroundColor: theme.background.app },
   flex: { flex: 1 },
   header: {

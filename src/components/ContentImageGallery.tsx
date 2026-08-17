@@ -4,12 +4,14 @@ import { ImageSquare } from 'phosphor-react-native';
 import { ContentImage } from '@/components/ContentImage';
 import { radius, spacing, theme, typography } from '@/theme';
 import type { ContentImageAsset } from '@/types/contentImage';
+import { useI18n } from '@/i18n';
 
-export function ContentImageGallery({ images, title = 'Gallery' }: { images: ContentImageAsset[]; title?: string }) {
+export function ContentImageGallery({ images, title }: { images: ContentImageAsset[]; title?: string }) {
+  const { t } = useI18n();
   const approved = images.filter((image) => image.rights.rightsStatus === 'approved');
   if (!approved.length) return null;
   return <View style={styles.section}>
-    <Text style={styles.title}>{title}</Text>
+    <Text style={styles.title}>{title ?? t('gallery.title')}</Text>
     <FlatList
       horizontal
       data={approved}

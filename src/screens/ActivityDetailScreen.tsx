@@ -14,6 +14,7 @@ import { resolveParticipantCounts } from '@/utils/attendanceSummary';
 import { resolveBadges, resolveLifecycle } from '@/utils/activityLifecycle';
 import { canCreateAgain } from '@/utils/createAgain';
 import { activityCategoryLabel, textAlignForContent, useI18n } from '@/i18n';
+import { presentLocationName } from '@/utils/locationPresentation';
 import { openNativeShare } from '@/lib/contentShare';
 import { formatAgeRange } from '@/utils/babyAge';
 import { buildShareMessage } from '@/utils/buildShareMessage';
@@ -268,7 +269,7 @@ export function ActivityDetailScreen({
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <View style={styles.topBar}>
         <Pressable style={styles.roundButton} onPress={onBack} accessibilityRole="button" accessibilityLabel={t('common.back')}>
-          <ArrowLeft size={20} color={theme.text.primary} />
+          <ArrowLeft size={20} color={theme.text.primary} style={isRTL ? styles.flipped : undefined} />
         </Pressable>
         <View style={styles.heroActions}>
           {!isCancelled && (
@@ -326,7 +327,7 @@ export function ActivityDetailScreen({
           <Text style={[styles.title, textAlignForContent(activity.title, locale)]}>{activity.title}</Text>
           <Text style={styles.meta}>
             {formatExactStartTime(activity.startTime)} · {formatDuration(activity.durationMinutes)} ·{' '}
-            {activity.distanceKm.toFixed(1)}km away
+            {t('place.distance.kilometers', { count: activity.distanceKm.toFixed(1) })}
           </Text>
           <Text style={styles.meta}>
             {t('activity.babyAge', { age: formatAgeRange(activity.babyMinAgeMonths, activity.babyMaxAgeMonths) })}
@@ -432,7 +433,9 @@ export function ActivityDetailScreen({
             </MapView>
           </View>
           <Pressable style={styles.directionsRow} onPress={handleGetDirections}>
-            <Text style={styles.locationLabel}>{activity.location.label}</Text>
+            <Text style={[styles.locationLabel, textAlignForContent(presentLocationName(activity.location.label), locale)]}>
+              {presentLocationName(activity.location.label)}
+            </Text>
             <View style={styles.directionsButton}>
               <NavigationArrow size={14} color={theme.text.accent} weight="fill" />
               <Text style={styles.directionsLabel}>{t('activity.directions')}</Text>
@@ -551,6 +554,7 @@ function firstName(displayName: string): string {
 }
 
 const styles = StyleSheet.create({
+  flipped: { transform: [{ scaleX: -1 }] },
   container: { flex: 1, backgroundColor: theme.background.app },
   topBar: {
     flexDirection: 'row',

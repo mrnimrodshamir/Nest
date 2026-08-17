@@ -199,8 +199,8 @@ export function ActivityForm({
   const validateEssentials = () => {
     const startTimeError = startTimeValidationMessage(mode, hasSelectedStartTime);
     if (startTimeError) return setValidationError(startTimeError), false;
-    if (!title.trim()) return setValidationError('Give your activity a title'), false;
-    if (!locationName.trim()) return setValidationError('Name the public place you picked'), false;
+    if (!title.trim()) return setValidationError(t('error.activityTitleRequired')), false;
+    if (!locationName.trim()) return setValidationError(t('error.activityLocationRequired')), false;
     setValidationError(null);
     return true;
   };
