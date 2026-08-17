@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { setActiveDateLocale } from './core.ts';
+import { SUPPORTED_LOCALES, setActiveDateLocale } from './core.ts';
 import { formatDuration } from '@/utils/formatDuration.ts';
 import { formatExactStartTime } from '@/utils/formatExactStartTime.ts';
 import { generateActivityTitle } from '@/utils/generateActivityTitle.ts';
@@ -28,13 +28,39 @@ test('exact dates use the selected app locale and full natural names', () => {
   assert.match(formatExactStartTime(start, now), /Wednesday, August 19 at 8:00 PM/);
 });
 
-test('NestUp-generated activity titles localize templates and the generic meeting point', () => {
+test('a dropped pin contributes NO location to a generated title, in any language', () => {
   const now = new Date('2026-08-16T10:00:00+03:00');
   const tomorrow = new Date('2026-08-17T20:00:00+03:00');
+
+  // Previously the stored English placeholder was interpolated verbatim, so a
+  // Hebrew device showed "טיול עגלות ב־Meeting point". Translating the
+  // placeholder would only have moved the problem: "at the meeting point" is
+  // filler in every language. A pin with no name now yields no location clause.
   setActiveDateLocale('he');
-  assert.equal(generateActivityTitle('stroller_walk', tomorrow, 'Meeting point', now), 'טיול עגלות מחר ב־נקודת המפגש');
+  assert.equal(generateActivityTitle('stroller_walk', tomorrow, 'Meeting point', now), 'טיול עגלות מחר');
   setActiveDateLocale('en');
-  assert.equal(generateActivityTitle('stroller_walk', tomorrow, 'Meeting point', now), 'Stroller walk tomorrow at Meeting point');
+  assert.equal(generateActivityTitle('stroller_walk', tomorrow, 'Meeting point', now), 'Stroller walk tomorrow');
+
+  // Legacy rows and empty names take the same path.
+  for (const stored of ['', '  ', 'meeting point', ' Meeting Point ']) {
+    setActiveDateLocale('he');
+    assert.equal(generateActivityTitle('stroller_walk', tomorrow, stored, now), 'טיול עגלות מחר', stored);
+  }
+
+  // A real place name is still used, and still localized.
+  setActiveDateLocale('he');
+  assert.equal(generateActivityTitle('stroller_walk', tomorrow, 'Gordon Pool', now), 'טיול עגלות מחר ב־בריכת גורדון');
+});
+
+test('the storage placeholder can never reach the screen in ANY supported language', () => {
+  const now = new Date('2026-08-16T10:00:00+03:00');
+  const tomorrow = new Date('2026-08-17T20:00:00+03:00');
+  for (const locale of SUPPORTED_LOCALES) {
+    setActiveDateLocale(locale);
+    const title = generateActivityTitle('stroller_walk', tomorrow, 'Meeting point', now);
+    assert.doesNotMatch(title, /meeting point/i, `${locale} leaked the storage placeholder into a title`);
+  }
+  setActiveDateLocale('en');
 });
 
 test('structured chat events localize without touching user-authored content', () => {

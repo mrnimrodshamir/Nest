@@ -26,6 +26,7 @@ import {
   selectedLocationToNormalizedPlace,
 } from '@/utils/activityPlaceMapping';
 import { createManualPlace } from '@/utils/normalizedPlace';
+import { formScrollEnabledDuringMapTouch } from '@/utils/locationPickerState';
 import { presentSelectedLocation } from '@/utils/locationPresentation';
 import { applyReverseGeocodeLabel, moveSelectedLocation } from '@/utils/placeAdjustment';
 import { formatDuration } from '@/utils/formatDuration';
@@ -37,7 +38,7 @@ import {
   resolveActivityFormMode,
   startTimeValidationMessage,
 } from '@/utils/activityFormMode';
-import { activityCategoryLabel, useI18n, type TranslationKey } from '@/i18n';
+import { activityCategoryLabel, textAlignForContent, useI18n, type TranslationKey } from '@/i18n';
 
 const STAGE_LABEL_KEYS: Record<CreateActivityStage, TranslationKey> = {
   saving: 'activityForm.stage.saving',
@@ -97,6 +98,9 @@ export function ActivityForm({
   const behavior = resolveActivityFormMode(mode);
   const editValues = mode === 'edit' ? initialValues : null;
   const [reviewMode, setReviewMode] = useState(false);
+  /** Released back to true on touch end AND touch cancel, so a drag the form
+   *  tries to steal can never leave the form permanently unscrollable. */
+  const [formScrollEnabled, setFormScrollEnabled] = useState(true);
 
   const { session } = useAuth();
   const { children } = useChildren(session?.user.id ?? null);
@@ -272,7 +276,14 @@ export function ActivityForm({
   const primaryLabel = isSubmitting && stage ? t(STAGE_LABEL_KEYS[stage]) : behavior.showsReview && !reviewMode ? t('activityForm.review') : submitLabel;
 
   return (
-    <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+    <ScrollView
+      contentContainerStyle={styles.content}
+      keyboardShouldPersistTaps="handled"
+      /* Yielded to the location map while a finger is on it. Two competing pan
+         recognisers is why that map could not be dragged vertically: this
+         ScrollView was winning the gesture and the map never saw it. */
+      scrollEnabled={formScrollEnabled}
+    >
       {behavior.showsReview && reviewMode ? (
         <View style={styles.reviewBlock}>
           <CoverFrame variant="hero" radius={radius.lg} style={styles.coverPreview}>
@@ -392,6 +403,7 @@ export function ActivityForm({
 
           <Text style={styles.sectionLabel}>{t('activityForm.location')}</Text>
           <LocationPicker
+            onMapTouchChange={(isTouchingMap) => setFormScrollEnabled(formScrollEnabledDuringMapTouch(isTouchingMap))}
             latitude={latitude}
             longitude={longitude}
             onChangeCoordinates={(lat, lng) => {
@@ -499,10 +511,17 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 }
 
 function ReviewRow({ label, value }: { label: string; value: string }) {
+  const { locale } = useI18n();
+  /* The value can be either NestUp copy (a duration, a capacity) or something
+     the parent typed (the title, a place name), so it follows its OWN script
+     rather than a fixed side. The row is a flex row, so the value already sits
+     at the row's end in both directions — the hardcoded textAlign:'right' it
+     used to carry additionally forced Hebrew values to the wrong edge of their
+     own box in an RTL layout. */
   return (
     <View style={styles.reviewRow}>
       <Text style={styles.reviewLabel}>{label}</Text>
-      <Text style={styles.reviewValue} numberOfLines={3}>
+      <Text style={[styles.reviewValue, textAlignForContent(value, locale)]} numberOfLines={3}>
         {value}
       </Text>
     </View>
@@ -555,6 +574,9 @@ const styles = StyleSheet.create({
   reviewBlock: { gap: spacing.md },
   reviewMapWrapper: { height: 150, borderRadius: radius.lg, overflow: 'hidden' },
   reviewMap: { flex: 1 },
+  // Centering an absolutely positioned pin, not a layout side: left:50%
+  // with a negative half-width margin centres identically in RTL, so this
+  // deliberately stays physical rather than being mirrored.
   reviewMapPin: { position: 'absolute', top: '50%', left: '50%', marginLeft: -14, marginTop: -28 },
   reviewRow: {
     flexDirection: 'row',
@@ -565,6 +587,6 @@ const styles = StyleSheet.create({
     borderBottomColor: theme.border.default,
   },
   reviewLabel: { ...typography.footnote, color: theme.text.secondary },
-  reviewValue: { ...typography.bodyMedium, color: theme.text.primary, flexShrink: 1, textAlign: 'right' },
+  reviewValue: { ...typography.bodyMedium, color: theme.text.primary, flexShrink: 1 },
   editDetailsLink: { alignItems: 'center', paddingVertical: spacing.sm },
 });

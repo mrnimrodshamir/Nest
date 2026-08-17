@@ -111,7 +111,7 @@ export function ActivityCard({
                   key={attendee.id}
                   style={[
                     styles.avatar,
-                    { backgroundColor: attendee.avatarColor, marginLeft: index === 0 ? 0 : -8 },
+                    { backgroundColor: attendee.avatarColor, marginStart: index === 0 ? 0 : -8 },
                   ]}
                 >
                   {attendee.avatarUrl && (
@@ -157,7 +157,7 @@ const styles = StyleSheet.create({
   cardRail: {
     width: 150,
     borderRadius: radius.lg,
-    marginRight: spacing.sm,
+    marginEnd: spacing.sm,
   },
   cardHighlighted: {
     borderColor: theme.brand.primary,
@@ -227,7 +227,7 @@ const styles = StyleSheet.create({
   attendeeRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginLeft: spacing.sm,
+    marginStart: spacing.sm,
   },
   avatar: {
     width: 20,
@@ -240,6 +240,6 @@ const styles = StyleSheet.create({
   attendeeCount: {
     ...typography.caption,
     color: theme.text.secondary,
-    marginLeft: 4,
+    marginStart: 4,
   },
 });

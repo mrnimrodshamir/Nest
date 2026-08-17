@@ -1,6 +1,7 @@
 import { activeDateLocale, currentAppLocale, translate } from '@/i18n/core';
 import { activityCategoryLabel, localizedPlaceName } from '@/i18n/taxonomy';
 import { CATEGORY_LABELS, type ActivityCategory } from '../types/activity';
+import { isGenericPlaceName } from './genericPlaceName';
 
 /** "Today" / "Tomorrow" / "Friday" — the day-only building block shared by
  *  every place the app describes when something's happening in words. */
@@ -55,7 +56,14 @@ export function generateActivityTitle(
   const safeCategory: ActivityCategory = activityType in CATEGORY_LABELS ? activityType : 'other';
   const category = activityCategoryLabel(safeCategory, (key, params) => translate(locale, key, params));
   const temporal = temporalPhrase(startsAt, now);
-  const location = localizedPlaceName({ name: shortLocationLabel(locationName) }, locale);
+  const shortLabel = shortLocationLabel(locationName);
+  /* A dropped pin has no name worth putting in a title. Previously the stored
+     English placeholder was interpolated verbatim, producing
+     "טיול עגלות ב־Meeting point" on a Hebrew device. Falling through to the
+     no-location template instead gives "טיול עגלות מחר", which is both correct
+     Hebrew and better copy than any translation of the placeholder would be —
+     and it means the placeholder can never reach a title in ANY language. */
+  const location = isGenericPlaceName(shortLabel) ? '' : localizedPlaceName({ name: shortLabel }, locale);
   const when = temporal.trim();
   if (!location) return translate(locale, 'activity.title.withoutLocation', { category, when }).replace(/\s+/g, ' ').trim();
   return translate(locale, 'activity.title.withLocation', { category, when, location }).replace(/\s+/g, ' ').trim();

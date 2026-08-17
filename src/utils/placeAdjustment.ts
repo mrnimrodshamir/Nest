@@ -1,4 +1,5 @@
 import type { NormalizedPlace, SelectedActivityLocation } from '@/types/place';
+import { GENERIC_PLACE_NAME } from './genericPlaceName';
 import { isValidCoordinate } from '@/utils/normalizedPlace';
 
 export const PLACE_ADJUSTMENT_TOLERANCE_METERS = 40;
@@ -36,7 +37,7 @@ export function adjustProviderPlace(
     return { ...selectedPlace, ...coordinates };
   }
 
-  const safeName = displayName?.trim() || 'Meeting point';
+  const safeName = displayName?.trim() || GENERIC_PLACE_NAME;
   const safeAddress = formattedAddress?.trim() || null;
   return {
     name: safeName,
@@ -62,7 +63,7 @@ export function moveSelectedLocation(
     return {
       place: null,
       ...coordinates,
-      displayName: 'Meeting point',
+      displayName: GENERIC_PLACE_NAME,
       addressLabel: null,
       source: 'manual',
       wasAdjusted: true,
@@ -83,7 +84,7 @@ export function applyReverseGeocodeLabel(
   if (!trimmed || selection.source === 'provider') return selection;
   return {
     ...selection,
-    displayName: selection.wasAdjusted ? 'Meeting point' : trimmed,
+    displayName: selection.wasAdjusted ? GENERIC_PLACE_NAME : trimmed,
     addressLabel: trimmed,
   };
 }

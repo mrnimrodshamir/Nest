@@ -147,7 +147,7 @@ export const he: Dictionary = {
   'chats.empty.pastBody': 'כשפעילות מסתיימת, הצ׳אט שלה עובר לכאן.',
   'chats.error.forums': 'לא הצלחנו לטעון את הפורומים.',
   'chats.error.load': 'לא הצלחנו לטעון את ההודעות שלכם.',
-  'chats.noMessagesYet': 'אמרו שלום 👋',
+  'chats.noMessagesYet': 'עדיין שקט כאן',
   'chats.you': 'אני',
   'chats.happenedOn': '{date} · {time}',
   'chats.directChat': 'הודעות אישיות',
@@ -287,7 +287,7 @@ export const he: Dictionary = {
   'chat.messagePlaceholder': 'הודעה',
   'chat.send': 'שליחה',
   'chat.notSent': 'לא נשלח — הקישו לניסיון חוזר',
-  'chat.conversationStart': 'זו תחילת השיחה שלכם.',
+  'chat.conversationStart': 'תהיו הראשונים לכתוב.',
 
   // --- Share Activity ----------------------------------------------------
   'share.live': 'הפעילות שלכם פורסמה.',

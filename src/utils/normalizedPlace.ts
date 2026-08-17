@@ -1,4 +1,5 @@
 import type { NormalizedPlace } from '@/types/place';
+import { GENERIC_PLACE_NAME } from './genericPlaceName';
 
 export interface ProviderPlaceInput {
   name: string;
@@ -66,7 +67,7 @@ export function createAppleMapsPlace(input: ProviderPlaceInput): NormalizedPlace
 export function createManualPlace(input: ManualPlaceInput): NormalizedPlace {
   assertCoordinates(input.latitude, input.longitude);
   return {
-    name: requiredName(input.name ?? '', 'Meeting point'),
+    name: requiredName(input.name ?? '', GENERIC_PLACE_NAME),
     formattedAddress: optionalText(input.formattedAddress),
     latitude: input.latitude,
     longitude: input.longitude,
@@ -81,7 +82,7 @@ export function createManualPlace(input: ManualPlaceInput): NormalizedPlace {
 export function createLegacyPlace(input: LegacyPlaceInput): NormalizedPlace {
   assertCoordinates(input.latitude, input.longitude);
   return {
-    name: requiredName(input.addressLabel, 'Meeting point'),
+    name: requiredName(input.addressLabel, GENERIC_PLACE_NAME),
     formattedAddress: optionalText(input.addressLabel),
     latitude: input.latitude,
     longitude: input.longitude,

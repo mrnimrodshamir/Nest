@@ -1,5 +1,6 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, TextInput, Pressable, StyleSheet, ActivityIndicator, Platform, Keyboard, ScrollView } from 'react-native';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { AppState, View, Text, TextInput, Pressable, StyleSheet, ActivityIndicator, Platform, Keyboard, ScrollView } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import MapView, { PROVIDER_DEFAULT, type Region } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { MagnifyingGlass, MapPin, X } from 'phosphor-react-native';
@@ -8,6 +9,12 @@ import { usePlaceSearch, type PlaceSearchItem } from '@/hooks/usePlaceSearch';
 import type { NormalizedPlace, SelectedActivityLocation } from '@/types/place';
 import { presentSelectedLocation } from '@/utils/locationPresentation';
 import { LOCATION_PICKER_DELTA, selectProviderPlace } from '@/utils/placeSelection';
+import {
+  isMeaningfulRegionChange,
+  nextLocationPickerMapGeneration,
+  shouldRemountPickerMapForAppState,
+  shouldResolveLocationName,
+} from '@/utils/locationPickerState';
 import { textAlignForContent, useI18n } from '@/i18n';
 
 interface LocationPickerProps {
@@ -24,6 +31,10 @@ interface LocationPickerProps {
    *  permission is already granted — only appropriate for a brand-new
    *  activity, never when editing one that already has a real location. */
   autoCenterOnMount?: boolean;
+  /** Raised while a finger is down on the map so the host can stop its
+   *  ScrollView from stealing the drag. Without this the map cannot be panned
+   *  vertically at all — see locationPickerState. */
+  onMapTouchChange?: (isTouchingMap: boolean) => void;
 }
 
 const DELTA = LOCATION_PICKER_DELTA;
@@ -47,11 +58,53 @@ export function LocationPicker({
   onSelectPlace,
   selectedLocation,
   autoCenterOnMount = false,
+  onMapTouchChange,
 }: LocationPickerProps) {
   const { t, locale } = useI18n();
   const [isResolving, setIsResolving] = useState(false);
   const [isResolvingSelection, setIsResolvingSelection] = useState(false);
   const mapRef = useRef<MapView>(null);
+
+  /* Map lifecycle. The picker is entered and left repeatedly within a single
+     activity draft, and each return can otherwise reuse a stale native MapKit
+     view that draws but ignores touches. Same remedy as Discovery, kept in a
+     separate module so Discovery's validated path is untouched. */
+  const [mapGeneration, setMapGeneration] = useState(0);
+  const hasBlurred = useRef(false);
+  const appState = useRef(AppState.currentState);
+
+  useFocusEffect(
+    useCallback(() => {
+      setMapGeneration((generation) => nextLocationPickerMapGeneration(generation, hasBlurred.current));
+      hasBlurred.current = false;
+      return () => {
+        hasBlurred.current = true;
+      };
+    }, []),
+  );
+
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', (nextState) => {
+      if (shouldRemountPickerMapForAppState(appState.current, nextState)) {
+        setMapGeneration((generation) => generation + 1);
+      }
+      appState.current = nextState;
+    });
+    return () => subscription.remove();
+  }, []);
+
+  /* Gesture arbitration with the host ScrollView. A ref rather than state:
+     this changes on every touch down/up and must not re-render the map. */
+  const isTouchingMap = useRef(false);
+  const setTouchingMap = (touching: boolean) => {
+    if (isTouchingMap.current === touching) return;
+    isTouchingMap.current = touching;
+    onMapTouchChange?.(touching);
+  };
+
+  /* The last region we accepted as a real user pan, so the initial layout
+     callback and our own animateToRegion are not mistaken for one. */
+  const settledRegion = useRef<{ latitude: number; longitude: number } | null>(null);
   // Guards against a slow reverse-geocode response landing after a newer
   // drag — only the most recent request is allowed to write back a result.
   const requestId = useRef(0);
@@ -103,7 +156,19 @@ export function LocationPicker({
   };
 
   const handleRegionChangeComplete = (region: Region) => {
+    const previous = settledRegion.current;
+    settledRegion.current = { latitude: region.latitude, longitude: region.longitude };
+
+    // Coordinates are the real data and are always committed: even the first
+    // layout settle should anchor the draft to what the map is showing.
     onChangeCoordinates(region.latitude, region.longitude);
+
+    // The NAME, however, is only re-derived for an actual pan. Re-resolving on
+    // the initial settle or after animateToRegion would overwrite the name a
+    // search result just supplied, which is why a picked place could silently
+    // revert to a nearby street address.
+    if (!isMeaningfulRegionChange(previous, region)) return;
+    if (!shouldResolveLocationName(isTouchingMap.current)) return;
     void resolveName(region.latitude, region.longitude);
   };
 
@@ -116,6 +181,13 @@ export function LocationPicker({
       onSelectPlace?.(selected.selection.place!);
       onChangeCoordinates(selected.selection.latitude, selected.selection.longitude);
       onChangeLocationName?.(selected.selection.displayName);
+      // Claim the destination BEFORE animating, so the settle this animation
+      // produces is recognised as ours and does not reverse-geocode over the
+      // name the chosen place just gave us.
+      settledRegion.current = {
+        latitude: selected.cameraRegion.latitude,
+        longitude: selected.cameraRegion.longitude,
+      };
       mapRef.current?.animateToRegion(selected.cameraRegion, 400);
       search.clearResults();
     } catch {
@@ -134,7 +206,10 @@ export function LocationPicker({
       <View style={styles.searchRow}>
         <MagnifyingGlass size={16} color={theme.text.muted} style={styles.searchIcon} />
         <TextInput
-          style={styles.searchInput}
+          // Follows the typed script: a parent in Tel Aviv searches "גן מאיר"
+          // as readily as "Meir". This field used to be pinned to LTR, which
+          // put the caret on the wrong side of Hebrew input.
+          style={[styles.searchInput, textAlignForContent(search.query, locale)]}
           placeholder={t('locationPicker.search')}
           placeholderTextColor={theme.text.muted}
           value={search.query}
@@ -195,8 +270,19 @@ export function LocationPicker({
         </View>
       ) : null}
 
-      <View style={styles.mapWrapper}>
+      {/* The touch handlers live on this wrapper, not on the MapView: the map
+          consumes its own gestures, and a responder on the native view would
+          fight it. onTouchCancel matters as much as onTouchEnd — a drag the
+          parent tries to steal ends as a cancel, and only clearing on a clean
+          end would leave the form permanently unscrollable. */}
+      <View
+        style={styles.mapWrapper}
+        onTouchStart={() => setTouchingMap(true)}
+        onTouchEnd={() => setTouchingMap(false)}
+        onTouchCancel={() => setTouchingMap(false)}
+      >
         <MapView
+          key={`activity-location-map-${mapGeneration}`}
           ref={mapRef}
           provider={PROVIDER_DEFAULT}
           style={styles.map}
@@ -207,6 +293,15 @@ export function LocationPicker({
             longitudeDelta: DELTA,
           }}
           onRegionChangeComplete={handleRegionChangeComplete}
+          // Declared rather than left to defaults, so the gestures this picker
+          // depends on cannot be turned off by a library default changing.
+          // Rotate and pitch are off on purpose: this is a "drop a pin" map,
+          // and a two-finger twist here only ever loses the parent their frame.
+          scrollEnabled
+          zoomEnabled
+          rotateEnabled={false}
+          pitchEnabled={false}
+          toolbarEnabled={false}
         />
         <View style={styles.centerPinWrap} pointerEvents="none">
           <MapPin size={32} color={theme.brand.primary} weight="fill" />
@@ -240,10 +335,8 @@ const styles = StyleSheet.create({
     ...typography.body,
     paddingVertical: spacing.md,
     color: theme.text.primary,
-    textAlign: 'left',
-    writingDirection: 'ltr',
   },
-  searchTrailing: { marginLeft: spacing.xs },
+  searchTrailing: { marginStart: spacing.xs },
   searchStatusText: { ...typography.caption, color: theme.text.muted },
   resultsList: {
     backgroundColor: theme.background.surface,
@@ -280,6 +373,7 @@ const styles = StyleSheet.create({
   },
   map: { flex: 1 },
   centerPinWrap: {
+    // Centering, not a side: unchanged under RTL by construction.
     position: 'absolute',
     top: '50%',
     left: '50%',

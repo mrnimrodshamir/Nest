@@ -141,7 +141,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: theme.background.app },
   backButton: {
     width: 44, height: 44, borderRadius: 22, backgroundColor: theme.background.surface,
-    alignItems: 'center', justifyContent: 'center', marginLeft: spacing.lg, marginTop: spacing.sm,
+    alignItems: 'center', justifyContent: 'center', marginStart: spacing.lg, marginTop: spacing.sm,
   },
   flipped: { transform: [{ scaleX: -1 }] },
   centerState: { flex: 1, alignItems: 'center', justifyContent: 'center' },

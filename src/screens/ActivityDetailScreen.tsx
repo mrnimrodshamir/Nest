@@ -642,7 +642,7 @@ const styles = StyleSheet.create({
     height: 8,
     borderRadius: 4,
     backgroundColor: theme.semantic.danger,
-    marginLeft: 'auto',
+    marginStart: 'auto',
   },
   sectionLabel: { ...typography.bodyMedium, color: theme.text.primary, marginBottom: spacing.sm },
   description: { ...typography.subhead, color: theme.text.secondary, lineHeight: 21, marginBottom: spacing.lg },

@@ -481,7 +481,7 @@ const styles = StyleSheet.create({
   activityMeta: { ...typography.footnote, color: theme.text.secondary },
   rtlText: { textAlign: 'right', writingDirection: 'rtl' },
   activityFooterLine: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 2 },
-  activityPreview: { ...typography.footnote, color: theme.text.muted, flex: 1, marginRight: spacing.sm },
+  activityPreview: { ...typography.footnote, color: theme.text.muted, flex: 1, marginEnd: spacing.sm },
   activityFooterRight: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  activityCount: { ...typography.caption, color: theme.text.muted, marginRight: spacing.xs },
+  activityCount: { ...typography.caption, color: theme.text.muted, marginEnd: spacing.xs },
 });

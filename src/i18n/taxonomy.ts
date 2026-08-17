@@ -58,8 +58,12 @@ const HEBREW_PLACE_NAMES: Readonly<Record<string, string>> = {
   'tel-aviv-museum-of-art': 'מוזיאון תל אביב לאמנות',
 };
 
+/** Real Tel Aviv places only. The generic "dropped a pin" placeholder used to
+ *  live here, which meant it was localized for Hebrew and left in English for
+ *  French, Russian and every language added later. It is a UI string, not a
+ *  place, and now resolves through `locationPicker.meetingPoint` for all
+ *  locales — see genericPlaceName. */
 const HEBREW_PLACE_NAMES_BY_ENGLISH: Readonly<Record<string, string>> = {
-  'meeting point': 'נקודת המפגש',
   'independence park': 'פארק העצמאות',
   'gordon swimming pool': 'בריכת גורדון',
   'gordon pool': 'בריכת גורדון',

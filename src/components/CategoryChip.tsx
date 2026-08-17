@@ -47,7 +47,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
     borderRadius: radius.pill,
     backgroundColor: theme.background.app,
-    marginRight: spacing.sm,
+    marginEnd: spacing.sm,
   },
   chipSelected: {
     backgroundColor: theme.brand.primary,
