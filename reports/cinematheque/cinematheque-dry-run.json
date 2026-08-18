@@ -1,0 +1,123 @@
+{
+  "generatedAt": "2026-08-18T18:38:28.266Z",
+  "provider": "tel_aviv_cinematheque",
+  "horizonDays": 7,
+  "identityResult": "CONFIRMED via live evidence 2026-08-19: repeated showtimes of the same film share one stable WordPress event_id across different day-schedule pages — grouped as one Event + multiple Occurrences, keyed by event_id, never by title.",
+  "fetch": {
+    "sourceComplete": true,
+    "incompleteReason": null,
+    "daysFetched": 7,
+    "dayFailures": [],
+    "rawCardCount": 52
+  },
+  "counts": {
+    "fetched": 8,
+    "normalized": 8,
+    "invalid": 0,
+    "relevant": 3,
+    "excludedByRelevance": 5,
+    "distinctEvents": 2,
+    "occurrences": 3,
+    "new": 3,
+    "existing": 0,
+    "exactDuplicate": 0,
+    "probableDuplicate": 0,
+    "ambiguousDuplicate": 3,
+    "distinct": 0,
+    "withAgeData": 0,
+    "withPriceData": 0,
+    "withHallData": 0,
+    "estimatedNetNew": 3
+  },
+  "excludedByMapping": [],
+  "excludedByRelevance": [
+    {
+      "title": "שכונת חיים | עונה חדשה",
+      "reason": "no_family_signal"
+    },
+    {
+      "title": "לוני טונס מציגים: קיוטי נגד אקמי - מדובב",
+      "reason": "no_family_signal"
+    },
+    {
+      "title": "לוני טונס מציגים: קיוטי נגד אקמי - מדובב",
+      "reason": "no_family_signal"
+    },
+    {
+      "title": "לוני טונס מציגים: קיוטי נגד אקמי - מדובב",
+      "reason": "no_family_signal"
+    },
+    {
+      "title": "עכברשע | שעת סיפור+הקרנה | מועדון אנגלית לקטנטנים עם רות גלנץ",
+      "reason": "no_family_signal"
+    }
+  ],
+  "candidates": [
+    {
+      "eventId": "116049",
+      "title": "היפהפייה והיחפן - מדובב | הקרנה על פופים",
+      "startsAt": "2026-08-21T13:30:00+03:00",
+      "endsAt": "2026-08-21T11:48:00.000Z",
+      "director": "קלייד ג'רונימי, וילפרד ג'קסון, המילטון לוסק",
+      "language": "מדובב לעברית, ללא תרגום",
+      "hall": null,
+      "ageRange": "unknown",
+      "price": null,
+      "source": "סינמטק תל אביב",
+      "sourceType": "external_organizer",
+      "registrationUrl": "https://cintlv.pres.global/order/131769/",
+      "relevanceReason": "ילד, ילדים, תינוק",
+      "dedupeClassification": "AMBIGUOUS",
+      "dedupeDetail": {
+        "classification": "AMBIGUOUS",
+        "titleSimilarity": 0,
+        "timeDeltaMinutes": 1470,
+        "distanceMeters": 212.7535490746718
+      }
+    },
+    {
+      "eventId": "116049",
+      "title": "היפהפייה והיחפן - מדובב | הקרנה על פופים",
+      "startsAt": "2026-08-22T11:00:00+03:00",
+      "endsAt": "2026-08-22T09:18:00.000Z",
+      "director": "קלייד ג'רונימי, וילפרד ג'קסון, המילטון לוסק",
+      "language": "מדובב לעברית, ללא תרגום",
+      "hall": null,
+      "ageRange": "unknown",
+      "price": null,
+      "source": "סינמטק תל אביב",
+      "sourceType": "external_organizer",
+      "registrationUrl": "https://cintlv.pres.global/order/131770/",
+      "relevanceReason": "ילד, ילדים, תינוק",
+      "dedupeClassification": "AMBIGUOUS",
+      "dedupeDetail": {
+        "classification": "AMBIGUOUS",
+        "titleSimilarity": 0,
+        "timeDeltaMinutes": 2760,
+        "distanceMeters": 212.7535490746718
+      }
+    },
+    {
+      "eventId": "116050",
+      "title": "צעצוע של סיפור 5 - מדובב | המרכז למשפחה",
+      "startsAt": "2026-08-22T11:00:00+03:00",
+      "endsAt": "2026-08-22T09:42:00.000Z",
+      "director": "מקינה האריס, אנדרו סטנטון",
+      "language": "מדובב לעברית, ללא תרגום",
+      "hall": null,
+      "ageRange": "unknown",
+      "price": null,
+      "source": "סינמטק תל אביב",
+      "sourceType": "external_organizer",
+      "registrationUrl": "https://cintlv.pres.global/order/132398/",
+      "relevanceReason": "ילד, ילדים, משפח, סיפור",
+      "dedupeClassification": "AMBIGUOUS",
+      "dedupeDetail": {
+        "classification": "AMBIGUOUS",
+        "titleSimilarity": 0,
+        "timeDeltaMinutes": 2760,
+        "distanceMeters": 212.7535490746718
+      }
+    }
+  ]
+}

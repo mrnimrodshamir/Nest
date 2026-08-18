@@ -1,0 +1,86 @@
+{
+  "generatedAt": "2026-08-18T18:49:35.216Z",
+  "provider": "tel_aviv_port",
+  "horizonDays": 7,
+  "fetch": {
+    "sourceComplete": true,
+    "incompleteReason": null,
+    "rawListItemCount": 13,
+    "invalidListItems": [],
+    "excludedEvergreen": [
+      {
+        "slug": "mizraka",
+        "title": "⛲מזרקת הנוי ביריד המזרח שעות פעילות",
+        "spanDays": 241
+      },
+      {
+        "slug": "links",
+        "title": "הצטרפו לקבוצות הווטסאפ וקבלו עדכונים על כל אירועי החינם",
+        "spanDays": 456
+      }
+    ],
+    "detailFetchFailures": []
+  },
+  "counts": {
+    "fetched": 13,
+    "normalized": 2,
+    "notFamilyTagged": 0,
+    "invalid": 0,
+    "relevant": 1,
+    "excludedByRelevance": 1,
+    "new": 1,
+    "existing": 0,
+    "exactDuplicate": 0,
+    "probableDuplicate": 0,
+    "ambiguousDuplicate": 1,
+    "distinct": 0,
+    "withAgeData": 0,
+    "withPriceData": 1,
+    "withRegistrationUrl": 1,
+    "estimatedNetNew": 1
+  },
+  "excludedEvergreen": [
+    {
+      "slug": "mizraka",
+      "title": "⛲מזרקת הנוי ביריד המזרח שעות פעילות",
+      "spanDays": 241
+    },
+    {
+      "slug": "links",
+      "title": "הצטרפו לקבוצות הווטסאפ וקבלו עדכונים על כל אירועי החינם",
+      "spanDays": 456
+    }
+  ],
+  "notFamilyTagged": [],
+  "excludedByMapping": [],
+  "excludedByRelevance": [
+    {
+      "title": "פסטיבל \"מוגזם בנמל\"- האטרקציה של הקיץ בנמל תל אביב",
+      "reason": "excluded_term"
+    }
+  ],
+  "candidates": [
+    {
+      "title": "אורות, לייזרים וחדר מלא בלונים: תערוכת GLOW מגיעה לנמל תל אביב",
+      "startsAt": "2026-08-13T21:00:00.000Z",
+      "endsAt": "2026-08-30T21:00:00.000Z",
+      "occurrenceShape": "multi_day",
+      "venue": "האנגר 11, נמל תל אביב",
+      "ageRange": "unknown",
+      "price": "129 ₪ במכירה מוקדמת | 139 ₪ מחיר מלא",
+      "source": "נמל תל אביב",
+      "sourceType": "external_organizer",
+      "registrationUrl": "https://www.to-mix.co.il/glow-exhibition/?utm_source=google&utm_medium=ppc&gad_source=1&gad_campaignid=24056208879&gbraid=0AAAAABtyTOC54v76JDoFNnZC4O11e_4p-&gclid=CjwKCAjwyuDTBhB-EiwANCQhLEfE5rzLhMy9zLb_RNPuaTEut1eBfTxj-reDjveSLijSG8KSCHd1axoCOXgQAvD_BwE",
+      "airConditioned": true,
+      "indoorOutdoor": "indoor",
+      "relevanceReason": "ילד, ילדים, משפח, משחק, משחקים",
+      "dedupeClassification": "AMBIGUOUS",
+      "dedupeDetail": {
+        "classification": "AMBIGUOUS",
+        "titleSimilarity": 0,
+        "timeDeltaMinutes": 6930,
+        "distanceMeters": 177.9325275422109
+      }
+    }
+  ]
+}
