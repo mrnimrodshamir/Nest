@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-18T11:46:05.808Z",
+  "generatedAt": "2026-08-18T20:10:26.538Z",
   "provider": "beit_ariela_libraries",
   "horizonDays": 7,
   "fetch": {
@@ -18,9 +18,9 @@
     "excludedByRelevance": 15,
     "new": 5,
     "existing": 0,
-    "exactDuplicate": 0,
+    "exactDuplicate": 5,
     "probableDuplicate": 0,
-    "ambiguousDuplicate": 5,
+    "ambiguousDuplicate": 0,
     "distinct": 0,
     "withAgeData": 5,
     "withPriceData": 5,
@@ -106,7 +106,7 @@
       "registrationUrl": "https://beitariela.smarticket.co.il/show/2012",
       "locationQuality": "resolved via curated place table",
       "relevanceReason": "ילד, הורה, יצירה, ספריה, workshop",
-      "dedupeClassification": "AMBIGUOUS"
+      "dedupeClassification": "EXACT"
     },
     {
       "title": "ההצגה ״אבא של עמליה נוסע לאוסטרליה״",
@@ -118,7 +118,7 @@
       "registrationUrl": "https://beitariela.smarticket.co.il/show/2108",
       "locationQuality": "resolved via curated place table",
       "relevanceReason": "ילד, משפח, הורה, אבא, הצגה, יצירה, workshop",
-      "dedupeClassification": "AMBIGUOUS"
+      "dedupeClassification": "EXACT"
     },
     {
       "title": "הארי פוטר — לידתו של מנהיג",
@@ -130,7 +130,7 @@
       "registrationUrl": "https://www.coing.co/TLV_ChessCenter/267926",
       "locationQuality": "resolved via curated place table",
       "relevanceReason": "ילד",
-      "dedupeClassification": "AMBIGUOUS"
+      "dedupeClassification": "EXACT"
     },
     {
       "title": "מפגש מוזיקלי אינטראקטיבי לילדות ולילדים",
@@ -142,7 +142,7 @@
       "registrationUrl": "https://beitariela.smarticket.co.il/show/2109",
       "locationQuality": "resolved via curated place table",
       "relevanceReason": "ילד, ילדים, ילדות, הורה",
-      "dedupeClassification": "AMBIGUOUS"
+      "dedupeClassification": "EXACT"
     },
     {
       "title": "הצדף שלי",
@@ -154,7 +154,7 @@
       "registrationUrl": "https://eventbuzz.co.il/lp/event/ng2308",
       "locationQuality": "resolved via curated place table",
       "relevanceReason": "ילד, סדנה, סדנת, יצירה, מוזיאון, workshop",
-      "dedupeClassification": "AMBIGUOUS"
+      "dedupeClassification": "EXACT"
     }
   ]
 }
