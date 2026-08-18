@@ -4,11 +4,15 @@
  *  These use the REAL classifyCrossProviderMatch and buildProviderSyncPlan
  *  from providers/identity.ts and providers/syncPlan.ts — already
  *  exhaustively tested generically — with real candidate shapes produced
- *  by the two new connectors' own mapping functions, plus the two actual
- *  AMBIGUOUS cases this sprint's live dry runs found (not fabricated
- *  examples): Tel Aviv Port's GLOW exhibition against a nearby DigiTel
- *  port event, and Cinematheque's Toy Story 5 against DigiTel's own
- *  "שבת סרט - צעצוע של סיפור 5" entry at the same building. */
+ *  by the two new connectors' own mapping functions, plus the two real
+ *  cases this sprint's live production sync found: Tel Aviv Port's GLOW
+ *  exhibition against a nearby-but-unrelated DigiTel port event (correctly
+ *  DISTINCT — proximity alone is not evidence), and Cinematheque's Toy
+ *  Story 5 against DigiTel's own "שבת סרט - צעצוע של סיפור 5" entry at the
+ *  same building (correctly AMBIGUOUS — three corroborating signals, not
+ *  just proximity). See identity.test.ts for the classifier-level version
+ *  of both cases; these versions go through the real mapping functions
+ *  too, proving the whole pipeline agrees. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { classifyCrossProviderMatch } from './identity.ts';
@@ -17,10 +21,10 @@ import { mapTelAvivPortRecord } from '../telAvivPort/mapping.ts';
 import { mapCinemathequeOccurrence } from '../cinematheque/mapping.ts';
 
 // ===========================================================================
-// REAL CASE 1 — Tel Aviv Port GLOW vs a nearby DigiTel port event
+// REAL CASE 1 — Tel Aviv Port GLOW vs a nearby-but-unrelated DigiTel event
 // ===========================================================================
 
-test('GLOW (Tel Aviv Port) vs a real nearby DigiTel port event classifies AMBIGUOUS, never EXACT', () => {
+test('GLOW (Tel Aviv Port) vs a real nearby DigiTel port event classifies DISTINCT — proximity alone is not evidence', () => {
   const glow = mapTelAvivPortRecord({
     slug: 'glow', title: 'אורות, לייזרים וחדר מלא בלונים: תערוכת GLOW מגיעה לנמל תל אביב',
     termIds: ['17', '47', '55', '69'], description: 'תערוכה ממוזגת. 📍 האנגר 11, נמל תל אביב',
@@ -30,7 +34,8 @@ test('GLOW (Tel Aviv Port) vs a real nearby DigiTel port event classifies AMBIGU
   }).candidate!;
 
   // Real DigiTel entry from the 2026-08-19 snapshot: "שרים עם שירי - בנמל!"
-  // at "מתחם ליפקין שחק- שטח הנמל 15", ~178m from Hangar 11.
+  // at "מתחם ליפקין שחק- שטח הנמל 15", ~178m from Hangar 11 — genuinely
+  // unrelated program, different title, 4.8 days apart.
   const digitelPortEvent = {
     provider: 'tel_aviv_digitel', title: 'שרים עם שירי - בנמל!',
     startsAt: '2026-08-18T16:30:00Z', locationName: 'מתחם ליפקין שחק- שטח הנמל 15',
@@ -42,8 +47,8 @@ test('GLOW (Tel Aviv Port) vs a real nearby DigiTel port event classifies AMBIGU
     digitelPortEvent,
   );
   assert.notEqual(result.classification, 'EXACT');
-  assert.equal(result.classification, 'AMBIGUOUS');
-  assert.ok(result.distanceMeters! < 300, 'proximity, not title similarity, is what drives this AMBIGUOUS flag');
+  assert.equal(result.classification, 'DISTINCT');
+  assert.ok(result.distanceMeters! < 300, 'the two really are close in space — and that alone correctly does not matter anymore');
 });
 
 // ===========================================================================

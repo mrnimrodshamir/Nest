@@ -75,10 +75,28 @@ export function classifyCrossProviderMatch(a: DedupeComparable, b: DedupeCompara
     return { classification: 'PROBABLE', titleSimilarity, timeDeltaMinutes, distanceMeters };
   }
 
-  const someSignal = titleSimilarity >= WEAK_TITLE_SIMILARITY
-    || sameVenue(PROBABLE_DISTANCE_METERS)
-    || closeInTime(SAME_DAY_MINUTES);
-  if (someSignal) {
+  // AMBIGUOUS requires at least TWO independent weak signals corroborating
+  // each other — never geographic proximity alone. A large venue/complex
+  // (a port, a park, a cinematheque, a mall, a museum, a library system)
+  // legitimately hosts many unrelated events; "happened near the same
+  // coordinates" is not evidence two records describe the same real-world
+  // occurrence unless something else also lines up. Confirmed against a
+  // real false-positive this rule was built to fix: Tel Aviv Port's GLOW
+  // exhibition and a nearby DigiTel port event were 178m apart with
+  // unrelated titles and a 4.8-day time gap — proximity was the ONLY
+  // signal, and the two are genuinely distinct programs. Under the old
+  // rule (proximity alone sufficient) that pair wrongly flagged AMBIGUOUS;
+  // under this rule it correctly does not, since only one signal (venue)
+  // is present. A real duplicate still routes through cleanly: DigiTel's
+  // own "צעצוע של סיפור 5" listing at the Cinematheque's address, ~2 hours
+  // from Cinematheque's own screening of the same film, has THREE signals
+  // (weak title overlap, same-day time, same venue) and still classifies
+  // AMBIGUOUS here.
+  const weakTitle = titleSimilarity >= WEAK_TITLE_SIMILARITY;
+  const nearbyVenue = sameVenue(PROBABLE_DISTANCE_METERS);
+  const sameDay = closeInTime(SAME_DAY_MINUTES);
+  const corroboratingSignalCount = [weakTitle, nearbyVenue, sameDay].filter(Boolean).length;
+  if (corroboratingSignalCount >= 2) {
     return { classification: 'AMBIGUOUS', titleSimilarity, timeDeltaMinutes, distanceMeters };
   }
 

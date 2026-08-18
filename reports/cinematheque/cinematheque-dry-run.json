@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-18T18:38:28.266Z",
+  "generatedAt": "2026-08-18T19:30:02.070Z",
   "provider": "tel_aviv_cinematheque",
   "horizonDays": 7,
   "identityResult": "CONFIRMED via live evidence 2026-08-19: repeated showtimes of the same film share one stable WordPress event_id across different day-schedule pages — grouped as one Event + multiple Occurrences, keyed by event_id, never by title.",
@@ -8,7 +8,7 @@
     "incompleteReason": null,
     "daysFetched": 7,
     "dayFailures": [],
-    "rawCardCount": 52
+    "rawCardCount": 51
   },
   "counts": {
     "fetched": 8,
@@ -71,7 +71,7 @@
       "dedupeDetail": {
         "classification": "AMBIGUOUS",
         "titleSimilarity": 0,
-        "timeDeltaMinutes": 1470,
+        "timeDeltaMinutes": 1380,
         "distanceMeters": 212.7535490746718
       }
     },
@@ -93,8 +93,8 @@
       "dedupeDetail": {
         "classification": "AMBIGUOUS",
         "titleSimilarity": 0,
-        "timeDeltaMinutes": 2760,
-        "distanceMeters": 212.7535490746718
+        "timeDeltaMinutes": 60,
+        "distanceMeters": 0.23950882015085567
       }
     },
     {
@@ -114,9 +114,9 @@
       "dedupeClassification": "AMBIGUOUS",
       "dedupeDetail": {
         "classification": "AMBIGUOUS",
-        "titleSimilarity": 0,
-        "timeDeltaMinutes": 2760,
-        "distanceMeters": 212.7535490746718
+        "titleSimilarity": 0.4444444444444444,
+        "timeDeltaMinutes": 60,
+        "distanceMeters": 0.23950882015085567
       }
     }
   ]

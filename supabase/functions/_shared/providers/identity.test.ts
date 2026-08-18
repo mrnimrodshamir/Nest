@@ -136,6 +136,51 @@ test('identical title and venue is NEVER enough on its own — EXACT always requ
 });
 
 // ===========================================================================
+// PROXIMITY ALONE IS NEVER SUFFICIENT — the real Phase C production cases
+//
+// A large venue/complex (a port, a park, a cinematheque, a mall, a museum,
+// a library system) legitimately hosts many unrelated events. Geographic
+// proximity by itself must never be enough for EXACT, PROBABLE, or
+// AMBIGUOUS — it must be corroborated by at least one other signal (title
+// similarity or close timing).
+// ===========================================================================
+
+test('GLOW (Tel Aviv Port) vs a real nearby-but-unrelated DigiTel port event is DISTINCT — proximity alone (178m, 4.8 days apart, unrelated titles) is not enough', () => {
+  const result = classifyCrossProviderMatch(
+    { provider: 'tel_aviv_port', title: 'אורות, לייזרים וחדר מלא בלונים: תערוכת GLOW מגיעה לנמל תל אביב', startsAt: '2026-08-13T21:00:00.000Z', locationName: 'האנגר 11, נמל תל אביב', latitude: 32.099096, longitude: 34.775714 },
+    { provider: 'tel_aviv_digitel', title: 'שרים עם שירי - בנמל!', startsAt: '2026-08-18T16:30:00Z', locationName: 'מתחם ליפקין שחק- שטח הנמל 15', latitude: 32.099021748868, longitude: 34.7738270867459 },
+  );
+  assert.equal(result.classification, 'DISTINCT');
+  assert.ok(result.distanceMeters! < 300, 'the two really are close in space — that alone is exactly what must not decide this');
+});
+
+test('Cinematheque Toy Story 5 vs DigiTel\'s own Toy Story 5 at the same address is still AMBIGUOUS — three corroborating signals (weak title overlap, same-day time, same venue), not just proximity', () => {
+  const result = classifyCrossProviderMatch(
+    { provider: 'tel_aviv_cinematheque', title: 'צעצוע של סיפור 5 - מדובב | המרכז למשפחה', startsAt: '2026-08-22T11:00:00+03:00', locationName: 'סינמטק תל אביב', latitude: 32.070663, longitude: 34.78335 },
+    { provider: 'tel_aviv_digitel', title: 'שבת סרט - צעצוע של סיפור 5', startsAt: '2026-08-22T09:00:00Z', locationName: 'הארבעה 5', latitude: 32.0706651539424, longitude: 34.7833500085449 },
+  );
+  assert.equal(result.classification, 'AMBIGUOUS');
+  assert.notEqual(result.classification, 'EXACT');
+  assert.ok(result.titleSimilarity > 0, 'real shared tokens ("צעצוע", "של", "סיפור", "5") corroborate this, not proximity alone');
+});
+
+test('a venue match with weak title AND same-day time (two signals) is AMBIGUOUS even without exact proximity', () => {
+  const result = classifyCrossProviderMatch(
+    { provider: 'a', title: 'סדנת יצירה למשפחות', startsAt: '2026-08-20T10:00:00+03:00', locationName: 'נמל תל אביב', latitude: 32.099096, longitude: 34.775714 },
+    { provider: 'b', title: 'סדנה יצירתית לילדים', startsAt: '2026-08-20T15:00:00+03:00', locationName: 'נמל תל אביב', latitude: 32.099096, longitude: 34.775714 },
+  );
+  assert.equal(result.classification, 'AMBIGUOUS');
+});
+
+test('proximity plus nothing else — same venue, unrelated title, days apart — is DISTINCT', () => {
+  const result = classifyCrossProviderMatch(
+    { provider: 'a', title: 'הרצאה על כלכלה', startsAt: '2026-08-13T21:00:00Z', locationName: 'נמל תל אביב', latitude: 32.099096, longitude: 34.775714 },
+    { provider: 'b', title: 'שיעור יוגה בוקר', startsAt: '2026-08-20T06:00:00Z', locationName: 'נמל תל אביב', latitude: 32.099096, longitude: 34.775714 },
+  );
+  assert.equal(result.classification, 'DISTINCT');
+});
+
+// ===========================================================================
 // NEVER AUTO-MERGE ANYTHING BUT EXACT
 // ===========================================================================
 

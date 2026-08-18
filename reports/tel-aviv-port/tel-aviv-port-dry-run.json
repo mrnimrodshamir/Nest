@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-18T18:49:35.216Z",
+  "generatedAt": "2026-08-18T19:29:59.312Z",
   "provider": "tel_aviv_port",
   "horizonDays": 7,
   "fetch": {
@@ -32,8 +32,8 @@
     "existing": 0,
     "exactDuplicate": 0,
     "probableDuplicate": 0,
-    "ambiguousDuplicate": 1,
-    "distinct": 0,
+    "ambiguousDuplicate": 0,
+    "distinct": 1,
     "withAgeData": 0,
     "withPriceData": 1,
     "withRegistrationUrl": 1,
@@ -73,13 +73,13 @@
       "registrationUrl": "https://www.to-mix.co.il/glow-exhibition/?utm_source=google&utm_medium=ppc&gad_source=1&gad_campaignid=24056208879&gbraid=0AAAAABtyTOC54v76JDoFNnZC4O11e_4p-&gclid=CjwKCAjwyuDTBhB-EiwANCQhLEfE5rzLhMy9zLb_RNPuaTEut1eBfTxj-reDjveSLijSG8KSCHd1axoCOXgQAvD_BwE",
       "airConditioned": true,
       "indoorOutdoor": "indoor",
-      "relevanceReason": "ילד, ילדים, משפח, משחק, משחקים",
-      "dedupeClassification": "AMBIGUOUS",
+      "relevanceReason": "ילד, ילדים, משפח, משחק, משחקים, museum",
+      "dedupeClassification": "DISTINCT",
       "dedupeDetail": {
-        "classification": "AMBIGUOUS",
+        "classification": "DISTINCT",
         "titleSimilarity": 0,
-        "timeDeltaMinutes": 6930,
-        "distanceMeters": 177.9325275422109
+        "timeDeltaMinutes": null,
+        "distanceMeters": null
       }
     }
   ]

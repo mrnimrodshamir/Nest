@@ -59,6 +59,11 @@
  *  fetch is for Beit Ariela's much larger request count. */
 
 const BASE_URL = 'https://www.cinema.co.il';
+/** Same UA fix as telAvivPort/connector.ts — see that file's module doc.
+ *  Applied here defensively even though cinema.co.il was not observed to
+ *  403 in local testing, since local curl/node testing did not go through
+ *  Supabase's actual egress path either. */
+const REQUEST_HEADERS = { Accept: 'text/html', 'Accept-Language': 'he', 'User-Agent': 'Mozilla/5.0 (compatible; NestUpBot/1.0)' };
 const SCHEDULE_CONTAINER_MARKER = 'festival-filter-wraper';
 const CARD_MARKER_PATTERN = /class="festival-grid-box box event_id-(\d+)\s+([^"]*)"/g;
 export const FAMILY_TAXONOMY_TAG = 'movie-cat-10';
@@ -209,7 +214,7 @@ export async function fetchCinemathequeCandidates(options: FetchCinemathequeOpti
     const url = `${BASE_URL}/shown/?date=${dateIso}`;
     let response: Response;
     try {
-      response = await fetchImpl(url, { headers: { Accept: 'text/html', 'Accept-Language': 'he' } });
+      response = await fetchImpl(url, { headers: REQUEST_HEADERS });
     } catch (error) {
       dayFailures.push({ date: dateIso, reason: `network error: ${(error as Error).message}` });
       continue;

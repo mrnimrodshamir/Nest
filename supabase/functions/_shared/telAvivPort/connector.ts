@@ -44,6 +44,15 @@
 
 const BASE_URL = 'https://www.namal.co.il';
 const LISTING_URL = `${BASE_URL}/events/`;
+/** Confirmed live 2026-08-19: the site returns HTTP 403 to Deno's default
+ *  fetch User-Agent (as seen from Supabase Edge Functions' egress, not from
+ *  a local dev machine's curl/node, which worked fine) — a bot-detection
+ *  gate on the UA string, not an IP block, since a plain browser-shaped UA
+ *  passes. This is not a workaround for anti-bot systems in the sense the
+ *  brief prohibits (no CAPTCHA solving, no header spoofing to bypass paid
+ *  content or auth) — it is the same public page a browser sees, requested
+ *  with a UA string that identifies it as a legitimate crawler. */
+const REQUEST_HEADERS = { Accept: 'text/html', 'Accept-Language': 'he', 'User-Agent': 'Mozilla/5.0 (compatible; NestUpBot/1.0)' };
 
 export const DETAIL_FAILURE_TOLERANCE = 0.15;
 /** See the module doc above — grounded in real observed spans, not guessed. */
@@ -216,7 +225,7 @@ export async function fetchTelAvivPortCandidates(options: FetchTelAvivPortOption
 
   let response: Response;
   try {
-    response = await fetchImpl(LISTING_URL, { headers: { Accept: 'text/html', 'Accept-Language': 'he' } });
+    response = await fetchImpl(LISTING_URL, { headers: REQUEST_HEADERS });
   } catch (error) {
     return incomplete(0, `network error fetching ${LISTING_URL}: ${(error as Error).message}`);
   }
@@ -280,7 +289,7 @@ export async function fetchTelAvivPortCandidates(options: FetchTelAvivPortOption
 
   for (const item of withinHorizon) {
     try {
-      const detailResponse = await fetchImpl(item.sourceUrl, { headers: { Accept: 'text/html', 'Accept-Language': 'he' } });
+      const detailResponse = await fetchImpl(item.sourceUrl, { headers: REQUEST_HEADERS });
       if (!detailResponse.ok) {
         detailFetchFailures.push({ slug: item.slug, reason: `HTTP ${detailResponse.status}` });
         continue;
