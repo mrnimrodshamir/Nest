@@ -28,6 +28,29 @@ Deno.serve(async (request: Request) => {
 function createDatabase(client: any): SyncDatabase {
   return {
     async startRun() {
+      // Defense-in-depth against concurrent DigiTel syncs racing each other
+      // into the same INSERT INTO events with the same provider_transport_id
+      // (each transaction's own duplicate-candidate check only sees rows
+      // already committed, not another run's in-flight insert) — considered
+      // as a possible contributing factor to a real production failure
+      // alongside the proven ArcGIS pagination/identity-drift cause (see
+      // staging.ts's module doc). A stale "running" row from a run that
+      // crashed without reaching finishRun must not deadlock every future
+      // sync, so only a recent one blocks — well above this sync's normal
+      // ~10s duration, well below the 6h cron interval.
+      const staleCutoff = new Date(Date.now() - 15 * 60 * 1000).toISOString();
+      const { data: alreadyRunning, error: checkError } = await client
+        .from('provider_sync_runs')
+        .select('id, started_at')
+        .eq('provider', 'tel_aviv_digitel')
+        .eq('status', 'running')
+        .gte('started_at', staleCutoff)
+        .limit(1);
+      if (checkError) throw new Error(`Could not check for a concurrent sync run: ${checkError.message}`);
+      if (alreadyRunning && alreadyRunning.length > 0) {
+        throw new Error(`A DigiTel sync is already running (started ${alreadyRunning[0].started_at}) — refusing to start a second concurrent run`);
+      }
+
       const { data, error } = await client.from('provider_sync_runs').insert({ provider: 'tel_aviv_digitel', status: 'running' }).select('id').single();
       if (error) throw new Error(`Could not start sync run: ${error.message}`);
       return data.id;
