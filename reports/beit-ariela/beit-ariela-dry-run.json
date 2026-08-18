@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-18T10:38:18.569Z",
+  "generatedAt": "2026-08-18T11:46:05.808Z",
   "provider": "beit_ariela_libraries",
   "horizonDays": 7,
   "fetch": {
@@ -13,73 +13,41 @@
   "counts": {
     "fetched": 54,
     "normalized": 21,
-    "invalid": 12,
-    "relevant": 4,
-    "excludedByRelevance": 5,
-    "new": 4,
+    "invalid": 1,
+    "relevant": 5,
+    "excludedByRelevance": 15,
+    "new": 5,
     "existing": 0,
     "exactDuplicate": 0,
     "probableDuplicate": 0,
-    "ambiguousDuplicate": 4,
+    "ambiguousDuplicate": 5,
     "distinct": 0,
-    "withAgeData": 4,
-    "withPriceData": 4,
-    "withRegistrationUrl": 4,
-    "withCoordinates": 4
+    "withAgeData": 5,
+    "withPriceData": 5,
+    "withRegistrationUrl": 5,
+    "withCoordinates": 5
   },
   "excludedByMapping": [
     {
-      "title": "״איתמר מטייל על הקירות״",
-      "reason": "coordinates_unresolved"
-    },
-    {
-      "title": "״מר צפרדע והנחל המתוק״",
-      "reason": "coordinates_unresolved"
-    },
-    {
-      "title": "סדנת בובנאות",
-      "reason": "coordinates_unresolved"
-    },
-    {
-      "title": "מועדון קריאה",
-      "reason": "coordinates_unresolved"
-    },
-    {
-      "title": "תריסר ספרים",
-      "reason": "coordinates_unresolved"
-    },
-    {
-      "title": "הארי פוטר — לידתו של מנהיג",
-      "reason": "coordinates_unresolved"
-    },
-    {
-      "title": "יצירה מהאגדות",
-      "reason": "coordinates_unresolved"
-    },
-    {
       "title": "סיפור לשעת צהריים",
       "reason": "missing_place"
-    },
-    {
-      "title": "״דובי פנדה לא מתעורר״",
-      "reason": "coordinates_unresolved"
-    },
-    {
-      "title": "״לימבה מוכרת הכובעים״",
-      "reason": "coordinates_unresolved"
-    },
-    {
-      "title": "עגלת פרחים ועוגות",
-      "reason": "coordinates_unresolved"
-    },
-    {
-      "title": "״לטוס לירח לבדי״",
-      "reason": "coordinates_unresolved"
     }
   ],
   "excludedByRelevance": [
     {
+      "title": "״איתמר מטייל על הקירות״",
+      "reason": "no_family_signal"
+    },
+    {
       "title": "הקוסם מארץ עוץ",
+      "reason": "no_family_signal"
+    },
+    {
+      "title": "״מר צפרדע והנחל המתוק״",
+      "reason": "excluded_term"
+    },
+    {
+      "title": "סדנת בובנאות",
       "reason": "no_family_signal"
     },
     {
@@ -91,11 +59,39 @@
       "reason": "no_family_signal"
     },
     {
+      "title": "מועדון קריאה",
+      "reason": "no_family_signal"
+    },
+    {
       "title": "ספר המשמעות: סדנת כפולה",
       "reason": "no_family_signal"
     },
     {
+      "title": "תריסר ספרים",
+      "reason": "no_family_signal"
+    },
+    {
+      "title": "יצירה מהאגדות",
+      "reason": "no_family_signal"
+    },
+    {
       "title": "סדנת קומיקס עם נעה כ״ץ",
+      "reason": "no_family_signal"
+    },
+    {
+      "title": "״דובי פנדה לא מתעורר״",
+      "reason": "no_family_signal"
+    },
+    {
+      "title": "״לימבה מוכרת הכובעים״",
+      "reason": "no_family_signal"
+    },
+    {
+      "title": "עגלת פרחים ועוגות",
+      "reason": "no_family_signal"
+    },
+    {
+      "title": "״לטוס לירח לבדי״",
       "reason": "no_family_signal"
     }
   ],
@@ -122,6 +118,18 @@
       "registrationUrl": "https://beitariela.smarticket.co.il/show/2108",
       "locationQuality": "resolved via curated place table",
       "relevanceReason": "ילד, משפח, הורה, אבא, הצגה, יצירה, workshop",
+      "dedupeClassification": "AMBIGUOUS"
+    },
+    {
+      "title": "הארי פוטר — לידתו של מנהיג",
+      "startsAt": "2026-08-20T17:00:00+03:00",
+      "venue": "ספריית בית השחמט",
+      "ageRange": "8+ years",
+      "price": "25 ₪",
+      "source": "בית אריאלה וספריות תל אביב-יפו",
+      "registrationUrl": "https://www.coing.co/TLV_ChessCenter/267926",
+      "locationQuality": "resolved via curated place table",
+      "relevanceReason": "ילד",
       "dedupeClassification": "AMBIGUOUS"
     },
     {

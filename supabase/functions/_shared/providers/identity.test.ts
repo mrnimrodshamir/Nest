@@ -106,6 +106,36 @@ test('different title, different day, different venue is DISTINCT', () => {
 });
 
 // ===========================================================================
+// THE REAL 3-HOUR CASE FROM THE LIVE DRY RUN
+//
+// "ההצגה ״אבא של עמליה נוסע לאוסטרליה״" appeared on both DigiTel and Beit
+// Ariela: identical title, identical venue (Beit Ariela's own building), but
+// starsAt three hours apart (11:00 vs 14:00 Israel time). Approved rule:
+// same/similar title and venue but a MATERIALLY different start time stays
+// two separate occurrences unless a stronger provider identity proves they
+// are the same one. Neither provider currently exposes such an identity, so
+// this — and every case shaped like it — must classify AMBIGUOUS, never
+// EXACT or PROBABLE, and nothing may auto-link it.
+// ===========================================================================
+
+test('the real 3-hour same-title same-venue case from the live dry run classifies AMBIGUOUS, never EXACT or PROBABLE', () => {
+  const result = classifyCrossProviderMatch(
+    digitel({ title: 'ההצגה ״אבא של עמליה נוסע לאוסטרליה״', startsAt: '2026-08-20T14:00:00+03:00' }),
+    ariela({ title: 'ההצגה ״אבא של עמליה נוסע לאוסטרליה״', startsAt: '2026-08-20T11:00:00+03:00' }),
+  );
+  assert.equal(result.classification, 'AMBIGUOUS');
+  assert.equal(result.timeDeltaMinutes, 180);
+});
+
+test('identical title and venue is NEVER enough on its own — EXACT always requires close time too', () => {
+  for (const hoursApart of [1, 2, 3, 6, 12]) {
+    const later = new Date(Date.parse('2026-08-20T10:00:00+03:00') + hoursApart * 3_600_000).toISOString();
+    const result = classifyCrossProviderMatch(digitel(), ariela({ startsAt: later }));
+    assert.notEqual(result.classification, 'EXACT', `${hoursApart}h apart must not be EXACT`);
+  }
+});
+
+// ===========================================================================
 // NEVER AUTO-MERGE ANYTHING BUT EXACT
 // ===========================================================================
 
