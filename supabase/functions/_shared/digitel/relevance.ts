@@ -69,27 +69,57 @@ export type RelevanceDecision =
   | { relevant: false; reason: 'excluded_term'; matched: string[] }
   | { relevant: false; reason: 'no_family_signal'; matched: [] };
 
+/** Per-provider vocabulary layered onto the shared term lists above.
+ *
+ *  This — not a second copy of the term lists — is what "provider-specific
+ *  relevance hints" means. A provider's OWN vocabulary (a category label its
+ *  site already assigns, a venue-type word DigiTel's Hebrew corpus never
+ *  needed) gets added here, on top of the shared engine, rather than forking
+ *  it. `includeTerms`/`excludeTerms` extend the shared lists; `hintTerms` are
+ *  treated as a confident, specific signal — equivalent to a matched audience
+ *  or venue term — because a connector only ever supplies a hint it has
+ *  already derived with real confidence (e.g. from the source's own
+ *  age-audience category), not a guess. */
+export interface RelevanceHints {
+  includeTerms?: readonly string[];
+  excludeTerms?: readonly string[];
+  hintTerms?: readonly string[];
+}
+
 /** Decides whether a normalized record belongs in NestUp.
  *
  *  Exclusion wins over inclusion: "סדנת יין להורים" (a wine workshop for
  *  parents) matches both, and is not something to put in front of a parent
- *  looking for somewhere to take a toddler. */
-export function assessFamilyRelevance(input: {
-  title: string;
-  description?: string | null;
-  sourceType?: string | null;
-  locationName?: string | null;
-}): RelevanceDecision {
+ *  looking for somewhere to take a toddler.
+ *
+ *  `hints` is optional and defaults to nothing extra, so every existing
+ *  DigiTel call site is byte-for-byte unchanged when it omits the second
+ *  argument — see relevance.test.ts's "hints omitted is identical to
+ *  before" case. */
+export function assessFamilyRelevance(
+  input: {
+    title: string;
+    description?: string | null;
+    sourceType?: string | null;
+    locationName?: string | null;
+  },
+  hints?: RelevanceHints,
+): RelevanceDecision {
   const haystack = [input.title, input.description, input.sourceType, input.locationName]
     .filter((part): part is string => typeof part === 'string' && part.length > 0)
     .join(' ')
     .toLowerCase();
 
-  const excluded = EXCLUDE_TERMS.filter((term) => haystack.includes(term.toLowerCase()));
+  const excludeTerms = hints?.excludeTerms?.length ? [...EXCLUDE_TERMS, ...hints.excludeTerms] : EXCLUDE_TERMS;
+  const excluded = excludeTerms.filter((term) => haystack.includes(term.toLowerCase()));
   if (excluded.length > 0) return { relevant: false, reason: 'excluded_term', matched: excluded };
 
-  const matched = INCLUDE_TERMS.filter((term) => haystack.includes(term.toLowerCase()));
-  if (matched.length === 0) return { relevant: false, reason: 'no_family_signal', matched: [] };
+  const includeTerms = hints?.includeTerms?.length ? [...INCLUDE_TERMS, ...hints.includeTerms] : INCLUDE_TERMS;
+  const matched = includeTerms.filter((term) => haystack.includes(term.toLowerCase()));
+
+  const hintTerms = hints?.hintTerms ?? [];
+  const hintMatched = hintTerms.filter((term) => haystack.includes(term.toLowerCase()));
+  if (matched.length === 0 && hintMatched.length === 0) return { relevant: false, reason: 'no_family_signal', matched: [] };
 
   const tokens = new Set(haystack.normalize('NFKC').split(/[\s\p{P}\p{S}]+/u).filter(Boolean));
   const audienceTokens = new Set([...tokens].flatMap(hebrewPrefixVariants));
@@ -102,10 +132,12 @@ export function assessFamilyRelevance(input: {
   );
   const specificVenueMatched = ['מוזיאון', 'ספריה', 'ספרייה', 'פארק', 'גינה', 'מגרש משחקים', 'museum', 'library', 'park', 'playground']
     .some((term) => haystack.includes(term.toLowerCase()));
-  const onlyBroadSignal = matched.every((term) => BROAD_ACTIVITY_TERMS.includes(term));
-  if (!audienceMatched && !specificVenueMatched && onlyBroadSignal) {
-    return { relevant: false, reason: 'no_family_signal', matched: [] };
-  }
+  // A hint match is a confident, provider-vetted signal on its own — it does
+  // not need the broad-activity-word guard the shared term lists need,
+  // because a connector only emits a hint when it already has real
+  // confidence (e.g. the source's own age-audience category), not a guess.
+  if (hintMatched.length > 0) return { relevant: true, matched: [...matched, ...hintMatched] };
+
   if (!audienceMatched && !specificVenueMatched) {
     return { relevant: false, reason: 'no_family_signal', matched: [] };
   }

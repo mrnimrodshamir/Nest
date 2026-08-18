@@ -1,0 +1,152 @@
+{
+  "generatedAt": "2026-08-18T10:38:18.569Z",
+  "provider": "beit_ariela_libraries",
+  "horizonDays": 7,
+  "fetch": {
+    "pagesFetched": 3,
+    "sourceComplete": true,
+    "incompleteReason": null,
+    "rawListItemCount": 54,
+    "invalidListItems": [],
+    "detailFetchFailures": []
+  },
+  "counts": {
+    "fetched": 54,
+    "normalized": 21,
+    "invalid": 12,
+    "relevant": 4,
+    "excludedByRelevance": 5,
+    "new": 4,
+    "existing": 0,
+    "exactDuplicate": 0,
+    "probableDuplicate": 0,
+    "ambiguousDuplicate": 4,
+    "distinct": 0,
+    "withAgeData": 4,
+    "withPriceData": 4,
+    "withRegistrationUrl": 4,
+    "withCoordinates": 4
+  },
+  "excludedByMapping": [
+    {
+      "title": "״איתמר מטייל על הקירות״",
+      "reason": "coordinates_unresolved"
+    },
+    {
+      "title": "״מר צפרדע והנחל המתוק״",
+      "reason": "coordinates_unresolved"
+    },
+    {
+      "title": "סדנת בובנאות",
+      "reason": "coordinates_unresolved"
+    },
+    {
+      "title": "מועדון קריאה",
+      "reason": "coordinates_unresolved"
+    },
+    {
+      "title": "תריסר ספרים",
+      "reason": "coordinates_unresolved"
+    },
+    {
+      "title": "הארי פוטר — לידתו של מנהיג",
+      "reason": "coordinates_unresolved"
+    },
+    {
+      "title": "יצירה מהאגדות",
+      "reason": "coordinates_unresolved"
+    },
+    {
+      "title": "סיפור לשעת צהריים",
+      "reason": "missing_place"
+    },
+    {
+      "title": "״דובי פנדה לא מתעורר״",
+      "reason": "coordinates_unresolved"
+    },
+    {
+      "title": "״לימבה מוכרת הכובעים״",
+      "reason": "coordinates_unresolved"
+    },
+    {
+      "title": "עגלת פרחים ועוגות",
+      "reason": "coordinates_unresolved"
+    },
+    {
+      "title": "״לטוס לירח לבדי״",
+      "reason": "coordinates_unresolved"
+    }
+  ],
+  "excludedByRelevance": [
+    {
+      "title": "הקוסם מארץ עוץ",
+      "reason": "no_family_signal"
+    },
+    {
+      "title": "סדנת בובנאות חלל",
+      "reason": "no_family_signal"
+    },
+    {
+      "title": "יוגה לזמן שקיעה + מפגש קריאה בכתבי זן",
+      "reason": "no_family_signal"
+    },
+    {
+      "title": "ספר המשמעות: סדנת כפולה",
+      "reason": "no_family_signal"
+    },
+    {
+      "title": "סדנת קומיקס עם נעה כ״ץ",
+      "reason": "no_family_signal"
+    }
+  ],
+  "sample": [
+    {
+      "title": "בית אריאלה מארחים את ערוץ ניקלודיאון: ״אל עצמי״ מפגש מיוחד על מאחורי הקלעים של הסדרה",
+      "startsAt": "2026-08-18T17:00:00+03:00",
+      "venue": "בית אריאלה",
+      "ageRange": "9+ years",
+      "price": "55-40 ₪",
+      "source": "בית אריאלה וספריות תל אביב-יפו",
+      "registrationUrl": "https://beitariela.smarticket.co.il/show/2012",
+      "locationQuality": "resolved via curated place table",
+      "relevanceReason": "ילד, הורה, יצירה, ספריה, workshop",
+      "dedupeClassification": "AMBIGUOUS"
+    },
+    {
+      "title": "ההצגה ״אבא של עמליה נוסע לאוסטרליה״",
+      "startsAt": "2026-08-20T11:00:00+03:00",
+      "venue": "בית אריאלה",
+      "ageRange": "4–7 years",
+      "price": "60-40 ₪",
+      "source": "בית אריאלה וספריות תל אביב-יפו",
+      "registrationUrl": "https://beitariela.smarticket.co.il/show/2108",
+      "locationQuality": "resolved via curated place table",
+      "relevanceReason": "ילד, משפח, הורה, אבא, הצגה, יצירה, workshop",
+      "dedupeClassification": "AMBIGUOUS"
+    },
+    {
+      "title": "מפגש מוזיקלי אינטראקטיבי לילדות ולילדים",
+      "startsAt": "2026-08-22T10:30:00+03:00",
+      "venue": "בית אריאלה",
+      "ageRange": "6–12 years",
+      "price": "60-40 ₪",
+      "source": "בית אריאלה וספריות תל אביב-יפו",
+      "registrationUrl": "https://beitariela.smarticket.co.il/show/2109",
+      "locationQuality": "resolved via curated place table",
+      "relevanceReason": "ילד, ילדים, ילדות, הורה",
+      "dedupeClassification": "AMBIGUOUS"
+    },
+    {
+      "title": "הצדף שלי",
+      "startsAt": "2026-08-23T10:00:00+03:00",
+      "venue": "ספריית בית יד לבנים",
+      "ageRange": "6–9 years",
+      "price": "25 ₪",
+      "source": "בית אריאלה וספריות תל אביב-יפו",
+      "registrationUrl": "https://eventbuzz.co.il/lp/event/ng2308",
+      "locationQuality": "resolved via curated place table",
+      "relevanceReason": "ילד, סדנה, סדנת, יצירה, מוזיאון, workshop",
+      "dedupeClassification": "AMBIGUOUS"
+    }
+  ]
+}
