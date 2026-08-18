@@ -537,7 +537,8 @@ export const fr: Dictionary = {
   'activityForm.decrease': 'Réduire {label}', 'activityForm.increase': 'Augmenter {label}',
   'duration.minutes': '{count} min', 'duration.hours': '{count} h',
   'age.newborn': 'Nouveau-né', 'age.months': '{count} mois', 'age.years': '{count} ans',
-  'age.yearsMonths': '{years} ans {months} mois', 'age.any': 'Tout âge', 'age.upTo': 'Jusqu’à {age}',
+  // "1 ans" was reaching the screen. French needs the singular.
+  'age.months.one': '1 mois', 'age.years.one': '1 an', 'age.any': 'Tout âge', 'age.upTo': 'Jusqu’à {age}',
   'age.andUp': '{age} et plus', 'age.range': '{min}–{max}',
   'activity.title.tomorrow': 'demain', 'activity.title.onDay': '{day}',
   'activity.title.withLocation': '{category} {when} à {location}', 'activity.title.withoutLocation': '{category} {when}',
@@ -596,6 +597,7 @@ export const fr: Dictionary = {
   'onboarding.error.childSave': "Impossible d’enregistrer les informations de votre enfant. Réessayez.", 'onboarding.error.childRequired': 'Ajoutez au moins un enfant pour terminer la configuration.',
   'onboarding.error.childVerify': "Impossible de confirmer l’enregistrement. Réessayez.", 'onboarding.error.finish': 'Impossible de terminer la configuration du compte. Réessayez.',
   'age.he.prefix.male': 'garçon de', 'age.he.prefix.female': 'fille de', 'age.he.prefix.neutral': 'âge',
+  'age.he.yearNeutral.one': 'un an', 'age.he.yearNeutral.two': 'deux ans', 'age.he.yearNeutral.other': '{count} ans',
   'age.he.month.one': 'un mois', 'age.he.month.two': 'deux mois', 'age.he.month.other': '{count} mois',
   'age.he.year.one': 'un an', 'age.he.year.two': 'deux ans', 'age.he.year.other': '{count} ans',
   'age.he.withPrefix': '{prefix} {age}', 'age.he.yearsMonths': '{prefix} {years} et {months}',

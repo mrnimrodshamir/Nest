@@ -536,7 +536,9 @@ export const ru: Dictionary = {
   'activityForm.decrease': 'Уменьшить: {label}', 'activityForm.increase': 'Увеличить: {label}',
   'duration.minutes': '{count} мин', 'duration.hours': '{count} ч',
   'age.newborn': 'Новорождённый', 'age.months': '{count} мес.', 'age.years': '{count} г.',
-  'age.yearsMonths': '{years} г. {months} мес.', 'age.any': 'Любой возраст', 'age.upTo': 'До {age}',
+  // Abbreviated on purpose: it sidesteps год/года/лет agreement, which a
+  // single template cannot express correctly.
+  'age.months.one': '1 мес.', 'age.years.one': '1 г.', 'age.any': 'Любой возраст', 'age.upTo': 'До {age}',
   'age.andUp': '{age} и старше', 'age.range': '{min}–{max}',
   'activity.title.tomorrow': 'завтра', 'activity.title.onDay': '{day}',
   'activity.title.withLocation': '{category} {when} в {location}', 'activity.title.withoutLocation': '{category} {when}',
@@ -595,6 +597,7 @@ export const ru: Dictionary = {
   'onboarding.error.childSave': 'Не удалось сохранить данные ребёнка. Повторите.', 'onboarding.error.childRequired': 'Добавьте хотя бы одного ребёнка, чтобы завершить настройку.',
   'onboarding.error.childVerify': 'Не удалось подтвердить сохранение данных. Повторите.', 'onboarding.error.finish': 'Не удалось завершить настройку аккаунта. Повторите.',
   'age.he.prefix.male': 'мальчик,', 'age.he.prefix.female': 'девочка,', 'age.he.prefix.neutral': 'возраст',
+  'age.he.yearNeutral.one': 'один год', 'age.he.yearNeutral.two': 'два года', 'age.he.yearNeutral.other': '{count} лет',
   'age.he.month.one': 'один месяц', 'age.he.month.two': 'два месяца', 'age.he.month.other': '{count} месяцев',
   'age.he.year.one': 'один год', 'age.he.year.two': 'два года', 'age.he.year.other': '{count} лет',
   'age.he.withPrefix': '{prefix} {age}', 'age.he.yearsMonths': '{prefix} {years} и {months}',

@@ -109,5 +109,8 @@ test('Hebrew child ages use grammatical relationship and age words', () => {
   assert.equal(formatBabyAge(36, 'he', 'male'), 'בן 3');
   assert.equal(formatBabyAge(25, 'he', 'male'), 'בן שנתיים וחודש');
   assert.equal(formatBabyAge(25, 'he', 'female'), 'בת שנתיים וחודש');
-  assert.equal(formatBabyAge(8, 'he', null), 'גיל 8 חודשים');
+  // With no stored gender the phrase carries the UNIT instead of a prefix.
+  // This used to be 'גיל 8 חודשים' — grammatical, but the register of a form
+  // field rather than of one parent describing their child to another.
+  assert.equal(formatBabyAge(8, 'he', null), '8 חודשים');
 });

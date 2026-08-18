@@ -27,6 +27,7 @@ import {
 } from '@/utils/activityPlaceMapping';
 import { createManualPlace } from '@/utils/normalizedPlace';
 import { formScrollEnabledDuringMapTouch } from '@/utils/locationPickerState';
+import { isGenericPlaceName } from '@/utils/genericPlaceName';
 import { presentSelectedLocation } from '@/utils/locationPresentation';
 import { applyReverseGeocodeLabel, moveSelectedLocation } from '@/utils/placeAdjustment';
 import { formatDuration } from '@/utils/formatDuration';
@@ -94,7 +95,7 @@ export function ActivityForm({
   onSubmit,
   footer,
 }: ActivityFormProps) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const behavior = resolveActivityFormMode(mode);
   const editValues = mode === 'edit' ? initialValues : null;
   const [reviewMode, setReviewMode] = useState(false);
@@ -418,10 +419,17 @@ export function ActivityForm({
           />
           <Field label={t('locationPicker.name')}>
             <TextInput
-              style={styles.input}
-              placeholder={t('locationPicker.namePlaceholder')}
+              style={[styles.input, textAlignForContent(locationName, locale)]}
+              /* The stored generic token is not a name the parent chose, so the
+                 field stays EMPTY and shows the localized placeholder instead
+                 of pre-filling the English "Meeting point" — which is what a
+                 Hebrew device was displaying in this box. Typing anything here
+                 replaces the token with a real name. */
+              placeholder={isGenericPlaceName(locationName)
+                ? t('locationPicker.meetingPoint')
+                : t('locationPicker.namePlaceholder')}
               placeholderTextColor={theme.text.muted}
-              value={locationName}
+              value={isGenericPlaceName(locationName) ? '' : locationName}
               onChangeText={(name) => {
                 setSelectedLocation((current) => ({ ...current, displayName: name }));
               }}
