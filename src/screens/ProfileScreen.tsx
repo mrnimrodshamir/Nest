@@ -14,6 +14,7 @@ import {
   SignOut,
   Trash,
   CaretRight,
+  EnvelopeSimple,
 } from 'phosphor-react-native';
 import { theme, typography, spacing, radius } from '@/theme';
 import { PersonCard } from '@/components/PersonCard';
@@ -25,6 +26,7 @@ import { NotificationPermissionSheet } from '@/components/NotificationPermission
 import { LanguageSelector } from '@/components/LanguageSelector';
 import { useI18n } from '@/i18n';
 import { LEGAL_URLS } from '@/constants/legal';
+import { SUPPORT_EMAIL, buildSupportMailtoUrl } from '@/utils/supportContact';
 import type { NotificationPreferences } from '@/types/profile';
 import { APP_NAME } from '@/constants/brand';
 import { formatAppVersion } from '@/utils/appVersion';
@@ -59,13 +61,27 @@ export function ProfileScreen({ onEditProfile, onOpenMyActivities, onOpenBlocked
   const [showNotificationSheet, setShowNotificationSheet] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  const { t, isRTL } = useI18n();
+  const { t, isRTL, locale } = useI18n();
 
   const handleSignOut = () => {
     Alert.alert(t('profile.signOutConfirm'), undefined, [
       { text: t('common.cancel'), style: 'cancel' },
       { text: t('profile.signOut'), style: 'destructive', onPress: signOut },
     ]);
+  };
+
+  const handleContactSupport = async () => {
+    const url = buildSupportMailtoUrl(locale);
+    try {
+      const canOpen = await Linking.canOpenURL(url);
+      if (canOpen) {
+        await Linking.openURL(url);
+        return;
+      }
+    } catch {
+      // Falls through to the same fallback as canOpen === false.
+    }
+    Alert.alert(t('profile.support.unavailable', { email: SUPPORT_EMAIL }));
   };
 
   const handleDeleteAccount = () => {
@@ -155,6 +171,23 @@ export function ProfileScreen({ onEditProfile, onOpenMyActivities, onOpenBlocked
           <MenuRow icon={ProhibitInset} label={t('profile.blockedMembers')} onPress={onOpenBlockedUsers} isLast />
         </MenuSection>
 
+        <Pressable
+          style={styles.supportCard}
+          onPress={() => void handleContactSupport()}
+          accessibilityRole="button"
+          accessibilityLabel={t('profile.support.title')}
+        >
+          <EnvelopeSimple size={20} color={theme.brand.primary} />
+          <View style={styles.supportTextColumn}>
+            <Text style={[styles.supportTitle, isRTL && styles.rtlText]}>{t('profile.support.title')}</Text>
+            <Text style={[styles.supportSubtitle, isRTL && styles.rtlText]}>{t('profile.support.subtitle')}</Text>
+            {/* The address itself always stays LTR and legible, even inside
+                an RTL layout — an email address read right-to-left is just
+                broken, not merely stylistically off. */}
+            <Text style={styles.supportEmail}>{SUPPORT_EMAIL}</Text>
+          </View>
+        </Pressable>
+
         <MenuSection>
           <MenuRow icon={FileText} label={t('profile.terms')} onPress={() => Linking.openURL(LEGAL_URLS.terms)} />
           <MenuRow icon={ShieldCheck} label={t('profile.privacy')} onPress={() => Linking.openURL(LEGAL_URLS.privacy)} isLast />
@@ -238,6 +271,22 @@ const styles = StyleSheet.create({
     borderColor: theme.border.default,
     overflow: 'hidden',
   },
+  supportCard: {
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.md,
+    backgroundColor: theme.background.surface,
+    borderRadius: radius.lg,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: theme.border.default,
+    padding: spacing.lg,
+  },
+  supportTextColumn: { flex: 1, gap: 2 },
+  supportTitle: { ...typography.bodyMedium, color: theme.text.primary },
+  supportSubtitle: { ...typography.footnote, color: theme.text.secondary },
+  // Always LTR regardless of interface direction — see the render-site comment.
+  supportEmail: { ...typography.footnote, color: theme.text.accent, textAlign: 'left', writingDirection: 'ltr', marginTop: 2 },
   menuRow: {
     flexDirection: 'row',
     alignItems: 'center',
