@@ -44,6 +44,8 @@ export const he: Dictionary = {
   'language.hebrew': 'עברית',
   'language.french': 'Français',
   'language.russian': 'Русский',
+  'language.arabic': 'العربية',
+  'language.spanish': 'Español',
   'language.system': 'לפי המכשיר',
   'language.systemHint': 'לפי שפת המכשיר',
   'language.restartHint': 'הפעילו מחדש את NestUp כדי שהתצוגה תתהפך לכיוון הנכון.',

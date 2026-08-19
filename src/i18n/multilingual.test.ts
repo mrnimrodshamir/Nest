@@ -20,20 +20,22 @@ import { en } from './en.ts';
 import { he } from './he.ts';
 import { fr } from './fr.ts';
 import { ru } from './ru.ts';
+import { ar } from './ar.ts';
+import { es } from './es.ts';
 
-const NEW_LOCALES: AppLocale[] = ['fr', 'ru'];
+const NEW_LOCALES: AppLocale[] = ['fr', 'ru', 'ar', 'es'];
 
 // ===========================================================================
-// FOUR LANGUAGES, ENGLISH DEFAULT
+// SIX LANGUAGES, ENGLISH DEFAULT
 // ===========================================================================
 
-test('exactly four languages ship, English first and default', () => {
-  assert.deepEqual([...SUPPORTED_LOCALES], ['en', 'he', 'fr', 'ru']);
+test('exactly six languages ship, English first and default', () => {
+  assert.deepEqual([...SUPPORTED_LOCALES], ['en', 'he', 'fr', 'ru', 'ar', 'es']);
   assert.equal(DEFAULT_LOCALE, 'en');
 });
 
 test('ENGLISH IS DEFAULT with no stored preference, whatever the device says', () => {
-  for (const tags of [[], ['en-US'], ['he-IL'], ['fr-FR'], ['ru-RU'], ['fr-CA', 'ru-RU']]) {
+  for (const tags of [[], ['en-US'], ['he-IL'], ['fr-FR'], ['ru-RU'], ['fr-CA', 'ru-RU'], ['ar-EG'], ['es-ES']]) {
     assert.equal(resolveLocale(tags, null), 'en', JSON.stringify(tags));
   }
 });
@@ -42,6 +44,8 @@ test('NO LANGUAGE AUTO-SELECTS from country or device — every one is opt-in', 
   assert.equal(resolveLocale(['fr-FR', 'fr'], null), 'en');
   assert.equal(resolveLocale(['ru-RU', 'ru'], null), 'en');
   assert.equal(resolveLocale(['he-IL'], 'system'), 'en');
+  assert.equal(resolveLocale(['ar-EG', 'ar'], null), 'en');
+  assert.equal(resolveLocale(['es-ES', 'es'], null), 'en');
 });
 
 // ===========================================================================
@@ -53,6 +57,8 @@ test('each language can be chosen and wins over the device', () => {
   assert.equal(resolveLocale(['en-US'], 'ru'), 'ru');
   assert.equal(resolveLocale(['ru-RU'], 'he'), 'he');
   assert.equal(resolveLocale(['fr-FR'], 'en'), 'en');
+  assert.equal(resolveLocale(['en-US'], 'ar'), 'ar');
+  assert.equal(resolveLocale(['en-US'], 'es'), 'es');
 });
 
 test('PERSISTENCE: every supported value round-trips through storage', () => {
@@ -64,11 +70,13 @@ test('PERSISTENCE: every supported value round-trips through storage', () => {
 });
 
 test('PERSISTENCE: the full switch sequence survives restarts', () => {
-  // EN -> FR -> restart -> RU -> restart -> HE -> restart -> EN
+  // EN -> FR -> restart -> RU -> restart -> HE -> restart -> AR -> restart -> ES -> restart -> EN
   const restart = (stored: string) => resolveLocale(['he-IL'], coerceLocalePreference(stored));
   assert.equal(restart('fr'), 'fr');
   assert.equal(restart('ru'), 'ru');
   assert.equal(restart('he'), 'he');
+  assert.equal(restart('ar'), 'ar');
+  assert.equal(restart('es'), 'es');
   assert.equal(restart('en'), 'en');
 });
 
@@ -86,17 +94,24 @@ test('device tags for the new languages normalise correctly', () => {
   for (const tag of ['ru', 'ru-RU', 'RU_ru']) {
     assert.equal(normalizeLanguageTag(tag), 'ru', tag);
   }
+  for (const tag of ['ar', 'ar-EG', 'ar-SA', 'AR_eg']) {
+    assert.equal(normalizeLanguageTag(tag), 'ar', tag);
+  }
+  for (const tag of ['es', 'es-ES', 'es-MX', 'ES_es']) {
+    assert.equal(normalizeLanguageTag(tag), 'es', tag);
+  }
   assert.equal(normalizeLanguageTag('de-DE'), null);
 });
 
 // ===========================================================================
-// DIRECTION — Hebrew alone is RTL
+// DIRECTION — Hebrew and Arabic are RTL
 // ===========================================================================
 
-test('HEBREW IS THE ONLY RTL LANGUAGE', () => {
-  assert.deepEqual([...RTL_LOCALES], ['he']);
+test('HEBREW AND ARABIC ARE THE ONLY RTL LANGUAGES', () => {
+  assert.deepEqual([...RTL_LOCALES], ['he', 'ar']);
   assert.equal(isRtlLocale('he'), true);
-  for (const locale of ['en', 'fr', 'ru'] as AppLocale[]) {
+  assert.equal(isRtlLocale('ar'), true);
+  for (const locale of ['en', 'fr', 'ru', 'es'] as AppLocale[]) {
     assert.equal(isRtlLocale(locale), false, `${locale} must be LTR`);
   }
 });
@@ -106,9 +121,16 @@ test('RUSSIAN IS NOT RTL — Cyrillic is an unfamiliar alphabet, not a direction
   assert.ok(!RTL_LOCALES.includes('ru'));
 });
 
+test('SPANISH IS NOT RTL', () => {
+  assert.equal(isRtlLocale('es'), false);
+  assert.ok(!RTL_LOCALES.includes('es'));
+});
+
 // ===========================================================================
 // COVERAGE
 // ===========================================================================
+
+const DICTIONARY_BY_LOCALE: Record<string, typeof en> = { fr, ru, ar, es };
 
 for (const locale of NEW_LOCALES) {
   test(`${locale}: every English key is translated`, () => {
@@ -116,30 +138,38 @@ for (const locale of NEW_LOCALES) {
   });
 
   test(`${locale}: introduces no key English lacks`, () => {
-    const dictionary = locale === 'fr' ? fr : ru;
+    const dictionary = DICTIONARY_BY_LOCALE[locale];
     const english = new Set(Object.keys(en));
     assert.deepEqual(Object.keys(dictionary).filter((k) => !english.has(k)), []);
   });
 
   test(`${locale}: no value is left as untranslated English`, () => {
-    const dictionary = locale === 'fr' ? fr : ru;
+    const dictionary = DICTIONARY_BY_LOCALE[locale];
     const allowed = new Set([
       // Every dictionary names each language in its OWN script.
       'language.english', 'language.hebrew', 'language.french', 'language.russian',
+      'language.arabic', 'language.spanish',
       // Pure format patterns — no words to translate.
       'chats.happenedOn', 'event.attendance.overflow', 'age.range',
       'activity.title.withoutLocation', 'duration.minutes', 'activity.participantsCount',
+      'sharing.eventTitle', 'profile.bioCount', 'place.age.range', 'age.andUp',
+      'time.withRelative', 'time.shortMinutes', 'time.shortHours',
       // A brand name.
       'common.whatsapp',
-      // Correct French that happens to be spelled like the English. Listing
-      // them beats mistranslating a word to satisfy a test.
+      // Correct French/Spanish that happens to be spelled like the English.
+      // Listing them beats mistranslating a word to satisfy a test.
       'sort.distance', 'chats.section.forums', 'activity.message',
       'chat.messagePlaceholder', 'profile.role.parent', 'profile.memberFallback',
-      // Proper Tel Aviv area names remain proper nouns in French.
+      'nav.chats', 'chats.section.active', 'activity.category.picnic',
+      'activity.category.fitness', 'activity.category.yoga',
+      // Proper Tel Aviv area names remain proper nouns in French and Spanish.
       'place.area.jaffa', 'place.area.neveTzedek', 'place.area.ramatAviv',
       'place.area.ramatAvivGimel', 'place.area.hadarYosef', 'place.area.hatikva',
       'place.area.neotAfeka', 'place.area.neveEliezer', 'place.area.neveSharet',
-      'place.area.zahala', 'event.category.festival',
+      'place.area.zahala', 'event.category.festival', 'place.area.oldNorth',
+      'place.area.northTelAviv', 'place.area.oldJaffa',
+      // Onboarding email placeholder — an example address, not prose.
+      'onboarding.emailPlaceholder',
     ]);
     const untranslated = (Object.keys(dictionary) as Array<keyof typeof en>).filter(
       (key) => !allowed.has(key) && dictionary[key] === en[key],
@@ -148,7 +178,7 @@ for (const locale of NEW_LOCALES) {
   });
 
   test(`${locale}: interpolation placeholders survive translation`, () => {
-    const dictionary = locale === 'fr' ? fr : ru;
+    const dictionary = DICTIONARY_BY_LOCALE[locale];
     const placeholders = (s: string) => (s.match(/\{(\w+)\}/g) ?? []).sort();
     for (const key of Object.keys(en) as Array<keyof typeof en>) {
       const translated = dictionary[key];
@@ -196,7 +226,9 @@ test('chat inbox uses consumer-facing private-message copy in every locale', () 
   assert.equal(he['chats.directChat'], 'הודעות אישיות');
   assert.equal(fr['chats.directChat'], 'Messages privés');
   assert.equal(ru['chats.directChat'], 'Личные сообщения');
-  for (const dictionary of [en, he, fr, ru]) {
+  assert.equal(ar['chats.directChat'], 'رسائل خاصة');
+  assert.equal(es['chats.directChat'], 'Mensajes privados');
+  for (const dictionary of [en, he, fr, ru, ar, es]) {
     assert.doesNotMatch(dictionary['chats.directChat'], /direct chat|group chat|chat_type/i);
   }
 });
@@ -205,14 +237,14 @@ test('chat inbox uses consumer-facing private-message copy in every locale', () 
 // FORUMS
 // ===========================================================================
 
-test('all 12 forums have French and Russian names and descriptions', () => {
+test('all 12 forums have translated names and descriptions in every new language', () => {
   const keys = (Object.keys(en) as Array<keyof typeof en>).filter(
     (k) => k.startsWith('forum.') && k.endsWith('.title'),
   );
   assert.equal(keys.length, 12, `expected 12 forums, found ${keys.length}`);
   for (const titleKey of keys) {
     const descriptionKey = titleKey.replace('.title', '.description') as keyof typeof en;
-    for (const [locale, dictionary] of [['fr', fr], ['ru', ru]] as const) {
+    for (const [locale, dictionary] of [['fr', fr], ['ru', ru], ['ar', ar], ['es', es]] as const) {
       assert.ok(dictionary[titleKey], `${locale} missing ${titleKey}`);
       assert.ok(dictionary[descriptionKey], `${locale} missing ${descriptionKey}`);
       assert.notEqual(dictionary[titleKey], en[titleKey], `${locale} ${titleKey} untranslated`);
@@ -221,9 +253,11 @@ test('all 12 forums have French and Russian names and descriptions', () => {
 });
 
 test('forum KEYS are unchanged — only the labels are localized', () => {
-  const frenchKeys = Object.keys(fr).filter((k) => k.startsWith('forum.')).sort();
   const englishKeys = Object.keys(en).filter((k) => k.startsWith('forum.')).sort();
-  assert.deepEqual(frenchKeys, englishKeys);
+  for (const [name, dictionary] of [['fr', fr], ['ru', ru], ['ar', ar], ['es', es]] as const) {
+    const keys = Object.keys(dictionary).filter((k) => k.startsWith('forum.')).sort();
+    assert.deepEqual(keys, englishKeys, name);
+  }
 });
 
 // ===========================================================================
@@ -235,6 +269,20 @@ test('each language maps to its own date locale', () => {
   assert.equal(dateLocaleTag('he'), 'he-IL');
   assert.equal(dateLocaleTag('fr'), 'fr-FR');
   assert.equal(dateLocaleTag('ru'), 'ru-RU');
+  assert.equal(dateLocaleTag('ar'), 'ar-EG');
+  assert.equal(dateLocaleTag('es'), 'es-ES');
+});
+
+test('Arabic uses ar-EG, never ar-SA — Saudi ICU defaults to the Hijri calendar', () => {
+  // A Gregorian-dates app must never silently switch calendar systems.
+  assert.notEqual(dateLocaleTag('ar'), 'ar-SA');
+  // Force Latin digits so the assertion checks the calendar, not the numeral
+  // script — ar-EG correctly renders Arabic-Indic digits (٢٠٢٦) by default.
+  const formatted = new Date('2026-08-19T10:00:00Z').toLocaleDateString(
+    `${dateLocaleTag('ar')}-u-nu-latn`,
+    { year: 'numeric' },
+  );
+  assert.match(formatted, /2026/, `ar-EG produced a non-Gregorian year: ${formatted}`);
 });
 
 test('the active date locale follows the chosen language', () => {
@@ -265,18 +313,20 @@ test('formatters ask the APP locale, never the device', () => {
 
 const selector = readFileSync(new URL('../components/LanguageSelector.tsx', import.meta.url), 'utf8');
 
-test('the selector offers all four languages, each in its own script', () => {
-  for (const key of ["'en'", "'he'", "'fr'", "'ru'"]) {
+test('the selector offers all six languages, each in its own script', () => {
+  for (const key of ["'en'", "'he'", "'fr'", "'ru'", "'ar'", "'es'"]) {
     assert.ok(selector.includes(`key: ${key}`), `selector is missing ${key}`);
   }
   assert.match(selector, /language\.french/);
   assert.match(selector, /language\.russian/);
+  assert.match(selector, /language\.arabic/);
+  assert.match(selector, /language\.spanish/);
   assert.ok(!/'system'/.test(selector), 'device-locale option is back in the user UI');
 });
 
-test('LAYOUT: four options wrap into a grid instead of compressing', () => {
-  // Four across on a 375pt screen leaves ~80pt per cell, which truncates
-  // "Français" and wraps "Русский" one character per line.
+test('LAYOUT: six options wrap into a grid instead of compressing', () => {
+  // Four-plus across on a 375pt screen leaves too little space per cell,
+  // which truncates "Français" and wraps "Русский" one character per line.
   assert.match(selector, /flexWrap: 'wrap'/);
   assert.match(selector, /width: '48%'/);
   assert.match(selector, /numberOfLines=\{1\}/);
@@ -303,7 +353,7 @@ test('NO INLINE LOCALE BRANCHING outside the i18n module', () => {
     const source = readFileSync(new URL(file, import.meta.url), 'utf8');
     const code = source.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
     assert.ok(
-      !/locale === '(he|fr|ru)'\s*\?/.test(code),
+      !/locale === '(he|fr|ru|ar|es)'\s*\?/.test(code),
       `${file} branches on locale inline instead of using a translation key`,
     );
   }

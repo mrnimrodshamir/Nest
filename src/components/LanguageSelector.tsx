@@ -7,15 +7,15 @@ import type { AppLocale } from '@/i18n';
 
 /** Language choice, shown in Profile.
  *
- *  A 2x2 GRID, not a four-across row. "Français" and "Русский" are long enough
- *  that four segments on a 375pt screen leave roughly 80pt each, which either
- *  truncates the label or — worse, and seen on device before — wraps it one
- *  character per line. Two columns give every label ~160pt, which fits all four
- *  comfortably in every language.
+ *  A GRID, not an across-the-screen row. "Français" and "Русский" are long
+ *  enough that four segments on a 375pt screen leave roughly 80pt each, which
+ *  either truncates the label or — worse, and seen on device before — wraps it
+ *  one character per line. Two columns give every label ~160pt, which fits
+ *  every language comfortably; six languages simply wrap into three rows.
  *
  *  Each option is labelled in its OWN script. Someone who has landed in a
  *  language they cannot read must be able to find their way out without reading
- *  it, so 'Русский' is never rendered as 'Russian'.
+ *  it, so 'العربية' is never rendered as 'Arabic'.
  *
  *  LAYOUT RULES that keep the earlier bug dead: every cell is a fixed 48%
  *  width — not a nested flex that can collapse to zero — and every label is
@@ -31,6 +31,8 @@ export function LanguageSelector() {
     { key: 'he', label: t('language.hebrew') },
     { key: 'fr', label: t('language.french') },
     { key: 'ru', label: t('language.russian') },
+    { key: 'ar', label: t('language.arabic') },
+    { key: 'es', label: t('language.spanish') },
   ];
 
   return (

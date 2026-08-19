@@ -43,6 +43,7 @@ test('no Hebrew value is left as an untranslated English string', () => {
   // pure placeholder pattern with no words to translate.
   const allowed = new Set([
     'language.english', 'language.hebrew', 'language.french', 'language.russian',
+    'language.arabic', 'language.spanish',
     // Pure format patterns with no words to translate.
     'chats.happenedOn', 'event.attendance.overflow', 'age.range',
     'activity.title.withoutLocation',
@@ -83,9 +84,8 @@ test('accepts the legacy "iw" code Android still emits for Hebrew', () => {
 });
 
 test('unsupported languages return null so the caller can fall back', () => {
-  // German and Spanish are not shipped; French and Russian now are.
+  // German is not shipped; French, Russian, Arabic and Spanish now are.
   assert.equal(normalizeLanguageTag('de-DE'), null);
-  assert.equal(normalizeLanguageTag('es-ES'), null);
   assert.equal(normalizeLanguageTag(''), null);
   assert.equal(normalizeLanguageTag(null), null);
 });

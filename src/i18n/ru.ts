@@ -53,6 +53,8 @@ export const ru: Dictionary = {
   'language.hebrew': 'עברית',
   'language.french': 'Français',
   'language.russian': 'Русский',
+  'language.arabic': 'العربية',
+  'language.spanish': 'Español',
   'language.system': 'Как на устройстве',
   'language.systemHint': 'Использовать язык устройства',
   'language.restartHint': 'Перезапустите NestUp, чтобы завершить смену направления текста.',

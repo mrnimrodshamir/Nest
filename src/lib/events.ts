@@ -76,10 +76,23 @@ export async function queryEventAttendanceCounts(occurrenceIds: readonly string[
   return counts;
 }
 
+/** The event-translation cache only ever has entries for the locales the
+ *  translation pipeline populates. Arabic and Spanish have no cached rows yet
+ *  — querying with an unsupported locale would either be a no-op or force
+ *  {@link CachedEventTranslation}'s locale type wider than the cache actually
+ *  supports, so those locales skip the cache and get provider content as-is,
+ *  same as any other cache miss. */
+const CACHED_EVENT_LOCALES: readonly CachedEventTranslation['locale'][] = ['en', 'he', 'fr', 'ru'];
+
+function isCachedEventLocale(locale: AppLocale): locale is CachedEventTranslation['locale'] {
+  return (CACHED_EVENT_LOCALES as readonly string[]).includes(locale);
+}
+
 /** Adds only a fingerprint-valid cached translation. Any cache/RLS/network
  * failure returns the original provider content and never hides an Event. */
 export async function localizeEvents(events: readonly EventDetails[], locale: AppLocale): Promise<EventDetails[]> {
   const originals = events.map(({ localizedContent: _localizedContent, ...event }) => event as EventDetails);
+  if (!isCachedEventLocale(locale)) return originals;
   const candidates = originals.filter((event) => detectEventSourceLanguage(event) !== locale);
   if (candidates.length === 0) return originals;
   try {
@@ -89,7 +102,7 @@ export async function localizeEvents(events: readonly EventDetails[], locale: Ap
       .in('event_id', [...new Set(candidates.map((event) => event.id))]);
     if (error) return originals;
     const byEvent = new Map<string, CachedEventTranslation>((data ?? []).map((row) => [row.event_id as string, {
-      locale: row.locale as AppLocale,
+      locale: row.locale as CachedEventTranslation['locale'],
       title: row.translated_title as string,
       description: (row.translated_description as string | null) ?? null,
       sourceLanguage: row.source_language as CachedEventTranslation['sourceLanguage'],

@@ -11,6 +11,8 @@ export const en = {
   'language.hebrew': 'עברית',
   'language.french': 'Français',
   'language.russian': 'Русский',
+  'language.arabic': 'العربية',
+  'language.spanish': 'Español',
   'language.system': 'Match device',
   'language.systemHint': 'Follow your device language',
   'language.restartHint': 'Restart NestUp to finish switching the layout direction.',

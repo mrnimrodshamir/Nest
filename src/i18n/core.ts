@@ -2,32 +2,41 @@ import { en, type Dictionary, type TranslationKey } from './en';
 import { he } from './he';
 import { fr } from './fr';
 import { ru } from './ru';
+import { ar } from './ar';
+import { es } from './es';
 
-export type AppLocale = 'en' | 'he' | 'fr' | 'ru';
+export type AppLocale = 'en' | 'he' | 'fr' | 'ru' | 'ar' | 'es';
 /** What the user actually chose. `system` means "follow the device", and is
  *  persisted distinctly from `en`/`he` so that a user who never made a choice
  *  keeps tracking their device when they change it. */
 export type LocalePreference = AppLocale | 'system';
 
-export const SUPPORTED_LOCALES: readonly AppLocale[] = ['en', 'he', 'fr', 'ru'];
+export const SUPPORTED_LOCALES: readonly AppLocale[] = ['en', 'he', 'fr', 'ru', 'ar', 'es'];
 export const DEFAULT_LOCALE: AppLocale = 'en';
 /** RTL is a property of the language, not of the device, and not of the
- *  alphabet being unfamiliar. Hebrew is the only RTL language NestUp ships:
- *  French is Latin and Russian is Cyrillic, and BOTH are left-to-right. */
-export const RTL_LOCALES: readonly AppLocale[] = ['he'];
+ *  alphabet being unfamiliar. Hebrew and Arabic are the only RTL languages
+ *  NestUp ships: French, Russian and Spanish are all left-to-right. */
+export const RTL_LOCALES: readonly AppLocale[] = ['he', 'ar'];
 
-const DICTIONARIES: Record<AppLocale, Dictionary> = { en, he, fr, ru };
+const DICTIONARIES: Record<AppLocale, Dictionary> = { en, he, fr, ru, ar, es };
 
 /** BCP-47 tag for locale-aware date and number formatting.
  *
  *  Kept next to the dictionaries so a new language cannot be added with
  *  translated copy but English dates. Callers pass this into the existing
- *  `toLocaleDateString`/`toLocaleTimeString` calls; no date logic changes. */
+ *  `toLocaleDateString`/`toLocaleTimeString` calls; no date logic changes.
+ *
+ *  Arabic deliberately maps to `ar-EG`, not `ar-SA`: ICU's Saudi locale
+ *  defaults to the Umm al-Qura (Hijri) calendar, which would print activity
+ *  dates in the wrong calendar system for a Gregorian-dates app. `ar-EG` is
+ *  Gregorian by default and still reads as natural Arabic digits/punctuation. */
 const DATE_LOCALE_TAG: Record<AppLocale, string> = {
   en: 'en-US',
   he: 'he-IL',
   fr: 'fr-FR',
   ru: 'ru-RU',
+  ar: 'ar-EG',
+  es: 'es-ES',
 };
 
 export function dateLocaleTag(locale: AppLocale): string {
@@ -76,6 +85,8 @@ export function normalizeLanguageTag(tag: string | null | undefined): AppLocale 
   if (primary === 'en') return 'en';
   if (primary === 'fr') return 'fr';
   if (primary === 'ru') return 'ru';
+  if (primary === 'ar') return 'ar';
+  if (primary === 'es') return 'es';
   return null;
 }
 
