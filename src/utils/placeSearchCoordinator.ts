@@ -169,6 +169,7 @@ export function dedupePlaceSearchResults(response: PlaceSearchResult): PlaceSear
       return [{ kind: 'suggestion' as const, key, suggestion }];
     });
   }
+  if (response.kind !== 'places') return [];
   return response.places.flatMap((place) => {
     const identity = place.providerPlaceId ?? `${place.latitude},${place.longitude},${place.name}`;
     const key = `place:${identity}`;

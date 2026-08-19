@@ -1,5 +1,5 @@
-export type PlaceSearchAction = 'autocomplete' | 'search' | 'place_details';
-export type SupportedLanguage = 'en' | 'he';
+export type PlaceSearchAction = 'autocomplete' | 'search' | 'place_details' | 'reverse_geocode';
+export type SupportedLanguage = 'en' | 'he' | 'fr' | 'ru';
 
 export interface SearchCenter { latitude: number; longitude: number }
 
@@ -32,9 +32,16 @@ export interface PlaceSuggestionResponse {
   resolutionToken: string;
 }
 
+export interface ReverseGeocodeResponse {
+  formattedAddress: string;
+  latitude: number;
+  longitude: number;
+}
+
 export type PlaceSearchResponse =
   | { kind: 'suggestions'; suggestions: PlaceSuggestionResponse[] }
-  | { kind: 'places'; places: NormalizedPlaceResponse[] };
+  | { kind: 'places'; places: NormalizedPlaceResponse[] }
+  | { kind: 'address'; address: ReverseGeocodeResponse | null };
 
 export type PlaceErrorCode =
   | 'INVALID_REQUEST'

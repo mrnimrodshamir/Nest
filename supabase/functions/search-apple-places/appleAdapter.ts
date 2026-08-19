@@ -1,4 +1,4 @@
-import type { NormalizedPlaceResponse, PlaceSuggestionResponse } from './contract.ts';
+import type { NormalizedPlaceResponse, PlaceSuggestionResponse, ReverseGeocodeResponse } from './contract.ts';
 import { encodeCompletionToken } from './completionToken.ts';
 import { PlaceFunctionError } from './errors.ts';
 
@@ -56,6 +56,33 @@ export function adaptPlacesResponse(payload: unknown, limit: number): Normalized
     if (places.length === limit) break;
   }
   return places;
+}
+
+/** Apple's own `formattedAddressLines` is the canonical, already-deduplicated
+ *  address for a coordinate — it never repeats the street name the way naively
+ *  concatenating separate `name`/`street`/`locality` fields can. We deliberately
+ *  do not reassemble the address from individual components ourselves: that is
+ *  exactly the class of bug this adapter exists to avoid (see LocationPicker's
+ *  on-device fallback, which has to do its own dedup precisely because
+ *  expo-location doesn't give it one preassembled string like this). Returns
+ *  null — never an invented/transliterated address — when Apple has nothing
+ *  for this coordinate; the caller falls back to on-device geocoding. */
+export function adaptReverseGeocodeResponse(payload: unknown): ReverseGeocodeResponse | null {
+  const root = record(payload);
+  const results = root?.results;
+  if (!Array.isArray(results)) malformed();
+  const first = record(results[0]);
+  if (!first) return null;
+  const coordinate = record(first.coordinate);
+  const latitude = coordinate?.latitude;
+  const longitude = coordinate?.longitude;
+  if (typeof latitude !== 'number' || typeof longitude !== 'number') return null;
+  const lines = Array.isArray(first.formattedAddressLines)
+    ? first.formattedAddressLines.filter((line): line is string => typeof line === 'string' && line.trim().length > 0)
+    : [];
+  const formattedAddress = lines.join(', ') || text(first.name) || text(first.formattedAddress);
+  if (!formattedAddress) return null;
+  return { formattedAddress, latitude, longitude };
 }
 
 function record(value: unknown): UnknownRecord | null {

@@ -1,11 +1,11 @@
 import type { PlaceSearchRequest, SupportedLanguage } from './contract.ts';
 import { PlaceFunctionError } from './errors.ts';
 
-const ACTIONS = new Set(['autocomplete', 'search', 'place_details']);
-const LANGUAGES = new Set<SupportedLanguage>(['en', 'he']);
+const ACTIONS = new Set(['autocomplete', 'search', 'place_details', 'reverse_geocode']);
+const LANGUAGES = new Set<SupportedLanguage>(['en', 'he', 'fr', 'ru']);
 
 export interface ValidatedRequest {
-  action: 'autocomplete' | 'search' | 'place_details';
+  action: 'autocomplete' | 'search' | 'place_details' | 'reverse_geocode';
   query: string;
   language: SupportedLanguage;
   countryCode: string;
@@ -38,6 +38,11 @@ export function validateRequest(value: unknown): ValidatedRequest {
       invalid('A completion token is required.');
     }
     return { action: request.action, query: '', language, countryCode, center: request.center, limit, completionToken: request.completionToken };
+  }
+
+  if (request.action === 'reverse_geocode') {
+    if (!request.center) invalid('A coordinate is required to reverse-geocode.');
+    return { action: request.action, query: '', language, countryCode, center: request.center, limit };
   }
 
   const query = typeof request.query === 'string' ? request.query.trim() : '';

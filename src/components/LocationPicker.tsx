@@ -8,6 +8,7 @@ import { theme, typography, spacing, radius } from '@/theme';
 import { usePlaceSearch, type PlaceSearchItem } from '@/hooks/usePlaceSearch';
 import type { NormalizedPlace, SelectedActivityLocation } from '@/types/place';
 import { presentSelectedLocation } from '@/utils/locationPresentation';
+import { resolveLocalizedAddress } from '@/utils/resolveLocalizedAddress';
 import { LOCATION_PICKER_DELTA, selectProviderPlace } from '@/utils/placeSelection';
 import {
   isMeaningfulRegionChange,
@@ -140,13 +141,9 @@ export function LocationPicker({
     const thisRequest = ++requestId.current;
     setIsResolving(true);
     try {
-      const results = await Location.reverseGeocodeAsync({ latitude: lat, longitude: lng });
+      const label = await resolveLocalizedAddress({ latitude: lat, longitude: lng }, locale);
       if (thisRequest !== requestId.current) return; // a newer drag/search superseded this
-      const place = results[0];
-      if (place && onChangeLocationName) {
-        const label = [place.name, place.street].filter(Boolean).join(' ') || place.name || place.street;
-        if (label) onChangeLocationName(label);
-      }
+      if (label && onChangeLocationName) onChangeLocationName(label);
     } catch {
       // Reverse geocoding failing is non-fatal — the coordinates the
       // parent actually chose are already saved via onChangeCoordinates.

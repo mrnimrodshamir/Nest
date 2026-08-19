@@ -1,6 +1,6 @@
 import type { PlaceSearchResponse } from './contract.ts';
 import type { ValidatedRequest } from './validation.ts';
-import { adaptAutocompleteResponse, adaptPlacesResponse } from './appleAdapter.ts';
+import { adaptAutocompleteResponse, adaptPlacesResponse, adaptReverseGeocodeResponse } from './appleAdapter.ts';
 import { decodeCompletionToken } from './completionToken.ts';
 import { PlaceFunctionError } from './errors.ts';
 import type { AppleMapsTokenService } from './tokenService.ts';
@@ -44,17 +44,39 @@ export class AppleMapsClient {
     if (request.action === 'autocomplete') {
       return { kind: 'suggestions', suggestions: adaptAutocompleteResponse(payload, request.limit) };
     }
+    if (request.action === 'reverse_geocode') {
+      return { kind: 'address', address: adaptReverseGeocodeResponse(payload) };
+    }
     return { kind: 'places', places: adaptPlacesResponse(payload, request.limit) };
   }
 
   private buildUrl(request: ValidatedRequest): URL {
     if (request.action === 'place_details') return decodeCompletionToken(request.completionToken!);
+    if (request.action === 'reverse_geocode') {
+      const url = new URL('/v1/reverseGeocode', APPLE_ORIGIN);
+      url.searchParams.set('loc', `${request.center!.latitude},${request.center!.longitude}`);
+      url.searchParams.set('lang', appleLanguageTag(request.language));
+      return url;
+    }
     const endpoint = request.action === 'autocomplete' ? '/v1/searchAutocomplete' : '/v1/search';
     const url = new URL(endpoint, APPLE_ORIGIN);
     url.searchParams.set('q', request.query);
-    url.searchParams.set('lang', request.language === 'he' ? 'he-IL' : 'en-US');
+    url.searchParams.set('lang', appleLanguageTag(request.language));
     url.searchParams.set('limitToCountries', request.countryCode);
     if (request.center) url.searchParams.set('searchLocation', `${request.center.latitude},${request.center.longitude}`);
     return url;
   }
+}
+
+/** BCP-47 tags Apple's Maps Server API expects. Kept in one place so
+ *  reverse-geocode and search always agree on what a given app language
+ *  means to the provider. */
+function appleLanguageTag(language: ValidatedRequest['language']): string {
+  const tags: Record<ValidatedRequest['language'], string> = {
+    en: 'en-US',
+    he: 'he-IL',
+    fr: 'fr-FR',
+    ru: 'ru-RU',
+  };
+  return tags[language];
 }

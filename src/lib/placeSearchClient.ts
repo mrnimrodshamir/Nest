@@ -1,8 +1,8 @@
 import { supabase } from '@/lib/supabase';
 import type { NormalizedPlace } from '@/types/place';
 
-export type PlaceSearchAction = 'autocomplete' | 'search' | 'place_details';
-export type PlaceSearchLanguage = 'en' | 'he';
+export type PlaceSearchAction = 'autocomplete' | 'search' | 'place_details' | 'reverse_geocode';
+export type PlaceSearchLanguage = 'en' | 'he' | 'fr' | 'ru';
 
 export interface PlaceSearchCenter {
   latitude: number;
@@ -25,6 +25,12 @@ export type PlaceSearchRequest =
       countryCode?: string;
       center?: PlaceSearchCenter;
       limit?: number;
+    }
+  | {
+      action: 'reverse_geocode';
+      center: PlaceSearchCenter;
+      language?: PlaceSearchLanguage;
+      countryCode?: string;
     };
 
 export interface PlaceSuggestion {
@@ -34,9 +40,16 @@ export interface PlaceSuggestion {
   resolutionToken: string;
 }
 
+export interface ReverseGeocodeAddress {
+  formattedAddress: string;
+  latitude: number;
+  longitude: number;
+}
+
 export type PlaceSearchResult =
   | { kind: 'suggestions'; suggestions: PlaceSuggestion[] }
-  | { kind: 'places'; places: NormalizedPlace[] };
+  | { kind: 'places'; places: NormalizedPlace[] }
+  | { kind: 'address'; address: ReverseGeocodeAddress | null };
 
 export type PlaceSearchErrorCode =
   | 'INVALID_REQUEST'
@@ -83,7 +96,18 @@ function isPlaceSearchResult(value: unknown): value is PlaceSearchResult {
   const result = value as Record<string, unknown>;
   if (result.kind === 'suggestions') return Array.isArray(result.suggestions);
   if (result.kind === 'places') return Array.isArray(result.places) && result.places.every(isNormalizedPlace);
+  if (result.kind === 'address') return result.address === null || isReverseGeocodeAddress(result.address);
   return false;
+}
+
+function isReverseGeocodeAddress(value: unknown): value is ReverseGeocodeAddress {
+  if (!value || typeof value !== 'object') return false;
+  const address = value as Record<string, unknown>;
+  return (
+    typeof address.formattedAddress === 'string' &&
+    typeof address.latitude === 'number' && address.latitude >= -90 && address.latitude <= 90 &&
+    typeof address.longitude === 'number' && address.longitude >= -180 && address.longitude <= 180
+  );
 }
 
 function isNormalizedPlace(value: unknown): value is NormalizedPlace {

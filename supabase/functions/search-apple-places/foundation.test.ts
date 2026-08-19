@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { adaptAutocompleteResponse, adaptPlacesResponse } from './appleAdapter.ts';
+import { adaptAutocompleteResponse, adaptPlacesResponse, adaptReverseGeocodeResponse } from './appleAdapter.ts';
 import { AppleMapsClient } from './appleMapsClient.ts';
 import { decodeCompletionToken, encodeCompletionToken, validateAppleCompletionUrl } from './completionToken.ts';
 import { PlaceFunctionError } from './errors.ts';
@@ -10,10 +10,21 @@ import { validateRequest } from './validation.ts';
 
 test('validates actions, query length, coordinates, language, and result limit', () => {
   assert.throws(() => validateRequest({ action: 'search', query: 'a' }), /between 2 and 100/);
-  assert.throws(() => validateRequest({ action: 'search', query: 'park', language: 'fr' }), /language/);
+  assert.throws(() => validateRequest({ action: 'search', query: 'park', language: 'de' }), /language/);
   assert.throws(() => validateRequest({ action: 'search', query: 'park', center: { latitude: 91, longitude: 0 } }), /center/);
   assert.throws(() => validateRequest({ action: 'search', query: 'park', limit: 9 }), /Limit/);
   assert.equal(validateRequest({ action: 'search', query: 'גן', language: 'he', limit: 8 }).query, 'גן');
+  // fr/ru are valid app locales too (used by reverse-geocode's locale-aware
+  // address lookup) — no longer rejected the way an unsupported language is.
+  assert.equal(validateRequest({ action: 'search', query: 'park', language: 'fr' }).language, 'fr');
+  assert.equal(validateRequest({ action: 'search', query: 'park', language: 'ru' }).language, 'ru');
+});
+
+test('reverse_geocode requires a coordinate, not a query', () => {
+  assert.throws(() => validateRequest({ action: 'reverse_geocode', language: 'he' }), /coordinate/);
+  const request = validateRequest({ action: 'reverse_geocode', center: { latitude: 32.0644, longitude: 34.7714 }, language: 'he' });
+  assert.equal(request.action, 'reverse_geocode');
+  assert.deepEqual(request.center, { latitude: 32.0644, longitude: 34.7714 });
 });
 
 test('requires authentication before parsing or calling the provider', async () => {
@@ -54,6 +65,21 @@ test('normalizes Hebrew and English places and removes duplicates', () => {
   assert.equal(places[0].name, 'גן מאיר');
   assert.equal(places[1].name, 'Hayarkon Park');
   assert.deepEqual(Object.keys(places[0]).sort(), ['category', 'formattedAddress', 'latitude', 'longitude', 'name', 'provider', 'providerPlaceId', 'source', 'wasAdjusted'].sort());
+});
+
+test('adaptReverseGeocodeResponse: uses Apple\'s own formattedAddressLines as-is — never reassembled from separate name/street fields', () => {
+  const address = adaptReverseGeocodeResponse({
+    results: [{ formattedAddressLines: ['יהודה הלוי 111', 'תל אביב-יפו'], coordinate: { latitude: 32.0644, longitude: 34.7714 } }],
+  });
+  assert.deepEqual(address, { formattedAddress: 'יהודה הלוי 111, תל אביב-יפו', latitude: 32.0644, longitude: 34.7714 });
+});
+
+test('adaptReverseGeocodeResponse: no results for this coordinate returns null, never an invented address', () => {
+  assert.equal(adaptReverseGeocodeResponse({ results: [] }), null);
+});
+
+test('adaptReverseGeocodeResponse: rejects a malformed envelope the same way place search does', () => {
+  assert.throws(() => adaptReverseGeocodeResponse({ unexpected: true }), /invalid response/);
 });
 
 test('drops malformed place candidates and rejects malformed provider envelopes', () => {
@@ -123,6 +149,33 @@ test('Apple client constructs biased Hebrew search and honors the limit', async 
   // Apple exposes no result-count parameter; the adapter enforces the
   // provider-neutral maximum before returning data to the client.
   assert.equal(url.searchParams.has('limit'), false);
+});
+
+test('reverse-geocode: he locale requests he-IL from Apple; en locale requests en-US', async () => {
+  const requestedLangs: string[] = [];
+  const client = new AppleMapsClient({ getAccessToken: async () => 'token' }, async (input) => {
+    requestedLangs.push(new URL(String(input)).searchParams.get('lang')!);
+    return Response.json({ results: [{ formattedAddressLines: ['Address'], coordinate: { latitude: 32.06, longitude: 34.77 } }] });
+  });
+  const heRequest = validateRequest({ action: 'reverse_geocode', center: { latitude: 32.06, longitude: 34.77 }, language: 'he' });
+  const enRequest = validateRequest({ action: 'reverse_geocode', center: { latitude: 32.06, longitude: 34.77 }, language: 'en' });
+  await client.execute(heRequest);
+  await client.execute(enRequest);
+  assert.deepEqual(requestedLangs, ['he-IL', 'en-US']);
+});
+
+test('reverse-geocode: sends the coordinate unaltered as the `loc` param', async () => {
+  let requested = '';
+  const client = new AppleMapsClient({ getAccessToken: async () => 'token' }, async (input) => {
+    requested = String(input);
+    return Response.json({ results: [] });
+  });
+  const request = validateRequest({ action: 'reverse_geocode', center: { latitude: 32.0644, longitude: 34.7714 }, language: 'he' });
+  const result = await client.execute(request);
+  const url = new URL(requested);
+  assert.equal(url.pathname, '/v1/reverseGeocode');
+  assert.equal(url.searchParams.get('loc'), '32.0644,34.7714');
+  assert.equal(result.kind, 'address');
 });
 
 test('token service caches access tokens and refreshes before expiry', async () => {
