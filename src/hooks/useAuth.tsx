@@ -14,6 +14,7 @@ import { normalizeOptionalProfileText, normalizeProfileBio } from '@/utils/publi
 import { hasUsableDisplayName, safeDisplayName } from '@/utils/profileIdentity';
 import { needsAppleProfileSetup } from '@/utils/profileCompleteness';
 import { currentAppLocale, translate, type TranslationKey } from '@/i18n';
+import { parseRecoveryUrl } from '@/utils/parseRecoveryUrl';
 
 const ONBOARDING_ERROR_KEYS: Readonly<Record<string, TranslationKey>> = {
   "Couldn't load your profile. Please try again.": 'onboarding.error.profileLoad',
@@ -116,6 +117,14 @@ interface UseAuthResult {
     onStage?: (stage: RegistrationStage) => void,
   ) => Promise<string | null>;
   resetPassword: (email: string) => Promise<string | null>;
+  /** Set while a tapped recovery link's temporary session is active and the
+   *  user has not yet chosen a new password. The main navigator gates on
+   *  this (not just `session`) so a recovery token never silently drops the
+   *  user into the normal signed-in app before they've reset anything. */
+  isPasswordRecovery: boolean;
+  beginPasswordRecovery: (url: string) => Promise<'ok' | 'expired' | 'malformed' | 'not_recovery'>;
+  completePasswordRecovery: (newPassword: string) => Promise<string | null>;
+  cancelPasswordRecovery: () => Promise<void>;
   signOut: () => Promise<void>;
   deleteAccount: () => Promise<string | null>;
   refreshProfile: () => Promise<void>;
@@ -148,6 +157,7 @@ function useAuthState(): UseAuthResult {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isPasswordRecovery, setIsPasswordRecovery] = useState(false);
 
   const loadProfile = useCallback(async (userId: string) => {
     try {
@@ -563,6 +573,51 @@ function useAuthState(): UseAuthResult {
     return null;
   }, []);
 
+  // Deep-link handoff for a tapped recovery email link. Establishes the
+  // short-lived recovery session Supabase issued (proof the tapper controls
+  // that email account), but does NOT drop the user into the normal app —
+  // isPasswordRecovery stays true until they actually set a new password,
+  // so App.tsx can gate on it and show ResetPasswordScreen instead of
+  // routing a bare token exchange straight into Discovery.
+  const beginPasswordRecovery = useCallback(async (url: string) => {
+    const parsed = parseRecoveryUrl(url);
+    if (parsed.status !== 'ok') {
+      if (parsed.status !== 'not_recovery') console.log('[Auth] Password recovery link rejected', parsed.status);
+      return parsed.status;
+    }
+    const { error } = await supabase.auth.setSession({
+      access_token: parsed.accessToken,
+      refresh_token: parsed.refreshToken,
+    });
+    if (error) {
+      // A token Supabase itself refuses (already consumed, tampered with)
+      // surfaces here even though our own shape-level parse passed.
+      console.log('[Auth] Password recovery session rejected by Supabase', error.message);
+      return 'expired';
+    }
+    setIsPasswordRecovery(true);
+    return 'ok';
+  }, []);
+
+  const completePasswordRecovery = useCallback(async (newPassword: string) => {
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    if (error) {
+      console.log('[Auth] Password recovery update failed', error.message);
+      return mapAuthError(error.message);
+    }
+    // The recovery session is now a normal authenticated session — clearing
+    // the flag is what lets the app's usual routing take over.
+    setIsPasswordRecovery(false);
+    return null;
+  }, []);
+
+  // Backing out of the reset screen without setting a password: never leave
+  // the device silently signed in as whoever the recovery link belonged to.
+  const cancelPasswordRecovery = useCallback(async () => {
+    setIsPasswordRecovery(false);
+    await supabase.auth.signOut();
+  }, []);
+
   const signOut = useCallback(async () => {
     if (session) {
       await clearPushRegistration(session.user.id);
@@ -674,6 +729,10 @@ function useAuthState(): UseAuthResult {
     signInWithApple,
     completeAppleProfile,
     resetPassword,
+    isPasswordRecovery,
+    beginPasswordRecovery,
+    completePasswordRecovery,
+    cancelPasswordRecovery,
     signOut,
     deleteAccount,
     refreshProfile,

@@ -39,6 +39,7 @@ import { BlockedUsersScreen } from '@/screens/BlockedUsersScreen';
 import { PublicProfileScreen } from '@/screens/PublicProfileScreen';
 import { LaunchScreen } from '@/screens/LaunchScreen';
 import { CompleteAppleProfileScreen } from '@/screens/auth/CompleteAppleProfileScreen';
+import { ResetPasswordScreen } from '@/screens/auth/ResetPasswordScreen';
 import { AuthNavigator } from '@/navigation/AuthNavigator';
 import { AppErrorBoundary } from '@/components/AppErrorBoundary';
 import { spacing, theme } from '@/theme';
@@ -167,8 +168,13 @@ function AppInner() {
     PlusJakartaSans_600SemiBold,
     PlusJakartaSans_700Bold,
   });
-  const { session, profile, isLoading: authLoading } = useAuth();
+  const { session, profile, isLoading: authLoading, isPasswordRecovery, beginPasswordRecovery } = useAuth();
   const pendingSharedRoute = useRef<SharedContentRoute | null>(null);
+  // Distinguishes "no recovery link involved" (null) from a link that was
+  // tapped but rejected before any session could be established — the latter
+  // still needs its own screen (ResetPasswordScreen's invalid-link state),
+  // not silent fallthrough to normal routing.
+  const [recoveryLinkStatus, setRecoveryLinkStatus] = React.useState<'expired' | 'malformed' | null>(null);
 
   const navigatePendingSharedRoute = useCallback(() => {
     if (!session || !profile?.onboardingCompleted || !navigationRef.isReady() || !pendingSharedRoute.current) return;
@@ -185,15 +191,27 @@ function AppInner() {
     } else navigationRef.navigate('EventDetails', route.params);
   }, [session, profile?.onboardingCompleted]);
 
+  // Password recovery deep links are handled here rather than through
+  // NavigationContainer's `linking` prop below, because that prop is only
+  // wired up once routeDecision === 'main-navigator' — i.e. only once the
+  // user is ALREADY signed in. A recovery link is tapped precisely because
+  // the user is signed out, so it needs to work regardless of session state.
+  const handleIncomingUrl = useCallback((url: string | null) => {
+    if (!url) return;
+    if (url.includes('reset-password')) {
+      void beginPasswordRecovery(url).then((status) => {
+        if (status === 'expired' || status === 'malformed') setRecoveryLinkStatus(status);
+      });
+      return;
+    }
+    if (!session) pendingSharedRoute.current = parseSharedContentUrl(url);
+  }, [session, beginPasswordRecovery]);
+
   useEffect(() => {
-    const rememberIfSignedOut = (url: string | null) => {
-      if (!url || session) return;
-      pendingSharedRoute.current = parseSharedContentUrl(url);
-    };
-    void Linking.getInitialURL().then(rememberIfSignedOut);
-    const subscription = Linking.addEventListener('url', ({ url }) => rememberIfSignedOut(url));
+    void Linking.getInitialURL().then(handleIncomingUrl);
+    const subscription = Linking.addEventListener('url', ({ url }) => handleIncomingUrl(url));
     return () => subscription.remove();
-  }, [session]);
+  }, [handleIncomingUrl]);
 
   useEffect(() => {
     navigatePendingSharedRoute();
@@ -265,6 +283,16 @@ function AppInner() {
           <NavigationContainer ref={navigationRef} onReady={navigatePendingSharedRoute} linking={routeDecision === 'main-navigator' && !PREVIEW_MODE ? linking : undefined}>
             {PREVIEW_MODE ? (
               <MainNavigator />
+            ) : isPasswordRecovery || recoveryLinkStatus ? (
+              // Takes priority over every other routing decision: a
+              // recovery link's temporary session must never be treated as
+              // "signed in" by the normal session/profile checks below —
+              // it stays here until a new password is set or the user
+              // backs out (cancelPasswordRecovery signs it out).
+              <ResetPasswordScreen
+                linkStatus={isPasswordRecovery ? 'ok' : recoveryLinkStatus!}
+                onRequestNewLink={() => setRecoveryLinkStatus(null)}
+              />
             ) : !session ? (
               <AuthNavigator />
             ) : routeDecision === 'complete-profile' ? (
