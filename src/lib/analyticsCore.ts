@@ -11,7 +11,8 @@ export type AnalyticsEvent =
   | 'share_started' | 'share_completed' | 'share_cancelled' | 'share_failed'
   | 'screen_viewed' | 'user_identified'
   | 'sign_up_started' | 'sign_up_completed' | 'activity_viewed'
-  | 'chat_message_sent' | 'account_deleted';
+  | 'chat_message_sent' | 'account_deleted'
+  | 'daily_push_opened' | 'daily_digest_viewed' | 'daily_digest_event_opened' | 'daily_digest_closed' | 'daily_digest_rsvp_after_open';
 
 export type AnalyticsValue = string | number | boolean;
 export type AnalyticsProperties = Record<string, AnalyticsValue | null | undefined>;

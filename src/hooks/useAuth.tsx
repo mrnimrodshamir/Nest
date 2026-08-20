@@ -766,7 +766,7 @@ function mapProfile(row: {
   phone: string | null;
   avatar_url: string | null;
   onboarding_completed: boolean;
-  notification_preferences: NotificationPreferences;
+  notification_preferences: Partial<NotificationPreferences> | null;
   parent_role?: string | null;
   birthdate?: string | null;
   neighborhood_label?: string | null;
@@ -780,7 +780,14 @@ function mapProfile(row: {
     phone: row.phone,
     avatarUrl: row.avatar_url,
     onboardingCompleted: row.onboarding_completed,
-    notificationPreferences: row.notification_preferences,
+    notificationPreferences: {
+      activity_changes: row.notification_preferences?.activity_changes === true,
+      chat_messages: row.notification_preferences?.chat_messages === true,
+      reminders: row.notification_preferences?.reminders === true,
+      // Existing rows do not have this key until the migration backfill.
+      // Undefined must render OFF and must never be written back as enabled.
+      daily_digest: row.notification_preferences?.daily_digest === true,
+    },
     parentRole: coerceParentRole(row.parent_role),
     // Normalised to a plain ISO date: Postgres `date` comes back as
     // YYYY-MM-DD, but a timestamp-ish value would break date-only comparisons.

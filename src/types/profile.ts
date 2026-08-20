@@ -4,6 +4,9 @@ export interface NotificationPreferences {
   activity_changes: boolean;
   chat_messages: boolean;
   reminders: boolean;
+  /** "What's on today" — the Daily Digest push. Opt-in only: a missing or
+   *  false value must always be treated as off, never silently enabled. */
+  daily_digest: boolean;
 }
 
 /** Own full profile — matches the private `profiles` table (own row only).

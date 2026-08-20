@@ -43,6 +43,7 @@ export async function ensurePushRegistration(promptIfNeeded: boolean): Promise<b
     status = requested.status;
   }
   if (status !== 'granted') {
+    await removeStoredTokenForCurrentUser();
     console.log('[Push] permission not granted', { status });
     return false;
   }
@@ -77,6 +78,17 @@ export async function ensurePushRegistration(promptIfNeeded: boolean): Promise<b
   }
 
   return true;
+}
+
+/** If the caregiver disabled the OS-level notification permission after a
+ * token was registered, remove this device's exact row. Category preferences
+ * remain untouched, so permission is never silently re-enabled. */
+async function removeStoredTokenForCurrentUser(): Promise<void> {
+  const token = await AsyncStorage.getItem(LAST_TOKEN_KEY);
+  if (!token) return;
+  const { data } = await supabase.auth.getUser();
+  if (data.user) await supabase.from('push_tokens').delete().match({ user_id: data.user.id, token });
+  await AsyncStorage.removeItem(LAST_TOKEN_KEY);
 }
 
 /** Removes this device's push token on sign-out so a signed-out device

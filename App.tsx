@@ -34,6 +34,7 @@ import { EditActivityScreen } from '@/screens/EditActivityScreen';
 import { ProfileScreen } from '@/screens/ProfileScreen';
 import { EditProfileScreen } from '@/screens/EditProfileScreen';
 import { MyActivitiesScreen } from '@/screens/MyActivitiesScreen';
+import { DailyDigestScreen } from '@/screens/DailyDigestScreen';
 import { MessagesScreen } from '@/screens/MessagesScreen';
 import { BlockedUsersScreen } from '@/screens/BlockedUsersScreen';
 import { PublicProfileScreen } from '@/screens/PublicProfileScreen';
@@ -72,6 +73,7 @@ import type { FamilyFriendlyPlace } from '@/types/familyFriendlyPlace';
 import type { EventDetails } from '@/types/event';
 import { buildActivitySeedFromPlace } from '@/utils/placeActivityPrefill';
 import { parseSharedContentUrl, type SharedContentRoute } from '@/utils/contentSharing';
+import { parseDailyDigestNotification } from '@/utils/dailyDigestNotification';
 
 // RTL is controlled by the selected app language in I18nProvider. Enable it
 // before the first React tree mounts so a Hebrew relaunch can use native RTL
@@ -109,6 +111,7 @@ export type RootStackParamList = {
   EditProfile: undefined;
   MyActivities: undefined;
   BlockedUsers: undefined;
+  DailyDigest: { date?: string } | undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -137,6 +140,7 @@ const linking: LinkingOptions<RootStackParamList> = {
         path: 'activity/:activityId/chat',
         parse: { kind: () => 'group' as const },
       },
+      DailyDigest: 'daily-digest',
     },
   },
 };
@@ -169,7 +173,10 @@ function AppInner() {
     PlusJakartaSans_700Bold,
   });
   const { session, profile, isLoading: authLoading, isPasswordRecovery, beginPasswordRecovery } = useAuth();
+  const { locale: appLocale } = useI18n();
   const pendingSharedRoute = useRef<SharedContentRoute | null>(null);
+  const pendingDailyDigestRoute = useRef<{ kind: 'digest'; date: string } | { kind: 'fallback' } | null>(null);
+  const lastHandledNotificationId = useRef<string | null>(null);
   // Distinguishes "no recovery link involved" (null) from a link that was
   // tapped but rejected before any session could be established — the latter
   // still needs its own screen (ResetPasswordScreen's invalid-link state),
@@ -190,6 +197,23 @@ function AppInner() {
       }
     } else navigationRef.navigate('EventDetails', route.params);
   }, [session, profile?.onboardingCompleted]);
+
+  const navigatePendingDailyDigest = useCallback(() => {
+    if (!session || !profile?.onboardingCompleted || !navigationRef.isReady() || !pendingDailyDigestRoute.current) return;
+    const pending = pendingDailyDigestRoute.current;
+    try {
+      if (pending.kind === 'fallback') {
+        navigationRef.navigate('Tabs');
+      } else if (navigationRef.getCurrentRoute()?.name !== 'DailyDigest') {
+        navigationRef.navigate('DailyDigest', { date: pending.date });
+        track('daily_push_opened', { date: pending.date, city: 'tel_aviv', locale: appLocale });
+      }
+      pendingDailyDigestRoute.current = null;
+    } catch {
+      // The main navigator may still be replacing the auth/onboarding tree.
+      // Keep the pending route; the session/profile effect retries it.
+    }
+  }, [appLocale, profile?.onboardingCompleted, session]);
 
   // Password recovery deep links are handled here rather than through
   // NavigationContainer's `linking` prop below, because that prop is only
@@ -218,10 +242,44 @@ function AppInner() {
   }, [navigatePendingSharedRoute]);
 
   useEffect(() => {
+    navigatePendingDailyDigest();
+  }, [navigatePendingDailyDigest]);
+
+  // The Daily Digest push is composed server-side and has no client to ask
+  // "what language is this user in" — this is the one sync point that makes
+  // that possible. Fire-and-forget: a failed write just means the next
+  // digest falls back to English for this user, not a crash or a stuck UI.
+  useEffect(() => {
+    if (!session) return;
+    void supabase
+      .from('profiles')
+      .update({ locale: appLocale, locale_updated_at: new Date().toISOString() })
+      .eq('id', session.user.id)
+      .then(({ error }) => {
+        if (error) console.log('[Locale] Server-side locale sync failed', error.message);
+      });
+  }, [session, appLocale]);
+
+  useEffect(() => {
     // Safe fallback if the tapped notification references content that no
     // longer exists — try/catch around navigation, since a bad or stale
     // activityId shouldn't crash the app.
-    function handleNotificationData(data: Record<string, unknown> | undefined) {
+    function handleNotificationData(data: Record<string, unknown> | undefined, notificationId?: string) {
+      if (notificationId && lastHandledNotificationId.current === notificationId) return;
+      if (notificationId) lastHandledNotificationId.current = notificationId;
+
+      // Capture Daily Digest taps even while auth/session restoration is still
+      // replacing the navigator. Navigation happens later, once the main tree
+      // is ready; malformed/stale payloads deterministically fall back home.
+      const digestRoute = parseDailyDigestNotification(data);
+      if (digestRoute.status !== 'not_digest') {
+        pendingDailyDigestRoute.current = digestRoute.status === 'valid'
+          ? { kind: 'digest', date: digestRoute.date }
+          : { kind: 'fallback' };
+        navigatePendingDailyDigest();
+        return;
+      }
+
       if (!navigationRef.isReady()) return;
       const activityId = data?.activityId as string | undefined;
       const otherUserId = data?.otherUserId as string | undefined;
@@ -253,15 +311,19 @@ function AppInner() {
     }
 
     Notifications.getLastNotificationResponseAsync().then((response) => {
-      if (response) handleNotificationData(response.notification.request.content.data);
+      if (response) {
+        handleNotificationData(response.notification.request.content.data, response.notification.request.identifier);
+        void Notifications.clearLastNotificationResponseAsync();
+      }
     });
 
     const subscription = Notifications.addNotificationResponseReceivedListener((response) => {
-      handleNotificationData(response.notification.request.content.data);
+      handleNotificationData(response.notification.request.content.data, response.notification.request.identifier);
+      void Notifications.clearLastNotificationResponseAsync();
     });
 
     return () => subscription.remove();
-  }, []);
+  }, [navigatePendingDailyDigest]);
 
   if (!fontsLoaded || (!PREVIEW_MODE && authLoading)) {
     return <LaunchScreen />;
@@ -280,7 +342,14 @@ function AppInner() {
     <AppErrorBoundary>
       <GestureHandlerRootView style={{ flex: 1 }}>
         <SafeAreaProvider>
-          <NavigationContainer ref={navigationRef} onReady={navigatePendingSharedRoute} linking={routeDecision === 'main-navigator' && !PREVIEW_MODE ? linking : undefined}>
+          <NavigationContainer
+            ref={navigationRef}
+            onReady={() => {
+              navigatePendingSharedRoute();
+              navigatePendingDailyDigest();
+            }}
+            linking={routeDecision === 'main-navigator' && !PREVIEW_MODE ? linking : undefined}
+          >
             {PREVIEW_MODE ? (
               <MainNavigator />
             ) : isPasswordRecovery || recoveryLinkStatus ? (
@@ -426,6 +495,15 @@ function MainNavigator() {
           <MyActivitiesScreen
             onBack={() => navigation.goBack()}
             onOpenActivity={(activity) => navigation.navigate('ActivityDetail', { activityId: activity.id })}
+          />
+        )}
+      </Stack.Screen>
+      <Stack.Screen name="DailyDigest" options={{ presentation: 'modal' }}>
+        {({ route, navigation }) => (
+          <DailyDigestScreen
+            requestedDate={route.params?.date}
+            onClose={() => (navigation.canGoBack() ? navigation.goBack() : navigation.navigate('Tabs'))}
+            onOpenEvent={(occurrenceId) => navigation.navigate('EventDetails', { occurrenceId })}
           />
         )}
       </Stack.Screen>

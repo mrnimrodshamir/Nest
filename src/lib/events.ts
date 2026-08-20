@@ -8,6 +8,16 @@ import {
   detectEventSourceLanguage,
   type CachedEventTranslation,
 } from '../../supabase/functions/_shared/eventTranslation';
+import {
+  selectDigestEvents,
+  TEL_AVIV_CENTER,
+  DEFAULT_DIGEST_RADIUS_KM,
+  DEFAULT_DIGEST_MIN_RESULTS,
+  DEFAULT_DIGEST_MAX_RESULTS,
+  type DigestCandidateOccurrence,
+} from '../../supabase/functions/_shared/dailyDigest/selectDigestEvents';
+import { jerusalemLocalDateString } from '../../supabase/functions/_shared/dailyDigest/scheduleGate';
+import { rowsInDigestOrder } from '@/utils/dailyDigestRows';
 
 export const EVENT_COLUMNS = 'id,title,description,category,image_url,age_min_months,age_max_months,price_note,registration_required,registration_url,verification_status,publication_status,event_status,cancellation_reason,provider,provider_event_id,provider_transport_id,source_group_id,source_name,source_url,source_published_at,source_updated_at,provider_metadata,is_recurring,recurrence_rule,recurrence_timezone,recurrence_series_id,place_id,location_name,formatted_address,latitude,longitude,created_at,updated_at';
 export const EVENT_OCCURRENCE_COLUMNS = 'id,event_id,provider_occurrence_id,occurrence_fingerprint,starts_at,ends_at,original_starts_at,occurrence_status,cancellation_reason,source_updated_at,provider_metadata';
@@ -112,6 +122,55 @@ export async function localizeEvents(events: readonly EventDetails[], locale: Ap
   } catch {
     return originals;
   }
+}
+
+/** Today's Daily Digest events for Discovery-quality Tel Aviv content — runs
+ *  the EXACT same selection/ranking (`selectDigestEvents`) the server-side
+ *  `send-daily-digest` function used to decide what to push, so a user who
+ *  opens the digest from the notification sees the same events, in the same
+ *  order, that the push told them about — not an independently-computed
+ *  second opinion. Never queries `daily_digest_instances` (RLS-closed to
+ *  clients on purpose): re-deriving the same deterministic selection from
+ *  `active_event_occurrences` is simpler than adding client read access to a
+ *  server-analytics table, and produces an identical result. */
+export async function queryDailyDigestEvents(now: Date = new Date()): Promise<EventDetails[]> {
+  const localDate = jerusalemLocalDateString(now);
+  const windowStart = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString();
+  const windowEnd = new Date(now.getTime() + 48 * 60 * 60 * 1000).toISOString();
+  const { data, error } = await supabase
+    .from('active_event_occurrences')
+    .select('*')
+    .gte('starts_at', windowStart)
+    .lte('starts_at', windowEnd);
+  if (error) throw new Error(error.message);
+  const rows = data ?? [];
+  const candidates: DigestCandidateOccurrence[] = rows.map((row: any) => ({
+    occurrenceId: row.occurrence_id,
+    eventId: row.event_id,
+    title: row.title,
+    category: row.category,
+    startsAt: row.starts_at,
+    ageMinMonths: row.age_min_months,
+    ageMaxMonths: row.age_max_months,
+    priceNote: row.price_note,
+    provider: row.provider,
+    sourceName: row.source_name,
+    sourceType: row.source_type,
+    canonicalEventId: row.canonical_event_id,
+    latitude: row.latitude,
+    longitude: row.longitude,
+    locationName: row.location_name,
+  }));
+  const selected = selectDigestEvents(candidates, {
+    localDate,
+    targetLatitude: TEL_AVIV_CENTER.latitude,
+    targetLongitude: TEL_AVIV_CENTER.longitude,
+    maxRadiusKm: DEFAULT_DIGEST_RADIUS_KM,
+    minResults: DEFAULT_DIGEST_MIN_RESULTS,
+    maxResults: DEFAULT_DIGEST_MAX_RESULTS,
+  });
+  const selectedRows = rowsInDigestOrder(rows as Array<{ occurrence_id: string }>, selected.map((event) => event.occurrenceId));
+  return mapActiveRows(selectedRows, now);
 }
 
 /** Splits a joined view row back into the event and occurrence shapes the
