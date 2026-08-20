@@ -126,16 +126,16 @@ export async function localizeEvents(events: readonly EventDetails[], locale: Ap
   }
 }
 
-/** Today's Daily Digest events for Discovery-quality Tel Aviv content — runs
- *  the EXACT same selection/ranking (`selectDigestEvents`) the server-side
- *  `send-daily-digest` function used to decide what to push, so a user who
- *  opens the digest from the notification sees the same events, in the same
- *  order, that the push told them about — not an independently-computed
- *  second opinion. Never queries `daily_digest_instances` (RLS-closed to
- *  clients on purpose): re-deriving the same deterministic selection from
- *  `active_event_occurrences` is simpler than adding client read access to a
- *  server-analytics table, and produces an identical result. */
-export async function queryDailyDigestEvents(now: Date = new Date()): Promise<EventDetails[]> {
+/** Today's Digest. New push payloads carry the exact occurrence IDs persisted
+ * by the backend; those IDs are loaded in their original order so a source
+ * refresh cannot silently rerank the popup after delivery. The deterministic
+ * selector remains only as backwards compatibility for pre-Build-44 pushes. */
+export async function queryDailyDigestEvents(
+  now: Date = new Date(),
+  persistedOccurrenceIds: readonly string[] = [],
+): Promise<EventDetails[]> {
+  const persisted = await queryPersistedDigestEvents(persistedOccurrenceIds, now);
+  if (persisted) return persisted;
   const localDate = jerusalemLocalDateString(now);
   const windowStart = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString();
   const windowEnd = new Date(now.getTime() + 48 * 60 * 60 * 1000).toISOString();
@@ -184,11 +184,23 @@ export interface WeeklyDigestDayEvents {
   events: EventDetails[];
 }
 
-/** Weekly counterpart to queryDailyDigestEvents. It deliberately queries the
- * same publication-safe view and runs the same pure weekly selector used by
- * the Edge Function, so the pushed digest and screen cannot disagree. */
-export async function queryWeeklyDigestEvents(now: Date = new Date()): Promise<WeeklyDigestDayEvents[]> {
+/** Weekly counterpart. Build-44+ push taps render the backend-persisted order;
+ * old payloads without IDs retain the deterministic selector fallback. */
+export async function queryWeeklyDigestEvents(
+  now: Date = new Date(),
+  persistedOccurrenceIds: readonly string[] = [],
+): Promise<WeeklyDigestDayEvents[]> {
   const period = weeklyDigestPeriod(now);
+  const persisted = await queryPersistedDigestEvents(persistedOccurrenceIds, now);
+  if (persisted) {
+    return Array.from({ length: 7 }, (_, offset) => {
+      const localDate = addLocalCalendarDays(period.weekStart, offset);
+      return {
+        localDate,
+        events: persisted.filter((event) => jerusalemLocalDateString(new Date(event.occurrence.startsAt)) === localDate),
+      };
+    });
+  }
   const windowStart = `${addLocalCalendarDays(period.weekStart, -1)}T00:00:00.000Z`;
   const windowEnd = `${addLocalCalendarDays(period.weekEnd, 2)}T00:00:00.000Z`;
   const { data, error } = await supabase
@@ -227,6 +239,25 @@ export async function queryWeeklyDigestEvents(now: Date = new Date()): Promise<W
     );
     return { localDate: day.localDate, events: mapActiveRows(selectedRows, now) };
   });
+}
+
+/** Returns null only for legacy pushes that contain no persisted IDs. If a
+ * modern payload names a Digest that no longer resolves at all, fail closed so
+ * the screen can return to Discovery instead of presenting a different list. */
+async function queryPersistedDigestEvents(
+  occurrenceIds: readonly string[],
+  now: Date,
+): Promise<EventDetails[] | null> {
+  const uniqueIds = [...new Set(occurrenceIds.filter(Boolean))];
+  if (uniqueIds.length === 0) return null;
+  const { data, error } = await supabase
+    .from(ACTIVE_EVENTS_VIEW)
+    .select('*')
+    .in('occurrence_id', uniqueIds);
+  if (error) throw new Error(error.message);
+  if (!data?.length) throw new Error('DIGEST_NOT_AVAILABLE');
+  const ordered = rowsInDigestOrder(data as Array<{ occurrence_id: string }>, uniqueIds);
+  return mapActiveRows(ordered, now);
 }
 
 /** Splits a joined view row back into the event and occurrence shapes the

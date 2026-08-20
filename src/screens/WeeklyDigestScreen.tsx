@@ -1,7 +1,7 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { View, Text, Pressable, SectionList, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { X, CalendarBlank, WarningCircle } from 'phosphor-react-native';
+import { X, CalendarBlank } from 'phosphor-react-native';
 import { theme, typography, spacing, radius } from '@/theme';
 import { EventCard } from '@/components/EventCard';
 import { StateCard } from '@/components/StateCard';
@@ -15,33 +15,40 @@ import { formatAgeRange } from '@/utils/babyAge';
 
 interface WeeklyDigestScreenProps {
   requestedWeekStart?: string;
+  requestedOccurrenceIds?: readonly string[];
   onClose: () => void;
   onOpenEvent: (occurrenceId: string) => void;
 }
 
-export function WeeklyDigestScreen({ requestedWeekStart, onClose, onOpenEvent }: WeeklyDigestScreenProps) {
+const EMPTY_OCCURRENCE_IDS: readonly string[] = [];
+
+export function WeeklyDigestScreen({ requestedWeekStart, requestedOccurrenceIds = EMPTY_OCCURRENCE_IDS, onClose, onOpenEvent }: WeeklyDigestScreenProps) {
   const { t, isRTL, locale } = useI18n();
   const [days, setDays] = useState<WeeklyDigestDayEvents[] | null>(null);
-  const [error, setError] = useState(false);
   const isAvailable = isWeeklyDigestWeekAvailable(requestedWeekStart);
+  const viewedKeyRef = useRef<string | null>(null);
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
 
   const load = useCallback(async () => {
     if (!isAvailable) return;
-    setError(false);
     try {
-      setDays(await queryWeeklyDigestEvents());
+      setDays(await queryWeeklyDigestEvents(new Date(), requestedOccurrenceIds));
     } catch {
-      setError(true);
+      onCloseRef.current();
     }
+  }, [isAvailable, requestedOccurrenceIds]);
+
+  useEffect(() => {
+    if (!isAvailable) onCloseRef.current();
   }, [isAvailable]);
 
   useEffect(() => {
-    if (!isAvailable) onClose();
-  }, [isAvailable, onClose]);
-
-  useEffect(() => {
     if (!isAvailable) return;
-    track('weekly_digest_viewed', { week_start: requestedWeekStart, city: 'tel_aviv', locale });
+    if (viewedKeyRef.current !== requestedWeekStart) {
+      viewedKeyRef.current = requestedWeekStart ?? null;
+      track('weekly_digest_viewed', { week_start: requestedWeekStart, city: 'tel_aviv', locale });
+    }
     void load();
   }, [isAvailable, load, locale, requestedWeekStart]);
 
@@ -85,12 +92,8 @@ export function WeeklyDigestScreen({ requestedWeekStart, onClose, onOpenEvent }:
         </Pressable>
       </View>
 
-      {days === null && !error ? (
+      {days === null ? (
         <View style={styles.content}><SkeletonCard /><SkeletonCard /></View>
-      ) : error ? (
-        <View style={styles.content}>
-          <StateCard icon={WarningCircle} title={t('weeklyDigest.loadError')} body="" ctaLabel={t('discovery.retry')} onCtaPress={load} tone="warning" />
-        </View>
       ) : eventCount === 0 ? (
         <View style={styles.content}><StateCard icon={CalendarBlank} title={t('weeklyDigest.empty')} body="" /></View>
       ) : (

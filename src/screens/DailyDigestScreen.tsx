@@ -1,7 +1,7 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { View, Text, Pressable, FlatList, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { X, CalendarBlank, WarningCircle } from 'phosphor-react-native';
+import { X, CalendarBlank } from 'phosphor-react-native';
 import { theme, typography, spacing, radius } from '@/theme';
 import { EventCard } from '@/components/EventCard';
 import { StateCard } from '@/components/StateCard';
@@ -18,43 +18,50 @@ import { dateLocaleTag } from '@/i18n';
 
 interface DailyDigestScreenProps {
   requestedDate?: string;
+  requestedOccurrenceIds?: readonly string[];
   onClose: () => void;
   onOpenEvent: (occurrenceId: string) => void;
 }
+
+const EMPTY_OCCURRENCE_IDS: readonly string[] = [];
 
 /** Full-screen digest surface reached by tapping the "What's on today" push
  *  — never a dead end: an explicit X always returns to Discovery/Home
  *  (via onClose), and this screen re-derives the SAME deterministic
  *  selection the push used rather than reading a private analytics table.
  *  See queryDailyDigestEvents' doc comment. */
-export function DailyDigestScreen({ requestedDate, onClose, onOpenEvent }: DailyDigestScreenProps) {
+export function DailyDigestScreen({ requestedDate, requestedOccurrenceIds = EMPTY_OCCURRENCE_IDS, onClose, onOpenEvent }: DailyDigestScreenProps) {
   const { t, isRTL, locale } = useI18n();
   const [events, setEvents] = useState<EventDetails[] | null>(null);
-  const [error, setError] = useState(false);
   const isAvailable = isDailyDigestDateAvailable(requestedDate);
+  const viewedKeyRef = useRef<string | null>(null);
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
 
   const load = useCallback(async () => {
     if (!isAvailable) return;
-    setError(false);
     try {
-      const result = await queryDailyDigestEvents();
+      const result = await queryDailyDigestEvents(new Date(), requestedOccurrenceIds);
       setEvents(result);
     } catch {
-      setError(true);
+      onCloseRef.current();
+    }
+  }, [isAvailable, requestedOccurrenceIds]);
+
+  useEffect(() => {
+    if (!isAvailable) {
+      onCloseRef.current();
     }
   }, [isAvailable]);
 
   useEffect(() => {
-    if (!isAvailable) {
-      onClose();
-    }
-  }, [isAvailable, onClose]);
-
-  useEffect(() => {
     if (!isAvailable) return;
-    track('daily_digest_viewed', { locale });
+    if (viewedKeyRef.current !== requestedDate) {
+      viewedKeyRef.current = requestedDate ?? null;
+      track('daily_digest_viewed', { locale });
+    }
     void load();
-  }, [isAvailable, load, locale]);
+  }, [isAvailable, load, locale, requestedDate]);
 
   const dateLabel = new Date().toLocaleDateString(activeDateLocale(), { weekday: 'long', month: 'long', day: 'numeric' });
 
@@ -85,14 +92,10 @@ export function DailyDigestScreen({ requestedDate, onClose, onOpenEvent }: Daily
         </Pressable>
       </View>
 
-      {events === null && !error ? (
+      {events === null ? (
         <View style={styles.listContent}>
           <SkeletonCard />
           <SkeletonCard />
-        </View>
-      ) : error ? (
-        <View style={styles.listContent}>
-          <StateCard icon={WarningCircle} title={t('dailyDigest.loadError')} body="" ctaLabel={t('discovery.retry')} onCtaPress={load} tone="warning" />
         </View>
       ) : (events as EventDetails[]).length === 0 ? (
         <View style={styles.listContent}>

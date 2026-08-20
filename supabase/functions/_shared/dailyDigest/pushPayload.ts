@@ -13,6 +13,7 @@ export interface ExpoPushMessage {
     type: 'daily_digest' | 'weekly_digest';
     date?: string;
     week_start?: string;
+    occurrence_ids: string[];
     city: 'tel_aviv';
   };
 }
@@ -38,6 +39,7 @@ export function buildDigestPushMessage(input: {
   locale: string | null | undefined;
   localDate: string;
   eventCount: number;
+  occurrenceIds?: readonly string[];
 }): ExpoPushMessage {
   const { title, body } = buildDigestPushCopy(input.locale, input.eventCount);
   return {
@@ -45,7 +47,13 @@ export function buildDigestPushMessage(input: {
     title,
     body,
     sound: 'default',
-    data: { kind: 'daily_digest', type: 'daily_digest', date: input.localDate, city: DAILY_DIGEST_CITY },
+    data: {
+      kind: 'daily_digest',
+      type: 'daily_digest',
+      date: input.localDate,
+      occurrence_ids: [...(input.occurrenceIds ?? [])],
+      city: DAILY_DIGEST_CITY,
+    },
   };
 }
 
@@ -54,6 +62,7 @@ export function buildWeeklyDigestPushMessage(input: {
   locale: string | null | undefined;
   weekStart: string;
   eventCount: number;
+  occurrenceIds?: readonly string[];
 }): ExpoPushMessage {
   const { title, body } = buildWeeklyDigestPushCopy(input.locale, input.eventCount);
   return {
@@ -61,7 +70,13 @@ export function buildWeeklyDigestPushMessage(input: {
     title,
     body,
     sound: 'default',
-    data: { kind: 'weekly_digest', type: 'weekly_digest', week_start: input.weekStart, city: DAILY_DIGEST_CITY },
+    data: {
+      kind: 'weekly_digest',
+      type: 'weekly_digest',
+      week_start: input.weekStart,
+      occurrence_ids: [...(input.occurrenceIds ?? [])],
+      city: DAILY_DIGEST_CITY,
+    },
   };
 }
 
@@ -71,6 +86,7 @@ export function buildPushMessageForDigest(input: {
   locale: string | null | undefined;
   anchorDate: string;
   eventCount: number;
+  occurrenceIds?: readonly string[];
 }): ExpoPushMessage {
   return input.digestType === 'weekly'
     ? buildWeeklyDigestPushMessage({ ...input, weekStart: input.anchorDate })

@@ -79,9 +79,17 @@ test('2 valid events sends a digest with exactly 2 events to eligible users', as
     candidates: [occurrence({ occurrenceId: 'a' }), occurrence({ occurrenceId: 'b', category: 'workshop' })],
     users: [{ userId: 'u1', expoPushToken: 't1', locale: 'en' }],
   });
-  const result = await runDailyDigest({ dryRun: false, now: NOW }, db, okPushSender());
+  let pushedOccurrenceIds: string[] = [];
+  const sender: PushSender = {
+    async send(messages) {
+      pushedOccurrenceIds = messages[0]?.data.occurrence_ids ?? [];
+      return messages.map(() => ({ status: 'ok' as const }));
+    },
+  };
+  const result = await runDailyDigest({ dryRun: false, now: NOW }, db, sender);
   assert.equal(result.eventsSelected, 2);
   assert.equal(result.sent, 1);
+  assert.deepEqual(pushedOccurrenceIds, result.selectedOccurrenceIds, 'push must carry the persisted selection in order');
 });
 
 test('a dry run sends nothing but reports what WOULD send', async () => {

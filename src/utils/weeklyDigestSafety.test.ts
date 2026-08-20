@@ -43,8 +43,11 @@ test('publication-safe source excludes hidden, unpublished, cancelled, archived,
 });
 
 test('weekly cold/warm navigation has a dedicated route and safe fallback', () => {
+  assert.match(app, /digestIntentController\.capture/);
   assert.match(app, /pending\.kind === 'weekly'/);
   assert.match(app, /navigationRef\.navigate\('WeeklyDigest'/);
-  assert.match(app, /kind: 'fallback'/);
+  assert.match(app, /pending\.kind === 'fallback'/);
   assert.match(app, /navigationRef\.navigate\('Tabs'\)/);
+  assert.match(app, /mainNavigatorReady/);
+  assert.match(app, /digestRoutesAreRegistered/);
 });

@@ -74,7 +74,10 @@ import type { FamilyFriendlyPlace } from '@/types/familyFriendlyPlace';
 import type { EventDetails } from '@/types/event';
 import { buildActivitySeedFromPlace } from '@/utils/placeActivityPrefill';
 import { parseSharedContentUrl, type SharedContentRoute } from '@/utils/contentSharing';
-import { parseDigestNotification } from '@/utils/dailyDigestNotification';
+import {
+  DigestNotificationIntentController,
+  digestRoutesAreRegistered,
+} from '@/utils/digestNotificationIntent';
 
 // RTL is controlled by the selected app language in I18nProvider. Enable it
 // before the first React tree mounts so a Hebrew relaunch can use native RTL
@@ -112,8 +115,8 @@ export type RootStackParamList = {
   EditProfile: undefined;
   MyActivities: undefined;
   BlockedUsers: undefined;
-  DailyDigest: { date?: string } | undefined;
-  WeeklyDigest: { weekStart?: string; week_start?: string } | undefined;
+  DailyDigest: { date?: string; occurrenceIds?: string[] } | undefined;
+  WeeklyDigest: { weekStart?: string; week_start?: string; occurrenceIds?: string[] } | undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -178,13 +181,8 @@ function AppInner() {
   const { session, profile, isLoading: authLoading, isPasswordRecovery, beginPasswordRecovery } = useAuth();
   const { locale: appLocale } = useI18n();
   const pendingSharedRoute = useRef<SharedContentRoute | null>(null);
-  const pendingDailyDigestRoute = useRef<
-    | { kind: 'daily'; date: string }
-    | { kind: 'weekly'; weekStart: string }
-    | { kind: 'fallback' }
-    | null
-  >(null);
-  const lastHandledNotificationId = useRef<string | null>(null);
+  const digestIntentController = useRef(new DigestNotificationIntentController()).current;
+  const [mainNavigatorReady, setMainNavigatorReady] = React.useState(false);
   // Distinguishes "no recovery link involved" (null) from a link that was
   // tapped but rejected before any session could be established — the latter
   // still needs its own screen (ResetPasswordScreen's invalid-link state),
@@ -207,24 +205,29 @@ function AppInner() {
   }, [session, profile?.onboardingCompleted]);
 
   const navigatePendingDailyDigest = useCallback(() => {
-    if (!session || !profile?.onboardingCompleted || !navigationRef.isReady() || !pendingDailyDigestRoute.current) return;
-    const pending = pendingDailyDigestRoute.current;
+    const pending = digestIntentController.peek();
+    if (!pending || !session || !profile?.onboardingCompleted || !mainNavigatorReady || !navigationRef.isReady()) return;
+    // NavigationContainer readiness alone is insufficient: during cold auth
+    // restoration it can be ready while AuthNavigator still owns the tree.
+    // React Navigation ignores an action for an unregistered route without
+    // throwing, so consuming the intent there loses the real push tap.
+    if (!digestRoutesAreRegistered(navigationRef.getRootState()?.routeNames)) return;
     try {
       if (pending.kind === 'fallback') {
         navigationRef.navigate('Tabs');
       } else if (pending.kind === 'weekly' && navigationRef.getCurrentRoute()?.name !== 'WeeklyDigest') {
-        navigationRef.navigate('WeeklyDigest', { weekStart: pending.weekStart });
+        navigationRef.navigate('WeeklyDigest', { weekStart: pending.weekStart, occurrenceIds: pending.occurrenceIds });
         track('weekly_push_opened', { week_start: pending.weekStart, city: 'tel_aviv', locale: appLocale });
       } else if (pending.kind === 'daily' && navigationRef.getCurrentRoute()?.name !== 'DailyDigest') {
-        navigationRef.navigate('DailyDigest', { date: pending.date });
+        navigationRef.navigate('DailyDigest', { date: pending.date, occurrenceIds: pending.occurrenceIds });
         track('daily_push_opened', { date: pending.date, city: 'tel_aviv', locale: appLocale });
       }
-      pendingDailyDigestRoute.current = null;
+      digestIntentController.consume(pending);
     } catch {
       // The main navigator may still be replacing the auth/onboarding tree.
       // Keep the pending route; the session/profile effect retries it.
     }
-  }, [appLocale, profile?.onboardingCompleted, session]);
+  }, [appLocale, digestIntentController, mainNavigatorReady, profile?.onboardingCompleted, session]);
 
   // Password recovery deep links are handled here rather than through
   // NavigationContainer's `linking` prop below, because that prop is only
@@ -276,20 +279,12 @@ function AppInner() {
     // longer exists — try/catch around navigation, since a bad or stale
     // activityId shouldn't crash the app.
     function handleNotificationData(data: Record<string, unknown> | undefined, notificationId?: string) {
-      if (notificationId && lastHandledNotificationId.current === notificationId) return;
-      if (notificationId) lastHandledNotificationId.current = notificationId;
-
-      // Capture Daily Digest taps even while auth/session restoration is still
+      // Capture Digest taps even while auth/session restoration is still
       // replacing the navigator. Navigation happens later, once the main tree
       // is ready; malformed/stale payloads deterministically fall back home.
-      const digestRoute = parseDigestNotification(data);
-      if (digestRoute.status !== 'not_digest') {
-        pendingDailyDigestRoute.current = digestRoute.status !== 'valid'
-          ? { kind: 'fallback' }
-          : digestRoute.digestType === 'weekly'
-            ? { kind: 'weekly', weekStart: digestRoute.weekStart }
-            : { kind: 'daily', date: digestRoute.date };
-        navigatePendingDailyDigest();
+      const digestCapture = digestIntentController.capture(data, notificationId);
+      if (digestCapture !== 'not_digest') {
+        if (digestCapture === 'queued') navigatePendingDailyDigest();
         return;
       }
 
@@ -336,7 +331,7 @@ function AppInner() {
     });
 
     return () => subscription.remove();
-  }, [navigatePendingDailyDigest]);
+  }, [digestIntentController, navigatePendingDailyDigest]);
 
   if (!fontsLoaded || (!PREVIEW_MODE && authLoading)) {
     return <LaunchScreen />;
@@ -364,7 +359,7 @@ function AppInner() {
             linking={routeDecision === 'main-navigator' && !PREVIEW_MODE ? linking : undefined}
           >
             {PREVIEW_MODE ? (
-              <MainNavigator />
+              <MainNavigator onReadyChange={setMainNavigatorReady} />
             ) : isPasswordRecovery || recoveryLinkStatus ? (
               // Takes priority over every other routing decision: a
               // recovery link's temporary session must never be treated as
@@ -397,7 +392,7 @@ function AppInner() {
                 }}
               />
             ) : (
-              <MainNavigator />
+              <MainNavigator onReadyChange={setMainNavigatorReady} />
             )}
           </NavigationContainer>
           <StatusBar style="dark" />
@@ -413,12 +408,14 @@ function AppInner() {
  *  drilled in and reappears on the way back — standard iOS behavior, and it
  *  keeps ActivityDetail/Chat/PublicProfile as single shared screens instead
  *  of duplicating them per tab. */
-function MainNavigator() {
+function MainNavigator({ onReadyChange }: { onReadyChange: (ready: boolean) => void }) {
   usePushNotifications();
 
   useEffect(() => {
     console.log('[MAIN 01] main navigator mounted');
-  }, []);
+    onReadyChange(true);
+    return () => onReadyChange(false);
+  }, [onReadyChange]);
 
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
@@ -515,7 +512,8 @@ function MainNavigator() {
         {({ route, navigation }) => (
           <DailyDigestScreen
             requestedDate={route.params?.date}
-            onClose={() => (navigation.canGoBack() ? navigation.goBack() : navigation.navigate('Tabs'))}
+            requestedOccurrenceIds={route.params?.occurrenceIds}
+            onClose={() => navigation.reset({ index: 0, routes: [{ name: 'Tabs' }] })}
             onOpenEvent={(occurrenceId) => navigation.navigate('EventDetails', { occurrenceId })}
           />
         )}
@@ -524,7 +522,8 @@ function MainNavigator() {
         {({ route, navigation }) => (
           <WeeklyDigestScreen
             requestedWeekStart={route.params?.weekStart ?? route.params?.week_start}
-            onClose={() => (navigation.canGoBack() ? navigation.goBack() : navigation.navigate('Tabs'))}
+            requestedOccurrenceIds={route.params?.occurrenceIds}
+            onClose={() => navigation.reset({ index: 0, routes: [{ name: 'Tabs' }] })}
             onOpenEvent={(occurrenceId) => navigation.navigate('EventDetails', { occurrenceId })}
           />
         )}

@@ -261,6 +261,7 @@ export async function runDigest(
       locale: user.locale,
       anchorDate: period.anchorDate,
       eventCount: selected.length,
+      occurrenceIds: result.selectedOccurrenceIds,
     });
     if (input.dryRun) {
       result.wouldSend += 1;

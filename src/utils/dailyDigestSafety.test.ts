@@ -24,11 +24,21 @@ test('delivery claims happen before the push sender and dry runs suppress writes
 });
 
 test('cold-start routing retains a pending digest until navigation is ready', () => {
-  assert.match(app, /pendingDailyDigestRoute/);
+  assert.match(app, /DigestNotificationIntentController/);
   assert.match(app, /navigatePendingDailyDigest/);
+  assert.match(app, /mainNavigatorReady/);
+  assert.match(app, /digestRoutesAreRegistered/);
+  assert.ok(app.indexOf('digestRoutesAreRegistered') < app.indexOf('digestIntentController.consume'));
   assert.match(app, /getLastNotificationResponseAsync/);
   assert.match(app, /clearLastNotificationResponseAsync/);
   assert.match(app, /requestedDate=\{route\.params\?\.date\}/);
+  assert.match(app, /requestedOccurrenceIds=\{route\.params\?\.occurrenceIds\}/);
+});
+
+test('Digest is modal, Event back returns to it, and X resets exactly to Tabs', () => {
+  assert.match(app, /name="DailyDigest" options=\{\{ presentation: 'modal' \}\}/);
+  assert.match(app, /name="EventDetails"[\s\S]*onBack=\{\(\) => navigation\.goBack\(\)\}/);
+  assert.match(app, /onClose=\{\(\) => navigation\.reset\(\{ index: 0, routes: \[\{ name: 'Tabs' \}\] \}\)\}/);
 });
 
 test('production cron has exactly one named path and cannot bypass the Jerusalem gate', () => {
