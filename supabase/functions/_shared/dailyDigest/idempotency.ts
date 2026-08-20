@@ -5,7 +5,9 @@
  *  that reruns the same tick must produce the same key and hit the same
  *  constraint violation, not a fresh row. */
 export const DIGEST_TYPE_DAILY = 'daily' as const;
+export const DIGEST_TYPE_WEEKLY = 'weekly' as const;
+export type DigestType = typeof DIGEST_TYPE_DAILY | typeof DIGEST_TYPE_WEEKLY;
 
-export function buildDigestSendKey(userId: string, digestType: string, localDate: string): string {
-  return `${userId}:${digestType}:${localDate}`;
+export function buildDigestSendKey(userId: string, digestType: DigestType, anchorDate: string): string {
+  return `${userId}:${digestType}:${anchorDate}`;
 }

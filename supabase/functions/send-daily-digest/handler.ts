@@ -6,9 +6,19 @@ import {
   DEFAULT_DIGEST_MAX_RESULTS,
   type DigestCandidateOccurrence,
 } from '../_shared/dailyDigest/selectDigestEvents.ts';
-import { jerusalemLocalDateString } from '../_shared/dailyDigest/scheduleGate.ts';
-import { buildDigestSendKey, DIGEST_TYPE_DAILY } from '../_shared/dailyDigest/idempotency.ts';
-import { buildDigestPushMessage, type ExpoPushMessage } from '../_shared/dailyDigest/pushPayload.ts';
+import {
+  buildWeeklySocialDigest,
+  selectWeeklyDigestEvents,
+  type WeeklySocialDigest,
+} from '../_shared/dailyDigest/selectWeeklyDigestEvents.ts';
+import { jerusalemLocalDateString, weeklyDigestPeriod, weeklyDigestPeriodFromStart } from '../_shared/dailyDigest/scheduleGate.ts';
+import {
+  buildDigestSendKey,
+  DIGEST_TYPE_DAILY,
+  DIGEST_TYPE_WEEKLY,
+  type DigestType,
+} from '../_shared/dailyDigest/idempotency.ts';
+import { buildPushMessageForDigest, type ExpoPushMessage } from '../_shared/dailyDigest/pushPayload.ts';
 
 export interface EligibleDigestUser {
   userId: string;
@@ -18,21 +28,35 @@ export interface EligibleDigestUser {
 
 export type PushSendOutcome = { status: 'ok' } | { status: 'invalid_token' | 'error'; message: string };
 
+export interface DigestPeriod {
+  digestType: DigestType;
+  anchorDate: string;
+  startDate: string;
+  endDate: string;
+  days: string[];
+}
+
 export interface DigestDatabase {
-  /** Already filtered to today's Tel Aviv candidates via
-   *  active_event_occurrences plus a generous date/radius pre-filter — the
-   *  remaining precise filtering/ranking happens in selectDigestEvents. */
-  fetchTodayCandidates(localDate: string): Promise<DigestCandidateOccurrence[]>;
-  /** Already filtered server-side to: valid (non-expired-looking) push
-   *  token, notifications enabled, `daily_digest` preference true, account
-   *  not deleted/disabled, and a supported app locale (falls back to 'en'
-   *  in the row itself only if unset — never guessed here). */
-  fetchEligibleUsers(): Promise<EligibleDigestUser[]>;
+  fetchCandidates?(period: DigestPeriod): Promise<DigestCandidateOccurrence[]>;
+  /** Kept for existing Daily test adapters and deployment compatibility. */
+  fetchTodayCandidates?(localDate: string): Promise<DigestCandidateOccurrence[]>;
+  fetchEligibleUsers(digestType?: DigestType): Promise<EligibleDigestUser[]>;
   hasAlreadySent(sendKey: string): Promise<boolean>;
-  recordDigestInstance(input: { localDate: string; city: string; selectedOccurrenceIds: readonly string[]; selectionVersion: number }): Promise<string>;
-  /** Atomically reserves this user's logical daily send before any network
-   *  call. False means another invocation already owns/completed it. */
-  claimSend(input: { sendKey: string; userId: string; digestId: string; localDate: string }): Promise<boolean>;
+  recordDigestInstance(input: {
+    digestType?: DigestType;
+    anchorDate?: string;
+    localDate: string;
+    city: string;
+    selectedOccurrenceIds: readonly string[];
+    selectionVersion: number;
+  }): Promise<string>;
+  claimSend(input: {
+    sendKey: string;
+    userId: string;
+    digestId: string;
+    digestType?: DigestType;
+    localDate: string;
+  }): Promise<boolean>;
   markSendSucceeded(sendKey: string): Promise<void>;
   markSendFailed(sendKey: string, failureCode: string): Promise<void>;
   removeInvalidPushToken(userId: string, token: string): Promise<void>;
@@ -40,9 +64,6 @@ export interface DigestDatabase {
 }
 
 export interface PushSender {
-  /** Outcomes MUST be returned in the same order as `messages` — Expo's own
-   *  push API is positional (an array of tickets matching the array of
-   *  messages sent), and the handler zips them back to users by index. */
   send(messages: readonly ExpoPushMessage[]): Promise<PushSendOutcome[]>;
 }
 
@@ -51,13 +72,24 @@ export interface RunDailyDigestInput {
   now: Date;
 }
 
+export interface RunDigestInput extends RunDailyDigestInput {
+  digestType: DigestType;
+  city?: string;
+  weekStart?: string;
+}
+
 export interface RunDailyDigestResult {
+  digestType: DigestType;
   localDate: string;
+  periodStart: string;
+  periodEnd: string;
   eventsConsidered: number;
   eventsSelected: number;
   selectedOccurrenceIds: string[];
-  selectedEvents: Array<{ occurrenceId: string; title: string; provider: string }>;
+  selectedEvents: Array<{ occurrenceId: string; title: string; provider: string; category: string; localDate: string }>;
+  selectedPerDay: Record<string, number>;
   providerMix: Record<string, number>;
+  categoryMix: Record<string, number>;
   eligibleUsers: number;
   validPushUsers: number;
   localesSeen: Record<string, number>;
@@ -66,25 +98,49 @@ export interface RunDailyDigestResult {
   skipped: number;
   failed: number;
   errors: string[];
+  socialOutput: WeeklySocialDigest | null;
 }
 
-/** Orchestrates one Daily Digest tick. Pure aside from the injected
- *  `database`/`pushSender` dependencies, so the exact same code path runs in
- *  a dry run, a real send, and unit tests — no code path is dry-run-only. */
-export async function runDailyDigest(
+export function runDailyDigest(
   input: RunDailyDigestInput,
   database: DigestDatabase,
   pushSender: PushSender,
 ): Promise<RunDailyDigestResult> {
-  // A dry run is strictly read-only: no push, digest/send row, token cleanup,
-  // or analytics write. This lets production data be inspected safely.
-  const trackAnalytics = input.dryRun
-    ? async (_eventName: string, _properties: Record<string, unknown>) => undefined
-    : database.trackAnalytics.bind(database);
-  const localDate = jerusalemLocalDateString(input.now);
-  const candidates = await database.fetchTodayCandidates(localDate);
-  const selected = selectDigestEvents(candidates, {
-    localDate,
+  return runDigest({ ...input, digestType: DIGEST_TYPE_DAILY }, database, pushSender);
+}
+
+export function runWeeklyDigest(
+  input: RunDailyDigestInput,
+  database: DigestDatabase,
+  pushSender: PushSender,
+): Promise<RunDailyDigestResult> {
+  return runDigest({ ...input, digestType: DIGEST_TYPE_WEEKLY }, database, pushSender);
+}
+
+/** One orchestration path for Daily and Weekly. Selection and copy vary by
+ * digest type; preference, idempotency, delivery, token cleanup, and failure
+ * handling remain shared and therefore cannot drift. */
+export async function runDigest(
+  input: RunDigestInput,
+  database: DigestDatabase,
+  pushSender: PushSender,
+): Promise<RunDailyDigestResult> {
+  const city = input.city ?? 'tel_aviv';
+  const dailyDate = jerusalemLocalDateString(input.now);
+  const week = input.weekStart
+    ? weeklyDigestPeriodFromStart(input.weekStart)
+    : weeklyDigestPeriod(input.now);
+  const period: DigestPeriod = input.digestType === DIGEST_TYPE_WEEKLY
+    ? { digestType: input.digestType, anchorDate: week.weekStart, startDate: week.weekStart, endDate: week.weekEnd, days: week.days }
+    : { digestType: input.digestType, anchorDate: dailyDate, startDate: dailyDate, endDate: dailyDate, days: [dailyDate] };
+  const candidates = database.fetchCandidates
+    ? await database.fetchCandidates(period)
+    : await database.fetchTodayCandidates!(period.anchorDate);
+  const weeklySelection = input.digestType === DIGEST_TYPE_WEEKLY
+    ? selectWeeklyDigestEvents(candidates, week)
+    : null;
+  const selected = weeklySelection?.events ?? selectDigestEvents(candidates, {
+    localDate: dailyDate,
     targetLatitude: TEL_AVIV_CENTER.latitude,
     targetLongitude: TEL_AVIV_CENTER.longitude,
     maxRadiusKm: DEFAULT_DIGEST_RADIUS_KM,
@@ -92,22 +148,45 @@ export async function runDailyDigest(
     maxResults: DEFAULT_DIGEST_MAX_RESULTS,
   });
 
+  const prefix = input.digestType === DIGEST_TYPE_WEEKLY ? 'weekly' : 'daily';
+  const dateProperty = input.digestType === DIGEST_TYPE_WEEKLY ? 'week_start' : 'date';
+  const track = input.dryRun
+    ? async (_eventName: string, _properties: Record<string, unknown>) => undefined
+    : database.trackAnalytics.bind(database);
   const providerMix: Record<string, number> = {};
-  for (const event of selected) providerMix[event.provider] = (providerMix[event.provider] ?? 0) + 1;
+  const categoryMix: Record<string, number> = {};
+  const selectedPerDay = Object.fromEntries(period.days.map((day) => [day, 0]));
+  for (const event of selected) {
+    providerMix[event.provider] = (providerMix[event.provider] ?? 0) + 1;
+    categoryMix[event.category] = (categoryMix[event.category] ?? 0) + 1;
+    const day = jerusalemDateOf(event.startsAt);
+    if (day in selectedPerDay) selectedPerDay[day] += 1;
+  }
 
-  await trackAnalytics('daily_digest_generated', {
-    date: localDate,
-    city: 'tel_aviv',
+  await track(`${prefix}_digest_generated`, {
+    [dateProperty]: period.anchorDate,
+    city,
     result_count: selected.length,
   });
 
   const result: RunDailyDigestResult = {
-    localDate,
+    digestType: input.digestType,
+    localDate: period.anchorDate,
+    periodStart: period.startDate,
+    periodEnd: period.endDate,
     eventsConsidered: candidates.length,
     eventsSelected: selected.length,
-    selectedOccurrenceIds: selected.map((e) => e.occurrenceId),
-    selectedEvents: selected.map((event) => ({ occurrenceId: event.occurrenceId, title: event.title, provider: event.provider })),
+    selectedOccurrenceIds: selected.map((event) => event.occurrenceId),
+    selectedEvents: selected.map((event) => ({
+      occurrenceId: event.occurrenceId,
+      title: event.title,
+      provider: event.provider,
+      category: event.category,
+      localDate: jerusalemDateOf(event.startsAt),
+    })),
+    selectedPerDay,
     providerMix,
+    categoryMix,
     eligibleUsers: 0,
     validPushUsers: 0,
     localesSeen: {},
@@ -116,90 +195,134 @@ export async function runDailyDigest(
     skipped: 0,
     failed: 0,
     errors: [],
+    socialOutput: weeklySelection ? buildWeeklySocialDigest(weeklySelection, city) : null,
   };
 
-  // Never fabricate filler content and never send an empty digest.
   if (selected.length === 0) return result;
 
-  const users = await database.fetchEligibleUsers();
+  const users = await database.fetchEligibleUsers(input.digestType);
   result.eligibleUsers = users.length;
   for (const user of users) {
     const locale = user.locale ?? 'en';
     result.localesSeen[locale] = (result.localesSeen[locale] ?? 0) + 1;
   }
-  await trackAnalytics('daily_push_eligible', { date: localDate, city: 'tel_aviv', result_count: users.length });
-
+  await track(`${prefix}_push_eligible`, {
+    [dateProperty]: period.anchorDate,
+    city,
+    result_count: users.length,
+  });
   if (users.length === 0) return result;
 
-  const digestId = input.dryRun
-    ? null
-    : await database.recordDigestInstance({
-      localDate,
-      city: 'tel_aviv',
-      selectedOccurrenceIds: result.selectedOccurrenceIds,
-      selectionVersion: 1,
-    });
+  const digestId = input.dryRun ? null : await database.recordDigestInstance({
+    digestType: input.digestType,
+    anchorDate: period.anchorDate,
+    localDate: period.anchorDate,
+    city,
+    selectedOccurrenceIds: result.selectedOccurrenceIds,
+    selectionVersion: input.digestType === DIGEST_TYPE_WEEKLY ? 2 : 1,
+  });
 
-  const toSend: { user: EligibleDigestUser & { expoPushToken: string }; message: ExpoPushMessage; sendKey: string }[] = [];
+  const toSend: Array<{
+    user: EligibleDigestUser & { expoPushToken: string };
+    message: ExpoPushMessage;
+    sendKey: string;
+  }> = [];
   const seenTokens = new Set<string>();
   for (const user of users) {
+    const locale = user.locale ?? 'en';
     if (!user.expoPushToken || seenTokens.has(user.expoPushToken)) {
       result.skipped += 1;
-      await trackAnalytics('daily_push_skipped', {
-        date: localDate,
-        city: 'tel_aviv',
-        locale: user.locale ?? 'en',
+      await track(`${prefix}_push_skipped`, {
+        [dateProperty]: period.anchorDate,
+        city,
+        locale,
         reason: user.expoPushToken ? 'duplicate_token' : 'missing_token',
       });
       continue;
     }
     seenTokens.add(user.expoPushToken);
     result.validPushUsers += 1;
-    const sendKey = buildDigestSendKey(user.userId, DIGEST_TYPE_DAILY, localDate);
+    const sendKey = buildDigestSendKey(user.userId, input.digestType, period.anchorDate);
     if (await database.hasAlreadySent(sendKey)) {
       result.skipped += 1;
-      await trackAnalytics('daily_push_skipped', { date: localDate, city: 'tel_aviv', locale: user.locale ?? 'en' });
+      await track(`${prefix}_push_skipped`, {
+        [dateProperty]: period.anchorDate,
+        city,
+        locale,
+        reason: 'already_sent',
+      });
       continue;
     }
-    const message = buildDigestPushMessage({
+    const message = buildPushMessageForDigest({
+      digestType: input.digestType,
       expoPushToken: user.expoPushToken,
       locale: user.locale,
-      localDate,
+      anchorDate: period.anchorDate,
       eventCount: selected.length,
     });
     if (input.dryRun) {
       result.wouldSend += 1;
       continue;
     }
-    const claimed = await database.claimSend({ sendKey, userId: user.userId, digestId: digestId as string, localDate });
+    const claimed = await database.claimSend({
+      sendKey,
+      userId: user.userId,
+      digestId: digestId as string,
+      digestType: input.digestType,
+      localDate: period.anchorDate,
+    });
     if (!claimed) {
       result.skipped += 1;
-      await trackAnalytics('daily_push_skipped', { date: localDate, city: 'tel_aviv', locale: user.locale ?? 'en', reason: 'already_claimed' });
+      await track(`${prefix}_push_skipped`, {
+        [dateProperty]: period.anchorDate,
+        city,
+        locale,
+        reason: 'already_claimed',
+      });
       continue;
     }
     toSend.push({ user: user as EligibleDigestUser & { expoPushToken: string }, message, sendKey });
   }
 
   if (input.dryRun || toSend.length === 0) return result;
-
-  const outcomes = await pushSender.send(toSend.map((t) => t.message));
-
-  for (let i = 0; i < toSend.length; i += 1) {
-    const { user, sendKey } = toSend[i];
-    const outcome = outcomes[i];
+  const outcomes = await pushSender.send(toSend.map((entry) => entry.message));
+  for (let index = 0; index < toSend.length; index += 1) {
+    const { user, sendKey } = toSend[index];
+    const outcome = outcomes[index];
     if (!outcome || outcome.status !== 'ok') {
       result.failed += 1;
-      const failureCode = outcome?.status === 'invalid_token' ? 'invalid_token' : outcome ? 'push_error' : 'missing_push_result';
+      const failureCode = outcome?.status === 'invalid_token'
+        ? 'invalid_token'
+        : outcome ? 'push_error' : 'missing_push_result';
       result.errors.push(failureCode);
       await database.markSendFailed(sendKey, failureCode);
-      if (outcome?.status === 'invalid_token') await database.removeInvalidPushToken(user.userId, user.expoPushToken);
-      await trackAnalytics('daily_push_failed', { date: localDate, city: 'tel_aviv', locale: user.locale ?? 'en' });
+      if (outcome?.status === 'invalid_token') {
+        await database.removeInvalidPushToken(user.userId, user.expoPushToken);
+      }
+      await track(`${prefix}_push_failed`, {
+        [dateProperty]: period.anchorDate,
+        city,
+        locale: user.locale ?? 'en',
+      });
       continue;
     }
     result.sent += 1;
     await database.markSendSucceeded(sendKey);
-    await trackAnalytics('daily_push_sent', { date: localDate, city: 'tel_aviv', locale: user.locale ?? 'en', result_count: selected.length });
+    await track(`${prefix}_push_sent`, {
+      [dateProperty]: period.anchorDate,
+      city,
+      locale: user.locale ?? 'en',
+      result_count: selected.length,
+    });
   }
-
   return result;
+}
+
+function jerusalemDateOf(iso: string): string {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Jerusalem',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(new Date(iso));
 }

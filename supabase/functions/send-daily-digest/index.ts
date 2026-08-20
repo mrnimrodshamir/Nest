@@ -1,8 +1,9 @@
 // @ts-nocheck -- Supabase Edge Functions provide Deno and npm: imports at runtime.
 import { createClient } from 'npm:@supabase/supabase-js@2';
-import { runDailyDigest, type DigestDatabase, type PushSender, type PushSendOutcome } from './handler.ts';
+import { runDigest, type DigestDatabase, type DigestPeriod, type PushSender, type PushSendOutcome } from './handler.ts';
 import type { DigestCandidateOccurrence } from '../_shared/dailyDigest/selectDigestEvents.ts';
-import { isDailyDigestSendWindow } from '../_shared/dailyDigest/scheduleGate.ts';
+import { addLocalCalendarDays, isDailyDigestSendWindow, isWeeklyDigestSendWindow } from '../_shared/dailyDigest/scheduleGate.ts';
+import type { DigestType } from '../_shared/dailyDigest/idempotency.ts';
 
 const jsonHeaders = { 'Content-Type': 'application/json' };
 const EXPO_PUSH_API = 'https://exp.host/--/api/v2/push/send';
@@ -21,15 +22,18 @@ Deno.serve(async (request: Request) => {
   const client = createClient(url, serviceKey, { auth: { persistSession: false, autoRefreshToken: false } });
 
   const now = new Date();
-  // The cron tick fires every 15 minutes; only the tick that actually falls
-  // in the 07:00 Jerusalem window may do real work, unless the caller
-  // explicitly forces it (a manual dry run or the one approved test send).
-  if (!body.force && !isDailyDigestSendWindow(now)) {
+  const digestType: DigestType = body.digestType ?? 'daily';
+  // Both schedules tick every 15 minutes. Their separate DST-aware gates
+  // ensure Daily remains 07:00 and Weekly remains Saturday 19:00 Jerusalem.
+  const isSendWindow = digestType === 'weekly'
+    ? isWeeklyDigestSendWindow(now)
+    : isDailyDigestSendWindow(now);
+  if (!body.force && !isSendWindow) {
     return response(200, { skipped: 'OUTSIDE_SEND_WINDOW', now: now.toISOString() });
   }
 
   try {
-    const result = await runDailyDigest({ dryRun: body.dryRun, now }, createDatabase(client), createPushSender());
+    const result = await runDigest({ dryRun: body.dryRun, now, digestType, weekStart: body.weekStart }, createDatabase(client), createPushSender());
     return response(200, result);
   } catch (error) {
     return response(502, { error: 'DIGEST_RUN_FAILED', message: error instanceof Error ? error.message : String(error) });
@@ -38,18 +42,17 @@ Deno.serve(async (request: Request) => {
 
 function createDatabase(client: any): DigestDatabase {
   return {
-    async fetchTodayCandidates(): Promise<DigestCandidateOccurrence[]> {
-      // A generous window, not an exact Jerusalem-day range — selectDigestEvents
-      // does the precise Jerusalem-local-date filtering. Keeping the SQL range
-      // wide avoids re-deriving Jerusalem UTC offsets in Postgres.
-      const windowStart = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-      const windowEnd = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString();
+    async fetchCandidates(period: DigestPeriod): Promise<DigestCandidateOccurrence[]> {
+      // A deliberately generous UTC window. The pure selection engine owns
+      // exact Jerusalem-local day boundaries, including DST transitions.
+      const windowStart = `${addLocalCalendarDays(period.startDate, -1)}T00:00:00.000Z`;
+      const windowEnd = `${addLocalCalendarDays(period.endDate, 2)}T00:00:00.000Z`;
       const { data, error } = await client
         .from('active_event_occurrences')
         .select('occurrence_id,event_id,title,description,category,starts_at,age_min_months,age_max_months,price_note,provider,provider_event_id,source_name,source_url,source_type,canonical_event_id,latitude,longitude,location_name,formatted_address')
         .gte('starts_at', windowStart)
         .lte('starts_at', windowEnd);
-      if (error) throw new Error(`Could not load today's candidate occurrences: ${error.message}`);
+      if (error) throw new Error(`Could not load digest candidate occurrences: ${error.message}`);
       return (data ?? []).map((row: any) => ({
         occurrenceId: row.occurrence_id,
         eventId: row.event_id,
@@ -72,7 +75,7 @@ function createDatabase(client: any): DigestDatabase {
         formattedAddress: row.formatted_address,
       }));
     },
-    async fetchEligibleUsers() {
+    async fetchEligibleUsers(digestType: DigestType = 'daily') {
       // One row per opted-in user. A missing token stays visible to the dry
       // run as an explicit skip instead of disappearing from eligibility
       // totals. For multiple devices we intentionally choose the newest
@@ -80,7 +83,7 @@ function createDatabase(client: any): DigestDatabase {
       const { data, error } = await client
         .from('profiles')
         .select('id, locale, push_tokens(token,created_at)')
-        .eq('notification_preferences->>daily_digest', 'true');
+        .eq(`notification_preferences->>${digestType === 'weekly' ? 'weekly_digest' : 'daily_digest'}`, 'true');
       if (error) throw new Error(`Could not load eligible digest users: ${error.message}`);
       const users: { userId: string; expoPushToken: string | null; locale: string | null }[] = [];
       for (const row of data ?? []) {
@@ -98,8 +101,8 @@ function createDatabase(client: any): DigestDatabase {
     },
     async recordDigestInstance(input) {
       const { data, error } = await client.from('daily_digest_instances').upsert({
-        digest_type: 'daily',
-        digest_date: input.localDate,
+        digest_type: input.digestType ?? 'daily',
+        digest_date: input.anchorDate ?? input.localDate,
         city: input.city,
         selected_occurrence_ids: input.selectedOccurrenceIds,
         selection_version: input.selectionVersion,
@@ -115,6 +118,7 @@ function createDatabase(client: any): DigestDatabase {
         user_id: input.userId,
         digest_id: input.digestId,
         digest_date: input.localDate,
+        digest_type: input.digestType ?? 'daily',
         status: 'claimed',
       });
       if (error?.code === '23505') return false;
@@ -190,13 +194,18 @@ function createPushSender(): PushSender {
   };
 }
 
-function isRequestBody(value: unknown): value is { dryRun: boolean; force?: boolean } {
+function isRequestBody(value: unknown): value is { dryRun: boolean; force?: boolean; digestType?: DigestType; weekStart?: string } {
   if (typeof value !== 'object' || value === null) return false;
   const v = value as Record<string, unknown>;
   const keys = Object.keys(v);
   if (typeof v.dryRun !== 'boolean') return false;
-  if (keys.length === 1) return true;
-  return keys.length === 2 && keys.includes('force') && typeof v.force === 'boolean';
+  if (keys.some((key) => !['dryRun', 'force', 'digestType', 'weekStart'].includes(key))) return false;
+  if ('force' in v && typeof v.force !== 'boolean') return false;
+  if ('digestType' in v && v.digestType !== 'daily' && v.digestType !== 'weekly') return false;
+  if ('weekStart' in v) {
+    if (v.digestType !== 'weekly' || typeof v.weekStart !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(v.weekStart)) return false;
+  }
+  return true;
 }
 
 function isServiceRole(authorization: string | null): boolean {

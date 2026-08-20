@@ -20,7 +20,7 @@ interface DigestCopyEntry {
   body: (count: number) => string;
 }
 
-const COPY: Record<DigestLocale, DigestCopyEntry> = {
+const DAILY_COPY: Record<DigestLocale, DigestCopyEntry> = {
   en: {
     title: 'What’s on today in Tel Aviv?',
     body: (count) => (count === 1
@@ -59,6 +59,15 @@ const COPY: Record<DigestLocale, DigestCopyEntry> = {
   },
 };
 
+const WEEKLY_COPY: Record<DigestLocale, DigestCopyEntry> = {
+  en: { title: 'What’s on this week in Tel Aviv?', body: () => 'We picked some great family activities for the week ahead 👇' },
+  he: { title: 'מה עושים השבוע בתל אביב?', body: () => 'אספנו לכם פעילויות משפחתיות שוות לשבוע הקרוב 👇' },
+  fr: { title: 'Que faire cette semaine à Tel Aviv ?', body: () => 'Nous avons sélectionné de belles activités en famille pour la semaine à venir 👇' },
+  ru: { title: 'Что интересного на этой неделе в Тель-Авиве?', body: () => 'Мы выбрали отличные семейные события на предстоящую неделю 👇' },
+  ar: { title: 'ماذا نفعل هذا الأسبوع في تل أبيب؟', body: () => 'اخترنا لكم فعاليات عائلية مميزة للأسبوع القادم 👇' },
+  es: { title: '¿Qué hacer esta semana en Tel Aviv?', body: () => 'Seleccionamos actividades familiares geniales para la próxima semana 👇' },
+};
+
 export function isDigestLocale(value: string | null | undefined): value is DigestLocale {
   return !!value && (DIGEST_LOCALES as readonly string[]).includes(value);
 }
@@ -67,6 +76,11 @@ export function isDigestLocale(value: string | null | undefined): value is Diges
  *  an empty push, since a push with no shell copy is worse than an English
  *  one. `count` must be the actual number of events in THIS user's digest. */
 export function buildDigestPushCopy(locale: string | null | undefined, count: number): { title: string; body: string } {
-  const entry = COPY[isDigestLocale(locale) ? locale : 'en'];
+  const entry = DAILY_COPY[isDigestLocale(locale) ? locale : 'en'];
+  return { title: entry.title, body: entry.body(count) };
+}
+
+export function buildWeeklyDigestPushCopy(locale: string | null | undefined, count: number): { title: string; body: string } {
+  const entry = WEEKLY_COPY[isDigestLocale(locale) ? locale : 'en'];
   return { title: entry.title, body: entry.body(count) };
 }

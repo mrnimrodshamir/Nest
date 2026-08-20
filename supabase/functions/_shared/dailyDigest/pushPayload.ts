@@ -1,4 +1,5 @@
-import { buildDigestPushCopy } from './pushCopy.ts';
+import { buildDigestPushCopy, buildWeeklyDigestPushCopy } from './pushCopy.ts';
+import type { DigestType } from './idempotency.ts';
 
 /** Expo push API message shape — the subset this function actually sets.
  *  See https://docs.expo.dev/push-notifications/sending-notifications/. */
@@ -8,9 +9,10 @@ export interface ExpoPushMessage {
   body: string;
   sound: 'default';
   data: {
-    kind: 'daily_digest';
-    type: 'daily_digest';
-    date: string;
+    kind: 'daily_digest' | 'weekly_digest';
+    type: 'daily_digest' | 'weekly_digest';
+    date?: string;
+    week_start?: string;
     city: 'tel_aviv';
   };
 }
@@ -22,6 +24,10 @@ export const DAILY_DIGEST_CITY = 'tel_aviv' as const;
  *  coordinates — matching "no private data in the notification payload". */
 export function buildDailyDigestDeepLink(localDate: string): string {
   return `nestup://daily-digest?type=daily_digest&date=${encodeURIComponent(localDate)}&city=${DAILY_DIGEST_CITY}`;
+}
+
+export function buildWeeklyDigestDeepLink(weekStart: string): string {
+  return `nestup://weekly-digest?type=weekly_digest&week_start=${encodeURIComponent(weekStart)}&city=${DAILY_DIGEST_CITY}`;
 }
 
 /** Builds one Expo push message for one user. `eventCount` must be the
@@ -41,4 +47,32 @@ export function buildDigestPushMessage(input: {
     sound: 'default',
     data: { kind: 'daily_digest', type: 'daily_digest', date: input.localDate, city: DAILY_DIGEST_CITY },
   };
+}
+
+export function buildWeeklyDigestPushMessage(input: {
+  expoPushToken: string;
+  locale: string | null | undefined;
+  weekStart: string;
+  eventCount: number;
+}): ExpoPushMessage {
+  const { title, body } = buildWeeklyDigestPushCopy(input.locale, input.eventCount);
+  return {
+    to: input.expoPushToken,
+    title,
+    body,
+    sound: 'default',
+    data: { kind: 'weekly_digest', type: 'weekly_digest', week_start: input.weekStart, city: DAILY_DIGEST_CITY },
+  };
+}
+
+export function buildPushMessageForDigest(input: {
+  digestType: DigestType;
+  expoPushToken: string;
+  locale: string | null | undefined;
+  anchorDate: string;
+  eventCount: number;
+}): ExpoPushMessage {
+  return input.digestType === 'weekly'
+    ? buildWeeklyDigestPushMessage({ ...input, weekStart: input.anchorDate })
+    : buildDigestPushMessage({ ...input, localDate: input.anchorDate });
 }
