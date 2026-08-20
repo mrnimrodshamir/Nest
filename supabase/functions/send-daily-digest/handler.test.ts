@@ -1,8 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { runDailyDigest, type DigestDatabase, type EligibleDigestUser, type PushSender, type PushSendOutcome } from './handler.ts';
+import { runDailyDigest, runWeeklyDigest, type DigestDatabase, type EligibleDigestUser, type PushSender, type PushSendOutcome } from './handler.ts';
 import { TEL_AVIV_CENTER, type DigestCandidateOccurrence } from '../_shared/dailyDigest/selectDigestEvents.ts';
-import { buildDigestSendKey, DIGEST_TYPE_DAILY } from '../_shared/dailyDigest/idempotency.ts';
+import { buildDigestSendKey, DIGEST_TYPE_DAILY, DIGEST_TYPE_WEEKLY, type DigestType } from '../_shared/dailyDigest/idempotency.ts';
 
 const NOW = new Date('2026-08-20T04:05:00Z'); // 07:05 Jerusalem (IDT)
 const LOCAL_DATE = '2026-08-20';
@@ -34,16 +34,17 @@ function fakeDatabase(input: {
   candidates: DigestCandidateOccurrence[];
   users: EligibleDigestUser[];
   alreadySent?: Set<string>;
-}): { db: DigestDatabase; analytics: Array<{ event: string; properties: Record<string, unknown> }>; sends: Array<{ sendKey: string; userId: string }>; completed: string[]; failedClaims: string[]; removedTokens: string[] } {
+}): { db: DigestDatabase; analytics: Array<{ event: string; properties: Record<string, unknown> }>; sends: Array<{ sendKey: string; userId: string }>; completed: string[]; failedClaims: string[]; removedTokens: string[]; requestedDigestTypes: DigestType[] } {
   const analytics: Array<{ event: string; properties: Record<string, unknown> }> = [];
   const sends: Array<{ sendKey: string; userId: string }> = [];
   const completed: string[] = [];
   const failedClaims: string[] = [];
   const removedTokens: string[] = [];
+  const requestedDigestTypes: DigestType[] = [];
   const alreadySent = input.alreadySent ?? new Set<string>();
   const db: DigestDatabase = {
     async fetchTodayCandidates() { return input.candidates; },
-    async fetchEligibleUsers() { return input.users; },
+    async fetchEligibleUsers(digestType = DIGEST_TYPE_DAILY) { requestedDigestTypes.push(digestType); return input.users; },
     async hasAlreadySent(sendKey) { return alreadySent.has(sendKey); },
     async recordDigestInstance() { return 'digest-instance-1'; },
     async claimSend(record) {
@@ -57,7 +58,7 @@ function fakeDatabase(input: {
     async removeInvalidPushToken(_userId, token) { removedTokens.push(token); },
     async trackAnalytics(event, properties) { analytics.push({ event, properties }); },
   };
-  return { db, analytics, sends, completed, failedClaims, removedTokens };
+  return { db, analytics, sends, completed, failedClaims, removedTokens, requestedDigestTypes };
 }
 
 function okPushSender(): PushSender {
@@ -230,4 +231,42 @@ test('provider mix is reported per selected event provider', async () => {
   });
   const result = await runDailyDigest({ dryRun: false, now: NOW }, db, okPushSender());
   assert.deepEqual(result.providerMix, { tel_aviv_digitel: 1, cinematheque_tel_aviv: 1 });
+});
+
+test('Weekly uses the Sunday anchor, weekly preference path, and per-day cap', async () => {
+  const sundayEvents = Array.from({ length: 5 }, (_, index) => occurrence({
+    occurrenceId: `weekly-${index}`,
+    eventId: `weekly-event-${index}`,
+    startsAt: `2026-08-23T${String(10 + index).padStart(2, '0')}:00:00+03:00`,
+    category: index % 2 ? 'workshop' : 'community',
+  }));
+  const fake = fakeDatabase({ candidates: sundayEvents, users: [{ userId: 'u1', expoPushToken: 't1', locale: 'he' }] });
+  const result = await runWeeklyDigest({ dryRun: true, now: new Date('2026-08-22T16:05:00Z') }, fake.db, okPushSender());
+  assert.equal(result.localDate, '2026-08-23');
+  assert.equal(result.periodEnd, '2026-08-29');
+  assert.equal(result.eventsSelected, 3);
+  assert.deepEqual(fake.requestedDigestTypes, [DIGEST_TYPE_WEEKLY]);
+  assert.equal(result.wouldSend, 1);
+  assert.equal(result.socialOutput?.days.length, 7);
+});
+
+test('Daily and Weekly preferences remain independent in the shared delivery path', async () => {
+  const daily = fakeDatabase({ candidates: [occurrence()], users: [] });
+  const weekly = fakeDatabase({ candidates: [occurrence({ startsAt: '2026-08-23T10:00:00+03:00' })], users: [] });
+  await runDailyDigest({ dryRun: true, now: NOW }, daily.db, okPushSender());
+  await runWeeklyDigest({ dryRun: true, now: new Date('2026-08-22T16:05:00Z') }, weekly.db, okPushSender());
+  assert.deepEqual(daily.requestedDigestTypes, [DIGEST_TYPE_DAILY]);
+  assert.deepEqual(weekly.requestedDigestTypes, [DIGEST_TYPE_WEEKLY]);
+});
+
+test('Weekly cron retry cannot claim the same user and week twice', async () => {
+  const alreadySent = new Set<string>();
+  const weeklyOccurrence = occurrence({ startsAt: '2026-08-23T10:00:00+03:00' });
+  const first = fakeDatabase({ candidates: [weeklyOccurrence], users: [{ userId: 'u1', expoPushToken: 't1', locale: 'en' }], alreadySent });
+  await runWeeklyDigest({ dryRun: false, now: new Date('2026-08-22T16:05:00Z') }, first.db, okPushSender());
+  const second = fakeDatabase({ candidates: [weeklyOccurrence], users: [{ userId: 'u1', expoPushToken: 't1', locale: 'en' }], alreadySent });
+  const retry = await runWeeklyDigest({ dryRun: false, now: new Date('2026-08-22T16:10:00Z') }, second.db, okPushSender());
+  assert.equal(retry.sent, 0);
+  assert.equal(retry.skipped, 1);
+  assert.equal(alreadySent.has(buildDigestSendKey('u1', DIGEST_TYPE_WEEKLY, '2026-08-23')), true);
 });

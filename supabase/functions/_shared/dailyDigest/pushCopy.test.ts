@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { buildDigestPushCopy, DIGEST_LOCALES, isDigestLocale } from './pushCopy.ts';
+import { buildDigestPushCopy, buildWeeklyDigestPushCopy, DIGEST_LOCALES, isDigestLocale } from './pushCopy.ts';
 
 test('every one of the six shipping locales has distinct push copy', () => {
   const titles = DIGEST_LOCALES.map((locale) => buildDigestPushCopy(locale, 5).title);
@@ -43,4 +43,13 @@ test('no locale leaks a raw {count} placeholder into the rendered body', () => {
       assert.doesNotMatch(buildDigestPushCopy(locale, count).body, /\{count\}/, `${locale}/${count}`);
     }
   }
+});
+
+test('Weekly copy exists naturally in all six locales with RTL scripts preserved', () => {
+  for (const locale of DIGEST_LOCALES) {
+    const copy = buildWeeklyDigestPushCopy(locale, 14);
+    assert.ok(copy.title.length > 10 && copy.body.length > 10, locale);
+  }
+  assert.match(buildWeeklyDigestPushCopy('he', 14).title, /[֐-׿]/);
+  assert.match(buildWeeklyDigestPushCopy('ar', 14).title, /[؀-ۿ]/);
 });

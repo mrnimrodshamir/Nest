@@ -26,6 +26,7 @@ const MIGRATED = [
   'EditProfileScreen.tsx',
   'ShareActivityScreen.tsx',
   'DailyDigestScreen.tsx',
+  'WeeklyDigestScreen.tsx',
 ];
 
 /** Screens still holding hardcoded English. Empty — every screen with
