@@ -46,7 +46,7 @@ function createDatabase(client: any): DigestDatabase {
       const windowEnd = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString();
       const { data, error } = await client
         .from('active_event_occurrences')
-        .select('occurrence_id,event_id,title,category,starts_at,age_min_months,age_max_months,price_note,provider,source_name,source_type,canonical_event_id,latitude,longitude,location_name')
+        .select('occurrence_id,event_id,title,description,category,starts_at,age_min_months,age_max_months,price_note,provider,provider_event_id,source_name,source_url,source_type,canonical_event_id,latitude,longitude,location_name,formatted_address')
         .gte('starts_at', windowStart)
         .lte('starts_at', windowEnd);
       if (error) throw new Error(`Could not load today's candidate occurrences: ${error.message}`);
@@ -54,18 +54,22 @@ function createDatabase(client: any): DigestDatabase {
         occurrenceId: row.occurrence_id,
         eventId: row.event_id,
         title: row.title,
+        description: row.description,
         category: row.category,
         startsAt: row.starts_at,
         ageMinMonths: row.age_min_months,
         ageMaxMonths: row.age_max_months,
         priceNote: row.price_note,
         provider: row.provider,
+        providerEventId: row.provider_event_id,
         sourceName: row.source_name,
+        sourceUrl: row.source_url,
         sourceType: row.source_type,
         canonicalEventId: row.canonical_event_id,
         latitude: row.latitude,
         longitude: row.longitude,
         locationName: row.location_name,
+        formattedAddress: row.formatted_address,
       }));
     },
     async fetchEligibleUsers() {

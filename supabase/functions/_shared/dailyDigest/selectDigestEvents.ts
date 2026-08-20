@@ -10,6 +10,7 @@ export interface DigestCandidateOccurrence {
   occurrenceId: string;
   eventId: string;
   title: string;
+  description?: string | null;
   category: string;
   /** ISO timestamp. */
   startsAt: string;
@@ -17,7 +18,9 @@ export interface DigestCandidateOccurrence {
   ageMaxMonths: number | null;
   priceNote: string | null;
   provider: string;
+  providerEventId?: string | null;
   sourceName: string | null;
+  sourceUrl?: string | null;
   sourceType: 'municipal' | 'external_organizer' | null;
   /** Set only when this row is an explicitly-linked duplicate of another
    *  event — see events.canonical_event_id. Excluded outright. */
@@ -25,6 +28,7 @@ export interface DigestCandidateOccurrence {
   latitude: number | null;
   longitude: number | null;
   locationName: string | null;
+  formattedAddress?: string | null;
 }
 
 export interface SelectDigestEventsOptions {
@@ -73,6 +77,51 @@ function isValidCandidate(candidate: DigestCandidateOccurrence): boolean {
     && candidate.longitude <= 180;
 }
 
+function normalizeIdentityText(value: string | null | undefined): string {
+  return (value ?? '').normalize('NFKC').toLocaleLowerCase('he')
+    .replace(/[\u2010-\u2015\-–—―'"׳״.,:;!?()[\]{}]/g, ' ')
+    .replace(/\s+/g, ' ').trim();
+}
+
+function descriptionContainment(left: string | null | undefined, right: string | null | undefined): number {
+  const leftTokens = new Set(normalizeIdentityText(left).split(' ').filter((token) => token.length > 1));
+  const rightTokens = new Set(normalizeIdentityText(right).split(' ').filter((token) => token.length > 1));
+  const denominator = Math.min(leftTokens.size, rightTokens.size);
+  if (denominator < 4) return 0;
+  let overlap = 0;
+  for (const token of leftTokens) if (rightTokens.has(token)) overlap += 1;
+  return overlap / denominator;
+}
+
+function mirrorQuality(candidate: DigestCandidateOccurrence): number {
+  return (candidate.ageMinMonths !== null || candidate.ageMaxMonths !== null ? 3 : 0)
+    + (candidate.priceNote ? 1 : 0)
+    + (candidate.formattedAddress ? 1 : 0)
+    + (candidate.sourceUrl ? 1 : 0)
+    + Math.min(3, normalizeIdentityText(candidate.description).length / 120);
+}
+
+/** Removes only strongly-proven cross-provider mirrors. Similar sessions
+ * from one provider, different age-group titles, dates, or venues remain
+ * independent occurrences. */
+export function dedupeMirroredDigestCandidates(candidates: readonly DigestCandidateOccurrence[]): DigestCandidateOccurrence[] {
+  const sorted = [...candidates].sort((left, right) => mirrorQuality(right) - mirrorQuality(left));
+  const kept: DigestCandidateOccurrence[] = [];
+  for (const candidate of sorted) {
+    const isMirror = kept.some((existing) => {
+      if (existing.provider === candidate.provider) return false;
+      if (normalizeIdentityText(existing.title) !== normalizeIdentityText(candidate.title)) return false;
+      if (jerusalemDateOf(existing.startsAt) !== jerusalemDateOf(candidate.startsAt)) return false;
+      if (Math.abs(Date.parse(existing.startsAt) - Date.parse(candidate.startsAt)) > 4 * 60 * 60 * 1000) return false;
+      if (existing.latitude === null || existing.longitude === null || candidate.latitude === null || candidate.longitude === null) return false;
+      if (haversineKm(existing.latitude, existing.longitude, candidate.latitude, candidate.longitude) > 0.5) return false;
+      return descriptionContainment(existing.description, candidate.description) >= 0.6;
+    });
+    if (!isMirror) kept.push(candidate);
+  }
+  return kept;
+}
+
 function score(candidate: DigestCandidateOccurrence, distanceKm: number): number {
   let value = 0;
   if (candidate.ageMinMonths !== null || candidate.ageMaxMonths !== null) value += 2; // useful age data
@@ -90,7 +139,7 @@ export function selectDigestEvents(
   options: SelectDigestEventsOptions,
 ): DigestCandidateOccurrence[] {
   const seenOccurrenceIds = new Set<string>();
-  const withDistance = candidates
+  const withDistance = dedupeMirroredDigestCandidates(candidates)
     .filter((c) => c.canonicalEventId === null) // exclude duplicate/canonical-secondary records
     .filter(isValidCandidate)
     .filter((c) => {

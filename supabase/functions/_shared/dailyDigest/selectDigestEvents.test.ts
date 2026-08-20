@@ -147,3 +147,40 @@ test('selection is deterministic — same input produces the same order every ti
   const second = selectDigestEvents(candidates, baseOptions()).map((e) => e.occurrenceId);
   assert.deepEqual(first, second);
 });
+
+test('cross-provider Harry Potter mirror with punctuation/time drift occupies one recommendation slot', () => {
+  const description = 'הארי פוטר לידתו של מנהיג מה הופך את הארי פוטר לילד הכי אמיץ בהוגוורטס';
+  const result = selectDigestEvents([
+    occurrence({
+      occurrenceId: 'digitel-harry', title: 'הארי פוטר – לידתו של מנהיג',
+      startsAt: '2026-08-20T17:00:00Z', provider: 'tel_aviv_digitel',
+      description, latitude: 32.1157797862893, longitude: 34.7969729786721,
+      ageMinMonths: null, ageMaxMonths: null, formattedAddress: null,
+    }),
+    occurrence({
+      occurrenceId: 'library-harry', title: 'הארי פוטר — לידתו של מנהיג',
+      startsAt: '2026-08-20T14:00:00Z', provider: 'beit_ariela_libraries',
+      description: `${description}. יחד נדלג בין הסרטים השונים בסדרה ונראה כיצד נבנית דמותו.`,
+      latitude: 32.115777, longitude: 34.796976, ageMinMonths: 96,
+      formattedAddress: 'רח׳ טאגור 26', sourceUrl: 'https://ariela.today/events/chvchb',
+    }),
+  ], baseOptions());
+  assert.deepEqual(result.map((entry) => entry.occurrenceId), ['library-harry']);
+});
+
+test('legitimate adjacent age-group sessions are not merged merely because their titles are similar', () => {
+  const result = selectDigestEvents([
+    occurrence({ occurrenceId: 'young', title: 'התעמלות התפתחותית שנה וחצי-שנתיים וחצי', startsAt: '2026-08-20T16:30:00Z' }),
+    occurrence({ occurrenceId: 'older', title: 'התעמלות התפתחותית שנתים וחצי-שלוש וחצי', startsAt: '2026-08-20T17:15:00Z' }),
+  ], baseOptions());
+  assert.equal(result.length, 2);
+});
+
+test('same-provider repeated sessions are preserved even with identical title and venue', () => {
+  const description = 'פעילות משפחתית מלאה לילדים ולהורים יחד';
+  const result = selectDigestEvents([
+    occurrence({ occurrenceId: 'session-one', description, startsAt: '2026-08-20T10:00:00+03:00' }),
+    occurrence({ occurrenceId: 'session-two', description, startsAt: '2026-08-20T12:00:00+03:00' }),
+  ], baseOptions());
+  assert.equal(result.length, 2);
+});
