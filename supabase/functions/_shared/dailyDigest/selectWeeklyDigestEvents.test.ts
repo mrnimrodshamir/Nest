@@ -99,3 +99,23 @@ test('social representation contains public facts only', () => {
   assert.match(serialized, /ageMinMonths/);
   assert.doesNotMatch(serialized, /email|pushToken|child|birthdate|userId|private/i);
 });
+
+test('adult broad-category rows and provider cancellation markers never fill Weekly slots', () => {
+  const selected = selectWeeklyDigestEvents([
+    event('adult-museum', 23, {
+      title: 'ערב סיכום תערוכת קטלוגי אמן',
+      description: 'שש שיחות קצרות על ששה קטלוגים ועיצוב אמנות',
+      category: 'museum',
+    }),
+    event('cancelled', 23, {
+      title: 'מחנה קיץ ימי - מחזור 8 - בוטל',
+      description: 'מחנה קיץ לילדים ולנוער',
+    }),
+    event('family', 23, {
+      title: 'מופע לכל המשפחה',
+      description: 'מופע לילדים ולהורים',
+      category: 'performance',
+    }),
+  ], period);
+  assert.deepEqual(selected.events.map((entry) => entry.occurrenceId), ['family']);
+});

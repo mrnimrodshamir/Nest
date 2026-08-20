@@ -8,6 +8,9 @@ import type { WeeklyDigestPeriod } from './scheduleGate.ts';
 
 export const DEFAULT_WEEKLY_MAX_PER_DAY = 3;
 
+const FAMILY_SIGNAL = /(?:ילד|ילדות|משפח|פעוט|תינוק|הור(?:ה|ים|ות)|בייבי|כיתה|גיל(?:י|אים?)|נוער|baby|child|kid|famil|parent|toddler|bébé|enfant|famill|родител|дет|семейн|طفل|أطفال|عائل|والد|familia|niñ|bebé|padres)/iu;
+const CANCELLATION_SIGNAL = /(?:^|[\s[(\-–—])(?:בוטל|מבוטל|cancelled|canceled|annulé|annulée|отменено|отменён|ملغى|cancelado)(?:$|[\s\])!,.\-–—])/iu;
+
 export interface WeeklyDigestDay {
   localDate: string;
   events: DigestCandidateOccurrence[];
@@ -28,6 +31,19 @@ function normalizedVenue(event: DigestCandidateOccurrence): string {
     .trim();
 }
 
+/** A stricter Weekly editorial gate layered on top of the publication-safe
+ * view. It prevents an adult event that merely has a broad category such as
+ * "museum" from filling one of the limited weekly slots. Structured age data
+ * is sufficient evidence; otherwise public title/description must contain a
+ * family signal. Story time is intrinsically child/family programming. */
+export function isStrongWeeklyCandidate(event: DigestCandidateOccurrence): boolean {
+  const publicText = `${event.title} ${event.description ?? ''}`;
+  if (CANCELLATION_SIGNAL.test(publicText)) return false;
+  if (event.ageMinMonths !== null || event.ageMaxMonths !== null) return true;
+  if (event.category === 'story_time') return true;
+  return FAMILY_SIGNAL.test(publicText);
+}
+
 /** Uses the proven Daily lifecycle/radius/mirror-dedupe/ranking engine for
  * each day, then applies a soft week-wide diversity tie-break. Validity and
  * source quality always come first; diversity never admits an invalid row. */
@@ -43,7 +59,7 @@ export function selectWeeklyDigestEvents(
   const days: WeeklyDigestDay[] = [];
 
   for (const localDate of period.days) {
-    const ranked = selectDigestEvents(candidates, {
+    const ranked = selectDigestEvents(candidates.filter(isStrongWeeklyCandidate), {
       localDate,
       targetLatitude: TEL_AVIV_CENTER.latitude,
       targetLongitude: TEL_AVIV_CENTER.longitude,
