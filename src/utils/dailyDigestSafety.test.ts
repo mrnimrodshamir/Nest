@@ -3,9 +3,9 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
 const migration = readFileSync(new URL('../../supabase/migrations/20260819220000_daily_digest_schema.sql', import.meta.url), 'utf8');
+const scheduleMigration = readFileSync(new URL('../../supabase/migrations/20260820210000_schedule_daily_digest.sql', import.meta.url), 'utf8');
 const app = readFileSync(new URL('../../App.tsx', import.meta.url), 'utf8');
 const handler = readFileSync(new URL('../../supabase/functions/send-daily-digest/handler.ts', import.meta.url), 'utf8');
-const cronReview = readFileSync(new URL('../../docs/daily-digest/production-enablement.md', import.meta.url), 'utf8');
 
 test('digest delivery tables are RLS-closed and logically unique', () => {
   for (const table of ['daily_digest_instances', 'daily_digest_sends']) {
@@ -31,9 +31,12 @@ test('cold-start routing retains a pending digest until navigation is ready', ()
   assert.match(app, /requestedDate=\{route\.params\?\.date\}/);
 });
 
-test('cron is review-only and never applied by a tracked migration', () => {
-  assert.match(cronReview, /\*\/15 \* \* \* \*/);
-  assert.match(cronReview, /"dryRun":false/);
-  assert.match(cronReview, /Do not run this SQL/);
+test('production cron has exactly one named path and cannot bypass the Jerusalem gate', () => {
+  assert.match(scheduleMigration, /send-daily-digest-jerusalem-0700/);
+  assert.match(scheduleMigration, /'\*\/15 \* \* \* \*'/);
+  assert.match(scheduleMigration, /"dryRun":false/);
+  assert.doesNotMatch(scheduleMigration, /"force":true/);
+  assert.match(scheduleMigration, /for v_job in[\s\S]*cron\.unschedule/);
+  assert.equal((scheduleMigration.match(/perform cron\.schedule\(/g) ?? []).length, 1);
   assert.doesNotMatch(migration, /cron\.schedule/);
 });

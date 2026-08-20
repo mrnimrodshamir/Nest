@@ -1,11 +1,12 @@
-# Daily Digest production enablement (disabled)
+# Daily Digest production enablement
 
 The function is designed for a 15-minute UTC cron tick and performs the real
 `07:00 Asia/Jerusalem` decision inside the Edge Function with `Intl` timezone
 data. This avoids hard-coding Israel's changing UTC offset.
 
-Do not run this SQL until the production dry run and controlled device push
-have both been approved. Merely committing this file does not schedule a job.
+The production schedule is tracked by migration
+`20260820210000_schedule_daily_digest.sql`. The SQL below documents the same
+single-job design and emergency rollback procedure.
 
 ```sql
 do $$
