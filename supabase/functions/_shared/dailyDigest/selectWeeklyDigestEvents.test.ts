@@ -43,6 +43,7 @@ test('Weekly keeps zero/one/two days and caps 3+ days at three without filler', 
   const selected = selectWeeklyDigestEvents(candidates, period);
   assert.deepEqual(selected.days.map((day) => day.events.length), [0, 1, 2, 3, 0, 0, 0]);
   assert.equal(selected.events.length, 6);
+  assert.equal(selected.eligibleCount, 7);
 });
 
 test('invalid, out-of-radius, canonical-secondary, and duplicate occurrences are excluded', () => {

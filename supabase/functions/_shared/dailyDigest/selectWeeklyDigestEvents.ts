@@ -21,6 +21,7 @@ export interface WeeklyDigestSelection {
   weekEnd: string;
   days: WeeklyDigestDay[];
   events: DigestCandidateOccurrence[];
+  eligibleCount: number;
 }
 
 function normalizedVenue(event: DigestCandidateOccurrence): string {
@@ -57,6 +58,7 @@ export function selectWeeklyDigestEvents(
   const venueCounts = new Map<string, number>();
   const seenOccurrences = new Set<string>();
   const days: WeeklyDigestDay[] = [];
+  let eligibleCount = 0;
 
   for (const localDate of period.days) {
     const ranked = selectDigestEvents(candidates.filter(isStrongWeeklyCandidate), {
@@ -69,6 +71,7 @@ export function selectWeeklyDigestEvents(
     }).filter((event) => !seenOccurrences.has(event.occurrenceId));
 
     const originalPosition = new Map(ranked.map((event, index) => [event.occurrenceId, index]));
+    eligibleCount += ranked.length;
     const events: DigestCandidateOccurrence[] = [];
     while (events.length < maxPerDay && ranked.length > 0) {
       ranked.sort((left, right) => {
@@ -101,6 +104,7 @@ export function selectWeeklyDigestEvents(
     weekEnd: period.weekEnd,
     days,
     events: days.flatMap((day) => day.events),
+    eligibleCount,
   };
 }
 

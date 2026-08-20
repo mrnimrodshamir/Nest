@@ -84,6 +84,7 @@ export interface RunDailyDigestResult {
   periodStart: string;
   periodEnd: string;
   eventsConsidered: number;
+  eventsEligible: number;
   eventsSelected: number;
   selectedOccurrenceIds: string[];
   selectedEvents: Array<{ occurrenceId: string; title: string; provider: string; category: string; localDate: string }>;
@@ -175,6 +176,7 @@ export async function runDigest(
     periodStart: period.startDate,
     periodEnd: period.endDate,
     eventsConsidered: candidates.length,
+    eventsEligible: weeklySelection?.eligibleCount ?? selected.length,
     eventsSelected: selected.length,
     selectedOccurrenceIds: selected.map((event) => event.occurrenceId),
     selectedEvents: selected.map((event) => ({
