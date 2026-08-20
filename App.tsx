@@ -35,6 +35,7 @@ import { ProfileScreen } from '@/screens/ProfileScreen';
 import { EditProfileScreen } from '@/screens/EditProfileScreen';
 import { MyActivitiesScreen } from '@/screens/MyActivitiesScreen';
 import { DailyDigestScreen } from '@/screens/DailyDigestScreen';
+import { WeeklyDigestScreen } from '@/screens/WeeklyDigestScreen';
 import { MessagesScreen } from '@/screens/MessagesScreen';
 import { BlockedUsersScreen } from '@/screens/BlockedUsersScreen';
 import { PublicProfileScreen } from '@/screens/PublicProfileScreen';
@@ -73,7 +74,7 @@ import type { FamilyFriendlyPlace } from '@/types/familyFriendlyPlace';
 import type { EventDetails } from '@/types/event';
 import { buildActivitySeedFromPlace } from '@/utils/placeActivityPrefill';
 import { parseSharedContentUrl, type SharedContentRoute } from '@/utils/contentSharing';
-import { parseDailyDigestNotification } from '@/utils/dailyDigestNotification';
+import { parseDigestNotification } from '@/utils/dailyDigestNotification';
 
 // RTL is controlled by the selected app language in I18nProvider. Enable it
 // before the first React tree mounts so a Hebrew relaunch can use native RTL
@@ -112,6 +113,7 @@ export type RootStackParamList = {
   MyActivities: undefined;
   BlockedUsers: undefined;
   DailyDigest: { date?: string } | undefined;
+  WeeklyDigest: { weekStart?: string; week_start?: string } | undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -141,6 +143,7 @@ const linking: LinkingOptions<RootStackParamList> = {
         parse: { kind: () => 'group' as const },
       },
       DailyDigest: 'daily-digest',
+      WeeklyDigest: 'weekly-digest',
     },
   },
 };
@@ -175,7 +178,12 @@ function AppInner() {
   const { session, profile, isLoading: authLoading, isPasswordRecovery, beginPasswordRecovery } = useAuth();
   const { locale: appLocale } = useI18n();
   const pendingSharedRoute = useRef<SharedContentRoute | null>(null);
-  const pendingDailyDigestRoute = useRef<{ kind: 'digest'; date: string } | { kind: 'fallback' } | null>(null);
+  const pendingDailyDigestRoute = useRef<
+    | { kind: 'daily'; date: string }
+    | { kind: 'weekly'; weekStart: string }
+    | { kind: 'fallback' }
+    | null
+  >(null);
   const lastHandledNotificationId = useRef<string | null>(null);
   // Distinguishes "no recovery link involved" (null) from a link that was
   // tapped but rejected before any session could be established — the latter
@@ -204,7 +212,10 @@ function AppInner() {
     try {
       if (pending.kind === 'fallback') {
         navigationRef.navigate('Tabs');
-      } else if (navigationRef.getCurrentRoute()?.name !== 'DailyDigest') {
+      } else if (pending.kind === 'weekly' && navigationRef.getCurrentRoute()?.name !== 'WeeklyDigest') {
+        navigationRef.navigate('WeeklyDigest', { weekStart: pending.weekStart });
+        track('weekly_push_opened', { week_start: pending.weekStart, city: 'tel_aviv', locale: appLocale });
+      } else if (pending.kind === 'daily' && navigationRef.getCurrentRoute()?.name !== 'DailyDigest') {
         navigationRef.navigate('DailyDigest', { date: pending.date });
         track('daily_push_opened', { date: pending.date, city: 'tel_aviv', locale: appLocale });
       }
@@ -271,11 +282,13 @@ function AppInner() {
       // Capture Daily Digest taps even while auth/session restoration is still
       // replacing the navigator. Navigation happens later, once the main tree
       // is ready; malformed/stale payloads deterministically fall back home.
-      const digestRoute = parseDailyDigestNotification(data);
+      const digestRoute = parseDigestNotification(data);
       if (digestRoute.status !== 'not_digest') {
-        pendingDailyDigestRoute.current = digestRoute.status === 'valid'
-          ? { kind: 'digest', date: digestRoute.date }
-          : { kind: 'fallback' };
+        pendingDailyDigestRoute.current = digestRoute.status !== 'valid'
+          ? { kind: 'fallback' }
+          : digestRoute.digestType === 'weekly'
+            ? { kind: 'weekly', weekStart: digestRoute.weekStart }
+            : { kind: 'daily', date: digestRoute.date };
         navigatePendingDailyDigest();
         return;
       }
@@ -502,6 +515,15 @@ function MainNavigator() {
         {({ route, navigation }) => (
           <DailyDigestScreen
             requestedDate={route.params?.date}
+            onClose={() => (navigation.canGoBack() ? navigation.goBack() : navigation.navigate('Tabs'))}
+            onOpenEvent={(occurrenceId) => navigation.navigate('EventDetails', { occurrenceId })}
+          />
+        )}
+      </Stack.Screen>
+      <Stack.Screen name="WeeklyDigest" options={{ presentation: 'modal' }}>
+        {({ route, navigation }) => (
+          <WeeklyDigestScreen
+            requestedWeekStart={route.params?.weekStart ?? route.params?.week_start}
             onClose={() => (navigation.canGoBack() ? navigation.goBack() : navigation.navigate('Tabs'))}
             onOpenEvent={(occurrenceId) => navigation.navigate('EventDetails', { occurrenceId })}
           />

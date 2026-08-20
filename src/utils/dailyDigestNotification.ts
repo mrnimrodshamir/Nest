@@ -1,9 +1,34 @@
-import { jerusalemLocalDateString } from '../../supabase/functions/_shared/dailyDigest/scheduleGate';
+import { jerusalemLocalDateString, weeklyDigestPeriod } from '../../supabase/functions/_shared/dailyDigest/scheduleGate';
 
 export type DailyDigestNotificationRoute =
   | { status: 'valid'; date: string; city: 'tel_aviv' }
   | { status: 'stale' | 'malformed' }
   | { status: 'not_digest' };
+
+export type DigestNotificationRoute =
+  | { status: 'valid'; digestType: 'daily'; date: string; city: 'tel_aviv' }
+  | { status: 'valid'; digestType: 'weekly'; weekStart: string; city: 'tel_aviv' }
+  | { status: 'stale' | 'malformed' }
+  | { status: 'not_digest' };
+
+export function parseDigestNotification(
+  data: Record<string, unknown> | undefined,
+  now: Date = new Date(),
+): DigestNotificationRoute {
+  if (data?.kind === 'weekly_digest') {
+    if (data.type !== 'weekly_digest' || data.city !== 'tel_aviv' || typeof data.week_start !== 'string') {
+      return { status: 'malformed' };
+    }
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(data.week_start) || !isRealCalendarDate(data.week_start)) {
+      return { status: 'malformed' };
+    }
+    if (!isWeeklyDigestWeekAvailable(data.week_start, now)) return { status: 'stale' };
+    return { status: 'valid', digestType: 'weekly', weekStart: data.week_start, city: 'tel_aviv' };
+  }
+  const daily = parseDailyDigestNotification(data, now);
+  if (daily.status === 'valid') return { ...daily, digestType: 'daily' };
+  return daily;
+}
 
 /** Validates the entire push-routing contract before navigation. A stale or
  * malformed Daily Digest notification deliberately falls back to Discovery;
@@ -26,6 +51,13 @@ export function parseDailyDigestNotification(
 
 export function isDailyDigestDateAvailable(date: string | undefined, now: Date = new Date()): date is string {
   return !!date && /^\d{4}-\d{2}-\d{2}$/.test(date) && isRealCalendarDate(date) && date === jerusalemLocalDateString(now);
+}
+
+export function isWeeklyDigestWeekAvailable(weekStart: string | undefined, now: Date = new Date()): weekStart is string {
+  return !!weekStart
+    && /^\d{4}-\d{2}-\d{2}$/.test(weekStart)
+    && isRealCalendarDate(weekStart)
+    && weekStart === weeklyDigestPeriod(now).weekStart;
 }
 
 function isRealCalendarDate(value: string): boolean {

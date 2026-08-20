@@ -17,6 +17,8 @@ import {
   type DigestCandidateOccurrence,
 } from '../../supabase/functions/_shared/dailyDigest/selectDigestEvents';
 import { jerusalemLocalDateString } from '../../supabase/functions/_shared/dailyDigest/scheduleGate';
+import { addLocalCalendarDays, weeklyDigestPeriod } from '../../supabase/functions/_shared/dailyDigest/scheduleGate';
+import { selectWeeklyDigestEvents } from '../../supabase/functions/_shared/dailyDigest/selectWeeklyDigestEvents';
 import { rowsInDigestOrder } from '@/utils/dailyDigestRows';
 
 export const EVENT_COLUMNS = 'id,title,description,category,image_url,age_min_months,age_max_months,price_note,registration_required,registration_url,verification_status,publication_status,event_status,cancellation_reason,provider,provider_event_id,provider_transport_id,source_group_id,source_name,source_url,source_published_at,source_updated_at,provider_metadata,is_recurring,recurrence_rule,recurrence_timezone,recurrence_series_id,place_id,location_name,formatted_address,latitude,longitude,created_at,updated_at';
@@ -175,6 +177,56 @@ export async function queryDailyDigestEvents(now: Date = new Date()): Promise<Ev
   });
   const selectedRows = rowsInDigestOrder(rows as Array<{ occurrence_id: string }>, selected.map((event) => event.occurrenceId));
   return mapActiveRows(selectedRows, now);
+}
+
+export interface WeeklyDigestDayEvents {
+  localDate: string;
+  events: EventDetails[];
+}
+
+/** Weekly counterpart to queryDailyDigestEvents. It deliberately queries the
+ * same publication-safe view and runs the same pure weekly selector used by
+ * the Edge Function, so the pushed digest and screen cannot disagree. */
+export async function queryWeeklyDigestEvents(now: Date = new Date()): Promise<WeeklyDigestDayEvents[]> {
+  const period = weeklyDigestPeriod(now);
+  const windowStart = `${addLocalCalendarDays(period.weekStart, -1)}T00:00:00.000Z`;
+  const windowEnd = `${addLocalCalendarDays(period.weekEnd, 2)}T00:00:00.000Z`;
+  const { data, error } = await supabase
+    .from('active_event_occurrences')
+    .select('*')
+    .gte('starts_at', windowStart)
+    .lte('starts_at', windowEnd);
+  if (error) throw new Error(error.message);
+  const rows = data ?? [];
+  const candidates: DigestCandidateOccurrence[] = rows.map((row: any) => ({
+    occurrenceId: row.occurrence_id,
+    eventId: row.event_id,
+    title: row.title,
+    description: row.description,
+    category: row.category,
+    startsAt: row.starts_at,
+    ageMinMonths: row.age_min_months,
+    ageMaxMonths: row.age_max_months,
+    priceNote: row.price_note,
+    provider: row.provider,
+    providerEventId: row.provider_event_id,
+    sourceName: row.source_name,
+    sourceUrl: row.source_url,
+    sourceType: row.source_type,
+    canonicalEventId: row.canonical_event_id,
+    latitude: row.latitude,
+    longitude: row.longitude,
+    locationName: row.location_name,
+    formattedAddress: row.formatted_address,
+  }));
+  const selected = selectWeeklyDigestEvents(candidates, period);
+  return selected.days.map((day) => {
+    const selectedRows = rowsInDigestOrder(
+      rows as Array<{ occurrence_id: string }>,
+      day.events.map((event) => event.occurrenceId),
+    );
+    return { localDate: day.localDate, events: mapActiveRows(selectedRows, now) };
+  });
 }
 
 /** Splits a joined view row back into the event and occurrence shapes the

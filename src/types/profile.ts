@@ -7,6 +7,8 @@ export interface NotificationPreferences {
   /** "What's on today" — the Daily Digest push. Opt-in only: a missing or
    *  false value must always be treated as off, never silently enabled. */
   daily_digest: boolean;
+  /** Independent weekly "What's on this week" push; also opt-in only. */
+  weekly_digest: boolean;
 }
 
 /** Own full profile — matches the private `profiles` table (own row only).

@@ -15,6 +15,7 @@ import { hasUsableDisplayName, safeDisplayName } from '@/utils/profileIdentity';
 import { needsAppleProfileSetup } from '@/utils/profileCompleteness';
 import { currentAppLocale, translate, type TranslationKey } from '@/i18n';
 import { parseRecoveryUrl } from '@/utils/parseRecoveryUrl';
+import { mapNotificationPreferences } from '@/utils/notificationPreferences';
 
 const ONBOARDING_ERROR_KEYS: Readonly<Record<string, TranslationKey>> = {
   "Couldn't load your profile. Please try again.": 'onboarding.error.profileLoad',
@@ -780,14 +781,7 @@ function mapProfile(row: {
     phone: row.phone,
     avatarUrl: row.avatar_url,
     onboardingCompleted: row.onboarding_completed,
-    notificationPreferences: {
-      activity_changes: row.notification_preferences?.activity_changes === true,
-      chat_messages: row.notification_preferences?.chat_messages === true,
-      reminders: row.notification_preferences?.reminders === true,
-      // Existing rows do not have this key until the migration backfill.
-      // Undefined must render OFF and must never be written back as enabled.
-      daily_digest: row.notification_preferences?.daily_digest === true,
-    },
+    notificationPreferences: mapNotificationPreferences(row.notification_preferences),
     parentRole: coerceParentRole(row.parent_role),
     // Normalised to a plain ISO date: Postgres `date` comes back as
     // YYYY-MM-DD, but a timestamp-ish value would break date-only comparisons.

@@ -27,7 +27,7 @@ text, tokens, or secrets.
 | `sign_up_completed` | Account and profile setup complete | none | How many account creations succeed end to end? |
 | `login_started` | Email or Apple login is invoked | `login_method`: `email`/`apple` | Which login method is attempted? |
 | `login_completed` | Authenticated login succeeds | `login_method`: `email`/`apple` | Which login method converts? |
-| `language_changed` | User selects a language | `language`: `en`/`he`/`fr`/`ru` | Which languages are chosen? |
+| `language_changed` | User selects a language | `language`: `en`/`he`/`fr`/`ru`/`ar`/`es` | Which languages are chosen? |
 | `discovery_opened` | Discovery screen mounts | `discovery_mode`: `mixed` | How many sessions reach Discovery? |
 | `discovery_search_used` | A 2+ character search is submitted | `query_length` only | Is Discovery search used without collecting its text? |
 | `discovery_filter_changed` | Content/category/quick filter changes | `filter_type`, `filter_value` from fixed catalogues | Which filters help people explore? |
@@ -49,6 +49,24 @@ text, tokens, or secrets.
 | `public_profile_opened` | Existing Public Profile mounts | none | Does social context lead to profile exploration? |
 | `profile_updated` | Profile update succeeds | none | Do caregivers enrich their family profile? |
 | `account_deleted` | Account deletion RPC succeeds | none | How often is account deletion completed? |
+
+## Weekly Digest events
+
+Only public Event identity/taxonomy and delivery context are allowed. Email,
+push tokens, profile text, child data, birthdates, and private coordinates are
+never properties.
+
+| Event | Trigger | Allowed properties | Product question |
+| --- | --- | --- | --- |
+| `weekly_digest_generated` | Server produces a non-dry-run weekly selection | `week_start`, `city`, `result_count` | Is enough eligible weekly content available? |
+| `weekly_push_eligible` | Server finishes the weekly preference/token eligibility query | `week_start`, `city`, `result_count` | How large is the opted-in weekly audience? |
+| `weekly_push_sent` | Expo accepts a claimed weekly delivery | `week_start`, `city`, `locale`, `result_count` | How many weekly notifications were accepted? |
+| `weekly_push_skipped` | Delivery is skipped before Expo | `week_start`, `city`, `locale`, fixed `reason` | Why are eligible rows not sent? |
+| `weekly_push_failed` | Claimed weekly delivery fails | `week_start`, `city`, `locale` | How often does weekly delivery fail? |
+| `weekly_push_opened` | User taps a valid Weekly Digest notification | `week_start`, `city`, `locale` | Does the weekly push bring users into the curated week? |
+| `weekly_digest_viewed` | Weekly Digest screen loads | `week_start`, `city`, `locale` | How many users reach the weekly recommendations? |
+| `weekly_digest_event_opened` | User opens an Event from the digest | `week_start`, `city`, `locale`, `day`, `occurrence_id`, `provider`, `category`, `position` | Which days and recommendations drive Event interest? |
+| `weekly_digest_closed` | User closes the Weekly Digest | `week_start`, `city`, `result_count` | Do users return to Discovery after reviewing the week? |
 
 ## Sharing events
 
