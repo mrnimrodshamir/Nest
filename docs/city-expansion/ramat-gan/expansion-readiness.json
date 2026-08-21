@@ -1,0 +1,9 @@
+{
+  "schemaVersion": "1.0",
+  "score": 66,
+  "recommendation": "CONDITIONAL_GO",
+  "reasons": [
+    "localization_requires_review",
+    "geographic_bounds_require_validation"
+  ]
+}

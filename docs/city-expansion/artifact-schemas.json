@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nestup.app/schemas/city-expansion-artifacts-v1.json",
+  "title": "NestUp city expansion artifacts",
+  "type": "object",
+  "$defs": {
+    "artifactEnvelope": {
+      "type": "object",
+      "required": ["schemaVersion"],
+      "properties": { "schemaVersion": { "const": "1.0" } },
+      "additionalProperties": true
+    },
+    "approvalRequest": {
+      "allOf": [
+        { "$ref": "#/$defs/artifactEnvelope" },
+        {
+          "type": "object",
+          "required": ["approvalId", "runId", "gate", "decisionRequired", "riskSummary", "proposedChanges", "evidence", "dryRunResults", "requestedByAgent", "status", "productionActionTaken"],
+          "properties": {
+            "status": { "const": "PENDING" },
+            "productionActionTaken": { "const": false }
+          }
+        }
+      ]
+    },
+    "dryRun": {
+      "allOf": [
+        { "$ref": "#/$defs/artifactEnvelope" },
+        {
+          "type": "object",
+          "required": ["mode", "sourceComplete", "productionWrites", "fetched", "normalized", "relevant", "excluded", "invalid", "new", "updated", "unchanged", "missing", "archived", "duplicateExact", "duplicateProbable", "duplicateAmbiguous", "distinct"],
+          "properties": { "productionWrites": { "const": 0 } }
+        }
+      ]
+    },
+    "providerAnalyses": {
+      "allOf": [
+        { "$ref": "#/$defs/artifactEnvelope" },
+        {
+          "type": "object",
+          "required": ["analyses"],
+          "properties": {
+            "analyses": { "type": "array", "minItems": 2, "items": { "type": "object", "required": ["sourceId", "rank", "connectorType", "recommendation", "risk"] } }
+          }
+        }
+      ]
+    }
+  }
+}

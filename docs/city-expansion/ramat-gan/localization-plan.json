@@ -1,0 +1,111 @@
+{
+  "schemaVersion": "1.0",
+  "cityId": "ramat_gan",
+  "cityDisplayNames": {
+    "en": "Ramat Gan",
+    "he": "רמת גן",
+    "fr": "Ramat Gan",
+    "ru": "Рамат-Ган",
+    "ar": "رمات غان",
+    "es": "Ramat Gan"
+  },
+  "placeNames": [
+    {
+      "source": "הפארק הלאומי רמת גן",
+      "localized": {
+        "he": "הפארק הלאומי רמת גן",
+        "en": "Ramat Gan National Park"
+      },
+      "confidence": 95,
+      "requiresReview": false
+    }
+  ],
+  "neighborhoodNames": [
+    {
+      "source": "מרום נווה",
+      "localized": {
+        "he": "מרום נווה"
+      },
+      "confidence": 100,
+      "requiresReview": true
+    },
+    {
+      "source": "רמת חן",
+      "localized": {
+        "he": "רמת חן"
+      },
+      "confidence": 100,
+      "requiresReview": true
+    },
+    {
+      "source": "רמת יצחק",
+      "localized": {
+        "he": "רמת יצחק"
+      },
+      "confidence": 100,
+      "requiresReview": true
+    },
+    {
+      "source": "קריית קריניצי",
+      "localized": {
+        "he": "קריית קריניצי"
+      },
+      "confidence": 100,
+      "requiresReview": true
+    },
+    {
+      "source": "רמת אפעל",
+      "localized": {
+        "he": "רמת אפעל"
+      },
+      "confidence": 100,
+      "requiresReview": true
+    },
+    {
+      "source": "רמת השקמה",
+      "localized": {
+        "he": "רמת השקמה"
+      },
+      "confidence": 100,
+      "requiresReview": true
+    },
+    {
+      "source": "חרוזים",
+      "localized": {
+        "he": "חרוזים"
+      },
+      "confidence": 100,
+      "requiresReview": true
+    }
+  ],
+  "sourceDisplayNames": [
+    {
+      "source": "בית עמנואל רמת גן",
+      "localized": {
+        "he": "בית עמנואל רמת גן"
+      },
+      "confidence": 100,
+      "requiresReview": true
+    },
+    {
+      "source": "מוזיאון רמת גן לאמנות ישראלית",
+      "localized": {
+        "he": "מוזיאון רמת גן לאמנות ישראלית"
+      },
+      "confidence": 100,
+      "requiresReview": true
+    }
+  ],
+  "categoryLabels": {},
+  "preservedContentKinds": [
+    "user_generated",
+    "user_names",
+    "child_names",
+    "provider_titles_and_descriptions",
+    "unknown_proper_nouns"
+  ],
+  "unresolvedNames": [
+    "Official multilingual neighborhood names",
+    "Provider legal display names outside Hebrew"
+  ]
+}

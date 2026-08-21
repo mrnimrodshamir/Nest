@@ -1,0 +1,122 @@
+{
+  "schemaVersion": "1.0",
+  "runId": "ramat-gan-assisted-2026-08-21",
+  "workflowType": "city_expansion",
+  "cityId": "ramat_gan",
+  "status": "awaiting_approval",
+  "currentStage": "awaiting_human_approval",
+  "riskLevel": "medium",
+  "autonomyLevel": 2,
+  "tasks": [
+    {
+      "id": "city-profile",
+      "agent": "city_expansion",
+      "stage": "city_profile",
+      "status": "completed",
+      "dependsOn": [],
+      "parallelGroup": "foundation",
+      "productionWriteAllowed": false
+    },
+    {
+      "id": "source-discovery",
+      "agent": "source_discovery",
+      "stage": "source_discovery",
+      "status": "completed",
+      "dependsOn": [],
+      "parallelGroup": "foundation",
+      "productionWriteAllowed": false
+    },
+    {
+      "id": "source-review",
+      "agent": "orchestrator",
+      "stage": "source_review",
+      "status": "completed",
+      "dependsOn": [
+        "city-profile",
+        "source-discovery"
+      ],
+      "parallelGroup": null,
+      "productionWriteAllowed": false
+    },
+    {
+      "id": "provider-analysis",
+      "agent": "provider_integration",
+      "stage": "provider_analysis",
+      "status": "completed",
+      "dependsOn": [
+        "source-review"
+      ],
+      "parallelGroup": null,
+      "productionWriteAllowed": false
+    },
+    {
+      "id": "connector-draft",
+      "agent": "provider_integration",
+      "stage": "connector_draft",
+      "status": "completed",
+      "dependsOn": [
+        "provider-analysis"
+      ],
+      "parallelGroup": null,
+      "productionWriteAllowed": false
+    },
+    {
+      "id": "dry-run",
+      "agent": "provider_integration",
+      "stage": "dry_run",
+      "status": "completed",
+      "dependsOn": [
+        "connector-draft"
+      ],
+      "parallelGroup": null,
+      "productionWriteAllowed": false
+    },
+    {
+      "id": "quality-review",
+      "agent": "event_quality",
+      "stage": "quality_review",
+      "status": "completed",
+      "dependsOn": [
+        "dry-run"
+      ],
+      "parallelGroup": "review",
+      "productionWriteAllowed": false
+    },
+    {
+      "id": "localization-review",
+      "agent": "localization",
+      "stage": "localization_review",
+      "status": "completed",
+      "dependsOn": [
+        "city-profile"
+      ],
+      "parallelGroup": "review",
+      "productionWriteAllowed": false
+    },
+    {
+      "id": "expansion-scoring",
+      "agent": "city_expansion",
+      "stage": "expansion_scoring",
+      "status": "completed",
+      "dependsOn": [
+        "quality-review",
+        "localization-review"
+      ],
+      "parallelGroup": null,
+      "productionWriteAllowed": false
+    },
+    {
+      "id": "human-approval",
+      "agent": "orchestrator",
+      "stage": "awaiting_human_approval",
+      "status": "awaiting_approval",
+      "dependsOn": [
+        "expansion-scoring"
+      ],
+      "parallelGroup": null,
+      "productionWriteAllowed": false
+    }
+  ],
+  "approvalRequired": true,
+  "productionEnabled": false
+}

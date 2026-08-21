@@ -1,0 +1,59 @@
+{
+  "schemaVersion": "1.0",
+  "mode": "captured_public_sample",
+  "sourceComplete": true,
+  "productionWrites": 0,
+  "fetched": 4,
+  "normalized": 4,
+  "relevant": 3,
+  "excluded": 1,
+  "invalid": 0,
+  "new": 0,
+  "updated": 0,
+  "unchanged": 0,
+  "missing": 0,
+  "archived": 0,
+  "duplicateExact": 0,
+  "duplicateProbable": 0,
+  "duplicateAmbiguous": 0,
+  "distinct": 4,
+  "sampleEvents": [
+    {
+      "id": "sample-22699",
+      "title": "מיוזיכייף – חוויה מוזיקלית לקטנטנים בגילאי שנה וחצי עד שלוש",
+      "startsAt": "2026-08-18T07:00:00Z",
+      "locationName": "בית דורון"
+    },
+    {
+      "id": "sample-22752",
+      "title": "פעילות מוזיקלית עם דן דן הנגן לגילאי זחילה עד הליכה",
+      "startsAt": "2026-08-24T13:30:00Z",
+      "locationName": "משחקיית ר״געים"
+    },
+    {
+      "id": "sample-23233",
+      "title": "באהבה לסביבה – שוק, סדנה והצגה",
+      "startsAt": "2026-08-23T13:00:00Z",
+      "locationName": "בית הצנחן"
+    },
+    {
+      "id": "sample-test",
+      "title": "טסט למופע רב אירועים לאתר העירוני",
+      "startsAt": "2026-08-26T09:00:00Z",
+      "locationName": "אודיטוריום מוזיאון רמת גן"
+    }
+  ],
+  "excludedRecords": [
+    {
+      "id": "sample-test",
+      "reasons": [
+        "test_or_placeholder_content",
+        "manual_review_required"
+      ]
+    }
+  ],
+  "limitations": [
+    "Captured sample only; no live connector exists.",
+    "No production comparison or source-wide completeness claim."
+  ]
+}

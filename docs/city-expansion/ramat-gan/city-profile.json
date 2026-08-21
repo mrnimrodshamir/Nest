@@ -1,0 +1,50 @@
+{
+  "schemaVersion": "1.0",
+  "cityId": "ramat_gan",
+  "displayNames": {
+    "en": "Ramat Gan",
+    "he": "רמת גן",
+    "fr": "Ramat Gan",
+    "ru": "Рамат-Ган",
+    "ar": "رمات غان",
+    "es": "Ramat Gan"
+  },
+  "country": "IL",
+  "timezone": "Asia/Jerusalem",
+  "currency": "ILS",
+  "preferredLanguages": [
+    "he",
+    "en",
+    "ar",
+    "ru",
+    "fr",
+    "es"
+  ],
+  "geographicBounds": {
+    "south": 32.029,
+    "west": 34.789,
+    "north": 32.101,
+    "east": 34.879,
+    "status": "provisional_needs_official_gis_validation"
+  },
+  "neighborhoods": [
+    "מרום נווה",
+    "רמת חן",
+    "רמת יצחק",
+    "קריית קריניצי",
+    "רמת אפעל",
+    "רמת השקמה",
+    "חרוזים"
+  ],
+  "familyHubs": [
+    "הפארק הלאומי",
+    "הספארי",
+    "בית עמנואל והמרכזים הקהילתיים",
+    "מוזיאון רמת גן",
+    "מוזיאון האדם והחי"
+  ],
+  "defaultRadiusKm": 5,
+  "transportNotes": [
+    "Dense border with Tel Aviv and Givatayim requires city-aware filtering without hiding nearby content."
+  ]
+}

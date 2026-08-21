@@ -1,0 +1,37 @@
+{
+  "schemaVersion": "1.0",
+  "approvalId": "approval-ramat-gan-source-001",
+  "runId": "ramat-gan-assisted-2026-08-21",
+  "gate": "new_source",
+  "decisionRequired": "Approve or reject connector development and a future production dry run for ramat_gan_beit_emanuel.",
+  "riskSummary": [
+    "Automated access terms not yet approved",
+    "Markup stability not yet proven",
+    "Image rights not approved",
+    "City boundary remains provisional"
+  ],
+  "proposedChanges": [
+    "Develop connector behind disabled provider_registry row",
+    "Run fixture and non-production dry runs only"
+  ],
+  "evidence": [
+    "city-profile.json",
+    "source-candidates.json",
+    "provider-analyses.json",
+    "provider-proposal.json",
+    "dry-run.json",
+    "quality-report.json",
+    "localization-plan.json",
+    "expansion-readiness.json"
+  ],
+  "dryRunResults": {
+    "fetched": 4,
+    "normalized": 4,
+    "relevant": 3,
+    "excluded": 1,
+    "productionWrites": 0
+  },
+  "requestedByAgent": "orchestrator",
+  "status": "PENDING",
+  "productionActionTaken": false
+}
