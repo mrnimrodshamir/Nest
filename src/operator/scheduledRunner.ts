@@ -9,7 +9,7 @@ import type { ContentCandidate, HealthScore, OperatorFinding, OperatorMode, Prov
 
 export interface ScheduledRunContext { runId: string; taskId: string }
 export interface ScheduledOperatorStore {
-  beginRun(mode: 'daily' | 'source_hunt', now: Date): Promise<ScheduledRunContext>;
+  beginRun(mode: 'daily' | 'source_hunt', now: Date, scheduled: boolean): Promise<ScheduledRunContext>;
   loadContent(): Promise<ContentCandidate[]>;
   loadProviders(): Promise<ProviderSnapshot[]>;
   loadLatestProductHealth(): Promise<HealthScore | null>;
@@ -38,13 +38,14 @@ export interface ScheduledRunnerOptions {
   now?: Date;
   sourceCatalog?: SourceOpportunity[];
   idFactory?: () => string;
+  scheduled?: boolean;
 }
 
 export async function runScheduledOperator(mode: OperatorMode, store: ScheduledOperatorStore, options: ScheduledRunnerOptions = {}): Promise<ScheduledCycleReport> {
   assertScheduledMode(mode);
   const now = options.now ?? new Date();
   const idFactory = options.idFactory ?? (() => crypto.randomUUID());
-  const context = await store.beginRun(mode, now);
+  const context = await store.beginRun(mode, now, options.scheduled === true);
   try {
     const pending = await store.loadPendingApprovalKeys();
     const report = mode === 'daily'

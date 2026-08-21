@@ -8,10 +8,10 @@ type JsonObject = Record<string, unknown>;
 
 export function createSupabaseOperatorStore(client: SupabaseClient): ScheduledOperatorStore {
   return {
-    async beginRun(mode, now) {
+    async beginRun(mode, now, scheduled) {
       const runId=crypto.randomUUID(),taskId=crypto.randomUUID(),stage=mode==='source_hunt'?'source_discovery':'quality_review',agent=mode==='source_hunt'?'source_discovery':'orchestrator';
       await must(client.from('city_expansion_runs').insert({id:runId,workflow_type:'city_expansion',city_id:mode==='source_hunt'?'tel_aviv':'global',status:'running',current_stage:stage,risk_level:'low',autonomy_level:2,created_at:now.toISOString(),updated_at:now.toISOString()}));
-      await must(client.from('agent_tasks').insert({id:taskId,run_id:runId,agent,stage,status:'running',input_summary:{operatorMode:mode,scheduled:true,greenOnly:true},tools_used:['unified_operator','production_read_only'],approval_required:false,started_at:now.toISOString()}));
+      await must(client.from('agent_tasks').insert({id:taskId,run_id:runId,agent,stage,status:'running',input_summary:{operatorMode:mode,scheduled,greenOnly:true},tools_used:['unified_operator','production_read_only'],approval_required:false,started_at:now.toISOString()}));
       return {runId,taskId};
     },
     async loadContent() {

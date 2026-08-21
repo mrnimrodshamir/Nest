@@ -13,7 +13,7 @@ export async function handleOperatorRequest(request:Request,deps:OperatorHandler
   let body:unknown;try{body=await request.json();}catch{return response(400,{error:{code:'INVALID_REQUEST'}});}
   const mode=(body as {mode?:unknown})?.mode;
   if(mode!=='daily'&&mode!=='source_hunt')return response(400,{error:{code:'INVALID_REQUEST'}});
-  try{const report=await runScheduledOperator(mode as OperatorMode,createSupabaseOperatorStore(deps.client),{now:deps.now?.(),sourceCatalog:TEL_AVIV_SOURCE_CATALOG});return response(200,{ok:true,mode:report.mode,productHealth:report.productHealth,contentHealth:report.contentHealth,findings:report.findings.length,approvalsCreated:report.approvalsCreated.length});}
+  try{const report=await runScheduledOperator(mode as OperatorMode,createSupabaseOperatorStore(deps.client),{now:deps.now?.(),sourceCatalog:TEL_AVIV_SOURCE_CATALOG,scheduled:(body as {scheduled?:unknown}).scheduled===true});return response(200,{ok:true,mode:report.mode,productHealth:report.productHealth,contentHealth:report.contentHealth,findings:report.findings.length,approvalsCreated:report.approvalsCreated.length});}
   catch{return response(500,{error:{code:'OPERATOR_RUN_FAILED'}});}
 }
 
