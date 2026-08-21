@@ -31,6 +31,12 @@ The executable policy lives in `src/operator/policy.ts`.
 - `source_hunt`: source discovery and net-new-value ranking
 - `bug_hunt`: reproduce/root-cause/regression workflow
 
-Example: `npm run operator -- --mode deep_audit --persist`. Persistence is limited to the existing service-role-only agent control-plane tables. No operator schedules are enabled.
+Example: `npm run operator -- --mode deep_audit --persist`. Persistence is limited to the existing agent control-plane tables.
+
+## Supervised automation
+
+The scheduled Edge Function accepts only `daily` and `source_hunt`. Daily runs at `03:15 UTC`; weekly Tel Aviv Source Hunt runs Mondays at `03:30 UTC`. These are operational UTC schedules rather than user-facing delivery times. Scheduled runs may execute Green diagnostics and create pending Yellow approval requests only. They cannot update approval decisions, providers, Events, cities, notification behavior, builds, or releases.
+
+Owner requests use the existing `approval_requests` table plus an explicit `operator_owners` allow-list. Agents retain insert-only approval access. An authenticated allow-listed owner may select the inbox and update only `status`, `decided_by`, and `decided_at`; silence never changes a request from `PENDING`.
 
 Every health run also emits the compact `NESTUP OPERATOR REPORT` in its artifact. It includes overall scores, critical/product/content/provider/city sections, three opportunities at most, completed Green work, Yellow approvals, and one next-best action so it can be read in under two minutes.

@@ -1,4 +1,6 @@
 import type { HealthScore, HealthSignal } from './types.ts';
+import type { ContentCandidate } from './types.ts';
+import { auditContent } from './contentQuality.ts';
 
 export const CONTENT_SCORE_WEIGHTS = {
   sourceCompleteness: 15, freshness: 15, validity: 10, uniqueness: 10,
@@ -32,6 +34,24 @@ export function contentHealth(values: Record<keyof typeof CONTENT_SCORE_WEIGHTS,
 
 export function productHealth(values: Record<keyof typeof PRODUCT_SCORE_WEIGHTS, number>, reasons: Partial<Record<keyof typeof PRODUCT_SCORE_WEIGHTS, string>> = {}): HealthScore {
   return calculateHealthScore(Object.entries(PRODUCT_SCORE_WEIGHTS).map(([id, weight]) => ({ id, label: humanize(id), value: values[id as keyof typeof PRODUCT_SCORE_WEIGHTS], weight, reason: reasons[id as keyof typeof PRODUCT_SCORE_WEIGHTS] })));
+}
+
+export function scoreContentCandidates(events: ContentCandidate[]): HealthScore {
+  const count = Math.max(1, events.length);
+  const ratio = (predicate: (event: ContentCandidate) => boolean) => events.filter(predicate).length / count;
+  const duplicates = auditContent(events).duplicateGroups.reduce((sum, group) => sum + group.length, 0);
+  return contentHealth({
+    sourceCompleteness: 1,
+    freshness: ratio((event) => Number.isFinite(Date.parse(event.startsAt))),
+    validity: ratio((event) => Number.isFinite(Date.parse(event.startsAt))),
+    uniqueness: 1 - duplicates / count,
+    familyRelevance: 1,
+    ageCoverage: ratio((event) => event.ageMinMonths != null || event.ageMaxMonths != null),
+    priceCoverage: ratio((event) => Boolean(event.priceNote)),
+    locationCoverage: ratio((event) => event.latitude != null && event.longitude != null),
+    registrationCoverage: ratio((event) => Boolean(event.registrationUrl || event.sourceUrl)),
+    categoryConfidence: ratio((event) => Boolean(event.category && event.category !== 'other')),
+  });
 }
 
 function clamp(value: number): number { return Math.max(0, Math.min(1, Number.isFinite(value) ? value : 0)); }
