@@ -1,0 +1,59 @@
+{
+  "schemaVersion": "1.0",
+  "assessments": [
+    {
+      "eventId": "sample-22699",
+      "qualityScore": 100,
+      "publishRecommendation": "PUBLISH",
+      "reasons": [],
+      "duplicateClass": "DISTINCT",
+      "categoryConfidence": 85,
+      "ageConfidence": 90,
+      "locationConfidence": 95,
+      "priceConfidence": 25,
+      "sourceConfidence": 90,
+      "manualReviewRequired": false
+    },
+    {
+      "eventId": "sample-22752",
+      "qualityScore": 100,
+      "publishRecommendation": "PUBLISH",
+      "reasons": [],
+      "duplicateClass": "DISTINCT",
+      "categoryConfidence": 85,
+      "ageConfidence": 90,
+      "locationConfidence": 95,
+      "priceConfidence": 25,
+      "sourceConfidence": 90,
+      "manualReviewRequired": false
+    },
+    {
+      "eventId": "sample-23233",
+      "qualityScore": 100,
+      "publishRecommendation": "PUBLISH",
+      "reasons": [],
+      "duplicateClass": "DISTINCT",
+      "categoryConfidence": 85,
+      "ageConfidence": 25,
+      "locationConfidence": 95,
+      "priceConfidence": 25,
+      "sourceConfidence": 90,
+      "manualReviewRequired": false
+    },
+    {
+      "eventId": "sample-test",
+      "qualityScore": 55,
+      "publishRecommendation": "REVIEW",
+      "reasons": [
+        "test_or_placeholder_content"
+      ],
+      "duplicateClass": "DISTINCT",
+      "categoryConfidence": 30,
+      "ageConfidence": 25,
+      "locationConfidence": 65,
+      "priceConfidence": 25,
+      "sourceConfidence": 90,
+      "manualReviewRequired": true
+    }
+  ]
+}

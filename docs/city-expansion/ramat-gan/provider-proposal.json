@@ -1,0 +1,47 @@
+{
+  "schemaVersion": "1.0",
+  "providerId": "ramat_gan_beit_emanuel",
+  "providerName": "בית עמנואל רמת גן",
+  "sourceUrl": "https://mbe-rg.smarticket.co.il/",
+  "connectorType": "html_extraction",
+  "fetchStrategy": "Read public listing pages and approved detail pages with bounded concurrency, retries, timeout, and a pinned parser fixture.",
+  "paginationStrategy": "Follow only same-origin listing pagination discovered from the approved starting page; stop on repeated page identity or configured cap.",
+  "stableIdentityStrategy": "Use the Smarticket numeric detail-page id plus occurrence start; never derive identity from mutable title or description.",
+  "normalizationMapping": {
+    "title": "listing/detail title",
+    "starts_at": "occurrence date and time",
+    "location_name": "venue label",
+    "age_range": "explicit age text only",
+    "registration_url": "canonical same-origin detail URL",
+    "price_note": "explicit displayed price only"
+  },
+  "eventLifecycleHandling": "Provider-present records update in place. Missing reconciliation runs only after a complete successful fetch and preserves RSVP-linked occurrences.",
+  "sourceCompletenessRules": [
+    "all listing pages fetched",
+    "no repeated pagination token",
+    "response count below configured safety ceiling is investigated",
+    "any parse/schema drift marks source_complete=false"
+  ],
+  "failureModes": [
+    "timeout",
+    "HTTP error",
+    "markup drift",
+    "pagination loop",
+    "partial detail fetch",
+    "unexpected event volume"
+  ],
+  "imageRightsPolicy": "Do not ingest or republish provider images until written rights are recorded in the content image pipeline.",
+  "dedupeInteraction": "Provider-native ID is primary; cross-provider mirrors remain quality candidates and ambiguous matches require review.",
+  "estimatedMaintenanceRisk": "medium",
+  "safety": {
+    "dryRun": true,
+    "failClosedSourceCompleteness": true,
+    "deterministicIdentity": true,
+    "idempotent": true,
+    "providerScopedWrites": true,
+    "noDestructiveActionOnPartialFetch": true,
+    "rsvpSafeLifecycle": true,
+    "observable": true
+  },
+  "productionEnabled": false
+}

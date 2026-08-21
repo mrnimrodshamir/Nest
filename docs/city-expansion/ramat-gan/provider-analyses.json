@@ -1,0 +1,31 @@
+{
+  "schemaVersion": "1.0",
+  "analyses": [
+    {
+      "sourceId": "ramat_gan_beit_emanuel",
+      "rank": 1,
+      "connectorType": "html_extraction",
+      "stableIdsObserved": true,
+      "pagination": "requires_fixture_validation",
+      "detailPages": true,
+      "registrationLinks": true,
+      "ageData": "frequent_explicit_text",
+      "priceData": "partial",
+      "recommendation": "DRAFT_CONNECTOR_AFTER_GATE_A",
+      "risk": "medium"
+    },
+    {
+      "sourceId": "ramat_gan_museum",
+      "rank": 2,
+      "connectorType": "html_extraction",
+      "stableIdsObserved": true,
+      "pagination": "recurring_occurrence_expansion_requires_validation",
+      "detailPages": true,
+      "registrationLinks": true,
+      "ageData": "partial",
+      "priceData": "partial",
+      "recommendation": "ANALYZE_FIXTURES_AFTER_PRIMARY_SOURCE",
+      "risk": "medium"
+    }
+  ]
+}
