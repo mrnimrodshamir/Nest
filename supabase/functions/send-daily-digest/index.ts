@@ -49,7 +49,8 @@ function createDatabase(client: any): DigestDatabase {
       const windowEnd = `${addLocalCalendarDays(period.endDate, 2)}T00:00:00.000Z`;
       const { data, error } = await client
         .from('active_event_occurrences')
-        .select('occurrence_id,event_id,title,description,category,starts_at,age_min_months,age_max_months,price_note,provider,provider_event_id,source_name,source_url,source_type,canonical_event_id,latitude,longitude,location_name,formatted_address')
+        .select('occurrence_id,event_id,title,description,category,starts_at,age_min_months,age_max_months,price_note,provider,provider_event_id,source_name,source_url,source_type,canonical_event_id,latitude,longitude,location_name,formatted_address,city_id')
+        .eq('city_id', 'tel_aviv')
         .gte('starts_at', windowStart)
         .lte('starts_at', windowEnd);
       if (error) throw new Error(`Could not load digest candidate occurrences: ${error.message}`);

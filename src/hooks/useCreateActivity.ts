@@ -6,6 +6,7 @@ import type { ActivityCategory } from '@/types/activity';
 import type { NormalizedPlace } from '@/types/place';
 import { normalizedPlaceToColumns } from '@/utils/activityPlaceMapping';
 import { currentAppLocale, translate } from '@/i18n';
+import { resolveCityForCoordinate } from '@/config/cities';
 
 export interface CreateActivityInput {
   activityType: ActivityCategory;
@@ -146,7 +147,7 @@ export function useCreateActivity(): UseCreateActivityResult {
         }
       }
 
-      track('activity_created', { content_id: activityId, category: input.activityType });
+      track('activity_created', { content_id: activityId, category: input.activityType, city: resolveCityForCoordinate(input.latitude, input.longitude) ?? 'unknown' });
       setIsSubmitting(false);
       setStage(null);
 

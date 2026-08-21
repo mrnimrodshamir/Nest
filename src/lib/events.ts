@@ -21,7 +21,7 @@ import { addLocalCalendarDays, weeklyDigestPeriod } from '../../supabase/functio
 import { selectWeeklyDigestEvents } from '../../supabase/functions/_shared/dailyDigest/selectWeeklyDigestEvents';
 import { rowsInDigestOrder } from '@/utils/dailyDigestRows';
 
-export const EVENT_COLUMNS = 'id,title,description,category,image_url,age_min_months,age_max_months,price_note,registration_required,registration_url,verification_status,publication_status,event_status,cancellation_reason,provider,provider_event_id,provider_transport_id,source_group_id,source_name,source_url,source_published_at,source_updated_at,provider_metadata,is_recurring,recurrence_rule,recurrence_timezone,recurrence_series_id,place_id,location_name,formatted_address,latitude,longitude,created_at,updated_at';
+export const EVENT_COLUMNS = 'id,city_id,title,description,category,image_url,age_min_months,age_max_months,price_note,registration_required,registration_url,verification_status,publication_status,event_status,cancellation_reason,provider,provider_event_id,provider_transport_id,source_group_id,source_name,source_url,source_published_at,source_updated_at,provider_metadata,is_recurring,recurrence_rule,recurrence_timezone,recurrence_series_id,place_id,location_name,formatted_address,latitude,longitude,created_at,updated_at';
 export const EVENT_OCCURRENCE_COLUMNS = 'id,event_id,provider_occurrence_id,occurrence_fingerprint,starts_at,ends_at,original_starts_at,occurrence_status,cancellation_reason,source_updated_at,provider_metadata';
 
 const DISCOVERY_EVENT_LIMIT = 200;
@@ -142,6 +142,7 @@ export async function queryDailyDigestEvents(
   const { data, error } = await supabase
     .from('active_event_occurrences')
     .select('*')
+    .eq('city_id', 'tel_aviv')
     .gte('starts_at', windowStart)
     .lte('starts_at', windowEnd);
   if (error) throw new Error(error.message);
@@ -206,6 +207,7 @@ export async function queryWeeklyDigestEvents(
   const { data, error } = await supabase
     .from('active_event_occurrences')
     .select('*')
+    .eq('city_id', 'tel_aviv')
     .gte('starts_at', windowStart)
     .lte('starts_at', windowEnd);
   if (error) throw new Error(error.message);

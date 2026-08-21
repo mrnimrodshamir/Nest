@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { sourceBadgeForActivity, sourceBadgeForEvent } from './sourceBadge.ts';
+import { isTelAvivMunicipalEvent, sourceBadgeForActivity, sourceBadgeForEvent } from './sourceBadge.ts';
 
 test('a municipal event badge carries the municipality name and its base URL', () => {
   const badge = sourceBadgeForEvent({
@@ -27,4 +27,10 @@ test('the three kinds are mutually exclusive — an Event badge is never nestup_
   const external = sourceBadgeForEvent({ sourceType: 'external_organizer', sourceName: 'x', providerUrl: null });
   assert.notEqual(municipal.kind, 'nestup_community');
   assert.notEqual(external.kind, 'nestup_community');
+});
+
+test('Beit Emanuel keeps its own source and never receives the Tel Aviv municipality logo', () => {
+  assert.equal(isTelAvivMunicipalEvent({ source: { provider: 'ramat_gan_beit_emanuel' } }), false);
+  const badge = sourceBadgeForEvent({ sourceType: 'external_organizer', sourceName: 'בית עמנואל רמת גן', providerUrl: 'https://mbe-rg.smarticket.co.il/' });
+  assert.equal(badge.label, 'בית עמנואל רמת גן');
 });

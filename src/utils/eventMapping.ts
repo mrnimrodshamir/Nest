@@ -22,6 +22,7 @@ export interface EventImportRecord {
 
 export interface EventRow {
   id: string;
+  city_id?: 'tel_aviv' | 'ramat_gan' | null;
   title: string;
   description: string | null;
   category: string | null;
@@ -77,6 +78,7 @@ export function mapEventDetails(eventRow: EventRow, occurrenceRow: EventOccurren
   const occurrenceStatus = parseSourceStatus(occurrenceRow.occurrence_status);
   const entity: EventEntity = {
     id: eventRow.id,
+    cityId: eventRow.city_id === 'ramat_gan' ? 'ramat_gan' : 'tel_aviv',
     title: requireText(eventRow.title, 'title'),
     description: eventRow.description,
     category: parseCategory(eventRow.category),

@@ -36,7 +36,7 @@ interface UseEventRsvpResult {
  *
  *  The row's user_id is enforced by RLS against auth.uid(); the client id here
  *  is used only for local state, never as the security boundary. */
-export function useEventRsvp(occurrenceId: string | null): UseEventRsvpResult {
+export function useEventRsvp(occurrenceId: string | null, city: 'tel_aviv' | 'ramat_gan' | null = null): UseEventRsvpResult {
   const [isGoing, setIsGoing] = useState(false);
   const [attendees, setAttendees] = useState<EventAttendee[]>([]);
   const [attendeeCount, setAttendeeCount] = useState(0);
@@ -123,7 +123,7 @@ export function useEventRsvp(occurrenceId: string | null): UseEventRsvpResult {
           .eq('event_occurrence_id', occurrenceId)
           .eq('user_id', viewerId);
         if (deleteError) throw deleteError;
-        track('event_rsvp_left', { content_id: occurrenceId });
+        track('event_rsvp_left', { content_id: occurrenceId, city: city ?? 'unknown' });
       } else {
         // upsert on the unique (occurrence, user) pair, so a retry or a double
         // tap that slips past isSaving still cannot create a second row.
@@ -134,7 +134,7 @@ export function useEventRsvp(occurrenceId: string | null): UseEventRsvpResult {
             { onConflict: 'event_occurrence_id,user_id', ignoreDuplicates: true },
           );
         if (insertError) throw insertError;
-        track('event_rsvp_joined', { content_id: occurrenceId });
+        track('event_rsvp_joined', { content_id: occurrenceId, city: city ?? 'unknown' });
       }
       await load();
     } catch (err) {
@@ -144,7 +144,7 @@ export function useEventRsvp(occurrenceId: string | null): UseEventRsvpResult {
     } finally {
       setIsSaving(false);
     }
-  }, [occurrenceId, isGoing, isSaving, load]);
+  }, [city, occurrenceId, isGoing, isSaving, load]);
 
   return {
     isGoing,

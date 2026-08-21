@@ -91,7 +91,7 @@ export function buildRamatGanMvpArtifacts() {
   const cityProfile = {
     schemaVersion: '1.0', cityId: 'ramat_gan', displayNames: { en: 'Ramat Gan', he: 'רמת גן', fr: 'Ramat Gan', ru: 'Рамат-Ган', ar: 'رمات غان', es: 'Ramat Gan' },
     country: 'IL', timezone: 'Asia/Jerusalem', currency: 'ILS', preferredLanguages: ['he', 'en', 'ar', 'ru', 'fr', 'es'],
-    geographicBounds: { south: 32.029, west: 34.789, north: 32.101, east: 34.879, status: 'provisional_needs_official_gis_validation' },
+    geographicBounds: { south: 32.0360822, west: 34.7991359, north: 32.105566, east: 34.8547491, status: 'authoritative_official_gis', sourceCode: '8600', sourceUrl: 'https://ags.iplan.gov.il/arcgisiplan/rest/services/PlanningPublic/gvulot_retzef/MapServer/1' },
     neighborhoods: ['מרום נווה', 'רמת חן', 'רמת יצחק', 'קריית קריניצי', 'רמת אפעל', 'רמת השקמה', 'חרוזים'],
     familyHubs: ['הפארק הלאומי', 'הספארי', 'בית עמנואל והמרכזים הקהילתיים', 'מוזיאון רמת גן', 'מוזיאון האדם והחי'],
     defaultRadiusKm: 5, transportNotes: ['Dense border with Tel Aviv and Givatayim requires city-aware filtering without hiding nearby content.'],
@@ -124,7 +124,7 @@ export function buildRamatGanMvpArtifacts() {
   const approvalRequest: ApprovalRequest = {
     schemaVersion: '1.0', approvalId: 'approval-ramat-gan-source-001', runId: RAMAT_GAN_RUN_ID, gate: 'new_source',
     decisionRequired: 'Approve or reject connector development and a future production dry run for ramat_gan_beit_emanuel.',
-    riskSummary: ['Automated access terms not yet approved', 'Markup stability not yet proven', 'Image rights not approved', 'City boundary remains provisional'],
+    riskSummary: ['Public structured endpoint/markup requires monitoring', 'Image rights not approved and images remain excluded'],
     proposedChanges: ['Develop connector behind disabled provider_registry row', 'Run fixture and non-production dry runs only'],
     evidence: ['city-profile.json', 'source-candidates.json', 'provider-analyses.json', 'provider-proposal.json', 'dry-run.json', 'quality-report.json', 'localization-plan.json', 'expansion-readiness.json'],
     dryRunResults: { fetched: 4, normalized: 4, relevant: 3, excluded: 1, productionWrites: 0 },

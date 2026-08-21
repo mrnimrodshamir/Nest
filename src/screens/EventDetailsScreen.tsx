@@ -58,7 +58,8 @@ function EventDetailsContent({ event, onBack, onOpenProfile }: EventDetailsScree
   const content = useMemo(() => buildEventDetailsPresentation(event, dateLocaleTag(locale), t), [event, locale, t]);
   const [showCalendar, setShowCalendar] = useState(false);
   const [showAttendees, setShowAttendees] = useState(false);
-  const { isGoing, attendees, attendeeCount, isSaving, toggle } = useEventRsvp(event.occurrence.id);
+  const cityId = event.cityId ?? 'tel_aviv';
+  const { isGoing, attendees, attendeeCount, isSaving, toggle } = useEventRsvp(event.occurrence.id, cityId);
   const rsvp = rsvpPresentation({ isGoing, attendeeCount, lifecycle: event.lifecycle });
   const attendanceSummary = attendanceSummaryKey(attendeeCount);
   const preview = attendeePreview(attendees);
@@ -66,8 +67,8 @@ function EventDetailsContent({ event, onBack, onOpenProfile }: EventDetailsScree
   const shareMessage = buildEventShareMessage({ occurrenceId: event.occurrence.id, title: content.title, startsAt: event.occurrence.startsAt, location: event.location.name ?? event.location.formattedAddress, status: event.occurrence.status });
   const calendarEvent = { occurrenceId: event.occurrence.id, title: content.title, description: content.description, startsAt: event.occurrence.startsAt, endsAt: event.occurrence.endsAt, locationName: event.location.name ?? event.location.formattedAddress, sourceUrl: event.source.sourceUrl, status: event.occurrence.status };
   useEffect(() => {
-    track('event_opened', { content_id: event.occurrence.id, source: event.source.provider });
-  }, [event.occurrence.id, event.source.provider]);
+    track('event_opened', { content_id: event.occurrence.id, source: event.source.provider, city: cityId });
+  }, [cityId, event.occurrence.id, event.source.provider]);
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <View style={styles.header}>

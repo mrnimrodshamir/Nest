@@ -5,10 +5,8 @@
   "gate": "new_source",
   "decisionRequired": "Approve or reject connector development and a future production dry run for ramat_gan_beit_emanuel.",
   "riskSummary": [
-    "Automated access terms not yet approved",
-    "Markup stability not yet proven",
-    "Image rights not approved",
-    "City boundary remains provisional"
+    "Public structured endpoint/markup requires monitoring",
+    "Image rights not approved and images remain excluded"
   ],
   "proposedChanges": [
     "Develop connector behind disabled provider_registry row",

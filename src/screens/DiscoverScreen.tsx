@@ -39,6 +39,7 @@ import { ALL_DISCOVERY_CONTENT, discoveryEmptyCopyKey, selectedContentKeys, togg
 import { useI18n, textAlignForContent, type TranslationKey } from '@/i18n';
 import { applyContentSelectionChange, discoveryMapPointerEvents, handleDiscoveryItemIntent, nextDiscoveryMapGeneration, shouldRefreshDiscoveryMapForAppState } from '@/utils/discoveryScreenState';
 import { track } from '@/lib/analytics';
+import { resolveCityForCoordinate } from '@/config/cities';
 import { displayedEventContent } from '../../supabase/functions/_shared/eventTranslation';
 import {
   discoveryItemKey,
@@ -189,7 +190,7 @@ export function DiscoverScreen({ onOpenActivity, onOpenPlace, onOpenEvent, onHos
   }, [isFocused]);
 
   useEffect(() => {
-    track('discovery_opened', { discovery_mode: 'mixed' });
+    track('discovery_opened', { discovery_mode: 'mixed', city: resolveCityForCoordinate(initialCoordinate.latitude, initialCoordinate.longitude) ?? 'unknown' });
   }, []);
 
   const position = useDiscoveryPosition(!previewMode);

@@ -21,11 +21,13 @@
     "es"
   ],
   "geographicBounds": {
-    "south": 32.029,
-    "west": 34.789,
-    "north": 32.101,
-    "east": 34.879,
-    "status": "provisional_needs_official_gis_validation"
+    "south": 32.0360822,
+    "west": 34.7991359,
+    "north": 32.105566,
+    "east": 34.8547491,
+    "status": "authoritative_official_gis",
+    "sourceCode": "8600",
+    "sourceUrl": "https://ags.iplan.gov.il/arcgisiplan/rest/services/PlanningPublic/gvulot_retzef/MapServer/1"
   },
   "neighborhoods": [
     "מרום נווה",
