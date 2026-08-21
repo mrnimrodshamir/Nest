@@ -1,0 +1,16 @@
+{
+  "tests": true,
+  "testsPassed": 1385,
+  "testsFailed": 0,
+  "typeScript": true,
+  "expoDoctorPassed": 21,
+  "expoDoctorTotal": 21,
+  "iosExport": true,
+  "criticalFlowPassed": 484,
+  "criticalFlowTotal": 484,
+  "securityTests": true,
+  "securityScore": 0.8,
+  "securityLimitation": "Schema, RLS, grant, privacy-view, idempotency, and static regression checks passed; live anonymous/user-A/user-B isolation was not executed because dedicated non-production principals were unavailable and creating production identities was out of scope.",
+  "credentialScanMatches": 0,
+  "gitDiffCheck": true
+}

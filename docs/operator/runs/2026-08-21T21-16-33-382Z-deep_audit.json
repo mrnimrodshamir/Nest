@@ -1,0 +1,947 @@
+{
+  "schemaVersion": "1.0",
+  "generatedAt": "2026-08-21T21:16:33.379Z",
+  "mode": "deep_audit",
+  "plan": {
+    "mode": "deep_audit",
+    "capabilities": [
+      "observe_product",
+      "observe_content",
+      "inspect_providers",
+      "security_watch",
+      "bug_investigation",
+      "persist_audit"
+    ],
+    "productionWrites": false,
+    "schedulesEnabled": false
+  },
+  "summary": {
+    "eventsChecked": 343,
+    "contentHealth": 88,
+    "productHealth": 98,
+    "providersChecked": 5,
+    "topIssues": 5
+  },
+  "productHealth": {
+    "score": 98,
+    "signals": [
+      {
+        "id": "tests",
+        "label": "Tests",
+        "value": 1,
+        "weight": 20,
+        "deduction": 0
+      },
+      {
+        "id": "typeScript",
+        "label": "Type Script",
+        "value": 1,
+        "weight": 15,
+        "deduction": 0
+      },
+      {
+        "id": "expoDoctor",
+        "label": "Expo Doctor",
+        "value": 1,
+        "weight": 10,
+        "deduction": 0
+      },
+      {
+        "id": "iosExport",
+        "label": "Ios Export",
+        "value": 1,
+        "weight": 15,
+        "deduction": 0
+      },
+      {
+        "id": "criticalFlows",
+        "label": "Critical Flows",
+        "value": 1,
+        "weight": 15,
+        "deduction": 0
+      },
+      {
+        "id": "edgeFunctions",
+        "label": "Edge Functions",
+        "value": 1,
+        "weight": 10,
+        "deduction": 0
+      },
+      {
+        "id": "cronHealth",
+        "label": "Cron Health",
+        "value": 1,
+        "weight": 5,
+        "deduction": 0
+      },
+      {
+        "id": "security",
+        "label": "Security",
+        "value": 0.8,
+        "weight": 10,
+        "deduction": 2
+      }
+    ],
+    "deductions": [
+      "Security: -2"
+    ]
+  },
+  "operations": {
+    "agentPublicGrants": 0,
+    "agentTablesRls": 5,
+    "dailyCron": 1,
+    "digestUniqueIndexes": 2,
+    "eventAttendeePolicies": 3,
+    "publicProfileForbiddenColumns": 0,
+    "publicTablesWithoutRls": 0,
+    "weeklyCron": 1
+  },
+  "contentAudit": {
+    "checked": 343,
+    "issues": [
+      {
+        "id": "content:cancellation-mismatch",
+        "domain": "content",
+        "priority": "P1",
+        "title": "Cancellation wording disagrees with Event lifecycle",
+        "evidence": "2 affected active occurrence(s)",
+        "severity": 8,
+        "userImpact": 7,
+        "confidence": 9,
+        "reach": 3.1,
+        "implementationRisk": 4,
+        "autonomy": "YELLOW"
+      },
+      {
+        "id": "content:adult-only",
+        "domain": "content",
+        "priority": "P1",
+        "title": "Potential adult-only content is publicly active",
+        "evidence": "1 affected active occurrence(s)",
+        "severity": 8,
+        "userImpact": 7,
+        "confidence": 9,
+        "reach": 3.05,
+        "implementationRisk": 4,
+        "autonomy": "YELLOW"
+      },
+      {
+        "id": "content:broken-url",
+        "domain": "content",
+        "priority": "P1",
+        "title": "Event source or registration URLs are unreachable",
+        "evidence": "1 affected active occurrence(s)",
+        "severity": 8,
+        "userImpact": 7,
+        "confidence": 9,
+        "reach": 3.05,
+        "implementationRisk": 4,
+        "autonomy": "YELLOW"
+      },
+      {
+        "id": "content:missing-age",
+        "domain": "content",
+        "priority": "P2",
+        "title": "Events have no age metadata",
+        "evidence": "320 affected active occurrence(s)",
+        "severity": 5,
+        "userImpact": 7,
+        "confidence": 9,
+        "reach": 10,
+        "implementationRisk": 4,
+        "autonomy": "YELLOW"
+      },
+      {
+        "id": "content:missing-price",
+        "domain": "content",
+        "priority": "P3",
+        "title": "Events have no price metadata",
+        "evidence": "315 affected active occurrence(s)",
+        "severity": 5,
+        "userImpact": 7,
+        "confidence": 9,
+        "reach": 10,
+        "implementationRisk": 4,
+        "autonomy": "YELLOW"
+      }
+    ],
+    "counts": {
+      "missingAge": 320,
+      "missingPrice": 315,
+      "missingLocation": 0,
+      "missingUrl": 0,
+      "brokenUrl": 1,
+      "badDate": 0,
+      "pastVisible": 0,
+      "cancelledVisible": 0,
+      "cancellationMismatch": 2,
+      "suspiciousAdultOnly": 1,
+      "implausiblePrice": 0,
+      "wrongCity": 0,
+      "categoryAnomaly": 0,
+      "duplicateGroups": 0
+    },
+    "duplicateGroups": [],
+    "examples": {
+      "missingAge": [
+        "event-occ-v1-3030280bc0336833: הקרנבל של יובל: מסיבת סיום לחופש הגדול",
+        "event-occ-v1-64008d2196513032: ילדותא 2026 – אינדי ילד: לא נפסיק לשיר",
+        "event-occ-v1-1207f636ae3a6c6f: אורות, לייזרים וחדר מלא בלונים: תערוכת GLOW מגיעה לנמל תל אביב",
+        "event-occ-v1-53093ad1509c0966: ילדותא 2026 – הרפתקאות ינץ לוי",
+        "event-occ-v1-12bbb1d35dd68aa3: ילדותא 2026 - החולד הקטן"
+      ],
+      "missingPrice": [
+        "event-occ-v1-3030280bc0336833: הקרנבל של יובל: מסיבת סיום לחופש הגדול",
+        "event-occ-v1-64008d2196513032: ילדותא 2026 – אינדי ילד: לא נפסיק לשיר",
+        "event-occ-v1-53093ad1509c0966: ילדותא 2026 – הרפתקאות ינץ לוי",
+        "event-occ-v1-12bbb1d35dd68aa3: ילדותא 2026 - החולד הקטן",
+        "event-occ-v1-c93b69e0efce7717: ילדותא 2026 – על עלה ועל אלונה"
+      ],
+      "brokenUrl": [
+        "event-occ-v1-e5b04e2990dfbfb4: מגנטים מספרים"
+      ],
+      "suspiciousAdultOnly": [
+        "event-occ-v1-70e89f2504bd2bb4: סיור צפרות בשקיעה למבוגרים"
+      ],
+      "cancellationMismatch": [
+        "event-occ-v1-8b83f8c815c8ebf4: מחנה קיץ ימי - מחזור 8 - בוטל",
+        "event-occ-v1-d6eb81ddc3e5299b: **בוטל** הפנינג חשיפה כדורסל בנות"
+      ]
+    }
+  },
+  "contentHealth": {
+    "global": {
+      "score": 88,
+      "signals": [
+        {
+          "id": "sourceCompleteness",
+          "label": "Source Completeness",
+          "value": 1,
+          "weight": 15,
+          "deduction": 0
+        },
+        {
+          "id": "freshness",
+          "label": "Freshness",
+          "value": 1,
+          "weight": 15,
+          "deduction": 0
+        },
+        {
+          "id": "validity",
+          "label": "Validity",
+          "value": 1,
+          "weight": 10,
+          "deduction": 0
+        },
+        {
+          "id": "uniqueness",
+          "label": "Uniqueness",
+          "value": 1,
+          "weight": 10,
+          "deduction": 0
+        },
+        {
+          "id": "familyRelevance",
+          "label": "Family Relevance",
+          "value": 1,
+          "weight": 15,
+          "deduction": 0
+        },
+        {
+          "id": "ageCoverage",
+          "label": "Age Coverage",
+          "value": 0.06705539358600583,
+          "weight": 7.5,
+          "deduction": 7
+        },
+        {
+          "id": "priceCoverage",
+          "label": "Price Coverage",
+          "value": 0.08163265306122448,
+          "weight": 5,
+          "deduction": 4.6
+        },
+        {
+          "id": "locationCoverage",
+          "label": "Location Coverage",
+          "value": 1,
+          "weight": 10,
+          "deduction": 0
+        },
+        {
+          "id": "registrationCoverage",
+          "label": "Registration Coverage",
+          "value": 1,
+          "weight": 5,
+          "deduction": 0
+        },
+        {
+          "id": "categoryConfidence",
+          "label": "Category Confidence",
+          "value": 1,
+          "weight": 7.5,
+          "deduction": 0
+        }
+      ],
+      "deductions": [
+        "Age Coverage: -7",
+        "Price Coverage: -4.6"
+      ]
+    },
+    "cities": {
+      "tel_aviv": {
+        "score": 88,
+        "signals": [
+          {
+            "id": "sourceCompleteness",
+            "label": "Source Completeness",
+            "value": 1,
+            "weight": 15,
+            "deduction": 0
+          },
+          {
+            "id": "freshness",
+            "label": "Freshness",
+            "value": 1,
+            "weight": 15,
+            "deduction": 0
+          },
+          {
+            "id": "validity",
+            "label": "Validity",
+            "value": 1,
+            "weight": 10,
+            "deduction": 0
+          },
+          {
+            "id": "uniqueness",
+            "label": "Uniqueness",
+            "value": 1,
+            "weight": 10,
+            "deduction": 0
+          },
+          {
+            "id": "familyRelevance",
+            "label": "Family Relevance",
+            "value": 1,
+            "weight": 15,
+            "deduction": 0
+          },
+          {
+            "id": "ageCoverage",
+            "label": "Age Coverage",
+            "value": 0.009404388714733543,
+            "weight": 7.5,
+            "deduction": 7.4
+          },
+          {
+            "id": "priceCoverage",
+            "label": "Price Coverage",
+            "value": 0.012539184952978056,
+            "weight": 5,
+            "deduction": 4.9
+          },
+          {
+            "id": "locationCoverage",
+            "label": "Location Coverage",
+            "value": 1,
+            "weight": 10,
+            "deduction": 0
+          },
+          {
+            "id": "registrationCoverage",
+            "label": "Registration Coverage",
+            "value": 1,
+            "weight": 5,
+            "deduction": 0
+          },
+          {
+            "id": "categoryConfidence",
+            "label": "Category Confidence",
+            "value": 1,
+            "weight": 7.5,
+            "deduction": 0
+          }
+        ],
+        "deductions": [
+          "Age Coverage: -7.4",
+          "Price Coverage: -4.9"
+        ]
+      },
+      "ramat_gan": {
+        "score": 99,
+        "signals": [
+          {
+            "id": "sourceCompleteness",
+            "label": "Source Completeness",
+            "value": 1,
+            "weight": 15,
+            "deduction": 0
+          },
+          {
+            "id": "freshness",
+            "label": "Freshness",
+            "value": 1,
+            "weight": 15,
+            "deduction": 0
+          },
+          {
+            "id": "validity",
+            "label": "Validity",
+            "value": 1,
+            "weight": 10,
+            "deduction": 0
+          },
+          {
+            "id": "uniqueness",
+            "label": "Uniqueness",
+            "value": 1,
+            "weight": 10,
+            "deduction": 0
+          },
+          {
+            "id": "familyRelevance",
+            "label": "Family Relevance",
+            "value": 1,
+            "weight": 15,
+            "deduction": 0
+          },
+          {
+            "id": "ageCoverage",
+            "label": "Age Coverage",
+            "value": 0.8333333333333334,
+            "weight": 7.5,
+            "deduction": 1.2
+          },
+          {
+            "id": "priceCoverage",
+            "label": "Price Coverage",
+            "value": 1,
+            "weight": 5,
+            "deduction": 0
+          },
+          {
+            "id": "locationCoverage",
+            "label": "Location Coverage",
+            "value": 1,
+            "weight": 10,
+            "deduction": 0
+          },
+          {
+            "id": "registrationCoverage",
+            "label": "Registration Coverage",
+            "value": 1,
+            "weight": 5,
+            "deduction": 0
+          },
+          {
+            "id": "categoryConfidence",
+            "label": "Category Confidence",
+            "value": 1,
+            "weight": 7.5,
+            "deduction": 0
+          }
+        ],
+        "deductions": [
+          "Age Coverage: -1.2"
+        ]
+      }
+    },
+    "providers": {
+      "tel_aviv_digitel": {
+        "score": 88,
+        "signals": [
+          {
+            "id": "sourceCompleteness",
+            "label": "Source Completeness",
+            "value": 1,
+            "weight": 15,
+            "deduction": 0
+          },
+          {
+            "id": "freshness",
+            "label": "Freshness",
+            "value": 1,
+            "weight": 15,
+            "deduction": 0
+          },
+          {
+            "id": "validity",
+            "label": "Validity",
+            "value": 1,
+            "weight": 10,
+            "deduction": 0
+          },
+          {
+            "id": "uniqueness",
+            "label": "Uniqueness",
+            "value": 1,
+            "weight": 10,
+            "deduction": 0
+          },
+          {
+            "id": "familyRelevance",
+            "label": "Family Relevance",
+            "value": 1,
+            "weight": 15,
+            "deduction": 0
+          },
+          {
+            "id": "ageCoverage",
+            "label": "Age Coverage",
+            "value": 0,
+            "weight": 7.5,
+            "deduction": 7.5
+          },
+          {
+            "id": "priceCoverage",
+            "label": "Price Coverage",
+            "value": 0,
+            "weight": 5,
+            "deduction": 5
+          },
+          {
+            "id": "locationCoverage",
+            "label": "Location Coverage",
+            "value": 1,
+            "weight": 10,
+            "deduction": 0
+          },
+          {
+            "id": "registrationCoverage",
+            "label": "Registration Coverage",
+            "value": 1,
+            "weight": 5,
+            "deduction": 0
+          },
+          {
+            "id": "categoryConfidence",
+            "label": "Category Confidence",
+            "value": 1,
+            "weight": 7.5,
+            "deduction": 0
+          }
+        ],
+        "deductions": [
+          "Age Coverage: -7.5",
+          "Price Coverage: -5"
+        ]
+      },
+      "tel_aviv_port": {
+        "score": 93,
+        "signals": [
+          {
+            "id": "sourceCompleteness",
+            "label": "Source Completeness",
+            "value": 1,
+            "weight": 15,
+            "deduction": 0
+          },
+          {
+            "id": "freshness",
+            "label": "Freshness",
+            "value": 1,
+            "weight": 15,
+            "deduction": 0
+          },
+          {
+            "id": "validity",
+            "label": "Validity",
+            "value": 1,
+            "weight": 10,
+            "deduction": 0
+          },
+          {
+            "id": "uniqueness",
+            "label": "Uniqueness",
+            "value": 1,
+            "weight": 10,
+            "deduction": 0
+          },
+          {
+            "id": "familyRelevance",
+            "label": "Family Relevance",
+            "value": 1,
+            "weight": 15,
+            "deduction": 0
+          },
+          {
+            "id": "ageCoverage",
+            "label": "Age Coverage",
+            "value": 0,
+            "weight": 7.5,
+            "deduction": 7.5
+          },
+          {
+            "id": "priceCoverage",
+            "label": "Price Coverage",
+            "value": 1,
+            "weight": 5,
+            "deduction": 0
+          },
+          {
+            "id": "locationCoverage",
+            "label": "Location Coverage",
+            "value": 1,
+            "weight": 10,
+            "deduction": 0
+          },
+          {
+            "id": "registrationCoverage",
+            "label": "Registration Coverage",
+            "value": 1,
+            "weight": 5,
+            "deduction": 0
+          },
+          {
+            "id": "categoryConfidence",
+            "label": "Category Confidence",
+            "value": 1,
+            "weight": 7.5,
+            "deduction": 0
+          }
+        ],
+        "deductions": [
+          "Age Coverage: -7.5"
+        ]
+      },
+      "ramat_gan_beit_emanuel": {
+        "score": 99,
+        "signals": [
+          {
+            "id": "sourceCompleteness",
+            "label": "Source Completeness",
+            "value": 1,
+            "weight": 15,
+            "deduction": 0
+          },
+          {
+            "id": "freshness",
+            "label": "Freshness",
+            "value": 1,
+            "weight": 15,
+            "deduction": 0
+          },
+          {
+            "id": "validity",
+            "label": "Validity",
+            "value": 1,
+            "weight": 10,
+            "deduction": 0
+          },
+          {
+            "id": "uniqueness",
+            "label": "Uniqueness",
+            "value": 1,
+            "weight": 10,
+            "deduction": 0
+          },
+          {
+            "id": "familyRelevance",
+            "label": "Family Relevance",
+            "value": 1,
+            "weight": 15,
+            "deduction": 0
+          },
+          {
+            "id": "ageCoverage",
+            "label": "Age Coverage",
+            "value": 0.8333333333333334,
+            "weight": 7.5,
+            "deduction": 1.2
+          },
+          {
+            "id": "priceCoverage",
+            "label": "Price Coverage",
+            "value": 1,
+            "weight": 5,
+            "deduction": 0
+          },
+          {
+            "id": "locationCoverage",
+            "label": "Location Coverage",
+            "value": 1,
+            "weight": 10,
+            "deduction": 0
+          },
+          {
+            "id": "registrationCoverage",
+            "label": "Registration Coverage",
+            "value": 1,
+            "weight": 5,
+            "deduction": 0
+          },
+          {
+            "id": "categoryConfidence",
+            "label": "Category Confidence",
+            "value": 1,
+            "weight": 7.5,
+            "deduction": 0
+          }
+        ],
+        "deductions": [
+          "Age Coverage: -1.2"
+        ]
+      },
+      "tel_aviv_cinematheque": {
+        "score": 88,
+        "signals": [
+          {
+            "id": "sourceCompleteness",
+            "label": "Source Completeness",
+            "value": 1,
+            "weight": 15,
+            "deduction": 0
+          },
+          {
+            "id": "freshness",
+            "label": "Freshness",
+            "value": 1,
+            "weight": 15,
+            "deduction": 0
+          },
+          {
+            "id": "validity",
+            "label": "Validity",
+            "value": 1,
+            "weight": 10,
+            "deduction": 0
+          },
+          {
+            "id": "uniqueness",
+            "label": "Uniqueness",
+            "value": 1,
+            "weight": 10,
+            "deduction": 0
+          },
+          {
+            "id": "familyRelevance",
+            "label": "Family Relevance",
+            "value": 1,
+            "weight": 15,
+            "deduction": 0
+          },
+          {
+            "id": "ageCoverage",
+            "label": "Age Coverage",
+            "value": 0,
+            "weight": 7.5,
+            "deduction": 7.5
+          },
+          {
+            "id": "priceCoverage",
+            "label": "Price Coverage",
+            "value": 0,
+            "weight": 5,
+            "deduction": 5
+          },
+          {
+            "id": "locationCoverage",
+            "label": "Location Coverage",
+            "value": 1,
+            "weight": 10,
+            "deduction": 0
+          },
+          {
+            "id": "registrationCoverage",
+            "label": "Registration Coverage",
+            "value": 1,
+            "weight": 5,
+            "deduction": 0
+          },
+          {
+            "id": "categoryConfidence",
+            "label": "Category Confidence",
+            "value": 1,
+            "weight": 7.5,
+            "deduction": 0
+          }
+        ],
+        "deductions": [
+          "Age Coverage: -7.5",
+          "Price Coverage: -5"
+        ]
+      },
+      "beit_ariela_libraries": {
+        "score": 100,
+        "signals": [
+          {
+            "id": "sourceCompleteness",
+            "label": "Source Completeness",
+            "value": 1,
+            "weight": 15,
+            "deduction": 0
+          },
+          {
+            "id": "freshness",
+            "label": "Freshness",
+            "value": 1,
+            "weight": 15,
+            "deduction": 0
+          },
+          {
+            "id": "validity",
+            "label": "Validity",
+            "value": 1,
+            "weight": 10,
+            "deduction": 0
+          },
+          {
+            "id": "uniqueness",
+            "label": "Uniqueness",
+            "value": 1,
+            "weight": 10,
+            "deduction": 0
+          },
+          {
+            "id": "familyRelevance",
+            "label": "Family Relevance",
+            "value": 1,
+            "weight": 15,
+            "deduction": 0
+          },
+          {
+            "id": "ageCoverage",
+            "label": "Age Coverage",
+            "value": 1,
+            "weight": 7.5,
+            "deduction": 0
+          },
+          {
+            "id": "priceCoverage",
+            "label": "Price Coverage",
+            "value": 1,
+            "weight": 5,
+            "deduction": 0
+          },
+          {
+            "id": "locationCoverage",
+            "label": "Location Coverage",
+            "value": 1,
+            "weight": 10,
+            "deduction": 0
+          },
+          {
+            "id": "registrationCoverage",
+            "label": "Registration Coverage",
+            "value": 1,
+            "weight": 5,
+            "deduction": 0
+          },
+          {
+            "id": "categoryConfidence",
+            "label": "Category Confidence",
+            "value": 1,
+            "weight": 7.5,
+            "deduction": 0
+          }
+        ],
+        "deductions": []
+      }
+    }
+  },
+  "providerHealth": {
+    "beit_ariela_libraries": {
+      "score": 100,
+      "findings": [],
+      "reasons": []
+    },
+    "ramat_gan_beit_emanuel": {
+      "score": 100,
+      "findings": [],
+      "reasons": []
+    },
+    "tel_aviv_cinematheque": {
+      "score": 100,
+      "findings": [],
+      "reasons": []
+    },
+    "tel_aviv_digitel": {
+      "score": 100,
+      "findings": [],
+      "reasons": []
+    },
+    "tel_aviv_port": {
+      "score": 60,
+      "findings": [],
+      "reasons": [
+        "Intentionally parked after known upstream HTTP 403; unchanged state is not a new incident"
+      ]
+    }
+  },
+  "top5": [
+    {
+      "id": "content:cancellation-mismatch",
+      "domain": "content",
+      "priority": "P1",
+      "title": "Cancellation wording disagrees with Event lifecycle",
+      "evidence": "2 affected active occurrence(s)",
+      "severity": 8,
+      "userImpact": 7,
+      "confidence": 9,
+      "reach": 3.1,
+      "implementationRisk": 4,
+      "autonomy": "YELLOW",
+      "score": 390.6
+    },
+    {
+      "id": "content:adult-only",
+      "domain": "content",
+      "priority": "P1",
+      "title": "Potential adult-only content is publicly active",
+      "evidence": "1 affected active occurrence(s)",
+      "severity": 8,
+      "userImpact": 7,
+      "confidence": 9,
+      "reach": 3.05,
+      "implementationRisk": 4,
+      "autonomy": "YELLOW",
+      "score": 384.3
+    },
+    {
+      "id": "content:broken-url",
+      "domain": "content",
+      "priority": "P1",
+      "title": "Event source or registration URLs are unreachable",
+      "evidence": "1 affected active occurrence(s)",
+      "severity": 8,
+      "userImpact": 7,
+      "confidence": 9,
+      "reach": 3.05,
+      "implementationRisk": 4,
+      "autonomy": "YELLOW",
+      "score": 384.3
+    },
+    {
+      "id": "content:missing-age",
+      "domain": "content",
+      "priority": "P2",
+      "title": "Events have no age metadata",
+      "evidence": "320 affected active occurrence(s)",
+      "severity": 5,
+      "userImpact": 7,
+      "confidence": 9,
+      "reach": 10,
+      "implementationRisk": 4,
+      "autonomy": "YELLOW",
+      "score": 787.5
+    },
+    {
+      "id": "content:missing-price",
+      "domain": "content",
+      "priority": "P3",
+      "title": "Events have no price metadata",
+      "evidence": "315 affected active occurrence(s)",
+      "severity": 5,
+      "userImpact": 7,
+      "confidence": 9,
+      "reach": 10,
+      "implementationRisk": 4,
+      "autonomy": "YELLOW",
+      "score": 787.5
+    }
+  ],
+  "dailyReport": "NESTUP OPERATOR REPORT\n\nOVERALL:\nProduct Health: 98/100\nContent Health: 88/100\n\nCRITICAL:\n- None\n\nPRODUCT:\n- None\n\nCONTENT:\n- P1: Cancellation wording disagrees with Event lifecycle\n- P1: Potential adult-only content is publicly active\n- P1: Event source or registration URLs are unreachable\n- P2: Events have no age metadata\n- P3: Events have no price metadata\n\nPROVIDERS:\n- beit_ariela_libraries: 100/100\n- ramat_gan_beit_emanuel: 100/100\n- tel_aviv_cinematheque: 100/100\n- tel_aviv_digitel: 100/100\n- tel_aviv_port: 60/100\n\nCITY COVERAGE:\n- tel_aviv: 88/100\n- ramat_gan: 99/100\n\nNEW OPPORTUNITIES:\n- None\n\nAUTONOMOUS FIXES COMPLETED:\nRead-only diagnostics and regression coverage\n\nWAITING FOR APPROVAL:\nCancellation wording disagrees with Event lifecycle\nPotential adult-only content is publicly active\nEvent source or registration URLs are unreachable\nEvents have no age metadata\nEvents have no price metadata\n\nNEXT BEST ACTION:\n- Cancellation wording disagrees with Event lifecycle",
+  "contentOnly": false
+}
