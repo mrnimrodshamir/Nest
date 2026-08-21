@@ -26,6 +26,12 @@ revoke all on public.operator_owners from anon, authenticated;
 grant select on public.operator_owners to authenticated;
 grant all on public.operator_owners to service_role;
 
+-- Reassert the original control-plane boundary even if broad default grants
+-- were introduced later: the agent role may create/read approval requests but
+-- cannot approve, reject, edit, or delete them.
+revoke update, delete on public.approval_requests from service_role;
+grant select, insert on public.approval_requests to service_role;
+
 drop policy if exists operator_owners_read_self on public.operator_owners;
 create policy operator_owners_read_self on public.operator_owners
 for select to authenticated using (user_id = auth.uid());
