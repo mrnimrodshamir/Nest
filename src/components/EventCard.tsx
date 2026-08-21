@@ -2,12 +2,14 @@ import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { CalendarDots, Repeat } from 'phosphor-react-native';
 import { ContentImage } from '@/components/ContentImage';
+import { EventSourceLogo } from '@/components/EventSourceLogo';
 import { radius, spacing, theme, typography } from '@/theme';
 import type { EventDetails } from '@/types/event';
 import { buildEventDetailsPresentation } from '@/utils/eventPresentation';
 import { attendanceCardKey } from '@/utils/eventAttendance';
 import { CARD_MEDIA_MAX_HEIGHT } from '@/constants/activityArtFrame';
 import { dateLocaleTag, textAlignForContent, useI18n } from '@/i18n';
+import { isTelAvivMunicipalEvent } from '@/types/sourceBadge';
 
 export function EventCard({ event, highlighted, compact = false, attendeeCount = 0, onPress }: {
   event: EventDetails;
@@ -23,7 +25,10 @@ export function EventCard({ event, highlighted, compact = false, attendeeCount =
   const attendance = attendanceCardKey(attendeeCount);
   const interrupted = event.lifecycle === 'cancelled' || event.lifecycle === 'postponed';
   return <Pressable accessibilityRole="button" accessibilityLabel={`${content.title}, ${content.lifecycleLabel}`} onPress={() => onPress(event)} style={({ pressed }) => [styles.card, compact && styles.compact, highlighted && styles.highlighted, pressed && styles.pressed]}>
-    <ContentImage asset={event.images?.card ?? event.images?.cover} legacyUri={event.imageUrl} variant="card" style={styles.image} accessibilityLabel={t('map.imageLabel', { name: content.title })} fallback={<CalendarDots size={28} color={theme.brand.primary} weight="duotone" />} />
+    <View style={styles.media}>
+      <ContentImage asset={event.images?.card ?? event.images?.cover} legacyUri={event.imageUrl} variant="card" style={StyleSheet.absoluteFill} accessibilityLabel={t('map.imageLabel', { name: content.title })} fallback={<CalendarDots size={28} color={theme.brand.primary} weight="duotone" />} />
+      {isTelAvivMunicipalEvent(event) ? <EventSourceLogo accessibilityLabel={t('dailyDigest.municipalSource')} /> : null}
+    </View>
     <View style={styles.body}>
       <View style={styles.topRow}><Text style={styles.category}>{content.categoryLabel}</Text><View style={[styles.badge, interrupted && styles.badgeInterrupted]}><Text style={[styles.badgeText, interrupted && styles.badgeTextInterrupted]}>{content.lifecycleLabel}</Text></View></View>
       <Text style={[styles.title, textAlignForContent(content.title, locale)]} numberOfLines={2}>{content.title}</Text>
@@ -47,7 +52,7 @@ const styles = StyleSheet.create({
   attendance: { ...typography.caption, color: theme.text.accent, marginTop: 2 },
   highlighted: { borderColor: theme.brand.accent, borderWidth: 1.5 },
   pressed: { opacity: 0.86 },
-  image: { width: 112, alignSelf: 'stretch', backgroundColor: theme.brand.accentTint },
+  media: { width: 112, alignSelf: 'stretch', overflow: 'hidden', backgroundColor: theme.brand.accentTint },
   body: { flex: 1, padding: spacing.md, justifyContent: 'center' },
   topRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.xs },
   category: { ...typography.caption, color: theme.brand.accent, textTransform: 'uppercase' },
