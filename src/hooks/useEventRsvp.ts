@@ -36,7 +36,7 @@ interface UseEventRsvpResult {
  *
  *  The row's user_id is enforced by RLS against auth.uid(); the client id here
  *  is used only for local state, never as the security boundary. */
-export function useEventRsvp(occurrenceId: string | null, city: 'tel_aviv' | 'ramat_gan' | null = null): UseEventRsvpResult {
+export function useEventRsvp(occurrenceId: string | null, city: 'tel_aviv' | 'ramat_gan' | 'givatayim' | null = null): UseEventRsvpResult {
   const [isGoing, setIsGoing] = useState(false);
   const [attendees, setAttendees] = useState<EventAttendee[]>([]);
   const [attendeeCount, setAttendeeCount] = useState(0);

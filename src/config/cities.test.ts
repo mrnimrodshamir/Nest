@@ -14,6 +14,7 @@ test('Ramat Gan config has six locales and production-safe metadata', () => {
 test('official boundary distinguishes Ramat Gan from Tel Aviv and outside metro', () => {
   assert.equal(resolveCityForCoordinate(32.082076, 34.80393), 'ramat_gan'); // Beit Doron
   assert.equal(resolveCityForCoordinate(32.096963, 34.816551), 'ramat_gan'); // Beit HaTzanchan
+  assert.equal(resolveCityForCoordinate(32.0714, 34.81), 'givatayim');
   assert.equal(resolveCityForCoordinate(32.0809, 34.7806), 'tel_aviv');
   assert.equal(resolveCityForCoordinate(31.77, 35.21), null);
 });

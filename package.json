@@ -13,7 +13,9 @@
     "places:import": "node --experimental-strip-types --experimental-loader=./scripts/test-ts-resolve-loader.mjs scripts/import-places.mjs",
     "digitel:dry-run": "node --experimental-strip-types --experimental-loader=./scripts/test-ts-resolve-loader.mjs scripts/import-digitel.mjs",
     "city-expansion:dry-run": "node --experimental-strip-types --experimental-loader=./scripts/test-ts-resolve-loader.mjs scripts/run-city-expansion.mjs",
-    "beit-emanuel:dry-run": "node --experimental-strip-types --experimental-loader=./scripts/test-ts-resolve-loader.mjs scripts/dry-run-beit-emanuel.mjs"
+    "beit-emanuel:dry-run": "node --experimental-strip-types --experimental-loader=./scripts/test-ts-resolve-loader.mjs scripts/dry-run-beit-emanuel.mjs",
+    "givatayim:dry-run": "node --experimental-strip-types --experimental-loader=./scripts/test-ts-resolve-loader.mjs scripts/dry-run-givatayim.mjs",
+    "givatayim:production-dry-run": "node --experimental-strip-types --experimental-loader=./scripts/test-ts-resolve-loader.mjs scripts/dry-run-givatayim-production.mjs"
   },
   "dependencies": {
     "@expo-google-fonts/plus-jakarta-sans": "^0.2.3",

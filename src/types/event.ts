@@ -67,7 +67,7 @@ export interface EventOccurrence {
 export interface EventEntity {
   id: string;
   /** Added during multi-city rollout; legacy fixtures/rows default to Tel Aviv. */
-  cityId?: 'tel_aviv' | 'ramat_gan';
+  cityId?: 'tel_aviv' | 'ramat_gan' | 'givatayim';
   title: string;
   description: string | null;
   category: EventCategory | null;

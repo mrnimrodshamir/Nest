@@ -1,0 +1,33 @@
+{
+  "schemaVersion": "1.0",
+  "city": {
+    "id": "givatayim",
+    "officialCode": "6300",
+    "canonicalNames": { "en": "Givatayim", "he": "גבעתיים", "fr": "Givatayim", "ru": "Гиватаим", "ar": "جفعاتايم", "es": "Givatayim" },
+    "boundarySource": "https://ags.iplan.gov.il/arcgisiplan/rest/services/PlanningPublic/gvulot_retzef/MapServer/1",
+    "boundaryPrecision": "מקור וקטורי חתום",
+    "confidence": 98,
+    "timezone": "Asia/Jerusalem",
+    "currency": "ILS"
+  },
+  "sourceRanking": [
+    { "rank": 1, "id": "givatayim_municipality", "name": "Givatayim Municipality events", "url": "https://www.givatayim.muni.il/events/", "method": "structured HTML plus event detail pages", "expectedFamilyEventsPerWeek": 44, "stableIds": true, "coordinates": "Waze coordinates checked against official boundary", "age": "tags and descriptions", "price": "listing/details", "updateFrequency": "daily", "automationReliability": 92, "legalRisk": 8, "duplicationRisk": 15, "netNew": 44 },
+    { "rank": 2, "id": "givatayim_theater", "name": "Givatayim Theater children", "url": "https://t-g.co.il/events-tags/ילדים/", "method": "HTML/Smarticket", "expectedFamilyEventsPerWeek": 4, "stableIds": true, "coordinates": "single venue", "age": "partial", "price": "yes", "updateFrequency": "weekly", "automationReliability": 85, "legalRisk": 10, "duplicationRisk": 85, "netNew": 0, "reasonDeferred": "already syndicated into municipality feed" },
+    { "rank": 3, "id": "givatayim_libraries", "name": "Givatayim municipal libraries", "url": "https://www.givatayim.muni.il/ספריות-עירוניות/", "method": "municipal event subset", "expectedFamilyEventsPerWeek": 3, "stableIds": true, "coordinates": "municipal venues", "age": "partial", "price": "partial", "updateFrequency": "weekly", "automationReliability": 80, "legalRisk": 5, "duplicationRisk": 100, "netNew": 0, "reasonDeferred": "subset of municipality feed" },
+    { "rank": 4, "id": "givatayim_observatory", "name": "Givatayim Observatory", "url": "https://www.givatayim.muni.il/242/", "method": "municipal event subset", "expectedFamilyEventsPerWeek": 8, "stableIds": true, "coordinates": "single verified venue", "age": "good", "price": "partial", "updateFrequency": "weekly", "automationReliability": 82, "legalRisk": 5, "duplicationRisk": 100, "netNew": 0, "reasonDeferred": "subset of municipality feed" },
+    { "rank": 5, "id": "givatayim_community_centers", "name": "Givatayim community centers", "url": "https://www.givatayim.muni.il/מרכזים-קהילתיים/", "method": "municipal event subset", "expectedFamilyEventsPerWeek": 30, "stableIds": true, "coordinates": "verified municipal venues", "age": "good", "price": "good", "updateFrequency": "daily", "automationReliability": 90, "legalRisk": 5, "duplicationRisk": 100, "netNew": 0, "reasonDeferred": "subset of municipality feed" },
+    { "rank": 6, "id": "givatayim_conservatory", "name": "Givatayim Municipal Conservatory", "url": "https://www.givatayim.muni.il/קונסרבטוריון/", "method": "manual/municipal notices", "expectedFamilyEventsPerWeek": 1, "stableIds": false, "coordinates": "single venue", "age": "partial", "price": "partial", "updateFrequency": "irregular", "automationReliability": 45, "legalRisk": 5, "duplicationRisk": 80, "netNew": 0 }
+  ],
+  "provider": {
+    "selected": "givatayim_municipality",
+    "identity": "numeric municipal event id plus occurrence start",
+    "sourceCompleteness": "all advertised listing IDs parse; every in-window detail resolves; official boundary fetch succeeds",
+    "images": "provider URLs retained only as provenance; no republication",
+    "crossCityDedupe": "exact syndicated records excluded; probable or ambiguous matches fail closed for review"
+  },
+  "dryRun": { "fetched": 197, "normalized": 50, "relevant": 44, "excluded": 153, "invalid": 0, "exact": 0, "probable": 0, "ambiguous": 0, "distinct": 44, "ageData": 33, "priceData": 13, "registrationUrls": 39, "coordinates": 44, "unresolvedVenues": 0, "sourceComplete": true },
+  "quality": { "publish": 44, "review": 0, "reject": 6, "wrongCity": 0, "adultOnlyExcluded": true },
+  "productionGate": { "status": "blocked", "reason": "official municipality source returns HTTP 403 from the Supabase Edge runtime; local and management read-only dry runs remain clean", "controlledSyncRun": false, "cronEnabled": false },
+  "digest": { "enabled": false, "reason": "city is not production-enabled and city-specific digest requires separate approval" },
+  "autonomyLevel": 2
+}
