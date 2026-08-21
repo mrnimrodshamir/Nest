@@ -55,9 +55,42 @@ export interface GenericSyncDatabase {
 
 export interface ProviderSyncConfig {
   providerKey: string;
+  cityId?: string;
   sourceName: string;
   providerUrl: string;
   fetchCandidates: () => Promise<GenericFetchResult>;
+}
+
+export interface GenericDryRunOutcome extends GenericSyncRunOutcome {
+  mode: 'dry_run';
+  exactDuplicates: number;
+  probableDuplicates: number;
+  ambiguousDuplicates: number;
+  distinct: number;
+}
+
+/** Read-only production comparison. It deliberately never starts a sync run
+ * and therefore cannot reach the write RPC. */
+export async function runGenericProviderDryRun(config: ProviderSyncConfig, database: Pick<GenericSyncDatabase, 'listExisting'>): Promise<GenericDryRunOutcome> {
+  const fetched = await config.fetchCandidates();
+  const existing = await database.listExisting(config.providerKey);
+  const relevant = fetched.candidates.filter((candidate) => assessFamilyRelevance({
+    title: candidate.title, description: candidate.description,
+    sourceType: candidate.category, locationName: candidate.locationName,
+  }).relevant);
+  const plan = buildProviderSyncPlan({ provider: config.providerKey, candidates: relevant, existing, sourceComplete: fetched.sourceComplete, now: new Date() });
+  const counts = new Map<string, number>();
+  for (const candidate of relevant) counts.set(candidate.occurrenceFingerprint, (counts.get(candidate.occurrenceFingerprint) ?? 0) + 1);
+  const exactDuplicates = [...counts.values()].reduce((sum, count) => sum + Math.max(0, count - 1), 0);
+  return {
+    mode: 'dry_run', status: fetched.sourceComplete ? 'success' : 'partial', sourceComplete: fetched.sourceComplete,
+    fetched: fetched.rawCount, normalized: fetched.candidates.length, relevant: relevant.length,
+    inserted: fetched.sourceComplete ? plan.inserts.length : 0, updated: fetched.sourceComplete ? plan.updates.length : 0,
+    unchanged: fetched.sourceComplete ? plan.unchanged.length : 0, excluded: fetched.candidates.length - relevant.length,
+    missing: fetched.sourceComplete ? plan.newlyMissing.length : 0, archived: fetched.sourceComplete ? plan.archive.length : 0,
+    cleaned: fetched.sourceComplete ? plan.hardDelete.length : 0, errors: fetched.sourceComplete ? 0 : 1, errorSummary: fetched.incompleteReason,
+    exactDuplicates, probableDuplicates: 0, ambiguousDuplicates: 0, distinct: counts.size,
+  };
 }
 
 export async function runGenericProviderSync(config: ProviderSyncConfig, database: GenericSyncDatabase): Promise<GenericSyncRunOutcome> {
@@ -123,6 +156,7 @@ export async function runGenericProviderSync(config: ProviderSyncConfig, databas
 
 function toSyncRow(candidate: ProviderCandidate, config: ProviderSyncConfig, eligibleForNestupPublication: boolean) {
   return {
+    cityId: config.cityId ?? 'tel_aviv',
     eligibleForNestupPublication,
     providerEventId: candidate.providerEventId,
     providerTransportId: candidate.providerTransportId,

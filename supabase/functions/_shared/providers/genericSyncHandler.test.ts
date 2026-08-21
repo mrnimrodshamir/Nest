@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { runGenericProviderSync } from './genericSyncHandler.ts';
+import { runGenericProviderDryRun, runGenericProviderSync } from './genericSyncHandler.ts';
 import type { GenericSyncDatabase, GenericSyncRunOutcome } from './genericSyncHandler.ts';
 import type { ExistingProviderOccurrence, ProviderCandidate } from './types.ts';
 
@@ -125,4 +125,19 @@ test('the outcome object carries every field required for observability without 
   for (const field of ['status', 'sourceComplete', 'fetched', 'normalized', 'relevant', 'inserted', 'updated', 'unchanged', 'excluded', 'missing', 'archived', 'cleaned', 'errors']) {
     assert.ok(field in outcome, `missing observability field: ${field}`);
   }
+});
+
+test('dry run compares with production state without starting or applying a sync', async () => {
+  const dryRunCandidate = candidate();
+  let writes = 0;
+  const database = {
+    async listExisting() { return []; },
+    async startRun() { writes += 1; return 'never'; },
+    async finishRun() { writes += 1; },
+    async applyCompleteSync() { writes += 1; return { inserted: 0, updated: 0, unchanged: 0, missing: 0, archived: 0, cleaned: 0 }; },
+  };
+  const result = await runGenericProviderDryRun({ providerKey: 'test', sourceName: 'test', providerUrl: 'https://example.test', fetchCandidates: async () => ({ candidates: [dryRunCandidate], sourceComplete: true, incompleteReason: null, rawCount: 1 }) }, database);
+  assert.equal(result.mode, 'dry_run');
+  assert.equal(result.inserted, 1);
+  assert.equal(writes, 0);
 });
