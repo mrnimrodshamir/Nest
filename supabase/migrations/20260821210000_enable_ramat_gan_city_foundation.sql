@@ -38,7 +38,7 @@ update public.provider_registry set city_id='tel_aviv' where city_id is null;
 alter table public.provider_registry alter column city_id set not null;
 
 insert into public.provider_registry(key,name,source_type,base_url,connector_type,enabled,schedule_cron,trust_level,default_city,city_id)
-values('ramat_gan_beit_emanuel','Beit Emanuel Ramat Gan','external_organizer','https://mbe-rg.smarticket.co.il/','structured_html',false,null,'official_public_source','Ramat Gan','ramat_gan')
+values('ramat_gan_beit_emanuel','Beit Emanuel Ramat Gan','external_organizer','https://mbe-rg.smarticket.co.il/','html_extraction',false,null,'official_public_source','Ramat Gan','ramat_gan')
 on conflict(key) do update set name=excluded.name,source_type=excluded.source_type,base_url=excluded.base_url,connector_type=excluded.connector_type,default_city=excluded.default_city,city_id=excluded.city_id,updated_at=now();
 
 create or replace function public.assign_event_city_from_provider() returns trigger language plpgsql set search_path=public as $$
