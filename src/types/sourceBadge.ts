@@ -1,4 +1,4 @@
-/** Source badge — the data model only. No component yet; Section 5 of the
+/** Source badge — the data model only. No generic badge component yet; Section 5 of the
  *  design brief is explicit that the UI is not to be overbuilt in this phase.
  *  What exists here is enough for a future `<SourceBadge>` to render from
  *  without inventing its own classification logic, and enough for tests to
@@ -24,6 +24,17 @@ export interface SourceBadgeInfo {
   /** The provider's own home page, for a detail-screen link. Null for
    *  nestup_community — there is no external provider to link to. */
   providerUrl: string | null;
+}
+
+/** Canonical provider identity for events imported from the Tel Aviv-Yafo
+ * municipality's DigiTel feed. Keep this provider-specific: other municipal
+ * sources (for example Beit Ariela) have their own visual identity. */
+export const TEL_AVIV_DIGITEL_PROVIDER = 'tel_aviv_digitel' as const;
+
+export function isTelAvivMunicipalEvent(event: {
+  source: { provider: string };
+}): boolean {
+  return event.source.provider === TEL_AVIV_DIGITEL_PROVIDER;
 }
 
 /** Built from an Event's own source_type/source_name/provider_url — never
