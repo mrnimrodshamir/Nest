@@ -5,6 +5,7 @@ import { readFileSync } from 'node:fs';
 const migration = readFileSync(new URL('../../supabase/migrations/20260821210000_enable_ramat_gan_city_foundation.sql', import.meta.url), 'utf8');
 const digestBackend = readFileSync(new URL('../../supabase/functions/send-daily-digest/index.ts', import.meta.url), 'utf8');
 const digestClient = readFileSync(new URL('../lib/events.ts', import.meta.url), 'utf8');
+const eventProviderMigration = readFileSync(new URL('../../supabase/migrations/20260821212600_register_beit_emanuel_event_provider.sql', import.meta.url), 'utf8');
 
 test('Ramat Gan migration is additive, city-tagged, Level 2, and digest-disabled', () => {
   assert.match(migration, /add column if not exists city_id/);
@@ -21,4 +22,10 @@ test('Daily and Weekly digest candidate paths explicitly remain Tel Aviv-only', 
 test('internal control plane remains private while enabled city config is readable', () => {
   assert.match(migration, /city_registry_read_enabled/);
   assert.doesNotMatch(migration, /grant select on public\.(city_expansion_runs|agent_tasks|agent_artifacts|agent_decisions|approval_requests) to (anon|authenticated)/i);
+});
+
+test('Beit Emanuel is registered in the legacy event provider FK registry', () => {
+  assert.match(eventProviderMigration, /insert into public\.event_providers/);
+  assert.match(eventProviderMigration, /'ramat_gan_beit_emanuel'/);
+  assert.doesNotMatch(eventProviderMigration, /delete from public\.events/i);
 });
