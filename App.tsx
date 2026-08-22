@@ -36,6 +36,7 @@ import { EditProfileScreen } from '@/screens/EditProfileScreen';
 import { MyActivitiesScreen } from '@/screens/MyActivitiesScreen';
 import { DailyDigestScreen } from '@/screens/DailyDigestScreen';
 import { WeeklyDigestScreen } from '@/screens/WeeklyDigestScreen';
+import { WeekendDigestScreen } from '@/screens/WeekendDigestScreen';
 import { MessagesScreen } from '@/screens/MessagesScreen';
 import { BlockedUsersScreen } from '@/screens/BlockedUsersScreen';
 import { PublicProfileScreen } from '@/screens/PublicProfileScreen';
@@ -117,6 +118,7 @@ export type RootStackParamList = {
   BlockedUsers: undefined;
   DailyDigest: { date?: string; occurrenceIds?: string[] } | undefined;
   WeeklyDigest: { weekStart?: string; week_start?: string; occurrenceIds?: string[] } | undefined;
+  WeekendDigest: { weekendStart?: string; weekend_local_date?: string; occurrenceIds?: string[] } | undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -147,6 +149,7 @@ const linking: LinkingOptions<RootStackParamList> = {
       },
       DailyDigest: 'daily-digest',
       WeeklyDigest: 'weekly-digest',
+      WeekendDigest: 'weekend-digest',
     },
   },
 };
@@ -218,6 +221,9 @@ function AppInner() {
       } else if (pending.kind === 'weekly' && navigationRef.getCurrentRoute()?.name !== 'WeeklyDigest') {
         navigationRef.navigate('WeeklyDigest', { weekStart: pending.weekStart, occurrenceIds: pending.occurrenceIds });
         track('weekly_push_opened', { week_start: pending.weekStart, city: 'tel_aviv', locale: appLocale });
+      } else if (pending.kind === 'weekend' && navigationRef.getCurrentRoute()?.name !== 'WeekendDigest') {
+        navigationRef.navigate('WeekendDigest', { weekendStart: pending.weekendStart, occurrenceIds: pending.occurrenceIds });
+        track('weekend_push_opened', { weekend_start: pending.weekendStart, city: 'tel_aviv', locale: appLocale });
       } else if (pending.kind === 'daily' && navigationRef.getCurrentRoute()?.name !== 'DailyDigest') {
         navigationRef.navigate('DailyDigest', { date: pending.date, occurrenceIds: pending.occurrenceIds });
         track('daily_push_opened', { date: pending.date, city: 'tel_aviv', locale: appLocale });
@@ -522,6 +528,16 @@ function MainNavigator({ onReadyChange }: { onReadyChange: (ready: boolean) => v
         {({ route, navigation }) => (
           <WeeklyDigestScreen
             requestedWeekStart={route.params?.weekStart ?? route.params?.week_start}
+            requestedOccurrenceIds={route.params?.occurrenceIds}
+            onClose={() => navigation.reset({ index: 0, routes: [{ name: 'Tabs' }] })}
+            onOpenEvent={(occurrenceId) => navigation.navigate('EventDetails', { occurrenceId })}
+          />
+        )}
+      </Stack.Screen>
+      <Stack.Screen name="WeekendDigest" options={{ presentation: 'modal' }}>
+        {({ route, navigation }) => (
+          <WeekendDigestScreen
+            requestedWeekendStart={route.params?.weekendStart ?? route.params?.weekend_local_date}
             requestedOccurrenceIds={route.params?.occurrenceIds}
             onClose={() => navigation.reset({ index: 0, routes: [{ name: 'Tabs' }] })}
             onOpenEvent={(occurrenceId) => navigation.navigate('EventDetails', { occurrenceId })}

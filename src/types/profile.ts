@@ -9,6 +9,8 @@ export interface NotificationPreferences {
   daily_digest: boolean;
   /** Independent weekly "What's on this week" push; also opt-in only. */
   weekly_digest: boolean;
+  /** Independent Thursday-evening weekend selection; opt-in only. */
+  weekend_digest: boolean;
 }
 
 /** Own full profile — matches the private `profiles` table (own row only).

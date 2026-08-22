@@ -67,6 +67,15 @@ never properties.
 | `weekly_digest_viewed` | Weekly Digest screen loads | `week_start`, `city`, `locale` | How many users reach the weekly recommendations? |
 | `weekly_digest_event_opened` | User opens an Event from the digest | `week_start`, `city`, `locale`, `day`, `occurrence_id`, `provider`, `category`, `position` | Which days and recommendations drive Event interest? |
 | `weekly_digest_closed` | User closes the Weekly Digest | `week_start`, `city`, `result_count` | Do users return to Discovery after reviewing the week? |
+| `weekend_digest_generated` | Server produces a non-dry-run Thursday-Saturday selection | `weekend_start`, `city`, `result_count` | Is enough strong weekend content available? |
+| `weekend_push_eligible` | Server finishes Weekend preference/token eligibility | `weekend_start`, `city`, `result_count` | How large is the opted-in Weekend audience? |
+| `weekend_push_sent` | Expo accepts a claimed Weekend delivery | `weekend_start`, `city`, `locale`, `result_count` | How many Weekend notifications were accepted? |
+| `weekend_push_skipped` | Weekend delivery is skipped before Expo | `weekend_start`, `city`, `locale`, fixed `reason` | Why are eligible Weekend rows not sent? |
+| `weekend_push_failed` | Claimed Weekend delivery fails | `weekend_start`, `city`, `locale` | How often does Weekend delivery fail? |
+| `weekend_push_opened` | User taps a valid Weekend notification | `weekend_start`, `city`, `locale` | Does the push bring users into the Weekend selection? |
+| `weekend_digest_viewed` | Weekend Digest screen loads | `weekend_start`, `city`, `locale` | How many users reach the Weekend recommendations? |
+| `weekend_digest_event_opened` | User opens an Event from Weekend Digest | `weekend_start`, `city`, `locale`, `section`, `occurrence_id`, `provider`, `category`, `position` | Which section and recommendations drive interest? |
+| `weekend_digest_closed` | User closes Weekend Digest | `weekend_start`, `city`, `result_count` | Do users return to Discovery after reviewing Weekend? |
 
 ## Sharing events
 

@@ -1,4 +1,4 @@
-import { jerusalemLocalDateString, weeklyDigestPeriod } from '../../supabase/functions/_shared/dailyDigest/scheduleGate';
+import { jerusalemLocalDateString, weekendDigestPeriod, weeklyDigestPeriod } from '../../supabase/functions/_shared/dailyDigest/scheduleGate';
 
 export type DailyDigestNotificationRoute =
   | { status: 'valid'; date: string; city: 'tel_aviv'; occurrenceIds: string[] }
@@ -8,6 +8,7 @@ export type DailyDigestNotificationRoute =
 export type DigestNotificationRoute =
   | { status: 'valid'; digestType: 'daily'; date: string; city: 'tel_aviv'; occurrenceIds: string[] }
   | { status: 'valid'; digestType: 'weekly'; weekStart: string; city: 'tel_aviv'; occurrenceIds: string[] }
+  | { status: 'valid'; digestType: 'weekend'; weekendStart: string; city: 'tel_aviv'; occurrenceIds: string[] }
   | { status: 'stale' | 'malformed' }
   | { status: 'not_digest' };
 
@@ -15,6 +16,18 @@ export function parseDigestNotification(
   data: Record<string, unknown> | undefined,
   now: Date = new Date(),
 ): DigestNotificationRoute {
+  if (data?.kind === 'weekend_digest') {
+    if (data.type !== 'weekend_digest' || data.city !== 'tel_aviv' || typeof data.weekend_local_date !== 'string') {
+      return { status: 'malformed' };
+    }
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(data.weekend_local_date) || !isRealCalendarDate(data.weekend_local_date)) {
+      return { status: 'malformed' };
+    }
+    const occurrenceIds = parseOccurrenceIds(data.occurrence_ids);
+    if (occurrenceIds === null) return { status: 'malformed' };
+    if (!isWeekendDigestAvailable(data.weekend_local_date, now)) return { status: 'stale' };
+    return { status: 'valid', digestType: 'weekend', weekendStart: data.weekend_local_date, city: 'tel_aviv', occurrenceIds };
+  }
   if (data?.kind === 'weekly_digest') {
     if (data.type !== 'weekly_digest' || data.city !== 'tel_aviv' || typeof data.week_start !== 'string') {
       return { status: 'malformed' };
@@ -68,6 +81,13 @@ function isRealCalendarDate(value: string): boolean {
   const [year, month, day] = value.split('-').map(Number);
   const date = new Date(Date.UTC(year, month - 1, day));
   return date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day;
+}
+
+export function isWeekendDigestAvailable(weekendStart: string | undefined, now: Date = new Date()): weekendStart is string {
+  return !!weekendStart
+    && /^\d{4}-\d{2}-\d{2}$/.test(weekendStart)
+    && isRealCalendarDate(weekendStart)
+    && weekendStart === weekendDigestPeriod(now).weekendStart;
 }
 
 /** Build 43 and earlier Digest pushes did not carry the persisted selection,

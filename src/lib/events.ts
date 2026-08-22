@@ -17,8 +17,9 @@ import {
   type DigestCandidateOccurrence,
 } from '../../supabase/functions/_shared/dailyDigest/selectDigestEvents';
 import { jerusalemLocalDateString } from '../../supabase/functions/_shared/dailyDigest/scheduleGate';
-import { addLocalCalendarDays, weeklyDigestPeriod } from '../../supabase/functions/_shared/dailyDigest/scheduleGate';
+import { addLocalCalendarDays, weekendDigestPeriodFromStart, weeklyDigestPeriod } from '../../supabase/functions/_shared/dailyDigest/scheduleGate';
 import { selectWeeklyDigestEvents } from '../../supabase/functions/_shared/dailyDigest/selectWeeklyDigestEvents';
+import { selectWeekendDigestEvents, type WeekendSectionKey } from '../../supabase/functions/_shared/dailyDigest/selectWeekendDigestEvents';
 import { rowsInDigestOrder } from '@/utils/dailyDigestRows';
 
 export const EVENT_COLUMNS = 'id,city_id,title,description,category,image_url,age_min_months,age_max_months,price_note,registration_required,registration_url,verification_status,publication_status,event_status,cancellation_reason,provider,provider_event_id,provider_transport_id,source_group_id,source_name,source_url,source_published_at,source_updated_at,provider_metadata,is_recurring,recurrence_rule,recurrence_timezone,recurrence_series_id,place_id,location_name,formatted_address,latitude,longitude,created_at,updated_at';
@@ -185,6 +186,12 @@ export interface WeeklyDigestDayEvents {
   events: EventDetails[];
 }
 
+export interface WeekendDigestSectionEvents {
+  key: WeekendSectionKey;
+  localDate: string;
+  events: EventDetails[];
+}
+
 /** Weekly counterpart. Build-44+ push taps render the backend-persisted order;
  * old payloads without IDs retain the deterministic selector fallback. */
 export async function queryWeeklyDigestEvents(
@@ -241,6 +248,51 @@ export async function queryWeeklyDigestEvents(
     );
     return { localDate: day.localDate, events: mapActiveRows(selectedRows, now) };
   });
+}
+
+/** Thursday-evening/Friday/Saturday counterpart. Persisted IDs are the source
+ * of truth for modern pushes; the selector fallback exists only for payloads
+ * created before selections were persisted. */
+export async function queryWeekendDigestEvents(
+  weekendStart: string,
+  now: Date = new Date(),
+  persistedOccurrenceIds: readonly string[] = [],
+): Promise<WeekendDigestSectionEvents[]> {
+  const period = weekendDigestPeriodFromStart(weekendStart);
+  const keys: WeekendSectionKey[] = ['thursday_evening', 'friday', 'saturday'];
+  const persisted = await queryPersistedDigestEvents(persistedOccurrenceIds, now);
+  if (persisted) {
+    return period.days.map((localDate, index) => ({
+      key: keys[index],
+      localDate,
+      events: persisted.filter((event) => jerusalemLocalDateString(new Date(event.occurrence.startsAt)) === localDate),
+    }));
+  }
+  const windowStart = `${addLocalCalendarDays(period.weekendStart, -1)}T00:00:00.000Z`;
+  const windowEnd = `${addLocalCalendarDays(period.weekendEnd, 2)}T00:00:00.000Z`;
+  const { data, error } = await supabase
+    .from('active_event_occurrences')
+    .select('*')
+    .eq('city_id', 'tel_aviv')
+    .gte('starts_at', windowStart)
+    .lte('starts_at', windowEnd);
+  if (error) throw new Error(error.message);
+  const rows = data ?? [];
+  const candidates: DigestCandidateOccurrence[] = rows.map((row: any) => ({
+    occurrenceId: row.occurrence_id, eventId: row.event_id, title: row.title,
+    description: row.description, category: row.category, startsAt: row.starts_at,
+    ageMinMonths: row.age_min_months, ageMaxMonths: row.age_max_months,
+    priceNote: row.price_note, provider: row.provider, providerEventId: row.provider_event_id,
+    sourceName: row.source_name, sourceUrl: row.source_url, sourceType: row.source_type,
+    canonicalEventId: row.canonical_event_id, latitude: row.latitude, longitude: row.longitude,
+    locationName: row.location_name, formattedAddress: row.formatted_address,
+  }));
+  const selection = selectWeekendDigestEvents(candidates, period);
+  return selection.sections.map((section) => ({
+    key: section.key,
+    localDate: section.localDate,
+    events: mapActiveRows(rowsInDigestOrder(rows as Array<{ occurrence_id: string }>, section.events.map((event) => event.occurrenceId)), now),
+  }));
 }
 
 /** Returns null only for legacy pushes that contain no persisted IDs. If a

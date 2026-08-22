@@ -3,6 +3,7 @@ import { parseDigestNotification } from './dailyDigestNotification';
 export type PendingDigestIntent =
   | { kind: 'daily'; date: string; occurrenceIds: string[] }
   | { kind: 'weekly'; weekStart: string; occurrenceIds: string[] }
+  | { kind: 'weekend'; weekendStart: string; occurrenceIds: string[] }
   | { kind: 'fallback' };
 
 export type DigestCaptureResult = 'queued' | 'duplicate' | 'not_digest';
@@ -34,6 +35,8 @@ export class DigestNotificationIntentController {
       ? { kind: 'fallback' }
       : route.digestType === 'weekly'
         ? { kind: 'weekly', weekStart: route.weekStart, occurrenceIds: route.occurrenceIds }
+        : route.digestType === 'weekend'
+          ? { kind: 'weekend', weekendStart: route.weekendStart, occurrenceIds: route.occurrenceIds }
         : { kind: 'daily', date: route.date, occurrenceIds: route.occurrenceIds };
     return 'queued';
   }
@@ -58,5 +61,5 @@ export class DigestNotificationIntentController {
 }
 
 export function digestRoutesAreRegistered(routeNames: readonly string[] | undefined): boolean {
-  return !!routeNames?.includes('DailyDigest') && routeNames.includes('WeeklyDigest');
+  return !!routeNames?.includes('DailyDigest') && routeNames.includes('WeeklyDigest') && routeNames.includes('WeekendDigest');
 }

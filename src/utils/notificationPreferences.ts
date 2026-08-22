@@ -11,5 +11,6 @@ export function mapNotificationPreferences(
     reminders: row?.reminders === true,
     daily_digest: row?.daily_digest === true,
     weekly_digest: row?.weekly_digest === true,
+    weekend_digest: row?.weekend_digest === true,
   };
 }

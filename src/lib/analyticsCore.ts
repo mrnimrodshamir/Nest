@@ -13,7 +13,8 @@ export type AnalyticsEvent =
   | 'sign_up_started' | 'sign_up_completed' | 'activity_viewed'
   | 'chat_message_sent' | 'account_deleted'
   | 'daily_push_opened' | 'daily_digest_viewed' | 'daily_digest_event_opened' | 'daily_digest_closed' | 'daily_digest_rsvp_after_open'
-  | 'weekly_push_opened' | 'weekly_digest_viewed' | 'weekly_digest_event_opened' | 'weekly_digest_closed';
+  | 'weekly_push_opened' | 'weekly_digest_viewed' | 'weekly_digest_event_opened' | 'weekly_digest_closed'
+  | 'weekend_push_opened' | 'weekend_digest_viewed' | 'weekend_digest_event_opened' | 'weekend_digest_closed';
 
 export type AnalyticsValue = string | number | boolean;
 export type AnalyticsProperties = Record<string, AnalyticsValue | null | undefined>;

@@ -38,12 +38,13 @@ interface ProfileScreenProps {
   onOpenBlockedUsers: () => void;
 }
 
-const NOTIFICATION_LABEL_KEYS: Record<keyof NotificationPreferences, 'profile.notification.activityChanges' | 'profile.notification.chatMessages' | 'profile.notification.reminders' | 'profile.notification.dailyDigest' | 'profile.notification.weeklyDigest'> = {
+const NOTIFICATION_LABEL_KEYS: Record<keyof NotificationPreferences, 'profile.notification.activityChanges' | 'profile.notification.chatMessages' | 'profile.notification.reminders' | 'profile.notification.dailyDigest' | 'profile.notification.weeklyDigest' | 'profile.notification.weekendDigest'> = {
   activity_changes: 'profile.notification.activityChanges',
   chat_messages: 'profile.notification.chatMessages',
   reminders: 'profile.notification.reminders',
   daily_digest: 'profile.notification.dailyDigest',
   weekly_digest: 'profile.notification.weeklyDigest',
+  weekend_digest: 'profile.notification.weekendDigest',
 };
 
 /** The Profile tab -- the permanent home for every personal and account
@@ -155,7 +156,7 @@ export function ProfileScreen({ onEditProfile, onOpenMyActivities, onOpenBlocked
                     // other trigger entirely is joining a first activity) —
                     // never proactively, and always with the branded
                     // explainer first.
-                    if ((key === 'reminders' || key === 'daily_digest' || key === 'weekly_digest') && value) {
+                    if ((key === 'reminders' || key === 'daily_digest' || key === 'weekly_digest' || key === 'weekend_digest') && value) {
                       const { status } = await Notifications.getPermissionsAsync();
                       if (status === 'undetermined') setShowNotificationSheet(true);
                       else void ensurePushRegistration(true);
