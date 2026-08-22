@@ -293,6 +293,11 @@ test('Weekend uses Thursday anchor, separate preference path, and max three per 
   assert.equal(result.localDate, '2026-08-27');
   assert.equal(result.periodEnd, '2026-08-29');
   assert.equal(result.eventsSelected, 3);
+  assert.deepEqual(result.eligiblePerDay, {
+    '2026-08-27': 0,
+    '2026-08-28': 5,
+    '2026-08-29': 0,
+  });
   assert.deepEqual(fake.requestedDigestTypes, [DIGEST_TYPE_WEEKEND]);
   assert.equal(result.wouldSend, 1);
   assert.equal(result.socialOutput, null);

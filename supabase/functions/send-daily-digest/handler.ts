@@ -105,6 +105,7 @@ export interface RunDailyDigestResult {
     whySelected: string;
   }>;
   selectedPerDay: Record<string, number>;
+  eligiblePerDay: Record<string, number>;
   providerMix: Record<string, number>;
   categoryMix: Record<string, number>;
   duplicatesRemoved: number;
@@ -191,6 +192,12 @@ export async function runDigest(
   const providerMix: Record<string, number> = {};
   const categoryMix: Record<string, number> = {};
   const selectedPerDay = Object.fromEntries(period.days.map((day) => [day, 0]));
+  const eligiblePerDay = Object.fromEntries(period.days.map((day) => [day, 0]));
+  if (weekendSelection) {
+    for (const section of weekendSelection.sections) eligiblePerDay[section.localDate] = section.eligibleCount;
+  } else if (weeklySelection) {
+    for (const day of weeklySelection.days) eligiblePerDay[day.localDate] = day.events.length;
+  }
   for (const event of selected) {
     providerMix[event.provider] = (providerMix[event.provider] ?? 0) + 1;
     categoryMix[event.category] = (categoryMix[event.category] ?? 0) + 1;
@@ -227,6 +234,7 @@ export async function runDigest(
       whySelected: selectionReason(event),
     })),
     selectedPerDay,
+    eligiblePerDay,
     providerMix,
     categoryMix,
     duplicatesRemoved: weekendSelection?.duplicatesRemoved ?? 0,
