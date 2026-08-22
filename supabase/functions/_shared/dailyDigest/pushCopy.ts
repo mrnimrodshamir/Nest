@@ -68,6 +68,15 @@ const WEEKLY_COPY: Record<DigestLocale, DigestCopyEntry> = {
   es: { title: '¿Qué hacer esta semana en Tel Aviv?', body: () => 'Seleccionamos actividades familiares geniales para la próxima semana 👇' },
 };
 
+const WEEKEND_COPY: Record<DigestLocale, DigestCopyEntry> = {
+  en: { title: 'What are we doing this weekend? ☀️', body: () => 'We picked family activities for Thursday evening, Friday and Saturday' },
+  he: { title: 'מה עושים בסופ״ש? ☀️', body: () => 'בחרנו לכם פעילויות משפחתיות לחמישי בערב, שישי ושבת' },
+  fr: { title: 'Que fait-on ce week-end ? ☀️', body: () => 'Nous avons choisi des activités en famille pour jeudi soir, vendredi et samedi' },
+  ru: { title: 'Что будем делать на выходных? ☀️', body: () => 'Мы выбрали семейные события на вечер четверга, пятницу и субботу' },
+  ar: { title: 'ماذا سنفعل في عطلة نهاية الأسبوع؟ ☀️', body: () => 'اخترنا لكم فعاليات عائلية لمساء الخميس والجمعة والسبت' },
+  es: { title: '¿Qué hacemos este fin de semana? ☀️', body: () => 'Elegimos actividades familiares para el jueves por la tarde, viernes y sábado' },
+};
+
 export function isDigestLocale(value: string | null | undefined): value is DigestLocale {
   return !!value && (DIGEST_LOCALES as readonly string[]).includes(value);
 }
@@ -82,5 +91,10 @@ export function buildDigestPushCopy(locale: string | null | undefined, count: nu
 
 export function buildWeeklyDigestPushCopy(locale: string | null | undefined, count: number): { title: string; body: string } {
   const entry = WEEKLY_COPY[isDigestLocale(locale) ? locale : 'en'];
+  return { title: entry.title, body: entry.body(count) };
+}
+
+export function buildWeekendDigestPushCopy(locale: string | null | undefined, count: number): { title: string; body: string } {
+  const entry = WEEKEND_COPY[isDigestLocale(locale) ? locale : 'en'];
   return { title: entry.title, body: entry.body(count) };
 }

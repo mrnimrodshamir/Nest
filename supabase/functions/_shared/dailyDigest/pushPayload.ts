@@ -1,4 +1,4 @@
-import { buildDigestPushCopy, buildWeeklyDigestPushCopy } from './pushCopy.ts';
+import { buildDigestPushCopy, buildWeeklyDigestPushCopy, buildWeekendDigestPushCopy } from './pushCopy.ts';
 import type { DigestType } from './idempotency.ts';
 
 /** Expo push API message shape — the subset this function actually sets.
@@ -9,10 +9,11 @@ export interface ExpoPushMessage {
   body: string;
   sound: 'default';
   data: {
-    kind: 'daily_digest' | 'weekly_digest';
-    type: 'daily_digest' | 'weekly_digest';
+    kind: 'daily_digest' | 'weekly_digest' | 'weekend_digest';
+    type: 'daily_digest' | 'weekly_digest' | 'weekend_digest';
     date?: string;
     week_start?: string;
+    weekend_local_date?: string;
     occurrence_ids: string[];
     city: 'tel_aviv';
   };
@@ -29,6 +30,10 @@ export function buildDailyDigestDeepLink(localDate: string): string {
 
 export function buildWeeklyDigestDeepLink(weekStart: string): string {
   return `nestup://weekly-digest?type=weekly_digest&week_start=${encodeURIComponent(weekStart)}&city=${DAILY_DIGEST_CITY}`;
+}
+
+export function buildWeekendDigestDeepLink(weekendStart: string): string {
+  return `nestup://weekend-digest?type=weekend_digest&weekend_local_date=${encodeURIComponent(weekendStart)}&city=${DAILY_DIGEST_CITY}`;
 }
 
 /** Builds one Expo push message for one user. `eventCount` must be the
@@ -80,6 +85,29 @@ export function buildWeeklyDigestPushMessage(input: {
   };
 }
 
+export function buildWeekendDigestPushMessage(input: {
+  expoPushToken: string;
+  locale: string | null | undefined;
+  weekendStart: string;
+  eventCount: number;
+  occurrenceIds?: readonly string[];
+}): ExpoPushMessage {
+  const { title, body } = buildWeekendDigestPushCopy(input.locale, input.eventCount);
+  return {
+    to: input.expoPushToken,
+    title,
+    body,
+    sound: 'default',
+    data: {
+      kind: 'weekend_digest',
+      type: 'weekend_digest',
+      weekend_local_date: input.weekendStart,
+      occurrence_ids: [...(input.occurrenceIds ?? [])],
+      city: DAILY_DIGEST_CITY,
+    },
+  };
+}
+
 export function buildPushMessageForDigest(input: {
   digestType: DigestType;
   expoPushToken: string;
@@ -88,7 +116,7 @@ export function buildPushMessageForDigest(input: {
   eventCount: number;
   occurrenceIds?: readonly string[];
 }): ExpoPushMessage {
-  return input.digestType === 'weekly'
-    ? buildWeeklyDigestPushMessage({ ...input, weekStart: input.anchorDate })
-    : buildDigestPushMessage({ ...input, localDate: input.anchorDate });
+  if (input.digestType === 'weekly') return buildWeeklyDigestPushMessage({ ...input, weekStart: input.anchorDate });
+  if (input.digestType === 'weekend') return buildWeekendDigestPushMessage({ ...input, weekendStart: input.anchorDate });
+  return buildDigestPushMessage({ ...input, localDate: input.anchorDate });
 }

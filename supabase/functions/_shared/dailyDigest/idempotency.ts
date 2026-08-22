@@ -6,7 +6,8 @@
  *  constraint violation, not a fresh row. */
 export const DIGEST_TYPE_DAILY = 'daily' as const;
 export const DIGEST_TYPE_WEEKLY = 'weekly' as const;
-export type DigestType = typeof DIGEST_TYPE_DAILY | typeof DIGEST_TYPE_WEEKLY;
+export const DIGEST_TYPE_WEEKEND = 'weekend' as const;
+export type DigestType = typeof DIGEST_TYPE_DAILY | typeof DIGEST_TYPE_WEEKLY | typeof DIGEST_TYPE_WEEKEND;
 
 export function buildDigestSendKey(userId: string, digestType: DigestType, anchorDate: string): string {
   return `${userId}:${digestType}:${anchorDate}`;

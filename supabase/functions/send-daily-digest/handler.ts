@@ -11,11 +11,13 @@ import {
   selectWeeklyDigestEvents,
   type WeeklySocialDigest,
 } from '../_shared/dailyDigest/selectWeeklyDigestEvents.ts';
-import { jerusalemLocalDateString, weeklyDigestPeriod, weeklyDigestPeriodFromStart } from '../_shared/dailyDigest/scheduleGate.ts';
+import { selectWeekendDigestEvents } from '../_shared/dailyDigest/selectWeekendDigestEvents.ts';
+import { jerusalemLocalDateString, weekendDigestPeriod, weekendDigestPeriodFromStart, weeklyDigestPeriod, weeklyDigestPeriodFromStart } from '../_shared/dailyDigest/scheduleGate.ts';
 import {
   buildDigestSendKey,
   DIGEST_TYPE_DAILY,
   DIGEST_TYPE_WEEKLY,
+  DIGEST_TYPE_WEEKEND,
   type DigestType,
 } from '../_shared/dailyDigest/idempotency.ts';
 import { buildPushMessageForDigest, type ExpoPushMessage } from '../_shared/dailyDigest/pushPayload.ts';
@@ -40,7 +42,7 @@ export interface DigestDatabase {
   fetchCandidates?(period: DigestPeriod): Promise<DigestCandidateOccurrence[]>;
   /** Kept for existing Daily test adapters and deployment compatibility. */
   fetchTodayCandidates?(localDate: string): Promise<DigestCandidateOccurrence[]>;
-  fetchEligibleUsers(digestType?: DigestType): Promise<EligibleDigestUser[]>;
+  fetchEligibleUsers(digestType?: DigestType, testUserId?: string): Promise<EligibleDigestUser[]>;
   hasAlreadySent(sendKey: string): Promise<boolean>;
   recordDigestInstance(input: {
     digestType?: DigestType;
@@ -76,6 +78,8 @@ export interface RunDigestInput extends RunDailyDigestInput {
   digestType: DigestType;
   city?: string;
   weekStart?: string;
+  weekendStart?: string;
+  testUserId?: string;
 }
 
 export interface RunDailyDigestResult {
@@ -91,6 +95,8 @@ export interface RunDailyDigestResult {
   selectedPerDay: Record<string, number>;
   providerMix: Record<string, number>;
   categoryMix: Record<string, number>;
+  duplicatesRemoved: number;
+  qualityExclusions: number;
   eligibleUsers: number;
   validPushUsers: number;
   localesSeen: Record<string, number>;
@@ -118,6 +124,14 @@ export function runWeeklyDigest(
   return runDigest({ ...input, digestType: DIGEST_TYPE_WEEKLY }, database, pushSender);
 }
 
+export function runWeekendDigest(
+  input: RunDailyDigestInput,
+  database: DigestDatabase,
+  pushSender: PushSender,
+): Promise<RunDailyDigestResult> {
+  return runDigest({ ...input, digestType: DIGEST_TYPE_WEEKEND }, database, pushSender);
+}
+
 /** One orchestration path for Daily and Weekly. Selection and copy vary by
  * digest type; preference, idempotency, delivery, token cleanup, and failure
  * handling remain shared and therefore cannot drift. */
@@ -131,16 +145,24 @@ export async function runDigest(
   const week = input.weekStart
     ? weeklyDigestPeriodFromStart(input.weekStart)
     : weeklyDigestPeriod(input.now);
+  const weekend = input.weekendStart
+    ? weekendDigestPeriodFromStart(input.weekendStart)
+    : weekendDigestPeriod(input.now);
   const period: DigestPeriod = input.digestType === DIGEST_TYPE_WEEKLY
     ? { digestType: input.digestType, anchorDate: week.weekStart, startDate: week.weekStart, endDate: week.weekEnd, days: week.days }
-    : { digestType: input.digestType, anchorDate: dailyDate, startDate: dailyDate, endDate: dailyDate, days: [dailyDate] };
+    : input.digestType === DIGEST_TYPE_WEEKEND
+      ? { digestType: input.digestType, anchorDate: weekend.weekendStart, startDate: weekend.weekendStart, endDate: weekend.weekendEnd, days: weekend.days }
+      : { digestType: input.digestType, anchorDate: dailyDate, startDate: dailyDate, endDate: dailyDate, days: [dailyDate] };
   const candidates = database.fetchCandidates
     ? await database.fetchCandidates(period)
     : await database.fetchTodayCandidates!(period.anchorDate);
   const weeklySelection = input.digestType === DIGEST_TYPE_WEEKLY
     ? selectWeeklyDigestEvents(candidates, week)
     : null;
-  const selected = weeklySelection?.events ?? selectDigestEvents(candidates, {
+  const weekendSelection = input.digestType === DIGEST_TYPE_WEEKEND
+    ? selectWeekendDigestEvents(candidates, weekend)
+    : null;
+  const selected = weeklySelection?.events ?? weekendSelection?.events ?? selectDigestEvents(candidates, {
     localDate: dailyDate,
     targetLatitude: TEL_AVIV_CENTER.latitude,
     targetLongitude: TEL_AVIV_CENTER.longitude,
@@ -149,8 +171,8 @@ export async function runDigest(
     maxResults: DEFAULT_DIGEST_MAX_RESULTS,
   });
 
-  const prefix = input.digestType === DIGEST_TYPE_WEEKLY ? 'weekly' : 'daily';
-  const dateProperty = input.digestType === DIGEST_TYPE_WEEKLY ? 'week_start' : 'date';
+  const prefix = input.digestType === DIGEST_TYPE_WEEKLY ? 'weekly' : input.digestType === DIGEST_TYPE_WEEKEND ? 'weekend' : 'daily';
+  const dateProperty = input.digestType === DIGEST_TYPE_WEEKLY ? 'week_start' : input.digestType === DIGEST_TYPE_WEEKEND ? 'weekend_start' : 'date';
   const track = input.dryRun
     ? async (_eventName: string, _properties: Record<string, unknown>) => undefined
     : database.trackAnalytics.bind(database);
@@ -176,7 +198,7 @@ export async function runDigest(
     periodStart: period.startDate,
     periodEnd: period.endDate,
     eventsConsidered: candidates.length,
-    eventsEligible: weeklySelection?.eligibleCount ?? selected.length,
+    eventsEligible: weeklySelection?.eligibleCount ?? weekendSelection?.eligibleCount ?? selected.length,
     eventsSelected: selected.length,
     selectedOccurrenceIds: selected.map((event) => event.occurrenceId),
     selectedEvents: selected.map((event) => ({
@@ -189,6 +211,8 @@ export async function runDigest(
     selectedPerDay,
     providerMix,
     categoryMix,
+    duplicatesRemoved: weekendSelection?.duplicatesRemoved ?? 0,
+    qualityExclusions: weekendSelection?.qualityExclusions ?? 0,
     eligibleUsers: 0,
     validPushUsers: 0,
     localesSeen: {},
@@ -202,7 +226,7 @@ export async function runDigest(
 
   if (selected.length === 0) return result;
 
-  const users = await database.fetchEligibleUsers(input.digestType);
+  const users = await database.fetchEligibleUsers(input.digestType, input.testUserId);
   result.eligibleUsers = users.length;
   for (const user of users) {
     const locale = user.locale ?? 'en';
@@ -221,7 +245,7 @@ export async function runDigest(
     localDate: period.anchorDate,
     city,
     selectedOccurrenceIds: result.selectedOccurrenceIds,
-    selectionVersion: input.digestType === DIGEST_TYPE_WEEKLY ? 2 : 1,
+    selectionVersion: input.digestType === DIGEST_TYPE_WEEKEND ? 3 : input.digestType === DIGEST_TYPE_WEEKLY ? 2 : 1,
   });
 
   const toSend: Array<{

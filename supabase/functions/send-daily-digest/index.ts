@@ -2,7 +2,7 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { runDigest, type DigestDatabase, type DigestPeriod, type PushSender, type PushSendOutcome } from './handler.ts';
 import type { DigestCandidateOccurrence } from '../_shared/dailyDigest/selectDigestEvents.ts';
-import { addLocalCalendarDays, isDailyDigestSendWindow, isWeeklyDigestSendWindow } from '../_shared/dailyDigest/scheduleGate.ts';
+import { addLocalCalendarDays, isDailyDigestSendWindow, isWeekendDigestSendWindow, isWeeklyDigestSendWindow } from '../_shared/dailyDigest/scheduleGate.ts';
 import type { DigestType } from '../_shared/dailyDigest/idempotency.ts';
 
 const jsonHeaders = { 'Content-Type': 'application/json' };
@@ -27,13 +27,18 @@ Deno.serve(async (request: Request) => {
   // ensure Daily remains 07:00 and Weekly remains Saturday 19:00 Jerusalem.
   const isSendWindow = digestType === 'weekly'
     ? isWeeklyDigestSendWindow(now)
-    : isDailyDigestSendWindow(now);
+    : digestType === 'weekend'
+      ? isWeekendDigestSendWindow(now)
+      : isDailyDigestSendWindow(now);
+  if (body.force === true && body.dryRun === false && !body.testUserId) {
+    return response(400, { error: 'CONTROLLED_TEST_USER_REQUIRED' });
+  }
   if (!body.force && !isSendWindow) {
     return response(200, { skipped: 'OUTSIDE_SEND_WINDOW', now: now.toISOString() });
   }
 
   try {
-    const result = await runDigest({ dryRun: body.dryRun, now, digestType, weekStart: body.weekStart }, createDatabase(client), createPushSender());
+    const result = await runDigest({ dryRun: body.dryRun, now, digestType, weekStart: body.weekStart, weekendStart: body.weekendStart, testUserId: body.testUserId }, createDatabase(client), createPushSender());
     return response(200, result);
   } catch (error) {
     return response(502, { error: 'DIGEST_RUN_FAILED', message: error instanceof Error ? error.message : String(error) });
@@ -76,15 +81,17 @@ function createDatabase(client: any): DigestDatabase {
         formattedAddress: row.formatted_address,
       }));
     },
-    async fetchEligibleUsers(digestType: DigestType = 'daily') {
+    async fetchEligibleUsers(digestType: DigestType = 'daily', testUserId?: string) {
       // One row per opted-in user. A missing token stays visible to the dry
       // run as an explicit skip instead of disappearing from eligibility
       // totals. For multiple devices we intentionally choose the newest
       // valid Expo token so the daily digest is one push per user/day.
-      const { data, error } = await client
+      let query = client
         .from('profiles')
         .select('id, locale, push_tokens(token,created_at)')
-        .eq(`notification_preferences->>${digestType === 'weekly' ? 'weekly_digest' : 'daily_digest'}`, 'true');
+        .eq(`notification_preferences->>${digestType === 'weekly' ? 'weekly_digest' : digestType === 'weekend' ? 'weekend_digest' : 'daily_digest'}`, 'true');
+      if (testUserId) query = query.eq('id', testUserId);
+      const { data, error } = await query;
       if (error) throw new Error(`Could not load eligible digest users: ${error.message}`);
       const users: { userId: string; expoPushToken: string | null; locale: string | null }[] = [];
       for (const row of data ?? []) {
@@ -195,17 +202,21 @@ function createPushSender(): PushSender {
   };
 }
 
-function isRequestBody(value: unknown): value is { dryRun: boolean; force?: boolean; digestType?: DigestType; weekStart?: string } {
+function isRequestBody(value: unknown): value is { dryRun: boolean; force?: boolean; digestType?: DigestType; weekStart?: string; weekendStart?: string; testUserId?: string } {
   if (typeof value !== 'object' || value === null) return false;
   const v = value as Record<string, unknown>;
   const keys = Object.keys(v);
   if (typeof v.dryRun !== 'boolean') return false;
-  if (keys.some((key) => !['dryRun', 'force', 'digestType', 'weekStart'].includes(key))) return false;
+  if (keys.some((key) => !['dryRun', 'force', 'digestType', 'weekStart', 'weekendStart', 'testUserId'].includes(key))) return false;
   if ('force' in v && typeof v.force !== 'boolean') return false;
-  if ('digestType' in v && v.digestType !== 'daily' && v.digestType !== 'weekly') return false;
+  if ('digestType' in v && v.digestType !== 'daily' && v.digestType !== 'weekly' && v.digestType !== 'weekend') return false;
   if ('weekStart' in v) {
     if (v.digestType !== 'weekly' || typeof v.weekStart !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(v.weekStart)) return false;
   }
+  if ('weekendStart' in v) {
+    if (v.digestType !== 'weekend' || typeof v.weekendStart !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(v.weekendStart)) return false;
+  }
+  if ('testUserId' in v && (typeof v.testUserId !== 'string' || !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(v.testUserId))) return false;
   return true;
 }
 

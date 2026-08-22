@@ -65,6 +65,14 @@ export function isWeeklyDigestSendWindow(nowUtc: Date, windowMinutes = 15): bool
   return jerusalemWeekday(nowUtc) === 6 && hour === 19 && minute < windowMinutes;
 }
 
+/** Thursday 18:00 in Jerusalem. The cron continues to tick in UTC; this gate
+ * owns the local wall-clock decision and therefore remains correct across
+ * Israel daylight-saving transitions. */
+export function isWeekendDigestSendWindow(nowUtc: Date, windowMinutes = 15): boolean {
+  const { hour, minute } = jerusalemParts(nowUtc);
+  return jerusalemWeekday(nowUtc) === 4 && hour === 18 && minute < windowMinutes;
+}
+
 export function addLocalCalendarDays(localDate: string, days: number): string {
   const [year, month, day] = localDate.split('-').map(Number);
   const date = new Date(Date.UTC(year, month - 1, day + days));
@@ -75,6 +83,35 @@ export interface WeeklyDigestPeriod {
   weekStart: string;
   weekEnd: string;
   days: string[];
+}
+
+export interface WeekendDigestPeriod {
+  weekendStart: string;
+  weekendEnd: string;
+  days: [string, string, string];
+}
+
+export function weekendDigestPeriodFromStart(weekendStart: string): WeekendDigestPeriod {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(weekendStart)) throw new Error('Invalid weekend digest start');
+  const [year, month, day] = weekendStart.split('-').map(Number);
+  const parsed = new Date(Date.UTC(year, month - 1, day));
+  if (parsed.toISOString().slice(0, 10) !== weekendStart || parsed.getUTCDay() !== 4) {
+    throw new Error('Weekend digest start must be a real Thursday');
+  }
+  return {
+    weekendStart,
+    weekendEnd: addLocalCalendarDays(weekendStart, 2),
+    days: [weekendStart, addLocalCalendarDays(weekendStart, 1), addLocalCalendarDays(weekendStart, 2)],
+  };
+}
+
+/** Thursday-Saturday period containing today when today is Thu/Fri/Sat,
+ * otherwise the next upcoming Thursday-Saturday period. */
+export function weekendDigestPeriod(nowUtc: Date): WeekendDigestPeriod {
+  const localDate = jerusalemLocalDateString(nowUtc);
+  const weekday = jerusalemWeekday(nowUtc);
+  const offsetToThursday = weekday >= 4 ? (weekday <= 6 ? 4 - weekday : 0) : 4 - weekday;
+  return weekendDigestPeriodFromStart(addLocalCalendarDays(localDate, offsetToThursday));
 }
 
 export function weeklyDigestPeriodFromStart(weekStart: string): WeeklyDigestPeriod {
