@@ -1,5 +1,8 @@
 import {
+  DEFAULT_DIGEST_RADIUS_KM,
+  TEL_AVIV_CENTER,
   dedupeMirroredDigestCandidates,
+  selectDigestEvents,
   type DigestCandidateOccurrence,
 } from './selectDigestEvents.ts';
 import {
@@ -53,20 +56,30 @@ export function selectWeekendDigestEvents(
     days: period.days,
   }, maxPerSection);
   const keys: WeekendSectionKey[] = ['thursday_evening', 'friday', 'saturday'];
+  const eligibleBySection = period.days.map((localDate) => selectDigestEvents(deduped, {
+    localDate,
+    targetLatitude: TEL_AVIV_CENTER.latitude,
+    targetLongitude: TEL_AVIV_CENTER.longitude,
+    maxRadiusKm: DEFAULT_DIGEST_RADIUS_KM,
+    minResults: 0,
+    maxResults: Math.max(deduped.length, maxPerSection),
+  }));
   const sections = weekly.days.map((day, index) => ({
     key: keys[index],
     localDate: day.localDate,
     events: day.events,
-    eligibleCount: deduped.filter((event) => isInSection(event, period, index)).length,
+    eligibleCount: eligibleBySection[index].length,
   }));
+  const eligibleCount = sections.reduce((total, section) => total + section.eligibleCount, 0);
+  const duplicatesRemoved = Math.max(0, strong.length - deduped.length);
   return {
     weekendStart: period.weekendStart,
     weekendEnd: period.weekendEnd,
     sections,
     events: sections.flatMap((section) => section.events),
-    eligibleCount: sections.reduce((total, section) => total + section.eligibleCount, 0),
-    duplicatesRemoved: Math.max(0, strong.length - deduped.length),
-    qualityExclusions: Math.max(0, inWindow.length - strong.length),
+    eligibleCount,
+    duplicatesRemoved,
+    qualityExclusions: Math.max(0, inWindow.length - duplicatesRemoved - eligibleCount),
   };
 }
 

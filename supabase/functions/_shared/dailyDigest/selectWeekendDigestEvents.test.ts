@@ -62,6 +62,16 @@ test('cancelled and adult-only content are quality exclusions', () => {
   assert.equal(result.qualityExclusions, 2);
 });
 
+test('eligible count excludes malformed or out-of-radius rows rejected by the shared selector', () => {
+  const result = selectWeekendDigestEvents([
+    event('valid', '2026-08-28T10:00:00+03:00'),
+    event('invalid-coordinate', '2026-08-28T11:00:00+03:00', { latitude: null }),
+    event('outside-tel-aviv', '2026-08-28T12:00:00+03:00', { latitude: 31.7683, longitude: 35.2137 }),
+  ], PERIOD);
+  assert.equal(result.eligibleCount, 1);
+  assert.equal(result.qualityExclusions, 2);
+});
+
 test('optional RSVP counts do not affect the current deterministic ranking', () => {
   const candidates = [event('a', '2026-08-28T10:00:00+03:00'), event('b', '2026-08-28T11:00:00+03:00')];
   const base = selectWeekendDigestEvents(candidates, PERIOD);

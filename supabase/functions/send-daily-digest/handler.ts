@@ -91,7 +91,19 @@ export interface RunDailyDigestResult {
   eventsEligible: number;
   eventsSelected: number;
   selectedOccurrenceIds: string[];
-  selectedEvents: Array<{ occurrenceId: string; title: string; provider: string; category: string; localDate: string }>;
+  selectedEvents: Array<{
+    occurrenceId: string;
+    title: string;
+    provider: string;
+    category: string;
+    localDate: string;
+    startsAt: string;
+    locationName: string | null;
+    ageMinMonths: number | null;
+    ageMaxMonths: number | null;
+    priceNote: string | null;
+    whySelected: string;
+  }>;
   selectedPerDay: Record<string, number>;
   providerMix: Record<string, number>;
   categoryMix: Record<string, number>;
@@ -207,6 +219,12 @@ export async function runDigest(
       provider: event.provider,
       category: event.category,
       localDate: jerusalemDateOf(event.startsAt),
+      startsAt: event.startsAt,
+      locationName: event.locationName,
+      ageMinMonths: event.ageMinMonths,
+      ageMaxMonths: event.ageMaxMonths,
+      priceNote: event.priceNote,
+      whySelected: selectionReason(event),
     })),
     selectedPerDay,
     providerMix,
@@ -343,6 +361,14 @@ export async function runDigest(
     });
   }
   return result;
+}
+
+function selectionReason(event: DigestCandidateOccurrence): string {
+  const signals = ['verified active family event in the Tel Aviv weekend window'];
+  if (event.ageMinMonths !== null || event.ageMaxMonths !== null) signals.push('structured family age data');
+  if (event.sourceType === 'municipal') signals.push('trusted municipal source');
+  if (event.priceNote) signals.push('price information available');
+  return signals.join('; ');
 }
 
 function jerusalemDateOf(iso: string): string {

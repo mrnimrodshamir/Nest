@@ -88,9 +88,15 @@ function createDatabase(client: any): DigestDatabase {
       // valid Expo token so the daily digest is one push per user/day.
       let query = client
         .from('profiles')
-        .select('id, locale, push_tokens(token,created_at)')
-        .eq(`notification_preferences->>${digestType === 'weekly' ? 'weekly_digest' : digestType === 'weekend' ? 'weekend_digest' : 'daily_digest'}`, 'true');
-      if (testUserId) query = query.eq('id', testUserId);
+        .select('id, locale, push_tokens(token,created_at)');
+      if (testUserId) {
+        // A force-send is permitted only to one explicitly selected internal
+        // validation account. Normal production delivery still requires the
+        // independent opt-in below.
+        query = query.eq('id', testUserId);
+      } else {
+        query = query.eq(`notification_preferences->>${digestType === 'weekly' ? 'weekly_digest' : digestType === 'weekend' ? 'weekend_digest' : 'daily_digest'}`, 'true');
+      }
       const { data, error } = await query;
       if (error) throw new Error(`Could not load eligible digest users: ${error.message}`);
       const users: { userId: string; expoPushToken: string | null; locale: string | null }[] = [];

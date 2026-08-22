@@ -105,6 +105,9 @@ test('a dry run sends nothing but reports what WOULD send', async () => {
   assert.equal(pushSenderCalled, false, 'dry run must never call the real push sender');
   assert.equal(sends.length, 0, 'dry run must never write a send record');
   assert.equal(analytics.length, 0, 'dry run must not write analytics');
+  assert.equal(result.selectedEvents[0]?.startsAt, `${LOCAL_DATE}T10:00:00+03:00`);
+  assert.equal(result.selectedEvents[0]?.locationName, 'Beit Ariela');
+  assert.match(result.selectedEvents[0]?.whySelected ?? '', /family age data/);
 });
 
 test('a user already sent today (idempotency) is skipped, not re-sent', async () => {
