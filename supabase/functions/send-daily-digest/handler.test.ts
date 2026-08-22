@@ -1,8 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { runDailyDigest, runWeeklyDigest, type DigestDatabase, type EligibleDigestUser, type PushSender, type PushSendOutcome } from './handler.ts';
+import { runDailyDigest, runWeeklyDigest, runWeekendDigest, type DigestDatabase, type EligibleDigestUser, type PushSender, type PushSendOutcome } from './handler.ts';
 import { TEL_AVIV_CENTER, type DigestCandidateOccurrence } from '../_shared/dailyDigest/selectDigestEvents.ts';
-import { buildDigestSendKey, DIGEST_TYPE_DAILY, DIGEST_TYPE_WEEKLY, type DigestType } from '../_shared/dailyDigest/idempotency.ts';
+import { buildDigestSendKey, DIGEST_TYPE_DAILY, DIGEST_TYPE_WEEKLY, DIGEST_TYPE_WEEKEND, type DigestType } from '../_shared/dailyDigest/idempotency.ts';
 
 const NOW = new Date('2026-08-20T04:05:00Z'); // 07:05 Jerusalem (IDT)
 const LOCAL_DATE = '2026-08-20';
@@ -277,4 +277,52 @@ test('Weekly cron retry cannot claim the same user and week twice', async () => 
   assert.equal(retry.sent, 0);
   assert.equal(retry.skipped, 1);
   assert.equal(alreadySent.has(buildDigestSendKey('u1', DIGEST_TYPE_WEEKLY, '2026-08-23')), true);
+});
+
+test('Weekend uses Thursday anchor, separate preference path, and max three per section', async () => {
+  const candidates = Array.from({ length: 5 }, (_, index) => occurrence({
+    occurrenceId: `weekend-${index}`, eventId: `weekend-event-${index}`,
+    startsAt: `2026-08-28T${String(10 + index).padStart(2, '0')}:00:00+03:00`,
+    category: index % 2 ? 'workshop' : 'story_time',
+  }));
+  const fake = fakeDatabase({ candidates, users: [{ userId: 'u1', expoPushToken: 't1', locale: 'he' }] });
+  const result = await runWeekendDigest({ dryRun: true, now: new Date('2026-08-27T15:05:00Z') }, fake.db, okPushSender());
+  assert.equal(result.localDate, '2026-08-27');
+  assert.equal(result.periodEnd, '2026-08-29');
+  assert.equal(result.eventsSelected, 3);
+  assert.deepEqual(fake.requestedDigestTypes, [DIGEST_TYPE_WEEKEND]);
+  assert.equal(result.wouldSend, 1);
+  assert.equal(result.socialOutput, null);
+});
+
+test('Daily, Weekly and Weekend preferences remain independent', async () => {
+  const daily = fakeDatabase({ candidates: [occurrence()], users: [] });
+  const weekly = fakeDatabase({ candidates: [occurrence({ startsAt: '2026-08-23T10:00:00+03:00' })], users: [] });
+  const weekend = fakeDatabase({ candidates: [occurrence({ startsAt: '2026-08-28T10:00:00+03:00' })], users: [] });
+  await runDailyDigest({ dryRun: true, now: NOW }, daily.db, okPushSender());
+  await runWeeklyDigest({ dryRun: true, now: new Date('2026-08-22T16:05:00Z') }, weekly.db, okPushSender());
+  await runWeekendDigest({ dryRun: true, now: new Date('2026-08-27T15:05:00Z') }, weekend.db, okPushSender());
+  assert.deepEqual(daily.requestedDigestTypes, [DIGEST_TYPE_DAILY]);
+  assert.deepEqual(weekly.requestedDigestTypes, [DIGEST_TYPE_WEEKLY]);
+  assert.deepEqual(weekend.requestedDigestTypes, [DIGEST_TYPE_WEEKEND]);
+});
+
+test('Weekend concurrent/retry delivery remains atomically send-once', async () => {
+  const alreadySent = new Set<string>();
+  const candidate = occurrence({ startsAt: '2026-08-28T10:00:00+03:00' });
+  const first = fakeDatabase({ candidates: [candidate], users: [{ userId: 'u1', expoPushToken: 't1', locale: 'en' }], alreadySent });
+  await runWeekendDigest({ dryRun: false, now: new Date('2026-08-27T15:05:00Z') }, first.db, okPushSender());
+  const retryDb = fakeDatabase({ candidates: [candidate], users: [{ userId: 'u1', expoPushToken: 't1', locale: 'en' }], alreadySent });
+  const retry = await runWeekendDigest({ dryRun: false, now: new Date('2026-08-27T15:10:00Z') }, retryDb.db, okPushSender());
+  assert.equal(retry.sent, 0);
+  assert.equal(retry.skipped, 1);
+  assert.equal(alreadySent.has(buildDigestSendKey('u1', DIGEST_TYPE_WEEKEND, '2026-08-27')), true);
+});
+
+test('Weekend analytics use the shared path once and remain privacy-safe', async () => {
+  const fake = fakeDatabase({ candidates: [occurrence({ startsAt: '2026-08-28T10:00:00+03:00' })], users: [{ userId: 'u1', expoPushToken: 't1', locale: 'ar' }] });
+  await runWeekendDigest({ dryRun: false, now: new Date('2026-08-27T15:05:00Z') }, fake.db, okPushSender());
+  assert.equal(fake.analytics.filter((entry) => entry.event === 'weekend_digest_generated').length, 1);
+  assert.equal(fake.analytics.filter((entry) => entry.event === 'weekend_push_sent').length, 1);
+  assert.doesNotMatch(JSON.stringify(fake.analytics), /token|email|child|latitude|longitude/i);
 });

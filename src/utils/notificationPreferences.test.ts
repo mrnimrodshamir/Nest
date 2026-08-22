@@ -14,4 +14,12 @@ test('missing digest preferences default off', () => {
   const mapped = mapNotificationPreferences(null);
   assert.equal(mapped.daily_digest, false);
   assert.equal(mapped.weekly_digest, false);
+  assert.equal(mapped.weekend_digest, false);
+});
+
+test('Weekend remains independent from Daily and Weekly', () => {
+  const mapped = mapNotificationPreferences({ daily_digest: true, weekly_digest: false, weekend_digest: true });
+  assert.equal(mapped.daily_digest, true);
+  assert.equal(mapped.weekly_digest, false);
+  assert.equal(mapped.weekend_digest, true);
 });

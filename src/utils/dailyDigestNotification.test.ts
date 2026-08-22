@@ -32,3 +32,13 @@ test('Weekly notification supports warm/cold routing and fails closed for malfor
   assert.deepEqual(parseDigestNotification({ kind: 'weekly_digest', type: 'weekly_digest', week_start: '2026-08-16', city: 'tel_aviv' }, saturday), { status: 'stale' });
   assert.deepEqual(parseDigestNotification({ kind: 'weekly_digest', type: 'weekly_digest', week_start: 'not-a-date', city: 'tel_aviv' }, saturday), { status: 'malformed' });
 });
+
+test('Weekend notification validates Thursday identity and stale payloads fail closed', () => {
+  const thursday = new Date('2026-08-27T15:05:00Z');
+  assert.deepEqual(parseDigestNotification({ kind: 'weekend_digest', type: 'weekend_digest', weekend_local_date: '2026-08-27', city: 'tel_aviv', occurrence_ids: ['o1'] }, thursday), {
+    status: 'valid', digestType: 'weekend', weekendStart: '2026-08-27', city: 'tel_aviv', occurrenceIds: ['o1'],
+  });
+  assert.deepEqual(parseDigestNotification({ kind: 'weekend_digest', type: 'weekend_digest', weekend_local_date: '2026-08-20', city: 'tel_aviv' }, thursday), { status: 'stale' });
+  assert.deepEqual(parseDigestNotification({ kind: 'weekend_digest', type: 'weekend_digest', weekend_local_date: '2026-08-28', city: 'tel_aviv' }, thursday), { status: 'stale' });
+  assert.deepEqual(parseDigestNotification({ kind: 'weekend_digest', type: 'weekend_digest', city: 'tel_aviv' }, thursday), { status: 'malformed' });
+});

@@ -20,6 +20,10 @@ const weekly = {
   city: 'tel_aviv',
   occurrence_ids: ['event-occ-v1-c'],
 };
+const weekend = {
+  kind: 'weekend_digest', type: 'weekend_digest', weekend_local_date: '2026-08-20',
+  city: 'tel_aviv', occurrence_ids: ['event-occ-v1-weekend'],
+};
 
 test('Daily cold-start intent survives until the registered main stack consumes it', () => {
   const controller = new DigestNotificationIntentController();
@@ -32,7 +36,8 @@ test('Daily cold-start intent survives until the registered main stack consumes 
   });
   assert.equal(digestRoutesAreRegistered(['SignIn', 'CompleteProfile']), false);
   assert.equal(controller.peek(), pending, 'auth restoration must not consume the intent');
-  assert.equal(digestRoutesAreRegistered(['Tabs', 'DailyDigest', 'WeeklyDigest']), true);
+  assert.equal(digestRoutesAreRegistered(['Tabs', 'DailyDigest', 'WeeklyDigest']), false);
+  assert.equal(digestRoutesAreRegistered(['Tabs', 'DailyDigest', 'WeeklyDigest', 'WeekendDigest']), true);
   assert.equal(controller.consume(pending!), true);
   assert.equal(controller.peek(), null);
 });
@@ -76,4 +81,17 @@ test('payload occurrence IDs are optional for backwards compatibility and malfor
   const malformed = new DigestNotificationIntentController();
   assert.equal(malformed.capture({ ...daily, occurrence_ids: ['ok', 4] }, 'bad-ids', NOW), 'queued');
   assert.deepEqual(malformed.peek(), { kind: 'fallback' });
+});
+
+test('Weekend cold/warm/auth-restore intent opens once and normal launch stays empty', () => {
+  const controller = new DigestNotificationIntentController();
+  assert.equal(controller.peek(), null, 'normal launch must not invent a Weekend popup');
+  assert.equal(controller.capture(weekend, 'weekend-1', NOW), 'queued');
+  const pending = controller.peek();
+  assert.deepEqual(pending, { kind: 'weekend', weekendStart: '2026-08-20', occurrenceIds: ['event-occ-v1-weekend'] });
+  assert.equal(digestRoutesAreRegistered(['CompleteProfile']), false);
+  assert.equal(controller.peek(), pending, 'auth restore must retain the Weekend intent');
+  assert.equal(controller.consume(pending!), true);
+  assert.equal(controller.capture(weekend, 'weekend-1', NOW), 'duplicate');
+  assert.equal(controller.peek(), null);
 });

@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { isDailyDigestSendWindow, isWeeklyDigestSendWindow, jerusalemLocalDateString, weeklyDigestPeriod } from './scheduleGate.ts';
+import { isDailyDigestSendWindow, isWeekendDigestSendWindow, isWeeklyDigestSendWindow, jerusalemLocalDateString, weekendDigestPeriod, weeklyDigestPeriod } from './scheduleGate.ts';
 
 test('07:00 Jerusalem (IDT, summer UTC+3) is inside the send window', () => {
   // 2026-08-20 07:05 Asia/Jerusalem == 04:05 UTC in August (IDT, UTC+3).
@@ -69,4 +69,21 @@ test('Weekly period is the coming Sunday-Saturday and crosses month/year safely'
   const year = weeklyDigestPeriod(new Date('2026-12-26T17:05:00Z'));
   assert.equal(year.weekStart, '2026-12-27');
   assert.equal(year.weekEnd, '2027-01-02');
+});
+
+test('Weekend gate opens Thursday at 18:00 Jerusalem across DST', () => {
+  assert.equal(isWeekendDigestSendWindow(new Date('2026-08-27T15:05:00Z')), true);
+  assert.equal(isWeekendDigestSendWindow(new Date('2026-12-03T16:05:00Z')), true);
+  assert.equal(isWeekendDigestSendWindow(new Date('2026-08-27T14:59:00Z')), false);
+  assert.equal(isWeekendDigestSendWindow(new Date('2026-08-27T15:15:00Z')), false);
+  assert.equal(isWeekendDigestSendWindow(new Date('2026-08-28T15:05:00Z')), false);
+});
+
+test('Weekend period is Jerusalem-local Thursday through Saturday', () => {
+  assert.deepEqual(weekendDigestPeriod(new Date('2026-08-27T15:05:00Z')), {
+    weekendStart: '2026-08-27', weekendEnd: '2026-08-29',
+    days: ['2026-08-27', '2026-08-28', '2026-08-29'],
+  });
+  assert.equal(weekendDigestPeriod(new Date('2026-08-29T10:00:00Z')).weekendStart, '2026-08-27');
+  assert.equal(weekendDigestPeriod(new Date('2026-08-30T10:00:00Z')).weekendStart, '2026-09-03');
 });

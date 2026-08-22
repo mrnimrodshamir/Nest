@@ -11,7 +11,7 @@ const app = readFileSync(new URL('../../App.tsx', import.meta.url), 'utf8');
 
 test('Weekly preference is independent, explicit, and defaults existing users off', () => {
   assert.match(weeklyMigration, /jsonb_build_object\('weekly_digest', false\)/);
-  assert.match(edgeIndex, /weekly_digest' : 'daily_digest/);
+  assert.match(edgeIndex, /weekly_digest' : digestType === 'weekend' \? 'weekend_digest' : 'daily_digest/);
   assert.match(edgeIndex, /notification_preferences->>/);
   assert.doesNotMatch(weeklyMigration, /'daily_digest', false/);
 });
