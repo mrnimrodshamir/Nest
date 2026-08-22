@@ -3,6 +3,7 @@ export type AnalyticsEvent =
   | 'login_started' | 'login_completed' | 'language_changed'
   | 'discovery_opened' | 'discovery_search_used' | 'discovery_filter_changed'
   | 'discovery_sort_changed' | 'discovery_item_opened'
+  | 'venue_marker_opened' | 'venue_event_opened'
   | 'activity_opened' | 'activity_created' | 'activity_joined' | 'activity_left' | 'activity_shared'
   | 'event_opened' | 'event_rsvp_joined' | 'event_rsvp_left' | 'event_shared'
   | 'place_opened' | 'place_shared'

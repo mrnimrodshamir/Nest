@@ -41,8 +41,17 @@ test('Event query is occurrence-backed, viewport-limited, staged-domain-only, an
   assert.match(source, /publication_status', 'published'/);
   assert.match(source, /verification_status', 'verified'/);
   assert.match(source, /DISCOVERY_EVENT_LIMIT = 200/);
-  assert.match(source, /DISCOVERY_HORIZON_DAYS = 90/);
+  // Discovery's date relevance horizon now lives in
+  // src/utils/discoveryDateFilter.ts (a 30-day default, extendable via an
+  // explicit date filter) rather than a fixed 90-day cutoff baked into the
+  // query itself — see discoveryDateFilter.test.ts for that logic's coverage.
+  assert.match(source, /resolveDiscoveryDateRange/);
   assert.doesNotMatch(source, /recommend|personaliz|\bai\b|saved/i);
+});
+
+test('Discovery defaults to a 30-day date-relevance horizon, not the Place Details 90-day one', async () => {
+  const source = await readFile(new URL('../utils/discoveryDateFilter.ts', import.meta.url), 'utf8');
+  assert.match(source, /DISCOVERY_DEFAULT_HORIZON_DAYS = 30/);
 });
 
 test('Event marker, card, details route, and place integration are present without a Saved control', async () => {

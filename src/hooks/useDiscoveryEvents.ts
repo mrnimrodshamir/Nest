@@ -2,15 +2,17 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { localizeEvents, queryDiscoveryEvents, queryEventAttendanceCounts } from '@/lib/events';
 import type { EventDetails } from '@/types/event';
 import type { PlaceViewport } from '@/types/familyFriendlyPlace';
+import type { DiscoveryDateFilterKey } from '@/utils/discoveryDateFilter';
 import { translate, useI18n } from '@/i18n';
 
-export function useDiscoveryEvents(options: { viewport: PlaceViewport; mockEvents?: EventDetails[] }) {
+export function useDiscoveryEvents(options: { viewport: PlaceViewport; mockEvents?: EventDetails[]; dateFilter?: DiscoveryDateFilterKey }) {
   const { locale } = useI18n();
   const [events, setEvents] = useState<EventDetails[]>(options.mockEvents ?? []);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [attendeeCounts, setAttendeeCounts] = useState<Record<string, number>>({});
   const requestId = useRef(0);
+  const dateFilter = options.dateFilter ?? 'next30';
 
   const refresh = useCallback(async () => {
     if (options.mockEvents) {
@@ -23,7 +25,7 @@ export function useDiscoveryEvents(options: { viewport: PlaceViewport; mockEvent
     setIsLoading(true);
     setError(null);
     try {
-      const result = await queryDiscoveryEvents(options.viewport);
+      const result = await queryDiscoveryEvents(options.viewport, new Date(), dateFilter);
       if (id === requestId.current) {
         setEvents(result);
         setAttendeeCounts({});
@@ -46,7 +48,7 @@ export function useDiscoveryEvents(options: { viewport: PlaceViewport; mockEvent
     } finally {
       if (id === requestId.current) setIsLoading(false);
     }
-  }, [locale, options.mockEvents, options.viewport]);
+  }, [locale, options.mockEvents, options.viewport, dateFilter]);
 
   useEffect(() => {
     const timer = setTimeout(refresh, 250);

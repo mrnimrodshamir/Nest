@@ -21,12 +21,17 @@ import { addLocalCalendarDays, weekendDigestPeriodFromStart, weeklyDigestPeriod 
 import { selectWeeklyDigestEvents } from '../../supabase/functions/_shared/dailyDigest/selectWeeklyDigestEvents';
 import { selectWeekendDigestEvents, type WeekendSectionKey } from '../../supabase/functions/_shared/dailyDigest/selectWeekendDigestEvents';
 import { rowsInDigestOrder } from '@/utils/dailyDigestRows';
+import { resolveDiscoveryDateRange, type DiscoveryDateFilterKey } from '@/utils/discoveryDateFilter';
 
 export const EVENT_COLUMNS = 'id,city_id,title,description,category,image_url,age_min_months,age_max_months,price_note,registration_required,registration_url,verification_status,publication_status,event_status,cancellation_reason,provider,provider_event_id,provider_transport_id,source_group_id,source_name,source_url,source_published_at,source_updated_at,provider_metadata,is_recurring,recurrence_rule,recurrence_timezone,recurrence_series_id,place_id,location_name,formatted_address,latitude,longitude,created_at,updated_at';
 export const EVENT_OCCURRENCE_COLUMNS = 'id,event_id,provider_occurrence_id,occurrence_fingerprint,starts_at,ends_at,original_starts_at,occurrence_status,cancellation_reason,source_updated_at,provider_metadata';
 
 const DISCOVERY_EVENT_LIMIT = 200;
-const DISCOVERY_HORIZON_DAYS = 90;
+/** Place Details is an explicit discovery path — a parent tapped into one
+ *  specific venue — so it keeps a wide horizon rather than the 30-day default
+ *  applied to normal, unfiltered Discovery. Unrelated to DISCOVERY_DEFAULT_HORIZON_DAYS
+ *  in @/utils/discoveryDateFilter, which governs the map/list horizon instead. */
+const PLACE_EVENTS_HORIZON_DAYS = 90;
 
 /** The database view that already excludes finished, cancelled and archived
  *  occurrences. Reading from it means the row limit is spent on events a parent
@@ -40,17 +45,29 @@ const DISCOVERY_HORIZON_DAYS = 90;
  *  which means it belongs in the database. */
 const ACTIVE_EVENTS_VIEW = 'active_event_occurrences';
 
-export async function queryDiscoveryEvents(viewport: PlaceViewport, now = new Date()): Promise<EventDetails[]> {
+/** Normal Discovery defaults to TODAY → NEXT 30 DAYS (see
+ *  @/utils/discoveryDateFilter) so a provider with hundreds of far-future rows
+ *  cannot crowd near-term Events out of the same 200-row budget. No Event is
+ *  ever deleted or excluded from the database for this — passing an explicit
+ *  `dateFilter` (wired to Discovery's date-filter UI) reaches any Event,
+ *  including 'all', which removes the upper bound entirely. */
+export async function queryDiscoveryEvents(
+  viewport: PlaceViewport,
+  now = new Date(),
+  dateFilter: DiscoveryDateFilterKey = 'next30',
+): Promise<EventDetails[]> {
   validateViewport(viewport);
-  const horizonEnd = new Date(startOfLocalDay(now).getTime() + DISCOVERY_HORIZON_DAYS * 24 * 60 * 60 * 1_000);
-  const { data, error } = await supabase
+  const range = resolveDiscoveryDateRange(dateFilter, now);
+  let query = supabase
     .from(ACTIVE_EVENTS_VIEW)
     .select('*')
     .gte('latitude', viewport.south)
     .lte('latitude', viewport.north)
     .gte('longitude', viewport.west)
     .lte('longitude', viewport.east)
-    .lt('starts_at', horizonEnd.toISOString())
+    .gte('starts_at', range.start.toISOString());
+  if (range.end !== null) query = query.lt('starts_at', range.end.toISOString());
+  const { data, error } = await query
     .order('starts_at', { ascending: true })
     .limit(DISCOVERY_EVENT_LIMIT);
   if (error) throw new Error(error.message);
@@ -59,7 +76,7 @@ export async function queryDiscoveryEvents(viewport: PlaceViewport, now = new Da
 
 export async function queryEventsAtPlace(placeId: string, now = new Date()): Promise<EventDetails[]> {
   if (!placeId.trim()) return [];
-  const horizonEnd = new Date(startOfLocalDay(now).getTime() + DISCOVERY_HORIZON_DAYS * 24 * 60 * 60 * 1_000);
+  const horizonEnd = new Date(startOfLocalDay(now).getTime() + PLACE_EVENTS_HORIZON_DAYS * 24 * 60 * 60 * 1_000);
   const { data, error } = await supabase
     .from(ACTIVE_EVENTS_VIEW)
     .select('*')

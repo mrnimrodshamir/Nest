@@ -58,6 +58,22 @@ export const en = {
   'discovery.count.events.other': '{count} events in this area',
   'discovery.count.mixed': '{count} nearby',
 
+  // Venue grouping — one marker for multiple Events at the same real venue.
+  'discovery.venueActivitiesCount.one': '1 activity here',
+  'discovery.venueActivitiesCount.other': '{count} activities here',
+  'discovery.venueSheetTitle': 'Activities at {venue}',
+
+  // Discovery's default date-relevance horizon and its explicit overrides.
+  'discovery.horizonDefault': 'Showing the next 30 days',
+  'discovery.dateFilter.title': 'Date',
+  'discovery.dateFilter.today': 'Today',
+  'discovery.dateFilter.tomorrow': 'Tomorrow',
+  'discovery.dateFilter.week': 'This week',
+  'discovery.dateFilter.weekend': 'This weekend',
+  'discovery.dateFilter.next7': 'Next 7 days',
+  'discovery.dateFilter.next30': 'Next 30 days',
+  'discovery.dateFilter.all': 'All upcoming',
+
   // Empty states — one per content combination, so mixed selections read
   // naturally instead of falling back to a generic catch-all.
   'discovery.empty.all': 'Nothing nearby matches your filters yet.',
@@ -692,6 +708,7 @@ export const en = {
   'map.placeMarker': 'Place: {name}',
   'map.eventMarker': 'Event: {name}',
   'map.placeCluster': '{count} places',
+  'map.eventVenueCluster': '{count} activities at this location',
   'map.imageLabel': '{name} image',
   'activity.reportTitle': 'Report this activity',
   'activity.reportPrompt': "Tell us what's wrong — this goes to the {appName} team, not the host.",

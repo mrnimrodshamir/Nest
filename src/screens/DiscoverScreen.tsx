@@ -17,6 +17,8 @@ import { ActivityCard } from '@/components/ActivityCard';
 import { ActivityMapPin } from '@/components/ActivityMapPin';
 import { EventCard } from '@/components/EventCard';
 import { EventMapPin } from '@/components/EventMapPin';
+import { EventVenueMarker } from '@/components/EventVenueMarker';
+import { VenueEventsSheet } from '@/components/VenueEventsSheet';
 import { CategoryChip } from '@/components/CategoryChip';
 import { PlaceCard } from '@/components/PlaceCard';
 import { PlaceClusterMarker } from '@/components/PlaceClusterMarker';
@@ -33,6 +35,8 @@ import type { DiscoveryContentKey, DiscoveryContentSelection, DiscoveryItem, Dis
 import type { EventCategory, EventDetails } from '@/types/event';
 import type { FamilyFriendlyPlace, PlaceCategory, PlaceFilters } from '@/types/familyFriendlyPlace';
 import { clusterPlacesForRegion } from '@/utils/placeClustering';
+import { groupEventsByVenue, type EventVenueMapItem } from '@/utils/eventVenueGrouping';
+import { DISCOVERY_DATE_FILTERS, type DiscoveryDateFilterKey } from '@/utils/discoveryDateFilter';
 import { regionToPlaceViewport } from '@/utils/placeViewport';
 import { distanceMeters } from '@/utils/placeViewport';
 import { ALL_DISCOVERY_CONTENT, discoveryEmptyCopyKey, selectedContentKeys, toggleDiscoveryContent, visibleDiscoveryFailures } from '@/utils/discoveryPresentation';
@@ -86,6 +90,14 @@ const SORT_OPTIONS: Array<{ key: DiscoverySort; labelKey: TranslationKey }> = [
   { key: 'soonest', labelKey: 'sort.soonest' },
   { key: 'alphabetical', labelKey: 'sort.alphabetical' },
 ];
+
+// Order matches the conceptual relevance ladder from the mission brief:
+// today → tomorrow → this week → this weekend → next 7 days → rest of 30
+// days (the default) → explicitly everything, which is the only path back
+// to far-future Events the 30-day default excludes from normal Discovery.
+const DATE_FILTER_OPTIONS: Array<{ key: DiscoveryDateFilterKey; labelKey: TranslationKey }> = DISCOVERY_DATE_FILTERS.map((key) => ({
+  key, labelKey: `discovery.dateFilter.${key}` as TranslationKey,
+}));
 
 const EVENT_CATEGORIES: Array<{ key: EventCategory | 'all'; labelKey: TranslationKey }> = [
   { key: 'all', labelKey: 'filters.allEvents' },
@@ -148,6 +160,8 @@ export function DiscoverScreen({ onOpenActivity, onOpenPlace, onOpenEvent, onHos
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [sortOpen, setSortOpen] = useState(false);
   const [sort, setSort] = useState<DiscoverySort>('default');
+  const [dateFilter, setDateFilter] = useState<DiscoveryDateFilterKey>('next30');
+  const [openVenueGroup, setOpenVenueGroup] = useState<Extract<EventVenueMapItem, { kind: 'venue' }> | null>(null);
   const [filterNotice, setFilterNotice] = useState<string | null>(null);
 
   const { t, locale } = useI18n();
@@ -219,7 +233,7 @@ export function DiscoverScreen({ onOpenActivity, onOpenPlace, onOpenEvent, onHos
     userCoordinate: position.userCoordinate,
     mockPlaces,
   });
-  const eventsQuery = useDiscoveryEvents({ viewport, mockEvents });
+  const eventsQuery = useDiscoveryEvents({ viewport, mockEvents, dateFilter });
   const activityRefreshRef = useRef(activitiesQuery.refresh);
   const placeRefreshRef = useRef(placesQuery.refresh);
   const eventRefreshRef = useRef(eventsQuery.refresh);
@@ -284,6 +298,13 @@ export function DiscoverScreen({ onOpenActivity, onOpenPlace, onOpenEvent, onHos
   const visiblePlaces = useMemo(() => visibleItems.flatMap((item) => item.type === 'place' ? [item.data] : []), [visibleItems]);
   const visibleEvents = useMemo(() => visibleItems.flatMap((item) => item.type === 'event' ? [item.data] : []), [visibleItems]);
   const placeMapItems = useMemo(() => clusterPlacesForRegion(visiblePlaces, region), [region, visiblePlaces]);
+  // Venue grouping, not geographic clustering: the same real venue stays one
+  // marker at any zoom level (see src/utils/eventVenueGrouping.ts), unlike
+  // placeMapItems above which merges DIFFERENT places when they visually
+  // collide. Built from visibleEvents — the same already-filtered set the
+  // list uses — so a marker's count and the list's result count can never
+  // disagree, and narrowing a filter narrows both together.
+  const venueMapItems = useMemo(() => groupEventsByVenue(visibleEvents), [visibleEvents]);
 
   const openItem = useCallback((item: DiscoveryItem) => {
     handleDiscoveryItemIntent(item, 'open', {
@@ -306,6 +327,19 @@ export function DiscoverScreen({ onOpenActivity, onOpenPlace, onOpenEvent, onHos
       openItem(item);
     }, MARKER_OPEN_DELAY_MS);
   }, [openItem]);
+
+  /** A venue marker holding multiple Events never arbitrarily opens one of
+   *  them — it opens the "{count} activities here" sheet instead, and the
+   *  user picks. */
+  const openVenueMarker = useCallback((group: Extract<EventVenueMapItem, { kind: 'venue' }>) => {
+    setOpenVenueGroup(group);
+    track('venue_marker_opened', { event_count: group.events.length, city: resolveCityForCoordinate(group.latitude, group.longitude) ?? 'unknown' });
+  }, []);
+
+  const openVenueEvent = useCallback((event: EventDetails) => {
+    track('venue_event_opened', { content_id: event.occurrence.id, event_count: openVenueGroup?.events.length ?? 0 });
+    openItem({ type: 'event', id: event.occurrence.id, data: event });
+  }, [openItem, openVenueGroup]);
 
   const changeContentSelection = useCallback((key: DiscoveryContentKey) => {
     // The rules (keep one type selected; drop a now-hidden selected marker)
@@ -336,7 +370,11 @@ export function DiscoverScreen({ onOpenActivity, onOpenPlace, onOpenEvent, onHos
         <ToolbarButton icon={ArrowsDownUp} label={t('discovery.sort')} onPress={() => setSortOpen(true)} active={sort !== 'default'} />
       </View>
       <Text style={styles.sheetTitle}>{showSkeleton ? t('discovery.finding') : t(discoveryCountKey(contentSelection, visibleItems.length), { count: visibleItems.length })}</Text>
-      {!showSkeleton && visibleItems.length > 0 ? <Text style={styles.sheetSubtitle}>{t('discovery.swipeUp')}</Text> : null}
+      {/* Only shown for Events under the default horizon — the one Discovery
+          actually narrows by date. Never shown once the user picked an
+          explicit date filter, since that IS their intent, not a default to
+          disclose. */}
+      {!showSkeleton && contentSelection.events && dateFilter === 'next30' ? <Text style={styles.sheetSubtitle}>{t('discovery.horizonDefault')}</Text> : !showSkeleton && visibleItems.length > 0 ? <Text style={styles.sheetSubtitle}>{t('discovery.swipeUp')}</Text> : null}
       {/* One banner per FAILED domain only — the domains that loaded stay
           listed below rather than being replaced by a full-screen error. */}
       {showActivityError ? <QueryErrorBanner label={t('discovery.error.activities')} onRetry={activitiesQuery.refresh} /> : null}
@@ -352,6 +390,7 @@ export function DiscoverScreen({ onOpenActivity, onOpenPlace, onOpenEvent, onHos
     setSelectedActivityCategory('all');
     setSelectedPlaceCategory('all');
     setSelectedEventCategory('all');
+    setDateFilter('next30');
     setPlaceQuickFilters(new Set());
     setFilterNotice(null);
   }, []);
@@ -361,7 +400,7 @@ export function DiscoverScreen({ onOpenActivity, onOpenPlace, onOpenEvent, onHos
   const visibleFailures = visibleDiscoveryFailures(contentSelection, activitiesQuery.error, placesQuery.error, eventsQuery.error);
   const activeFilterCount = (selectedContentKeys(contentSelection).length === 3 ? 0 : 1)
     + Number(selectedActivityCategory !== 'all') + Number(selectedPlaceCategory !== 'all')
-    + Number(selectedEventCategory !== 'all') + placeQuickFilters.size;
+    + Number(selectedEventCategory !== 'all') + Number(dateFilter !== 'next30') + placeQuickFilters.size;
   const showActivityError = visibleFailures.includes('activity');
   const showPlaceError = visibleFailures.includes('place');
   const showEventError = visibleFailures.includes('event');
@@ -411,10 +450,19 @@ export function DiscoverScreen({ onOpenActivity, onOpenPlace, onOpenEvent, onHos
             }, 300)}
           />
         ))}
-        {visibleEvents.map((event) => {
-          const item: DiscoveryItem = { type: 'event', id: event.occurrence.id, data: event };
-          return <EventMapPin key={discoveryItemKey(item)} event={event} selected={discoverySelectionEquals(selectedItem, item)} onPress={() => openMarkerItem(item)} />;
-        })}
+        {venueMapItems.map((mapItem) => mapItem.kind === 'single' ? (() => {
+          const item: DiscoveryItem = { type: 'event', id: mapItem.event.occurrence.id, data: mapItem.event };
+          return <EventMapPin key={discoveryItemKey(item)} event={mapItem.event} selected={discoverySelectionEquals(selectedItem, item)} onPress={() => openMarkerItem(item)} />;
+        })() : (
+          <EventVenueMarker
+            key={`event-venue:${mapItem.key}`}
+            latitude={mapItem.latitude}
+            longitude={mapItem.longitude}
+            count={mapItem.events.length}
+            selected={mapItem.events.some((event) => selectedItem?.type === 'event' && event.occurrence.id === selectedItem.id)}
+            onPress={() => openVenueMarker(mapItem)}
+          />
+        ))}
       </MapView>
       </View>
 
@@ -464,6 +512,7 @@ export function DiscoverScreen({ onOpenActivity, onOpenPlace, onOpenEvent, onHos
           </>
         ) : null}
         {contentSelection.events ? <FilterRow label={t('discovery.events')} items={EVENT_CATEGORIES} selected={selectedEventCategory} onSelect={(value) => { setSelectedEventCategory(value); track('discovery_filter_changed', { filter_type: 'event_category', filter_value: value }); }} /> : null}
+        {contentSelection.events ? <FilterRow label={t('discovery.dateFilter.title')} items={DATE_FILTER_OPTIONS} selected={dateFilter} onSelect={(value) => { setDateFilter(value); track('discovery_filter_changed', { filter_type: 'date_range', filter_value: value }); }} /> : null}
         {activeFilterCount > 0 ? (
           <Pressable style={styles.resetAll} onPress={resetAllFilters} accessibilityRole="button" accessibilityLabel={t('filters.resetAll')}>
             <Text style={styles.resetAllText}>{t('filters.resetAll')}</Text>
@@ -475,6 +524,8 @@ export function DiscoverScreen({ onOpenActivity, onOpenPlace, onOpenEvent, onHos
         <View style={styles.sortOptions}>{SORT_OPTIONS.map((item) => <Pressable key={item.key} style={[styles.sortOption, sort === item.key && styles.sortOptionSelected]} onPress={() => { setSort(item.key); setSortOpen(false); track('discovery_sort_changed', { sort: item.key }); }} accessibilityRole="radio" accessibilityState={{ checked: sort === item.key }} accessibilityLabel={t(item.labelKey)}><Text style={[styles.sortOptionText, sort === item.key && styles.sortOptionTextSelected]}>{t(item.labelKey)}</Text></Pressable>)}</View>
         <Text style={styles.sortHint}>{t('discovery.sortHint')}</Text>
       </ModalSheet> : null}
+
+      <VenueEventsSheet group={openVenueGroup} attendeeCounts={eventsQuery.attendeeCounts} onClose={() => setOpenVenueGroup(null)} onOpenEvent={openVenueEvent} />
 
       <Pressable style={styles.fab} onPress={onHostActivity} accessibilityLabel={t('discovery.hostActivity')}>
         <Plus size={24} color={theme.text.inverse} weight="bold" />

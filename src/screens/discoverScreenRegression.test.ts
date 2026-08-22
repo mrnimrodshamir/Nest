@@ -96,9 +96,10 @@ test('MARKERS: the map renders from the unsorted item set', () => {
   // listItems is the SORTED projection; markers must read the unsorted set so
   // changing sort order cannot move a pin.
   assert.ok(!markerRegion.includes('listItems'), 'map markers were driven by the sorted list');
-  // Places reach the map via placeMapItems, which clusters visiblePlaces
-  // geographically — still the unsorted set.
-  for (const memo of ['visibleActivities', 'placeMapItems', 'visibleEvents']) {
+  // Places reach the map via placeMapItems (geographic clustering) and
+  // Events via venueMapItems (venue grouping) — both still built from the
+  // unsorted visible* sets, never listItems.
+  for (const memo of ['visibleActivities', 'placeMapItems', 'venueMapItems']) {
     assert.ok(markerRegion.includes(memo), `${memo} not rendered on the map`);
   }
 });
@@ -110,12 +111,51 @@ test('MARKERS: place clustering is geographic, never sort-dependent', () => {
   assert.ok(!line.includes('sort'), 'clustering depends on the sort order');
 });
 
+test('MARKERS: Event venue grouping is zoom-independent, never geographic-cluster-dependent', () => {
+  const line = source.split('\n').find((l) => l.includes('const venueMapItems =')) ?? '';
+  assert.ok(line.includes('visibleEvents'), 'venue groups are not built from the unsorted events');
+  // Unlike placeMapItems, venue grouping must NOT take `region` — the same
+  // real venue stays one marker at any zoom level, never re-clustering as
+  // the map pans or zooms.
+  assert.ok(!line.includes('region'), 'venue grouping depends on the map region like geographic clustering does');
+  assert.ok(!line.includes('sort'), 'venue grouping depends on the sort order');
+});
+
 test('MARKERS: the unsorted memos are derived without any sort', () => {
   for (const memo of ['visibleActivities', 'visiblePlaces', 'visibleEvents']) {
     const line = source.split('\n').find((l) => l.includes(`const ${memo} =`)) ?? '';
     assert.ok(line.includes('visibleItems'), `${memo} is not derived from visibleItems`);
     assert.ok(!line.includes('sort'), `${memo} applied a sort`);
   }
+});
+
+// --- Venue marker → sheet lifecycle -----------------------------------------
+
+test('a venue marker with multiple Events opens the sheet rather than an Event directly', () => {
+  const open = source.search(/<MapView[\s\n]/);
+  const close = source.indexOf('</MapView>');
+  const markerRegion = source.slice(open, close);
+  assert.match(markerRegion, /onPress=\{\(\) => openVenueMarker\(mapItem\)\}/);
+  assert.ok(!markerRegion.includes('onOpenEvent(mapItem'), 'a venue marker opened an Event directly');
+});
+
+test('a single-Event venue keeps the existing direct-open marker behavior', () => {
+  const open = source.search(/<MapView[\s\n]/);
+  const close = source.indexOf('</MapView>');
+  const markerRegion = source.slice(open, close);
+  assert.match(markerRegion, /mapItem\.kind === 'single'/);
+  assert.match(markerRegion, /onPress=\{\(\) => openMarkerItem\(item\)\}/);
+});
+
+test('the venue sheet is conditionally rendered by its own group state, so closing unmounts its content', () => {
+  assert.match(source, /<VenueEventsSheet group=\{openVenueGroup\}/);
+  assert.match(source, /onClose=\{\(\) => setOpenVenueGroup\(null\)\}/);
+});
+
+test('opening a venue Event tracks analytics distinctly from a direct marker open', () => {
+  const handler = source.slice(source.indexOf('const openVenueEvent ='));
+  const body = handler.slice(0, handler.indexOf('}, ['));
+  assert.match(body, /track\('venue_event_opened'/);
 });
 
 test('sorting the list does not touch the query inputs', () => {
