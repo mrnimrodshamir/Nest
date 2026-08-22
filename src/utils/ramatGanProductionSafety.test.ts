@@ -16,9 +16,9 @@ test('Ramat Gan migration is additive, city-tagged, Level 2, and digest-disabled
   assert.doesNotMatch(migration, /delete from public\.(events|places|activities)/i);
 });
 
-test('Daily and Weekly digest candidate paths explicitly remain Tel Aviv-only', () => {
+test('Daily, Weekly and Weekend digest candidate paths explicitly remain Tel Aviv-only', () => {
   assert.match(digestBackend, /\.eq\('city_id', 'tel_aviv'\)/);
-  assert.equal((digestClient.match(/\.eq\('city_id', 'tel_aviv'\)/g) ?? []).length, 2);
+  assert.equal((digestClient.match(/\.eq\('city_id', 'tel_aviv'\)/g) ?? []).length, 3);
 });
 
 test('internal control plane remains private while enabled city config is readable', () => {
