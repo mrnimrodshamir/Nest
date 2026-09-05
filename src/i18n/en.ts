@@ -806,6 +806,11 @@ export const en = {
   'age.he.month.one': 'one month', 'age.he.month.two': 'two months', 'age.he.month.other': '{count} months',
   'age.he.year.one': 'one year', 'age.he.year.two': 'two years', 'age.he.year.other': '{count} years',
   'age.he.withPrefix': 'Hebrew age: {prefix} {age}', 'age.he.yearsMonths': 'Hebrew age: {prefix} {years} and {months}',
+  'legal.title': 'Before continuing to {appName}', 'legal.body': 'Please review and accept the current Terms of Use and Privacy Policy. You can open either document before deciding.',
+  'legal.agreePrefix': 'I have read and agree to the', 'legal.accept': 'Agree and continue', 'legal.saveError': "We couldn't save your agreement. Check your connection and try again.",
+  'report.action': 'Report', 'report.title': 'Report content', 'report.details': 'Add details (optional)', 'report.submit': 'Send report', 'report.success': 'Thanks. Your report was sent for review.', 'report.error': "We couldn't send your report. Please try again.",
+  'report.reason.harassment': 'Harassment or bullying', 'report.reason.inappropriate': 'Inappropriate content', 'report.reason.spam': 'Spam or scam', 'report.reason.hate': 'Hate or abusive behavior', 'report.reason.safety': 'Safety concern', 'report.reason.other': 'Other',
+  'moderation.options': 'Safety options', 'moderation.blockSuccess': 'This member has been blocked.', 'moderation.messageOptions': 'Message options',
 } as const;
 
 export type TranslationKey = keyof typeof en;

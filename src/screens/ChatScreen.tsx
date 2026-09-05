@@ -9,14 +9,18 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
-import { ArrowLeft, PaperPlaneTilt, WarningCircle } from 'phosphor-react-native';
+import { ArrowLeft, DotsThree, PaperPlaneTilt, WarningCircle } from 'phosphor-react-native';
 import { theme, typography, spacing, radius } from '@/theme';
 import { useChatMessages, type ChatMessage } from '@/hooks/useChatMessages';
 import { resolveBubbleRow, resolveBubbleTextDirection, resolveSenderNameAlignment } from '@/utils/chatBubbleLayout';
 import { useI18n } from '@/i18n';
+import { ReportContentSheet } from '@/components/ReportContentSheet';
+import { useReportAndBlock } from '@/hooks/useReportAndBlock';
+import type { ReportTarget } from '@/types/moderation';
 
 interface ChatScreenProps {
   /** Null while still resolving (or being created) — shows a loading state. */
@@ -26,12 +30,15 @@ interface ChatScreenProps {
   title: string;
   onBack: () => void;
   analyticsEvent?: 'chat_message_sent' | 'forum_message_sent';
+  kind?: 'group' | 'direct' | 'forum';
 }
 
-export function ChatScreen({ chatId, resolveError, title, onBack, analyticsEvent }: ChatScreenProps) {
+export function ChatScreen({ chatId, resolveError, title, onBack, analyticsEvent, kind = 'group' }: ChatScreenProps) {
   const { messages, isLoading, error, send, retry } = useChatMessages(chatId, analyticsEvent);
   const { t, locale, isRTL } = useI18n();
   const [draft, setDraft] = useState('');
+  const [reportTarget, setReportTarget] = useState<ReportTarget | null>(null);
+  const { blockUser } = useReportAndBlock();
   const listRef = useRef<FlatList<ChatMessage>>(null);
 
   const handleSend = () => {
@@ -39,6 +46,19 @@ export function ChatScreen({ chatId, resolveError, title, onBack, analyticsEvent
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     send(draft);
     setDraft('');
+  };
+
+  const moderateMessage = (message: ChatMessage) => {
+    const target: ReportTarget = { type: kind === 'forum' ? 'forum_message' : 'message', id: message.id, reportedUserId: message.senderId, label: message.senderName };
+    Alert.alert(t('moderation.messageOptions'), undefined, [
+      { text: t('report.action'), onPress: () => setReportTarget(target) },
+      { text: t('activity.blockAction'), style: 'destructive', onPress: async () => {
+        const blockError = await blockUser(message.senderId);
+        if (blockError) Alert.alert(t('activity.blockError'), blockError);
+        else if (kind === 'direct') onBack();
+      } },
+      { text: t('common.cancel'), style: 'cancel' },
+    ]);
   };
 
   return (
@@ -76,7 +96,7 @@ export function ChatScreen({ chatId, resolveError, title, onBack, analyticsEvent
               data={messages}
               keyExtractor={(item) => item.id}
               contentContainerStyle={styles.messageList}
-              renderItem={({ item }) => <MessageBubble message={item} locale={locale} onRetry={() => retry(item.id)} />}
+              renderItem={({ item }) => <MessageBubble message={item} locale={locale} onRetry={() => retry(item.id)} onModerate={() => moderateMessage(item)} />}
               onContentSizeChange={() => listRef.current?.scrollToEnd({ animated: true })}
               ListEmptyComponent={
                 <View style={styles.emptyState}>
@@ -104,11 +124,12 @@ export function ChatScreen({ chatId, resolveError, title, onBack, analyticsEvent
           </View>
         </KeyboardAvoidingView>
       )}
+      <ReportContentSheet visible={Boolean(reportTarget)} target={reportTarget} onClose={() => setReportTarget(null)} />
     </SafeAreaView>
   );
 }
 
-function MessageBubble({ message, locale, onRetry }: { message: ChatMessage; locale: import('@/i18n').AppLocale; onRetry: () => void }) {
+function MessageBubble({ message, locale, onRetry, onModerate }: { message: ChatMessage; locale: import('@/i18n').AppLocale; onRetry: () => void; onModerate: () => void }) {
   const { t } = useI18n();
   if (message.isSystem) {
     return (
@@ -129,7 +150,10 @@ function MessageBubble({ message, locale, onRetry }: { message: ChatMessage; loc
     <View style={styles.bubbleRow}>
       {row.spacerBefore && <View style={styles.bubbleSpacer} />}
       <View style={styles.bubbleColumn}>
-        <Text style={[styles.senderName, nameAlign, resolveBubbleTextDirection(message.senderName, locale)]}>{message.senderName}</Text>
+        <View style={styles.senderRow}>
+          <Text style={[styles.senderName, nameAlign, resolveBubbleTextDirection(message.senderName, locale)]}>{message.senderName}</Text>
+          {!message.isMine ? <Pressable onPress={onModerate} hitSlop={10} accessibilityRole="button" accessibilityLabel={t('moderation.messageOptions')}><DotsThree size={18} color={theme.text.muted} /></Pressable> : null}
+        </View>
         <View style={[styles.bubble, message.isMine ? styles.bubbleMine : styles.bubbleTheirs]}>
           <Text style={[styles.bubbleText, resolveBubbleTextDirection(message.content, locale), message.isMine && styles.bubbleTextMine]}>
             {message.content}
@@ -192,6 +216,7 @@ const styles = StyleSheet.create({
     marginHorizontal: spacing.sm,
     writingDirection: 'ltr',
   },
+  senderRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   bubble: {
     borderRadius: radius.lg,
     paddingHorizontal: spacing.md,

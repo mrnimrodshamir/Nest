@@ -4,6 +4,7 @@ import { track } from '@/lib/analytics';
 import { safeCaregiverDisplayName } from '@/utils/profileIdentity';
 import { currentAppLocale, translate } from '@/i18n';
 import { formatChatSystemMessage } from '@/utils/formatChatSystemMessage';
+import { isUserLocallyBlocked, subscribeToBlocks } from '@/lib/blockState';
 
 export interface ChatMessage {
   id: string;
@@ -56,6 +57,13 @@ export function useChatMessages(chatId: string | null, analyticsEvent: 'chat_mes
     const profile: ProfileLite = { ...rawProfile, display_name: safeCaregiverDisplayName(rawProfile.display_name) };
     profileCacheRef.current.set(senderId, profile);
     return profile;
+  }, []);
+
+  useEffect(() => {
+    return subscribeToBlocks((blockedUserId) => {
+      profileCacheRef.current.delete(blockedUserId);
+      setMessages((current) => current.filter((message) => message.senderId !== blockedUserId));
+    });
   }, []);
 
   useEffect(() => {
@@ -133,7 +141,7 @@ export function useChatMessages(chatId: string | null, analyticsEvent: 'chat_mes
         }),
       );
       if (cancelled) return;
-      setMessages(hydrated);
+      setMessages(hydrated.filter((message) => !message.senderId || !isUserLocallyBlocked(message.senderId)));
       setIsLoading(false);
     }
 
@@ -170,6 +178,7 @@ export function useChatMessages(chatId: string | null, analyticsEvent: 'chat_mes
           }
           const senderId = row.sender_id;
           if (!senderId) return;
+          if (isUserLocallyBlocked(senderId)) return;
           const sender = await resolveSender(senderId);
           if (cancelled) return;
           const isMine = senderId === currentUserIdRef.current;

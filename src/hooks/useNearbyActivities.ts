@@ -6,6 +6,7 @@ import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 import { FALLBACK_LOCATION } from '@/constants/location';
 import type { Activity, ActivityCategory, ActivityStatus, Attendee } from '@/types/activity';
 import { currentAppLocale, translate } from '@/i18n';
+import { isUserLocallyBlocked, subscribeToBlocks } from '@/lib/blockState';
 
 const KM_PER_MILE = 1.60934;
 const BASE_RADIUS_KM = 3;
@@ -62,6 +63,10 @@ export function useNearbyActivities(options?: UseNearbyActivitiesOptions): UseNe
   const queryLatitude = options?.queryCenter?.latitude;
   const queryLongitude = options?.queryCenter?.longitude;
 
+  useEffect(() => subscribeToBlocks((blockedUserId) => {
+    setActivities((current) => current.filter((activity) => activity.hostId !== blockedUserId));
+  }), []);
+
   const load = useCallback(async () => {
     const id = ++requestId.current;
     if (mockActivities) {
@@ -98,7 +103,7 @@ export function useNearbyActivities(options?: UseNearbyActivitiesOptions): UseNe
       }
 
       if (id !== requestId.current) return;
-      setActivities(results);
+      setActivities(results.filter((activity) => !isUserLocallyBlocked(activity.hostId)));
       setRadiusExpanded(expanded);
     } catch (err) {
       if (id !== requestId.current) return;

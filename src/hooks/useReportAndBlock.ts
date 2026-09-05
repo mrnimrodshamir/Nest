@@ -1,15 +1,11 @@
 import { useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import { currentAppLocale, translate } from '@/i18n';
-
-interface ReportInput {
-  reportedUserId: string;
-  activityId?: string;
-  reason: string;
-}
+import type { SubmitReportInput } from '@/types/moderation';
+import { markUserBlocked, markUserUnblocked } from '@/lib/blockState';
 
 interface UseReportAndBlockResult {
-  submitReport: (input: ReportInput) => Promise<string | null>;
+  submitReport: (input: SubmitReportInput) => Promise<string | null>;
   blockUser: (userId: string) => Promise<string | null>;
   unblockUser: (userId: string) => Promise<string | null>;
   isBlocked: (userId: string) => Promise<boolean>;
@@ -20,26 +16,21 @@ interface UseReportAndBlockResult {
  *  them. Kept deliberately small: no moderation UI, no report history view,
  *  just the two actions a user actually needs. */
 export function useReportAndBlock(): UseReportAndBlockResult {
-  const submitReport = useCallback(async (input: ReportInput) => {
-    const { data: userData } = await supabase.auth.getUser();
-    const reporterId = userData.user?.id;
-    if (!reporterId) return translate(currentAppLocale(), 'error.notSignedIn');
-    const { error } = await supabase.from('reports').insert({
-      reporter_id: reporterId,
-      reported_user_id: input.reportedUserId,
-      activity_id: input.activityId ?? null,
-      reason: input.reason,
+  const submitReport = useCallback(async (input: SubmitReportInput) => {
+    const { error } = await supabase.rpc('submit_content_report', {
+      p_target_type: input.target.type,
+      p_target_id: input.target.id,
+      p_reason: input.reason,
+      p_details: input.details?.trim() || null,
     });
     if (error) console.log('[ReportAndBlock] report failed', error.message);
-    return error ? translate(currentAppLocale(), 'activity.reportError') : null;
+    return error ? translate(currentAppLocale(), 'report.error') : null;
   }, []);
 
   const blockUser = useCallback(async (userId: string) => {
-    const { data: userData } = await supabase.auth.getUser();
-    const blockerId = userData.user?.id;
-    if (!blockerId) return translate(currentAppLocale(), 'error.notSignedIn');
-    const { error } = await supabase.from('blocks').insert({ blocker_id: blockerId, blocked_id: userId });
+    const { error } = await supabase.rpc('block_user_with_moderation', { p_blocked_user_id: userId });
     if (error) console.log('[ReportAndBlock] block failed', error.message);
+    if (!error) markUserBlocked(userId);
     return error ? translate(currentAppLocale(), 'activity.blockError') : null;
   }, []);
 
@@ -49,6 +40,7 @@ export function useReportAndBlock(): UseReportAndBlockResult {
     if (!blockerId) return translate(currentAppLocale(), 'error.notSignedIn');
     const { error } = await supabase.from('blocks').delete().match({ blocker_id: blockerId, blocked_id: userId });
     if (error) console.log('[ReportAndBlock] unblock failed', error.message);
+    if (!error) markUserUnblocked(userId);
     return error ? translate(currentAppLocale(), 'blocked.errorTitle') : null;
   }, []);
 

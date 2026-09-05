@@ -18,7 +18,6 @@ import { presentLocationName } from '@/utils/locationPresentation';
 import { openNativeShare } from '@/lib/contentShare';
 import { formatAgeRange } from '@/utils/babyAge';
 import { buildShareMessage } from '@/utils/buildShareMessage';
-import { APP_NAME } from '@/constants/brand';
 import { useActivityRsvp } from '@/hooks/useActivityRsvp';
 import { useActivityAttendance } from '@/hooks/useActivityAttendance';
 import { useAuth } from '@/hooks/useAuth';
@@ -30,6 +29,7 @@ import { CoverImage } from '@/components/CoverImage';
 import { CoverFrame } from '@/components/CoverFrame';
 import { NotificationPermissionSheet } from '@/components/NotificationPermissionSheet';
 import { PhotoNudgeSheet } from '@/components/PhotoNudgeSheet';
+import { ReportContentSheet } from '@/components/ReportContentSheet';
 import { usePhotoNudge } from '@/hooks/usePhotoNudge';
 import { hasCalendarDrift, updateCalendarEvent, removeCalendarEvent } from '@/lib/activityCalendar';
 import {
@@ -71,13 +71,14 @@ export function ActivityDetailScreen({
   const { activity, isSubmitting, error, join, leave } = useActivityRsvp(initial, attendance.refresh);
   const { profile, session, updateProfileDetails } = useAuth();
   const { children, setDefaultChild } = useChildren(session?.user.id ?? null);
-  const { submitReport, blockUser } = useReportAndBlock();
+  const { blockUser } = useReportAndBlock();
   const { shouldShow: shouldShowPhotoNudge, markShown: markPhotoNudgeShown } = usePhotoNudge();
   const remindersEnabled = profile?.notificationPreferences.reminders ?? true;
   const [showCalendarSheet, setShowCalendarSheet] = useState(false);
   const [showNotificationSheet, setShowNotificationSheet] = useState(false);
   const [showPhotoNudge, setShowPhotoNudge] = useState(false);
   const [calendarNotice, setCalendarNotice] = useState<'changed' | 'cancelled' | null>(null);
+  const [showReport, setShowReport] = useState(false);
 
   const { t, isRTL, locale } = useI18n();
   const relationship = isHost ? 'hosting' : activity.viewerStatus === 'going' ? 'joined' : 'none';
@@ -142,23 +143,6 @@ export function ActivityDetailScreen({
     if (url) void Linking.openURL(url).catch(() => undefined);
   };
 
-  const promptReportReason = () => {
-    Alert.prompt(
-      t('activity.reportTitle'),
-      t('activity.reportPrompt', { appName: APP_NAME }),
-      async (reason) => {
-        if (!reason?.trim()) return;
-        const err = await submitReport({
-          reportedUserId: activity.host.id,
-          activityId: activity.id,
-          reason: reason.trim(),
-        });
-        Alert.alert(err ? t('activity.reportError') : t('activity.reportSuccess'), err ?? t('activity.reportThanks'));
-      },
-      'plain-text',
-    );
-  };
-
   const confirmBlockHost = () => {
     Alert.alert(
       t('activity.blockTitle', { name: activity.host.displayName }),
@@ -171,6 +155,7 @@ export function ActivityDetailScreen({
           onPress: async () => {
             const err = await blockUser(activity.host.id);
             if (err) Alert.alert(t('activity.blockError'), err);
+            else onBack();
           },
         },
       ],
@@ -197,7 +182,7 @@ export function ActivityDetailScreen({
 
   const handleMorePress = () => {
     Alert.alert(t('activity.options'), undefined, [
-      { text: t('activity.reportTitle'), onPress: promptReportReason },
+      { text: t('report.action'), onPress: () => setShowReport(true) },
       { text: t('activity.blockTitle', { name: activity.host.displayName }), style: 'destructive', onPress: confirmBlockHost },
       { text: t('common.cancel'), style: 'cancel' },
     ]);
@@ -545,6 +530,7 @@ export function ActivityDetailScreen({
           onJoined(activity);
         }}
       />
+      <ReportContentSheet visible={showReport} target={{ type: 'activity', id: activity.id, reportedUserId: activity.host.id, label: activity.title }} onClose={() => setShowReport(false)} />
     </SafeAreaView>
   );
 }

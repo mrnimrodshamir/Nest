@@ -3,6 +3,7 @@ import { supabase } from '@/lib/supabase';
 import type { ActivityCategory, ActivityStatus } from '@/types/activity';
 import { useI18n } from '@/i18n';
 import { safeCaregiverDisplayName } from '@/utils/profileIdentity';
+import { isUserLocallyBlocked, subscribeToBlocks } from '@/lib/blockState';
 
 export interface Conversation {
   chatId: string;
@@ -206,7 +207,8 @@ export function useConversations(): UseConversationsResult {
       // A direct chat with no other participant is an orphaned relationship,
       // not a usable conversation. Hiding it avoids presenting stale rows as
       // mysterious sample content while preserving every real two-party chat.
-      const usable = result.filter((conversation) => conversation.kind !== 'direct' || conversation.otherUserId !== null);
+      const usable = result.filter((conversation) => conversation.kind !== 'direct'
+        || (conversation.otherUserId !== null && !isUserLocallyBlocked(conversation.otherUserId)));
       usable.sort((a, b) => (b.lastMessageAt ?? '').localeCompare(a.lastMessageAt ?? ''));
       setConversations(usable);
     } catch (err) {
@@ -220,6 +222,10 @@ export function useConversations(): UseConversationsResult {
   useEffect(() => {
     load();
   }, [load]);
+
+  useEffect(() => subscribeToBlocks((blockedUserId) => {
+    setConversations((current) => current.filter((conversation) => conversation.otherUserId !== blockedUserId));
+  }), []);
 
   return { conversations, isLoading, error, refresh: load };
 }

@@ -4,6 +4,7 @@ import { safeCaregiverDisplayName } from '@/utils/profileIdentity';
 import { coerceParentRole, type ParentRole } from '@/utils/parentRole';
 import { track } from '@/lib/analytics';
 import { currentAppLocale, translate } from '@/i18n';
+import { isUserLocallyBlocked, subscribeToBlocks } from '@/lib/blockState';
 
 export interface EventAttendee {
   userId: string;
@@ -44,6 +45,10 @@ export function useEventRsvp(occurrenceId: string | null, city: 'tel_aviv' | 'ra
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  useEffect(() => subscribeToBlocks((blockedUserId) => {
+    setAttendees((current) => current.filter((person) => person.userId !== blockedUserId));
+  }), []);
+
   const load = useCallback(async () => {
     if (!occurrenceId) {
       setAttendees([]);
@@ -80,8 +85,10 @@ export function useEventRsvp(occurrenceId: string | null, city: 'tel_aviv' | 'ra
         // coordinates or exact address can enter the attendee surface.
         .select('id, display_name, avatar_url, age_years, parent_role, child_count, neighborhood_label')
         .in('id', userIds);
+      const visibleProfiles = (profiles ?? []).filter((p) => !isUserLocallyBlocked(p.id as string));
+      setAttendeeCount(visibleProfiles.length);
       setAttendees(
-        (profiles ?? []).map((p) => ({
+        visibleProfiles.map((p) => ({
           userId: p.id as string,
           displayName: safeCaregiverDisplayName(p.display_name as string),
           avatarUrl: (p.avatar_url as string | null) ?? null,

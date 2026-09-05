@@ -42,6 +42,7 @@ import { BlockedUsersScreen } from '@/screens/BlockedUsersScreen';
 import { PublicProfileScreen } from '@/screens/PublicProfileScreen';
 import { LaunchScreen } from '@/screens/LaunchScreen';
 import { CompleteAppleProfileScreen } from '@/screens/auth/CompleteAppleProfileScreen';
+import { LegalConsentScreen } from '@/screens/auth/LegalConsentScreen';
 import { ResetPasswordScreen } from '@/screens/auth/ResetPasswordScreen';
 import { AuthNavigator } from '@/navigation/AuthNavigator';
 import { AppErrorBoundary } from '@/components/AppErrorBoundary';
@@ -181,7 +182,7 @@ function AppInner() {
     PlusJakartaSans_600SemiBold,
     PlusJakartaSans_700Bold,
   });
-  const { session, profile, isLoading: authLoading, isPasswordRecovery, beginPasswordRecovery } = useAuth();
+  const { session, profile, isLoading: authLoading, isPasswordRecovery, beginPasswordRecovery, legalConsentStatus } = useAuth();
   const { locale: appLocale } = useI18n();
   const pendingSharedRoute = useRef<SharedContentRoute | null>(null);
   const digestIntentController = useRef(new DigestNotificationIntentController()).current;
@@ -339,7 +340,7 @@ function AppInner() {
     return () => subscription.remove();
   }, [digestIntentController, navigatePendingDailyDigest]);
 
-  if (!fontsLoaded || (!PREVIEW_MODE && authLoading)) {
+  if (!fontsLoaded || (!PREVIEW_MODE && (authLoading || (session && legalConsentStatus === 'loading')))) {
     return <LaunchScreen />;
   }
 
@@ -378,6 +379,8 @@ function AppInner() {
               />
             ) : !session ? (
               <AuthNavigator />
+            ) : legalConsentStatus !== 'accepted' ? (
+              <LegalConsentScreen />
             ) : routeDecision === 'complete-profile' ? (
               // Signed in but the profile is missing OR still a stub (the
               // auth-user-creation trigger now creates a profile row for
@@ -804,7 +807,7 @@ function ForumChatContainer({
     };
   }, [forumKey, t]);
 
-  return <ChatScreen chatId={chatId} resolveError={resolveError} title={title ?? ''} onBack={onBack} analyticsEvent="forum_message_sent" />;
+  return <ChatScreen chatId={chatId} resolveError={resolveError} title={title ?? ''} onBack={onBack} analyticsEvent="forum_message_sent" kind="forum" />;
 }
 
 function GroupChatContainer({
@@ -843,7 +846,7 @@ function GroupChatContainer({
   }, [activityId, title, resolvedTitle]);
 
   return (
-    <ChatScreen chatId={chatId} resolveError={error} title={resolvedTitle || 'Chat'} onBack={onBack} />
+    <ChatScreen chatId={chatId} resolveError={error} title={resolvedTitle || 'Chat'} onBack={onBack} kind="group" />
   );
 }
 
@@ -867,7 +870,7 @@ function DirectChatContainer({
     if (chatId) supabase.rpc('mark_chat_read', { p_chat_id: chatId });
   }, [chatId]);
 
-  return <ChatScreen chatId={chatId} resolveError={error} title={title ?? 'Chat'} onBack={onBack} />;
+  return <ChatScreen chatId={chatId} resolveError={error} title={title ?? 'Chat'} onBack={onBack} kind="direct" />;
 }
 
 function EditActivityContainer({

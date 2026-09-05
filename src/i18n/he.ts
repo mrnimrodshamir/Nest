@@ -754,4 +754,9 @@ export const he: Dictionary = {
   'age.he.month.one': 'חודש', 'age.he.month.two': 'חודשיים', 'age.he.month.other': '{count} חודשים',
   'age.he.year.one': 'שנה', 'age.he.year.two': 'שנתיים', 'age.he.year.other': '{count}',
   'age.he.withPrefix': '{prefix} {age}', 'age.he.yearsMonths': '{prefix} {years} {months}',
+  'legal.title': 'לפני שממשיכים ל-{appName}', 'legal.body': 'אנא קראו ואשרו את תנאי השימוש ומדיניות הפרטיות העדכניים. אפשר לפתוח כל מסמך לפני האישור.',
+  'legal.agreePrefix': 'קראתי ואני מסכימ/ה ל', 'legal.accept': 'אישור והמשך', 'legal.saveError': 'לא הצלחנו לשמור את האישור. בדקו את החיבור ונסו שוב.',
+  'report.action': 'דיווח', 'report.title': 'דיווח על תוכן', 'report.details': 'פרטים נוספים (לא חובה)', 'report.submit': 'שליחת דיווח', 'report.success': 'תודה. הדיווח נשלח לבדיקה.', 'report.error': 'לא הצלחנו לשלוח את הדיווח. נסו שוב.',
+  'report.reason.harassment': 'הטרדה או בריונות', 'report.reason.inappropriate': 'תוכן לא הולם', 'report.reason.spam': 'ספאם או הונאה', 'report.reason.hate': 'שנאה או התנהגות פוגענית', 'report.reason.safety': 'חשש לבטיחות', 'report.reason.other': 'אחר',
+  'moderation.options': 'אפשרויות בטיחות', 'moderation.blockSuccess': 'המשתמש/ת נחסמ/ה.', 'moderation.messageOptions': 'אפשרויות הודעה',
 };

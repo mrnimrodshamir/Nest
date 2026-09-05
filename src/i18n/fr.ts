@@ -652,4 +652,9 @@ export const fr: Dictionary = {
   'age.he.month.one': 'un mois', 'age.he.month.two': 'deux mois', 'age.he.month.other': '{count} mois',
   'age.he.year.one': 'un an', 'age.he.year.two': 'deux ans', 'age.he.year.other': '{count} ans',
   'age.he.withPrefix': '{prefix} {age}', 'age.he.yearsMonths': '{prefix} {years} et {months}',
+  'legal.title': 'Avant de continuer vers {appName}', 'legal.body': "Veuillez lire et accepter les Conditions d’utilisation et la Politique de confidentialité actuelles.",
+  'legal.agreePrefix': "J’ai lu et j’accepte les", 'legal.accept': 'Accepter et continuer', 'legal.saveError': "Impossible d’enregistrer votre accord. Réessayez.",
+  'report.action': 'Signaler', 'report.title': 'Signaler un contenu', 'report.details': 'Détails supplémentaires (facultatif)', 'report.submit': 'Envoyer', 'report.success': 'Merci. Votre signalement a été envoyé.', 'report.error': "Impossible d’envoyer le signalement.",
+  'report.reason.harassment': 'Harcèlement ou intimidation', 'report.reason.inappropriate': 'Contenu inapproprié', 'report.reason.spam': 'Spam ou arnaque', 'report.reason.hate': 'Haine ou comportement abusif', 'report.reason.safety': 'Problème de sécurité', 'report.reason.other': 'Autre',
+  'moderation.options': 'Options de sécurité', 'moderation.blockSuccess': 'Ce membre a été bloqué.', 'moderation.messageOptions': 'Options du message',
 };

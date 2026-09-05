@@ -120,7 +120,8 @@ export function SignUpScreen({ onBack }: SignUpScreenProps) {
           birthdate: familyProfile.birthdate,
           neighborhood: familyProfile.neighborhood.trim(),
           occupation: familyProfile.occupation,
-          bio: familyProfile.bio,
+            bio: familyProfile.bio,
+            acceptedLegal: acceptedTerms,
         },
         setStage,
       );

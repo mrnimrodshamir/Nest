@@ -1,15 +1,12 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, Linking } from 'react-native';
+import { View, Text, StyleSheet, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { theme, typography, spacing } from '@/theme';
 import { StaticPrimaryButton } from '@/components/StaticPrimaryButton';
-import { Checkbox } from '@/components/Checkbox';
 import { OnboardingChildrenEditor, type OnboardingChild } from '@/components/OnboardingChildrenEditor';
 import { isNonEmpty } from '@/utils/validation';
-import { LEGAL_URLS } from '@/constants/legal';
 import { useAuth, type AppleProfileInput, type RegistrationStage } from '@/hooks/useAuth';
 import { useFormDraft } from '@/hooks/useFormDraft';
-import { APP_NAME } from '@/constants/brand';
 import { AvatarPicker } from '@/components/AvatarPicker';
 import { FamilyProfileFields, type FamilyProfileDraft } from '@/components/FamilyProfileFields';
 import { useI18n } from '@/i18n';
@@ -46,7 +43,6 @@ export function CompleteAppleProfileScreen({ input }: CompleteAppleProfileScreen
   });
   const [children, setChildren] = useState<OnboardingChild[]>([EMPTY_CHILD]);
   const [photoUri, setPhotoUri] = useState<string | null>(null);
-  const [acceptedTerms, setAcceptedTerms] = useState(false);
 
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [childErrors, setChildErrors] = useState<Array<{ name?: string; birthdate?: string }>>([]);
@@ -91,7 +87,6 @@ export function CompleteAppleProfileScreen({ input }: CompleteAppleProfileScreen
       if (!child.birthdate) e.birthdate = t('onboarding.childBirthdateRequired');
       return e;
     });
-    if (!acceptedTerms) errors.terms = t('onboarding.acceptTermsRequired');
     setFieldErrors(errors);
     setChildErrors(perChild);
     if (Object.keys(errors).length > 0 || perChild.some((e) => e.name || e.birthdate)) return;
@@ -135,18 +130,6 @@ export function CompleteAppleProfileScreen({ input }: CompleteAppleProfileScreen
             <FamilyProfileFields value={familyProfile} onChange={setFamilyProfile} errors={fieldErrors} />
             <OnboardingChildrenEditor children={children} onChange={setChildren} errors={childErrors} />
 
-            <Checkbox checked={acceptedTerms} onToggle={() => setAcceptedTerms((v) => !v)}>
-              {t('onboarding.agreePrefix', { appName: APP_NAME })}{' '}
-              <Text style={styles.legalLink} onPress={() => Linking.openURL(LEGAL_URLS.terms)}>
-                {t('profile.terms')}
-              </Text>{' '}
-              {t('onboarding.and')}{' '}
-              <Text style={styles.legalLink} onPress={() => Linking.openURL(LEGAL_URLS.privacy)}>
-                {t('profile.privacy')}
-              </Text>
-            </Checkbox>
-            {fieldErrors.terms && <Text style={styles.termsError}>{fieldErrors.terms}</Text>}
-
             {formError && <Text style={styles.formError}>{formError}</Text>}
 
             <StaticPrimaryButton
@@ -175,7 +158,5 @@ const styles = StyleSheet.create({
   title: { ...typography.title1, color: theme.text.primary, marginTop: spacing.lg },
   subtitle: { ...typography.body, color: theme.text.secondary, marginBottom: spacing.xl },
   form: { gap: spacing.lg, marginTop: spacing.xl },
-  legalLink: { color: theme.text.accent, fontFamily: typography.bodyMedium.fontFamily },
-  termsError: { ...typography.caption, color: theme.semantic.danger },
   formError: { ...typography.footnote, color: theme.semantic.danger, textAlign: 'center' },
 });

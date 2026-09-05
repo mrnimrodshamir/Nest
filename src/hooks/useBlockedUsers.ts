@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { safeCaregiverDisplayName } from '@/utils/profileIdentity';
 import { currentAppLocale, translate } from '@/i18n';
+import { markUserUnblocked } from '@/lib/blockState';
 
 export interface BlockedUser {
   id: string;
@@ -75,6 +76,7 @@ export function useBlockedUsers(): UseBlockedUsersResult {
         .delete()
         .match({ blocker_id: blockerId, blocked_id: userId });
       if (deleteError) return translate(currentAppLocale(), 'blocked.errorTitle');
+      markUserUnblocked(userId);
       await load();
       return null;
     },

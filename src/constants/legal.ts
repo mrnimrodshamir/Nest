@@ -1,4 +1,7 @@
 export const LEGAL_URLS = {
-  terms: 'https://ghzpzimcxvccbmjsttlf.supabase.co/storage/v1/object/public/legal/terms.html',
-  privacy: 'https://ghzpzimcxvccbmjsttlf.supabase.co/storage/v1/object/public/legal/privacy.html',
+  terms: 'https://nestup.best/terms',
+  privacy: 'https://nestup.best/privacy',
 } as const;
+
+export const CURRENT_TERMS_VERSION = '2026-09-06';
+export const CURRENT_PRIVACY_VERSION = '2026-09-06';

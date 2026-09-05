@@ -1,7 +1,7 @@
-import React, { useEffect } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ArrowLeft, Baby, Briefcase, MapPin } from 'phosphor-react-native';
+import { ArrowLeft, Baby, Briefcase, DotsThree, MapPin } from 'phosphor-react-native';
 import { PersonCard } from '@/components/PersonCard';
 import { PrimaryButton } from '@/components/PrimaryButton';
 import { StateCard } from '@/components/StateCard';
@@ -11,6 +11,8 @@ import { radius, spacing, theme, typography } from '@/theme';
 import { parentRoleKey } from '@/utils/parentRole';
 import { buildPublicChildren } from '@/utils/publicFamilyProfile';
 import { track } from '@/lib/analytics';
+import { useReportAndBlock } from '@/hooks/useReportAndBlock';
+import { ReportContentSheet } from '@/components/ReportContentSheet';
 
 interface PublicProfileScreenProps {
   userId: string;
@@ -30,16 +32,33 @@ interface PublicProfileScreenProps {
 export function PublicProfileScreen({ userId, onBack, onMessage }: PublicProfileScreenProps) {
   const { profile, isLoading, error } = usePublicProfile(userId);
   const { t, locale, isRTL } = useI18n();
+  const { blockUser } = useReportAndBlock();
+  const [showReport, setShowReport] = useState(false);
   const children = profile ? buildPublicChildren(profile.childNames, profile.childAgesMonths) : [];
   useEffect(() => {
     track('public_profile_opened');
   }, [userId]);
 
+  const openSafetyOptions = () => Alert.alert(t('moderation.options'), undefined, [
+    { text: t('report.action'), onPress: () => setShowReport(true) },
+    { text: t('activity.blockAction'), style: 'destructive', onPress: async () => {
+      const blockError = await blockUser(userId);
+      if (blockError) Alert.alert(t('activity.blockError'), blockError);
+      else onBack();
+    } },
+    { text: t('common.cancel'), style: 'cancel' },
+  ]);
+
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-      <Pressable onPress={onBack} style={styles.backButton} accessibilityRole="button" accessibilityLabel={t('common.back')}>
-        <ArrowLeft size={20} color={theme.text.primary} style={isRTL ? styles.flipped : undefined} />
-      </Pressable>
+      <View style={styles.headerRow}>
+        <Pressable onPress={onBack} style={styles.backButton} accessibilityRole="button" accessibilityLabel={t('common.back')}>
+          <ArrowLeft size={20} color={theme.text.primary} style={isRTL ? styles.flipped : undefined} />
+        </Pressable>
+        <Pressable onPress={openSafetyOptions} style={styles.backButton} accessibilityRole="button" accessibilityLabel={t('moderation.options')}>
+          <DotsThree size={20} color={theme.text.primary} weight="bold" />
+        </Pressable>
+      </View>
 
       {isLoading ? (
         <View style={styles.centerState}><ActivityIndicator color={theme.brand.primary} /></View>
@@ -117,6 +136,7 @@ export function PublicProfileScreen({ userId, onBack, onMessage }: PublicProfile
           </View>
         </ScrollView>
       )}
+      <ReportContentSheet visible={showReport} target={{ type: 'user', id: userId, reportedUserId: userId, label: profile?.displayName }} onClose={() => setShowReport(false)} />
     </SafeAreaView>
   );
 }
@@ -139,9 +159,10 @@ function ProfileSection({ title, icon: Icon, children }: { title: string; icon?:
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: theme.background.app },
+  headerRow: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: spacing.lg },
   backButton: {
     width: 44, height: 44, borderRadius: 22, backgroundColor: theme.background.surface,
-    alignItems: 'center', justifyContent: 'center', marginStart: spacing.lg, marginTop: spacing.sm,
+    alignItems: 'center', justifyContent: 'center', marginTop: spacing.sm,
   },
   flipped: { transform: [{ scaleX: -1 }] },
   centerState: { flex: 1, alignItems: 'center', justifyContent: 'center' },

@@ -58,6 +58,14 @@ export function usePublicProfile(userId: string | null): UsePublicProfileResult 
       try {
         const { data: userData } = await supabase.auth.getUser();
         const viewerId = userData.user?.id ?? null;
+        if (viewerId && viewerId !== userId) {
+          const { data: blocked, error: blockError } = await supabase.rpc('is_blocked_between', { a: viewerId, b: userId });
+          if (blockError) throw blockError;
+          if (blocked) {
+            if (!cancelled) setError(translate(currentAppLocale(), 'profile.notFound'));
+            return;
+          }
+        }
 
         const { data: row, error: profileError } = await supabase
           .from('public_profiles')

@@ -652,4 +652,9 @@ export const ru: Dictionary = {
   'age.he.month.one': 'один месяц', 'age.he.month.two': 'два месяца', 'age.he.month.other': '{count} месяцев',
   'age.he.year.one': 'один год', 'age.he.year.two': 'два года', 'age.he.year.other': '{count} лет',
   'age.he.withPrefix': '{prefix} {age}', 'age.he.yearsMonths': '{prefix} {years} и {months}',
+  'legal.title': 'Перед продолжением в {appName}', 'legal.body': 'Ознакомьтесь и примите действующие Условия использования и Политику конфиденциальности.',
+  'legal.agreePrefix': 'Я прочитал(-а) и принимаю', 'legal.accept': 'Принять и продолжить', 'legal.saveError': 'Не удалось сохранить согласие. Повторите попытку.',
+  'report.action': 'Пожаловаться', 'report.title': 'Пожаловаться на контент', 'report.details': 'Дополнительные сведения (необязательно)', 'report.submit': 'Отправить', 'report.success': 'Спасибо. Жалоба отправлена на проверку.', 'report.error': 'Не удалось отправить жалобу.',
+  'report.reason.harassment': 'Домогательства или травля', 'report.reason.inappropriate': 'Неприемлемый контент', 'report.reason.spam': 'Спам или мошенничество', 'report.reason.hate': 'Ненависть или оскорбления', 'report.reason.safety': 'Угроза безопасности', 'report.reason.other': 'Другое',
+  'moderation.options': 'Параметры безопасности', 'moderation.blockSuccess': 'Пользователь заблокирован.', 'moderation.messageOptions': 'Параметры сообщения',
 };

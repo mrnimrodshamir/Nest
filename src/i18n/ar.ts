@@ -770,4 +770,9 @@ export const ar: Dictionary = {
   'age.he.month.one': 'شهر واحد', 'age.he.month.two': 'شهران', 'age.he.month.other': '{count} أشهر',
   'age.he.year.one': 'سنة واحدة', 'age.he.year.two': 'سنتان', 'age.he.year.other': '{count} سنوات',
   'age.he.withPrefix': 'العمر بالعبرية: {prefix} {age}', 'age.he.yearsMonths': 'العمر بالعبرية: {prefix} {years} و{months}',
+  'legal.title': 'قبل المتابعة إلى {appName}', 'legal.body': 'يرجى قراءة شروط الاستخدام وسياسة الخصوصية الحالية والموافقة عليهما.',
+  'legal.agreePrefix': 'قرأت وأوافق على', 'legal.accept': 'موافقة ومتابعة', 'legal.saveError': 'تعذر حفظ موافقتك. حاول مرة أخرى.',
+  'report.action': 'إبلاغ', 'report.title': 'الإبلاغ عن محتوى', 'report.details': 'تفاصيل إضافية (اختياري)', 'report.submit': 'إرسال البلاغ', 'report.success': 'شكرًا. تم إرسال البلاغ للمراجعة.', 'report.error': 'تعذر إرسال البلاغ.',
+  'report.reason.harassment': 'مضايقة أو تنمر', 'report.reason.inappropriate': 'محتوى غير لائق', 'report.reason.spam': 'رسائل مزعجة أو احتيال', 'report.reason.hate': 'كراهية أو إساءة', 'report.reason.safety': 'مخاوف تتعلق بالسلامة', 'report.reason.other': 'أخرى',
+  'moderation.options': 'خيارات السلامة', 'moderation.blockSuccess': 'تم حظر هذا العضو.', 'moderation.messageOptions': 'خيارات الرسالة',
 } as const;

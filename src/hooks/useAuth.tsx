@@ -16,6 +16,7 @@ import { needsAppleProfileSetup } from '@/utils/profileCompleteness';
 import { currentAppLocale, translate, type TranslationKey } from '@/i18n';
 import { parseRecoveryUrl } from '@/utils/parseRecoveryUrl';
 import { mapNotificationPreferences } from '@/utils/notificationPreferences';
+import { persistCurrentLegalConsent, readCurrentLegalConsent, type LegalConsentStatus } from '@/lib/legalConsent';
 
 const ONBOARDING_ERROR_KEYS: Readonly<Record<string, TranslationKey>> = {
   "Couldn't load your profile. Please try again.": 'onboarding.error.profileLoad',
@@ -63,6 +64,7 @@ export interface RegistrationInput {
   neighborhood: string | null;
   occupation?: string | null;
   bio?: string | null;
+  acceptedLegal: boolean;
 }
 
 export interface AppleProfileInput {
@@ -105,6 +107,8 @@ interface UseAuthResult {
   session: Session | null;
   profile: Profile | null;
   isLoading: boolean;
+  legalConsentStatus: LegalConsentStatus;
+  acceptLegalTerms: () => Promise<string | null>;
   signIn: (email: string, password: string) => Promise<string | null>;
   register: (
     input: RegistrationInput,
@@ -159,6 +163,17 @@ function useAuthState(): UseAuthResult {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isPasswordRecovery, setIsPasswordRecovery] = useState(false);
+  const [legalConsentStatus, setLegalConsentStatus] = useState<LegalConsentStatus>('loading');
+
+  const loadLegalConsent = useCallback(async (userId: string) => {
+    setLegalConsentStatus('loading');
+    try {
+      setLegalConsentStatus(await readCurrentLegalConsent(userId) ? 'accepted' : 'required');
+    } catch (err) {
+      console.log('[Auth] Failed to verify legal consent', err instanceof Error ? err.message : err);
+      setLegalConsentStatus('required');
+    }
+  }, []);
 
   const loadProfile = useCallback(async (userId: string) => {
     try {
@@ -261,7 +276,8 @@ function useAuthState(): UseAuthResult {
       .getSession()
       .then(async ({ data }) => {
         setSession(data.session);
-        if (data.session) await loadProfile(data.session.user.id);
+        if (data.session) await Promise.all([loadProfile(data.session.user.id), loadLegalConsent(data.session.user.id)]);
+        else setLegalConsentStatus('required');
       })
       .catch(async (err) => {
         // A corrupted/unreadable persisted session must never hang the app
@@ -275,6 +291,7 @@ function useAuthState(): UseAuthResult {
         }
         setSession(null);
         setProfile(null);
+        setLegalConsentStatus('required');
       })
       .finally(() => setIsLoading(false));
 
@@ -284,14 +301,15 @@ function useAuthState(): UseAuthResult {
       console.log('[AUTH 02] session stored', { hasSession: Boolean(newSession) });
       if (newSession) {
         console.log('[AUTH 03] profile fetch started');
-        loadProfile(newSession.user.id).then(() => console.log('[AUTH 04] profile fetch completed'));
+        Promise.all([loadProfile(newSession.user.id), loadLegalConsent(newSession.user.id)]).then(() => console.log('[AUTH 04] profile/legal fetch completed'));
       } else {
         setProfile(null);
+        setLegalConsentStatus('required');
       }
     });
 
     return () => subscription.subscription.unsubscribe();
-  }, [loadProfile]);
+  }, [loadLegalConsent, loadProfile]);
 
   const signIn = useCallback(async (email: string, password: string) => {
     track('login_started', { login_method: 'email' });
@@ -313,6 +331,9 @@ function useAuthState(): UseAuthResult {
 
   const register = useCallback(
     async (input: RegistrationInput, onStage?: (stage: RegistrationStage) => void): Promise<RegisterResult> => {
+      if (!input.acceptedLegal) {
+        return { status: 'error', message: translate(currentAppLocale(), 'onboarding.acceptTermsRequired') };
+      }
       track('sign_up_started');
       onStage?.('creating-account');
 
@@ -363,6 +384,14 @@ function useAuthState(): UseAuthResult {
           status: 'error',
           message: translate(currentAppLocale(), 'auth.error.createdNeedsLogin'),
         };
+      }
+
+      try {
+        await persistCurrentLegalConsent();
+        setLegalConsentStatus('accepted');
+      } catch (err) {
+        console.log('[Auth] Registration legal acceptance failed', err instanceof Error ? err.message : err);
+        return { status: 'error', message: translate(currentAppLocale(), 'legal.saveError') };
       }
 
       const completionError = await completeOnboarding(
@@ -624,7 +653,20 @@ function useAuthState(): UseAuthResult {
       await clearPushRegistration(session.user.id);
     }
     await supabase.auth.signOut();
+    setLegalConsentStatus('required');
     console.log('[Auth] Signed out');
+  }, [session]);
+
+  const acceptLegalTerms = useCallback(async () => {
+    if (!session) return translate(currentAppLocale(), 'error.notSignedIn');
+    try {
+      await persistCurrentLegalConsent();
+      setLegalConsentStatus('accepted');
+      return null;
+    } catch (err) {
+      console.log('[Auth] Legal acceptance failed', err instanceof Error ? err.message : err);
+      return translate(currentAppLocale(), 'legal.saveError');
+    }
   }, [session]);
 
   const deleteAccount = useCallback(async () => {
@@ -725,6 +767,8 @@ function useAuthState(): UseAuthResult {
     session,
     profile,
     isLoading,
+    legalConsentStatus,
+    acceptLegalTerms,
     signIn,
     register,
     signInWithApple,

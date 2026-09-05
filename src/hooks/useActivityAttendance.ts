@@ -6,6 +6,7 @@ import {
   type PersonAttendance,
 } from '@/utils/attendanceSummary';
 import { currentAppLocale, translate } from '@/i18n/core';
+import { isUserLocallyBlocked, subscribeToBlocks } from '@/lib/blockState';
 
 export type { PersonAttendance } from '@/utils/attendanceSummary';
 
@@ -33,6 +34,10 @@ export function useActivityAttendance(activityId: string, refreshKey = 0): Atten
 
   const refresh = useCallback(() => setManualKey((k) => k + 1), []);
 
+  useEffect(() => subscribeToBlocks((blockedUserId) => {
+    setPeople((current) => current.filter((person) => person.userId !== blockedUserId));
+  }), []);
+
   useEffect(() => {
     let cancelled = false;
     setIsLoading(true);
@@ -47,7 +52,7 @@ export function useActivityAttendance(activityId: string, refreshKey = 0): Atten
           setError(translate(currentAppLocale(), 'activity.participantsLoadError'));
           return;
         }
-        setPeople(groupAttendance((data ?? []) as AttendanceRow[]));
+        setPeople(groupAttendance((data ?? []) as AttendanceRow[]).filter((person) => !isUserLocallyBlocked(person.userId)));
       });
 
     return () => {
