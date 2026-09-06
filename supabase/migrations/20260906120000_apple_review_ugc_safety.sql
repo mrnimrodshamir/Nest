@@ -1,6 +1,93 @@
 -- Apple Review P0: versioned legal consent, typed UGC reports, moderation
 -- signals and bidirectional block enforcement. Additive and row-preserving.
 
+-- Fail closed before the first schema change if the live database does not
+-- satisfy the contract this forward migration was reviewed against. This is
+-- intentionally based on schema state, not historical migration versions.
+do $$
+declare
+  required_relation text;
+  attendance_result text;
+begin
+  foreach required_relation in array array[
+    'reports',
+    'blocks',
+    'messages',
+    'chat_participants',
+    'activities',
+    'activity_attendees',
+    'event_attendees'
+  ] loop
+    if not exists (
+      select 1
+      from pg_class c
+      join pg_namespace n on n.oid = c.relnamespace
+      where n.nspname = 'public'
+        and c.relname = required_relation
+        and c.relkind in ('r', 'p')
+    ) then
+      raise exception 'Apple safety migration prerequisite missing: public.% table', required_relation;
+    end if;
+  end loop;
+
+  if not exists (
+    select 1
+    from pg_type t
+    join pg_namespace n on n.oid = t.typnamespace
+    join pg_enum e on e.enumtypid = t.oid
+    where n.nspname = 'public'
+      and t.typname = 'report_status'
+    group by t.oid
+    having array_agg(e.enumlabel::text order by e.enumsortorder)
+      @> array['open', 'reviewed', 'dismissed', 'actioned']::text[]
+  ) then
+    raise exception 'Apple safety migration prerequisite missing: report_status labels';
+  end if;
+
+  if not exists (
+    select 1
+    from pg_constraint con
+    where con.conrelid = 'public.blocks'::regclass
+      and con.contype in ('u', 'p')
+      and (
+        select array_agg(a.attname::text order by key_column.ordinality)
+        from unnest(con.conkey) with ordinality as key_column(attnum, ordinality)
+        join pg_attribute a
+          on a.attrelid = con.conrelid
+         and a.attnum = key_column.attnum
+      ) = array['blocker_id', 'blocked_id']::text[]
+  ) then
+    raise exception 'Apple safety migration prerequisite missing: unique blocks(blocker_id, blocked_id)';
+  end if;
+
+  if to_regprocedure('public.get_or_create_direct_chat(uuid)') is null
+     or pg_get_function_result(to_regprocedure('public.get_or_create_direct_chat(uuid)')) <> 'uuid' then
+    raise exception 'Apple safety migration prerequisite missing: get_or_create_direct_chat(uuid) returns uuid';
+  end if;
+
+  if to_regprocedure('public.get_activity_attendance(uuid)') is null then
+    raise exception 'Apple safety migration prerequisite missing: get_activity_attendance(uuid)';
+  end if;
+
+  attendance_result := regexp_replace(
+    pg_get_function_result(to_regprocedure('public.get_activity_attendance(uuid)')),
+    '\s+',
+    ' ',
+    'g'
+  );
+  if attendance_result <> 'TABLE(source text, user_id uuid, display_name text, avatar_url text, coming_alone boolean, child_id uuid, child_name text, child_age_months integer)' then
+    raise exception 'Apple safety migration prerequisite mismatch: get_activity_attendance(uuid) return contract';
+  end if;
+
+  if not exists (
+    select 1 from pg_proc
+    where oid = to_regprocedure('public.get_activity_attendance(uuid)')
+      and prosecdef
+  ) then
+    raise exception 'Apple safety migration prerequisite mismatch: get_activity_attendance(uuid) must be SECURITY DEFINER';
+  end if;
+end $$;
+
 create table if not exists public.legal_acceptances (
   user_id uuid primary key references auth.users(id) on delete cascade,
   terms_version text not null,
@@ -93,8 +180,22 @@ begin
     select p.id,jsonb_build_object('display_name',p.display_name) into reported,snapshot from public.profiles p where p.id=p_target_id::uuid;
   else
     select m.id,m.sender_id,jsonb_build_object('content_excerpt',left(m.content,240),'chat_id',m.chat_id)
-      into mid,reported,snapshot from public.messages m where m.id=p_target_id::uuid and public.can_access_chat(m.chat_id);
-    if p_target_type='forum_message' then select f.id into fid from public.forums f join public.messages m on m.chat_id=f.chat_id where m.id=mid; end if;
+      into mid,reported,snapshot
+      from public.messages m
+      where m.id=p_target_id::uuid
+        and exists (
+          select 1
+          from public.chat_participants cp
+          where cp.chat_id=m.chat_id
+            and cp.user_id=auth.uid()
+        );
+    if p_target_type='forum_message' then
+      select f.id into fid
+      from public.forums f
+      join public.messages m on m.chat_id=f.chat_id
+      where m.id=mid;
+      if fid is null then raise exception 'invalid report target'; end if;
+    end if;
   end if;
   if reported is null or reported=auth.uid() then raise exception 'invalid report target'; end if;
   insert into public.reports(reporter_id,reported_user_id,activity_id,message_id,forum_id,target_type,target_id,reason,details,context,status)
@@ -171,7 +272,7 @@ begin
   select 'attendee'::text,aa.user_id,p.display_name,p.avatar_url,aa.coming_alone,c.id,c.name,
     case when c.birthdate is null then null when (extract(year from age(current_date,c.birthdate))*12+extract(month from age(current_date,c.birthdate)))<24 then (extract(year from age(current_date,c.birthdate))*12+extract(month from age(current_date,c.birthdate)))::integer else (extract(year from age(current_date,c.birthdate))*12)::integer end
   from public.activity_attendees aa join public.profiles p on p.id=aa.user_id left join public.activity_attendee_children ac on ac.attendee_id=aa.id left join public.children c on c.id=ac.child_id
-  where aa.activity_id=p_activity_id and aa.status='going' and not public.is_blocked_between(auth.uid(),aa.user_id);
+  where aa.activity_id=p_activity_id and aa.status in ('going','attended') and not public.is_blocked_between(auth.uid(),aa.user_id);
 end $$;
 revoke all on function public.get_activity_attendance(uuid) from public, anon;
 grant execute on function public.get_activity_attendance(uuid) to authenticated;
