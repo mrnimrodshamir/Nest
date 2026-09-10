@@ -1,9 +1,10 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import type { ActivityCategory, ActivityStatus } from '@/types/activity';
 import { useI18n } from '@/i18n';
 import { safeCaregiverDisplayName } from '@/utils/profileIdentity';
-import { isUserLocallyBlocked, subscribeToBlocks } from '@/lib/blockState';
+import { isUserLocallyBlocked, subscribeToBlockStateChanges } from '@/lib/blockState';
+import { resolveUnavailableDirectChatIds } from '@/utils/directConversationAvailability';
 
 export interface Conversation {
   chatId: string;
@@ -50,10 +51,15 @@ export function useConversations(): UseConversationsResult {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const loadGeneration = useRef(0);
 
   const load = useCallback(async () => {
+    const generation = ++loadGeneration.current;
     setIsLoading(true);
     setError(null);
+    // A deterministic loading state prevents a persisted/inverse-blocked
+    // direct-chat shell from flashing while server availability is resolved.
+    setConversations([]);
     try {
       const { data: userData } = await supabase.auth.getUser();
       const userId = userData.user?.id;
@@ -74,16 +80,53 @@ export function useConversations(): UseConversationsResult {
       const chatIds = myParticipation.map((p) => p.chat_id);
       const readAtByChat = new Map(myParticipation.map((p) => [p.chat_id, p.last_read_at]));
 
-      const [{ data: chatRows }, { data: allParticipants }, { data: recentMessages }] = await Promise.all([
+      const [chatResult, participantResult, blockResult] = await Promise.all([
         supabase.from('chats').select('id, activity_id, type').in('id', chatIds),
         supabase.from('chat_participants').select('chat_id, user_id').in('chat_id', chatIds),
-        supabase
-          .from('messages')
-          .select('chat_id, sender_id, content, created_at')
-          .in('chat_id', chatIds)
-          .order('created_at', { ascending: false })
-          .limit(500),
+        supabase.from('blocks').select('blocked_id').eq('blocker_id', userId),
       ]);
+      if (chatResult.error) throw chatResult.error;
+      if (participantResult.error) throw participantResult.error;
+      if (blockResult.error) throw blockResult.error;
+      const chatRows = chatResult.data ?? [];
+      const allParticipants = participantResult.data ?? [];
+      const persistedBlockedUserIds = new Set((blockResult.data ?? []).map((row) => row.blocked_id));
+      const directChatIds = new Set(chatRows.filter((chat) => chat.type === 'direct').map((chat) => chat.id));
+      const directCounterparts = new Set(
+        allParticipants
+          .filter((row) => directChatIds.has(row.chat_id) && row.user_id !== userId)
+          .map((row) => row.user_id),
+      );
+      const locallyBlockedUserIds = new Set(
+        Array.from(directCounterparts).filter((id) => isUserLocallyBlocked(id)),
+      );
+      const unavailableDirectChatIds = await resolveUnavailableDirectChatIds({
+        userId,
+        chats: chatRows,
+        participants: allParticipants,
+        persistedBlockedUserIds,
+        locallyBlockedUserIds,
+        isBlockedBetween: async (otherUserId) => {
+          const { data, error: availabilityError } = await supabase.rpc('is_blocked_between', {
+            a: userId,
+            b: otherUserId,
+          });
+          if (availabilityError) throw availabilityError;
+          return data === true;
+        },
+      });
+      const eligibleChatRows = chatRows.filter((chat) => !unavailableDirectChatIds.has(chat.id));
+      const eligibleChatIds = eligibleChatRows.map((chat) => chat.id);
+      const messageResult = eligibleChatIds.length > 0
+        ? await supabase
+            .from('messages')
+            .select('chat_id, sender_id, content, created_at')
+            .in('chat_id', eligibleChatIds)
+            .order('created_at', { ascending: false })
+            .limit(500)
+        : { data: [], error: null };
+      if (messageResult.error) throw messageResult.error;
+      const recentMessages = messageResult.data ?? [];
 
       const lastMessageByChat = new Map<string, { sender_id: string; content: string; created_at: string }>();
       for (const row of recentMessages ?? []) {
@@ -95,7 +138,7 @@ export function useConversations(): UseConversationsResult {
         if (row.user_id !== userId) otherUserIdByChat.set(row.chat_id, row.user_id);
       }
 
-      const groupActivityIds = (chatRows ?? [])
+      const groupActivityIds = eligibleChatRows
         .filter((c) => c.type === 'group' && c.activity_id)
         .map((c) => c.activity_id as string);
       // Every distinct sender whose name we might need to show — direct
@@ -103,7 +146,11 @@ export function useConversations(): UseConversationsResult {
       // (so a group row can read "Maya: See you tomorrow" instead of just
       // the bare message text).
       const senderIdsNeedingProfiles = new Set<string>();
-      for (const otherUserId of otherUserIdByChat.values()) senderIdsNeedingProfiles.add(otherUserId);
+      for (const chat of eligibleChatRows) {
+        if (chat.type !== 'direct') continue;
+        const otherUserId = otherUserIdByChat.get(chat.id);
+        if (otherUserId) senderIdsNeedingProfiles.add(otherUserId);
+      }
       for (const message of lastMessageByChat.values()) {
         if (message.sender_id !== userId) senderIdsNeedingProfiles.add(message.sender_id);
       }
@@ -144,7 +191,7 @@ export function useConversations(): UseConversationsResult {
         attendeeCountByActivity.set(row.activity_id, (attendeeCountByActivity.get(row.activity_id) ?? 0) + 1);
       }
 
-      const result: Conversation[] = (chatRows ?? []).map((chat) => {
+      const result: Conversation[] = eligibleChatRows.map((chat) => {
         const lastMessage = lastMessageByChat.get(chat.id);
         const readAt = readAtByChat.get(chat.id);
         const hasUnread = Boolean(
@@ -210,12 +257,12 @@ export function useConversations(): UseConversationsResult {
       const usable = result.filter((conversation) => conversation.kind !== 'direct'
         || (conversation.otherUserId !== null && !isUserLocallyBlocked(conversation.otherUserId)));
       usable.sort((a, b) => (b.lastMessageAt ?? '').localeCompare(a.lastMessageAt ?? ''));
-      setConversations(usable);
+      if (generation === loadGeneration.current) setConversations(usable);
     } catch (err) {
       console.log('[Conversations] load failed', err instanceof Error ? err.message : err);
-      setError(t('chats.error.load'));
+      if (generation === loadGeneration.current) setError(t('chats.error.load'));
     } finally {
-      setIsLoading(false);
+      if (generation === loadGeneration.current) setIsLoading(false);
     }
   }, [t]);
 
@@ -223,9 +270,13 @@ export function useConversations(): UseConversationsResult {
     load();
   }, [load]);
 
-  useEffect(() => subscribeToBlocks((blockedUserId) => {
-    setConversations((current) => current.filter((conversation) => conversation.otherUserId !== blockedUserId));
-  }), []);
+  useEffect(() => subscribeToBlockStateChanges((userId, blocked) => {
+    if (blocked) {
+      setConversations((current) => current.filter((conversation) => conversation.otherUserId !== userId));
+      return;
+    }
+    void load();
+  }), [load]);
 
   return { conversations, isLoading, error, refresh: load };
 }

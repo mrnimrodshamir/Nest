@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
-import { isUserLocallyBlocked, markUserBlocked, markUserUnblocked, subscribeToBlocks } from './blockState.ts';
+import { isUserLocallyBlocked, markUserBlocked, markUserUnblocked, subscribeToBlocks, subscribeToBlockStateChanges } from './blockState.ts';
 import { CURRENT_PRIVACY_VERSION, CURRENT_TERMS_VERSION, LEGAL_URLS } from '../constants/legal.ts';
 
 const read = (relative: string) => readFileSync(new URL(relative, import.meta.url), 'utf8');
@@ -33,13 +33,17 @@ test('all required UGC surfaces expose the shared report flow', () => {
 
 test('block state removes loaded content synchronously and supports unblock', () => {
   const seen: string[] = [];
+  const changes: Array<[string, boolean]> = [];
   const unsubscribe = subscribeToBlocks((id) => seen.push(id));
+  const unsubscribeChanges = subscribeToBlockStateChanges((id, blocked) => changes.push([id, blocked]));
   markUserBlocked('member-b');
   assert.equal(isUserLocallyBlocked('member-b'), true);
   assert.deepEqual(seen, ['member-b']);
   markUserUnblocked('member-b');
   assert.equal(isUserLocallyBlocked('member-b'), false);
+  assert.deepEqual(changes, [['member-b', true], ['member-b', false]]);
   unsubscribe();
+  unsubscribeChanges();
 });
 
 test('migration provides typed reports, owner-only consent, bidirectional communication isolation and deduplicated block signals', () => {
@@ -127,6 +131,11 @@ test('block enforcement is bidirectional, compositional and does not spam modera
   assert.match(nearby, /subscribeToBlocks/);
   assert.match(chats, /isUserLocallyBlocked/);
   assert.match(conversations, /isUserLocallyBlocked/);
+  assert.match(conversations, /from\('blocks'\)/);
+  assert.match(conversations, /rpc\('is_blocked_between'/);
+  assert.match(conversations, /resolveUnavailableDirectChatIds/);
+  assert.match(conversations, /setConversations\(\[\]\)/);
+  assert.match(conversations, /subscribeToBlockStateChanges/);
 });
 
 test('all Apple report surfaces use typed targets without a client-supplied reporter identity', () => {
