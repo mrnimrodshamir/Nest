@@ -2,6 +2,15 @@
 
 Review reference: `1662db2a-46c9-453b-9030-ece368d76c4e`, version 1.0 (42).
 
+Live App Store Connect verification on 2026-09-15: App Privacy reports
+"Published 10 days ago by Nimrod Shamir". Its product-page preview contains
+**Data Linked to You** and no **Data Used to Track You** section. The eight
+declared data types show collection purposes and identity linkage, with no
+tracking use. The tracking-label correction below is already completed; no
+privacy answers were changed during this verification. The pending distribution
+version still selects rejected build 42. Replace that binary only after the
+remediation build has been physically validated.
+
 ## App Store Connect actions for the account owner
 
 ### App Privacy

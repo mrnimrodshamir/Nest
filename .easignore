@@ -1,0 +1,27 @@
+deck/
+# EAS uses this file instead of .gitignore. Never upload local credentials or state.
+node_modules/
+.expo/
+dist/
+web-build/
+*.log
+.DS_Store
+*.pem
+*.p8
+*apple-client-secret*
+.expo-shared/
+.env
+.env.*
+!.env.example
+*.tsbuildinfo
+ios/Pods/
+ios/build/
+*.xcworkspace/xcuserdata/
+android/.gradle/
+android/app/build/
+scripts/_tmp_*
+supabase/.temp/
+__pycache__/
+*.pyc
+# The website is deployed separately and is not an input to the mobile build.
+website/
