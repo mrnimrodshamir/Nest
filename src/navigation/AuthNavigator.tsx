@@ -5,6 +5,7 @@ import { WelcomeScreen } from '@/screens/auth/WelcomeScreen';
 import { SignInScreen } from '@/screens/auth/SignInScreen';
 import { SignUpScreen } from '@/screens/auth/SignUpScreen';
 import { ForgotPasswordScreen } from '@/screens/auth/ForgotPasswordScreen';
+import { LegalConsentScreen } from '@/screens/auth/LegalConsentScreen';
 import { useAuth } from '@/hooks/useAuth';
 import { useI18n } from '@/i18n';
 
@@ -95,6 +96,14 @@ function SignInContainer({
 }
 
 export function AuthNavigator() {
+  // Present the agreement before any Apple/email authentication or registration.
+  // This acknowledgement is local to the signed-out flow, not evidence of
+  // server-recorded consent. App.tsx retains that separate authenticated gate.
+  const [reviewedTermsBeforeAuth, setReviewedTermsBeforeAuth] = useState(false);
+  if (!reviewedTermsBeforeAuth) {
+    return <LegalConsentScreen onContinueBeforeAuth={() => setReviewedTermsBeforeAuth(true)} />;
+  }
+
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="Welcome">

@@ -8,7 +8,12 @@ import { useAuth } from '@/hooks/useAuth';
 import { useI18n } from '@/i18n';
 import { spacing, theme, typography } from '@/theme';
 
-export function LegalConsentScreen() {
+interface LegalConsentScreenProps {
+  /** Pre-auth acknowledgement only; authenticated consent is still saved by the root gate. */
+  onContinueBeforeAuth?: () => void;
+}
+
+export function LegalConsentScreen({ onContinueBeforeAuth }: LegalConsentScreenProps = {}) {
   const { acceptLegalTerms, signOut } = useAuth();
   const { t, isRTL } = useI18n();
   const [checked, setChecked] = useState(false);
@@ -17,6 +22,10 @@ export function LegalConsentScreen() {
 
   const accept = async () => {
     if (!checked || saving) return;
+    if (onContinueBeforeAuth) {
+      onContinueBeforeAuth();
+      return;
+    }
     setSaving(true);
     setError(null);
     setError(await acceptLegalTerms());
@@ -36,7 +45,7 @@ export function LegalConsentScreen() {
       {error ? <Text style={styles.error}>{error}</Text> : null}
       <PrimaryButton label={t('legal.accept')} onPress={() => void accept()} disabled={!checked || saving} />
       {saving ? <ActivityIndicator color={theme.brand.primary} /> : null}
-      <Pressable onPress={() => void signOut()} accessibilityRole="button"><Text style={styles.signOut}>{t('profile.signOut')}</Text></Pressable>
+      {!onContinueBeforeAuth && <Pressable onPress={() => void signOut()} accessibilityRole="button"><Text style={styles.signOut}>{t('profile.signOut')}</Text></Pressable>}
     </View>
   </SafeAreaView>;
 }

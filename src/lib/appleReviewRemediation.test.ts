@@ -6,6 +6,24 @@ import { CURRENT_PRIVACY_VERSION, CURRENT_TERMS_VERSION, LEGAL_URLS } from '../c
 
 const read = (relative: string) => readFileSync(new URL(relative, import.meta.url), 'utf8');
 
+test('terms precede every signed-out route without bypassing server-recorded consent', () => {
+  const navigation = read('../navigation/AuthNavigator.tsx');
+  const consent = read('../screens/auth/LegalConsentScreen.tsx');
+  const app = read('../../App.tsx');
+  const gate = navigation.indexOf('if (!reviewedTermsBeforeAuth)');
+  assert.ok(gate > 0 && gate < navigation.indexOf('<Stack.Navigator'));
+  assert.match(navigation, /\[reviewedTermsBeforeAuth, setReviewedTermsBeforeAuth\] = useState\(false\)/);
+  assert.match(navigation, /<LegalConsentScreen onContinueBeforeAuth=/);
+  assert.match(consent, /if \(!checked \|\| saving\) return/);
+  assert.match(consent, /if \(onContinueBeforeAuth\) \{\s+onContinueBeforeAuth\(\);\s+return;/);
+  assert.match(consent, /disabled=\{!checked \|\| saving\}/);
+  assert.match(consent, /Linking.openURL\(LEGAL_URLS.terms\)/);
+  assert.match(consent, /Linking.openURL\(LEGAL_URLS.privacy\)/);
+  assert.match(consent, /!onContinueBeforeAuth && <Pressable/);
+  assert.match(app, /legalConsentStatus !== 'accepted'/);
+  assert.match(consent, /await acceptLegalTerms\(\)/);
+});
+
 test('legal consent is current-version, server-backed and globally gates authenticated routing', () => {
   const auth = read('../hooks/useAuth.tsx');
   const app = read('../../App.tsx');
