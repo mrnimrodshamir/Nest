@@ -1,0 +1,50 @@
+-- Supabase Security Advisor: "Security Definer View" on public.public_profiles
+-- and public.active_event_occurrences, plus an anon-grant audit that turned up
+-- a real issue the advisor's generic label didn't fully describe.
+--
+-- FINDINGS:
+--
+-- 1. public.active_event_occurrences has no security_invoker setting (so it
+--    runs with the view owner's privileges, bypassing RLS on its base
+--    tables). Its own WHERE clause already replicates exactly what the base
+--    tables' RLS policies require (published + verified + visible), and
+--    `anon` has never had a grant on this view -- only `authenticated` does,
+--    matching the base-table policies' `{authenticated}` role. Flipping
+--    security_invoker on is a pure hardening no-op: it makes the view
+--    enforce RLS that already agrees with its own filter, for the only role
+--    that could ever query it.
+--
+-- 2. public.public_profiles is *deliberately* security_invoker=false: it is
+--    the mechanism (used by src/hooks/useEventRsvp.ts) that lets one user
+--    see another user's curated, privacy-safe profile projection -- display
+--    name, avatar, coarse age, bio, neighborhood, derived child count/ages --
+--    despite the base `profiles`/`children` tables being strictly
+--    `auth.uid() = owner` RLS. Flipping security_invoker on here would
+--    silently break "who's going" attendee lists (every other user's row
+--    would disappear under RLS), so that is NOT the fix.
+--
+--    The REAL bug, found while investigating the advisor's grant model: this
+--    view (and, independently, the base `profiles` table before RLS ever
+--    gets evaluated) has full CRUD GRANTs to `anon` -- INSERT/SELECT/
+--    UPDATE/DELETE/TRUNCATE/REFERENCES/TRIGGER. On `profiles` the RLS check
+--    (auth.uid() = id) makes an anon grant harmless: auth.uid() is null for
+--    anon, so RLS returns zero rows regardless of the grant. But
+--    public_profiles bypasses RLS BY DESIGN (security_invoker=false), so the
+--    anon SELECT grant is not harmless there -- it means any unauthenticated
+--    request could read every user's display name, bio, occupation,
+--    neighborhood, and derived child names/ages with no login at all. The
+--    dangling anon INSERT/UPDATE/DELETE/TRUNCATE grants are very unlikely to
+--    succeed against this specific view shape (it has a LATERAL aggregate
+--    join, so it is not auto-updatable today) but are needless attack
+--    surface that would become live the moment the view definition ever
+--    simplified.
+--
+-- FIX: revoke every anon grant on public_profiles (authenticated keeps full
+-- access, unchanged -- this is what the app has only ever actually used),
+-- and set active_event_occurrences to security_invoker=true. Neither change
+-- alters what any legitimate authenticated request can see: verified with
+-- the app's own RLS/grant audit before this migration was written.
+
+revoke all on public.public_profiles from anon;
+
+alter view public.active_event_occurrences set (security_invoker = true);
