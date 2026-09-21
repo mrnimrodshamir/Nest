@@ -46,8 +46,13 @@ export function needsInitialProfileSetup(profile: CompletenessProfile | null): b
 /** Apple authentication supplies credentials, not a NestUp family profile.
  * New and legacy Apple accounts must complete the MVP identity fields before
  * entering Main. Email-era established accounts keep the historical optional-
- * gaps compatibility rule. */
+ * gaps compatibility rule.
+ *
+ * `birthdate` is deliberately NOT part of this gate. App Review 5.1.1(v)
+ * requires that a caregiver's own date of birth never block access to core
+ * functionality, so a missing birthdate must not route anyone back into
+ * profile completion. It stays an optional profile field. */
 export function needsAppleProfileSetup(profile: CompletenessProfile | null): boolean {
   if (profileCompleteness(profile) === 'requires-initial-setup') return true;
-  return !profile?.parentRole || !profile.birthdate || !profile.neighborhood?.trim();
+  return !profile?.parentRole || !profile.neighborhood?.trim();
 }

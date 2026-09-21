@@ -355,7 +355,6 @@ export const en = {
   'onboarding.profileSubtitle': 'Help nearby caregivers know who they will be meeting.',
   'onboarding.nameRequired': 'Enter your name',
   'onboarding.roleRequired': 'Choose how you describe yourself',
-  'onboarding.birthdateRequired': 'Choose your date of birth',
   'onboarding.areaRequired': 'Enter your neighborhood or area',
   'onboarding.areaPlaceholder': 'Neighborhood or area',
   'onboarding.optionalDetails': 'Optional details',

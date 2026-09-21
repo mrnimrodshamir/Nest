@@ -19,7 +19,7 @@ export interface FamilyProfileDraft {
 interface FamilyProfileFieldsProps {
   value: FamilyProfileDraft;
   onChange: (value: FamilyProfileDraft) => void;
-  errors?: Partial<Record<'displayName' | 'parentRole' | 'birthdate' | 'neighborhood', string>>;
+  errors?: Partial<Record<'displayName' | 'parentRole' | 'neighborhood', string>>;
 }
 
 /** Shared profile setup used by email signup, Apple completion and compatible
@@ -64,8 +64,10 @@ export function FamilyProfileFields({ value, onChange, errors = {} }: FamilyProf
       </View>
 
       <View>
-        <ParentBirthdateField value={value.birthdate} onChange={(date) => set('birthdate', date)} optional={false} />
-        {errors.birthdate ? <Text style={styles.error}>{errors.birthdate}</Text> : null}
+        {/* Optional by App Review requirement 5.1.1(v): a caregiver's own date
+            of birth is not relevant to core functionality, so it is never
+            required at signup or profile completion. */}
+        <ParentBirthdateField value={value.birthdate} onChange={(date) => set('birthdate', date)} />
       </View>
 
       <FormField

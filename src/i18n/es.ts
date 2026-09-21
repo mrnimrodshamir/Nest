@@ -310,7 +310,6 @@ export const es: Dictionary = {
   'onboarding.profileSubtitle': 'Ayuda a los cuidadores cercanos a saber a quién van a conocer.',
   'onboarding.nameRequired': 'Ingresa tu nombre',
   'onboarding.roleRequired': 'Elige cómo te describes',
-  'onboarding.birthdateRequired': 'Elige tu fecha de nacimiento',
   'onboarding.areaRequired': 'Ingresa tu barrio o zona',
   'onboarding.areaPlaceholder': 'Barrio o zona',
   'onboarding.optionalDetails': 'Detalles opcionales',

@@ -371,7 +371,6 @@ export const he: Dictionary = {
   'onboarding.profileSubtitle': 'עזרו להורים ולמטפלים בסביבה להכיר את מי שיפגשו.',
   'onboarding.nameRequired': 'הזינו את שמכם',
   'onboarding.roleRequired': 'בחרו איך לתאר את עצמכם',
-  'onboarding.birthdateRequired': 'בחרו את תאריך הלידה שלכם',
   'onboarding.areaRequired': 'הזינו שכונה או אזור',
   'onboarding.areaPlaceholder': 'שכונה או אזור',
   'onboarding.optionalDetails': 'פרטים לבחירה',

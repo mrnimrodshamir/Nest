@@ -315,7 +315,6 @@ export const ar: Dictionary = {
   'onboarding.profileSubtitle': 'ساعد مقدمي الرعاية القريبين على معرفة من سيلتقون به.',
   'onboarding.nameRequired': 'أدخل اسمك',
   'onboarding.roleRequired': 'اختر كيف تصف نفسك',
-  'onboarding.birthdateRequired': 'اختر تاريخ ميلادك',
   'onboarding.areaRequired': 'أدخل حيك أو منطقتك',
   'onboarding.areaPlaceholder': 'الحي أو المنطقة',
   'onboarding.optionalDetails': 'تفاصيل اختيارية',

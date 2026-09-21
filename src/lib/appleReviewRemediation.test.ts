@@ -198,3 +198,41 @@ test('all six locale dictionaries include legal, report and safety copy', () => 
     }
   }
 });
+
+// --- Guideline 5.1.1(v): caregiver date of birth is never required --------
+
+/** Apple rejected Version 1.0 (47) because signup demanded the caregiver's
+ *  own date of birth. These tests pin the remediation: DOB may be collected
+ *  as an optional profile field, but nothing may require it or gate access
+ *  on it. Child birthdates are a separate concept and stay required — they
+ *  are the app's core age-matching functionality, not personal data about
+ *  the account holder. */
+
+test('no signup or profile-completion screen requires the caregiver birthdate', () => {
+  for (const screen of ['../screens/auth/SignUpScreen.tsx', '../screens/auth/CompleteAppleProfileScreen.tsx']) {
+    const source = read(screen);
+    assert.doesNotMatch(
+      source,
+      /if \(!familyProfile\.birthdate\)/,
+      `${screen} still blocks submission on the caregiver birthdate`,
+    );
+    assert.ok(source.includes('onboarding.birthdateRequired') === false, `${screen} still shows a required-DOB error`);
+    // The child birthdate requirement is core functionality and must remain.
+    assert.match(source, /if \(!child\.birthdate\) e\.birthdate = t\('onboarding\.childBirthdateRequired'\)/);
+  }
+});
+
+test('the caregiver birthdate field renders as optional wherever it is collected', () => {
+  const fields = read('../components/FamilyProfileFields.tsx');
+  assert.match(fields, /<ParentBirthdateField[^/]*\/>/);
+  assert.doesNotMatch(fields, /optional=\{false\}/);
+  // The field's own default must be optional, so no call site can make it required by omission.
+  const field = read('../components/ParentBirthdateField.tsx');
+  assert.match(field, /optional = true/);
+});
+
+test('routing never sends a caregiver back to setup for a missing birthdate', () => {
+  const completeness = read('../utils/profileCompleteness.ts');
+  const appleGate = completeness.slice(completeness.indexOf('export function needsAppleProfileSetup'));
+  assert.doesNotMatch(appleGate, /birthdate/, 'the Apple profile gate still inspects birthdate');
+});

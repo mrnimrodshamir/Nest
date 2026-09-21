@@ -382,7 +382,6 @@ export const ru: Dictionary = {
   'onboarding.profileSubtitle': 'Помогите родителям и опекунам поблизости узнать, с кем они встретятся.',
   'onboarding.nameRequired': 'Введите ваше имя',
   'onboarding.roleRequired': 'Выберите, как вы себя описываете',
-  'onboarding.birthdateRequired': 'Выберите дату рождения',
   'onboarding.areaRequired': 'Укажите район',
   'onboarding.areaPlaceholder': 'Район',
   'onboarding.optionalDetails': 'Необязательные сведения',

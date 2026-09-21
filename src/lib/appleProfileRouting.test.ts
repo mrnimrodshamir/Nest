@@ -28,8 +28,15 @@ test('complete Apple users enter Main and Private Relay is not treated as incomp
 test('legacy/default Apple display names and missing required MVP fields stay gated', () => {
   assert.equal(computeRouteDecision(appleSession(), { ...completeProfile, displayName: 'Momzy member' }), 'complete-profile');
   assert.equal(computeRouteDecision(appleSession(), { ...completeProfile, parentRole: null }), 'complete-profile');
-  assert.equal(computeRouteDecision(appleSession(), { ...completeProfile, birthdate: null }), 'complete-profile');
   assert.equal(computeRouteDecision(appleSession(), { ...completeProfile, neighborhood: null }), 'complete-profile');
+});
+
+/** App Review 5.1.1(v): a caregiver's own date of birth is not relevant to
+ *  core functionality, so it must never gate access. An Apple account with
+ *  no birthdate reaches Main like any other complete account. */
+test('a missing caregiver birthdate never gates an Apple account', () => {
+  assert.equal(computeRouteDecision(appleSession(), { ...completeProfile, birthdate: null }), 'main-navigator');
+  assert.equal(computeRouteDecision(appleSession(), { ...completeProfile, birthdate: undefined }), 'main-navigator');
 });
 
 test('Apple completion uses the existing onboarding path and repairs legacy-complete rows', async () => {

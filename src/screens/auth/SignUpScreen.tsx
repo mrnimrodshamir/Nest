@@ -90,7 +90,6 @@ export function SignUpScreen({ onBack }: SignUpScreenProps) {
     const errors: Record<string, string> = {};
     if (!isNonEmpty(familyProfile.displayName)) errors.displayName = t('onboarding.nameRequired');
     if (!familyProfile.parentRole) errors.parentRole = t('onboarding.roleRequired');
-    if (!familyProfile.birthdate) errors.birthdate = t('onboarding.birthdateRequired');
     if (!isNonEmpty(familyProfile.neighborhood)) errors.neighborhood = t('onboarding.areaRequired');
     if (!isValidEmail(email)) errors.email = t('onboarding.emailInvalid');
     if (!isValidPassword(password)) errors.password = t('onboarding.passwordInvalid');

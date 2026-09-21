@@ -376,7 +376,6 @@ export const fr: Dictionary = {
   'onboarding.profileSubtitle': 'Aidez les parents et aidants à proximité à savoir qui ils vont rencontrer.',
   'onboarding.nameRequired': 'Saisissez votre nom',
   'onboarding.roleRequired': 'Choisissez comment vous vous définissez',
-  'onboarding.birthdateRequired': 'Choisissez votre date de naissance',
   'onboarding.areaRequired': 'Saisissez votre quartier ou secteur',
   'onboarding.areaPlaceholder': 'Quartier ou secteur',
   'onboarding.optionalDetails': 'Informations facultatives',
