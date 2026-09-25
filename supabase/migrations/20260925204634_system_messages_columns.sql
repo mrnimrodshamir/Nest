@@ -1,6 +1,16 @@
--- Phase 1 / M1+M2 — structured system messages
+-- Phase 1 / M1 — structured system message columns.
 --
--- REVIEW BEFORE APPLYING. Not applied to production.
+-- APPLIED to production 2026-09-25 as migration 20260925204634.
+--
+-- Applied as a no-build hotfix: build 48 shipped a client that selects
+-- messages.kind and messages.metadata (src/hooks/useChatMessages.ts), which
+-- returned HTTP 400 against the un-migrated table and broke every chat with
+-- "Couldn't load your messages". The matching RLS half of this feature was
+-- already live (20260906120000_apple_review_ugc_safety tolerates a NULL
+-- sender_id), so only these columns were missing.
+--
+-- 0002_emit_system_message.sql (the emit trigger) remains staged and is
+-- deliberately NOT applied; until it is, no row is ever kind = 'system'.
 --
 -- Existing rows: `kind` defaults to 'user', so every current message stays
 -- valid and unchanged. No message is rewritten or deleted.
